@@ -1,0 +1,281 @@
+﻿@{
+    var data = ViewData[nameof(WikiRouteData)] as WikiRouteData
+        ?? new WikiRouteData();
+    Layout = data.IsCompact ? WikiWebConfig.CompactLayoutPath : WikiWebConfig.MainLayoutPath;
+}
+
+<div class="wiki @(data.IsCompact ? "compact" : null)">
+    @if (!data.IsCompact)
+    {
+        <nav>
+            <div id="wiki-sidebar-logo" role="banner">
+                <a id="wiki-sidebar-logo-link" href="/Wiki/@WikiConfig.MainPageTitle" title="Visit the main page"></a>
+            </div>
+            <div class="wiki-sidebar-section">
+                <ul>
+                    <li><a href="/Wiki/@WikiConfig.MainPageTitle" class="wiki-link wiki-link-exists" title="Visit the main page">@WikiConfig.MainPageTitle</a></li>
+                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.ContentsPageTitle))
+                    {
+                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContentsPageTitle" class="wiki-link wiki-link-exists" title="Visit the main contents page">@WikiWebConfig.ContentsPageTitle</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.HelpPageTitle))
+                    {
+                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.HelpPageTitle" class="wiki-link wiki-link-exists" title="Visit the main help page">@WikiWebConfig.HelpPageTitle</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.AboutPageTitle))
+                    {
+                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.AboutPageTitle" class="wiki-link wiki-link-exists" title="Learn about this site">@WikiWebConfig.AboutPageTitle</a></li>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.ContactPageTitle))
+                    {
+                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContactPageTitle" class="wiki-link wiki-link-exists" title="Contact the site administrators">@WikiWebConfig.ContactPageTitle</a></li>
+                    }
+                </ul>
+            </div>
+            <div class="wiki-sidebar-section">
+                <ul>
+                    <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:All_Pages?sort=timestamp&descending=true" class="wiki-link wiki-link-exists" title="A list of recent revisions">Recent changes</a></li>
+                    @if (!data.IsSystem)
+                    {
+                        <li><a href="@Url.Action("WhatLinksHere")" class="wiki-link wiki-link-exists" title="A list of articles with links to this one">What links here</a></li>
+                    }
+                    <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:Upload" class="wiki-link wiki-link-exists">Upload files</a></li>
+                    <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:Special" class="wiki-link wiki-link-exists" title="A list of all special pages">Special pages</a></li>
+                </ul>
+            </div>
+        </nav>
+    }
+    <div>
+        @if (!data.IsCompact)
+        {
+            <header>
+                <nav id="wiki-header-content" class="wiki-header-section">
+                    <ul>
+                        @if (data.IsSystem)
+                        {
+                            <li class="is-active">
+                                <span title="This is a special page which cannot be edited">Special page</span>
+                            </li>
+                        }
+                        else if (data.WikiItem is null)
+                        {
+                            <li class="is-active">
+                                <span title="View article">@(data.IsCategory ? "Category" : "Article")</span>
+                            </li>
+                        }
+                        else if (data.IsTalk)
+                        {
+                            <li>
+                                <a href="@Url.Action("Read", new { isCompact = data.IsCompact })" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                            </li>
+                            <li class="is-active">
+                                <span title="View discussion">@WikiConfig.TalkNamespace</span>
+                            </li>
+                        }
+                        else
+                        {
+                            <li class="is-active">
+                                <span title="View article">@(data.IsCategory ? "Category" : "Article")</span>
+                            </li>
+                            <li>
+                                <a href="@Url.Action("Read", new { isCompact = data.IsCompact })" title="View discussion">@WikiConfig.TalkNamespace</a>
+                            </li>
+                        }
+                    </ul>
+                </nav>
+                <div id="wiki-header-spacer"></div>
+                <nav id="wiki-header-actions" class="wiki-header-section">
+                    @if (!data.IsSystem && !data.IsTalk)
+                    {
+                        <ul>
+                            @if (data.IsEdit || data.IsHistory)
+                            {
+                                <li>
+                                    <a href="@Url.Action("Read", new { isCompact = data.IsCompact })">Read</a>
+                                </li>
+                            }
+                            else
+                            {
+                                <li class="is-active">
+                                    <span>Read</span>
+                                </li>
+                            }
+                            @if (data.CanEdit)
+                            {
+                                if (data.IsEdit)
+                                {
+                                    <li class="is-active">
+                                        <span title="Edit this page">Edit</span>
+                                    </li>
+                                }
+                                else
+                                {
+                                    <li>
+                                        <a href="@Url.Action("Edit", new { isCompact = data.IsCompact })" title="Edit this page">Edit</a>
+                                    </li>
+                                }
+                            }
+                            @if (data.IsHistory)
+                            {
+                                <li class="is-active">
+                                    <span title="Past revisions of this page">View history</span>
+                                </li>
+                            }
+                            else
+                            {
+                                <li>
+                                    <a href="@Url.Action("History", new { isCompact = data.IsCompact })" title="Past revisions of this page">View history</a>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    <div id="wiki-header-search">
+                        <form asp-controller="Wiki" asp-route-isCompact="@data.IsCompact" asp-route-wikiNamespace="@(WikiWebConfig.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
+                            <input id="searchInput"
+                                   type="search"
+                                   name="query"
+                                   placeholder="Search the wiki"
+                                   autocomplete="off"
+                                   list="searchSuggestions" />
+                            <datalist id="searchSuggestions" />
+                            <button type="submit"
+                                    name="go"
+                                    title="Go to a page with this exact name, or search for the text">
+                                <svg xmlns="http://www.w3.org/2000/svg">
+                                    <g fill="none" stroke-width="2">
+                                        <path d="M11.29 11.71l-4-4" />
+                                        <circle cx="5" cy="5" r="4" />
+                                    </g>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </nav>
+            </header>
+        }
+        <main id="wiki-content" role="main">
+            <div id="wiki-heading" role="heading">
+                <h1 id="wiki-main-heading">
+                    @if (data.IsSearch)
+                    {
+                        <span id="wiki-main-heading-search">Search results</span>
+                    }
+                    else if (data.IsSystem)
+                    {
+                        <span id="wiki-main-heading-special">Special page</span>
+                        <span class="wiki-main-heading-namespace-separator">:</span>
+                        <span id="wiki-main-heading-title">@data.Title</span>
+                    }
+                    else
+                    {
+                        if (data.IsTalk)
+                        {
+                            <span id="wiki-main-heading-talk">@WikiConfig.TalkNamespace</span>
+                            <span class="wiki-main-heading-namespace-separator">:</span>
+                        }
+                        else if (data.IsEdit)
+                        {
+                            <span id="wiki-main-heading-editnotice">Editing</span>
+                        }
+                        if ((!(data.WikiItem is Article article)
+                            || article.IsDeleted)
+                            && data.CanEdit
+                            && !data.IsEdit)
+                        {
+                            <a href="@Url.Action("Edit", new { isCompact = data.IsCompact })" class="wiki-link-missing" title="Create this page">
+                                @if (data.ShowNamespace)
+                                {
+                                    <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
+                                    <span class="wiki-main-heading-namespace-separator">:</span>
+                                }
+                                @if (data.IsHistory)
+                                {
+                                    <span class="wiki-main-heading-namespace-separator">:</span>
+                                    <span id="wiki-main-heading-history">Revision history</span>
+                                }
+                                <span id="wiki-main-heading-title">@data.Title</span>
+                            </a>
+                        }
+                        else
+                        {
+                            @if (data.ShowNamespace)
+                            {
+                                <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
+                                <span class="wiki-main-heading-namespace-separator">:</span>
+                            }
+                            @if (data.IsHistory)
+                            {
+                                <span class="wiki-main-heading-namespace-separator">:</span>
+                                <span id="wiki-main-heading-history">Revision history</span>
+                            }
+                            <span id="wiki-main-heading-title">@data.Title</span>
+                        }
+                    }
+                </h1>
+                @if (data.IsCompact && data.CanEdit && !data.IsEdit)
+                {
+                    <a id="wiki-heading-edit" class="btn btn-outline-primary" href="@Url.Action("Edit", new { isCompact = data.IsCompact })" title="Edit this page"></a>
+                }
+            </div>
+            <div id="wiki-body">
+                @RenderBody()
+                @if (!data.IsCompact
+                    && !data.IsSystem
+                    && !data.IsTalk
+                    && !data.IsHistory
+                    && data.Categories?.Count > 0)
+                {
+                    <section id="wiki-category-list-section">
+                        <a href="/Wiki/@WikiConfig.CategoriesTitle" id="wiki-category-list-category-link">@WikiConfig.CategoriesTitle</a>
+                        <ul>
+                            @foreach (var category in data.Categories)
+                            {
+                                <li>
+                                    <a href="/Wiki/@WikiConfig.CategoriesTitle:@category"
+                                       title="@WikiConfig.CategoriesTitle:@category">@category</a>
+                                </li>
+                            }
+                        </ul>
+                    </section>
+                }
+            </div>
+        </main>
+        @if (!data.IsCompact)
+        {
+            <footer>
+                <div id="wiki-top-footer" role="contentinfo">
+                    <ul>
+                        @if (!data.IsSystem
+                            && !data.IsTalk
+                            && data.WikiItem is Article tArticle)
+                        {
+                            <li id="wiki-footer-timestamp">This page was last edited <span class="wiki-timestamp">@tArticle.Timestamp.ToWikiDisplayString()</span> (UTC).</li>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle)
+                            || !string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+                        {
+                            <li id="wiki-footer-copyright">
+                                @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))
+                                {
+                                    <span>The content of this page is available under the terms of the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+                                {
+                                    <span>By using this site, you agree to the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                </div>
+                <div class="wiki-bottom-footer">
+                    <span>Developed by <a href="//williamstead.com" target="_blank">William Stead</a></span>
+                    <span>ver 0.1.0 © 2020—@(DateTime.Now.Year) <a href="//neverfoundry.com" target="_blank">NeverFoundry</a></span>
+                </div>
+            </footer>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}

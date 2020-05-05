@@ -1,0 +1,25 @@
+﻿@{
+    Layout = "/Pages/Shared/_Layout.cshtml";
+}
+
+<div id="account-main">
+    <nav>
+        <div id="wiki-sidebar-logo" role="banner">
+            <a id="wiki-sidebar-logo-link" href="/Wiki/@WikiConfig.MainPageTitle" title="Visit the main page"></a>
+        </div>
+    </nav>
+    <div>
+        <partial name="_LoginPartial" />
+        <main id="account-content" role="main">
+            @RenderBody()
+        </main>
+        <footer class="wiki-bottom-footer">
+            <span>Developed by <a href="//williamstead.com" target="_blank">William Stead</a></span>
+            <span>ver 0.1.0 © 2020—@(DateTime.Now.Year) <a href="//neverfoundry.com" target="_blank">NeverFoundry</a></span>
+        </footer>
+    </div>
+</div>
+
+@section Scripts {
+    @RenderSection("Scripts", required: false)
+}

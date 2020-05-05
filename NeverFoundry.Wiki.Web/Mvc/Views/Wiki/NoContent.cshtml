@@ -1,0 +1,10 @@
+﻿@model WikiRouteData
+
+<div id="wiki-nocontent">
+    <span id="wiki-nocontent-message">This @(Model.IsFile ? "file" : "page") does not exist.</span>
+    @if (!Model.IsFile && Model.CanEdit)
+    {
+        <a href="@Url.Action("Edit")"
+           class="wiki-link wiki-link-missing">Create it?</a>
+    }
+</div>

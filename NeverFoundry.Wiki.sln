@@ -1,0 +1,62 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29519.161
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{E53339B2-1760-4266-BCC7-CA923CBCF16C}") = "docker-compose-mvc", "Docker\MVC\docker-compose-mvc.dcproj", "{D4EFF986-9F61-4F0C-B4A1-0E0D63D3D382}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0833C366-8EC4-4692-B8F4-4AAA17D6FF8B}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.editorconfig = .editorconfig
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki", "NeverFoundry.Wiki\NeverFoundry.Wiki.csproj", "{8B69DAC5-8974-4E19-B850-A4C52E0E7869}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Blazor", "NeverFoundry.Wiki.Web\Blazor\NeverFoundry.Wiki.Blazor.csproj", "{57227CB8-6151-445D-A7A0-1BE932004F37}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Test", "NeverFoundry.Wiki.Test\NeverFoundry.Wiki.Test.csproj", "{951EED42-93C1-4CA0-8D79-C6261021BD4E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.MvcSample", "NeverFoundry.Wiki.Sample\MVC\NeverFoundry.Wiki.MvcSample.csproj", "{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Mvc", "NeverFoundry.Wiki.Web\Mvc\NeverFoundry.Wiki.Mvc.csproj", "{E461C678-4D7C-42E5-BE44-510A18A17626}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D4EFF986-9F61-4F0C-B4A1-0E0D63D3D382}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4EFF986-9F61-4F0C-B4A1-0E0D63D3D382}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4EFF986-9F61-4F0C-B4A1-0E0D63D3D382}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4EFF986-9F61-4F0C-B4A1-0E0D63D3D382}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B69DAC5-8974-4E19-B850-A4C52E0E7869}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B69DAC5-8974-4E19-B850-A4C52E0E7869}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B69DAC5-8974-4E19-B850-A4C52E0E7869}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B69DAC5-8974-4E19-B850-A4C52E0E7869}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57227CB8-6151-445D-A7A0-1BE932004F37}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57227CB8-6151-445D-A7A0-1BE932004F37}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57227CB8-6151-445D-A7A0-1BE932004F37}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57227CB8-6151-445D-A7A0-1BE932004F37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{951EED42-93C1-4CA0-8D79-C6261021BD4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{951EED42-93C1-4CA0-8D79-C6261021BD4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{951EED42-93C1-4CA0-8D79-C6261021BD4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{951EED42-93C1-4CA0-8D79-C6261021BD4E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E461C678-4D7C-42E5-BE44-510A18A17626}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E461C678-4D7C-42E5-BE44-510A18A17626}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E461C678-4D7C-42E5-BE44-510A18A17626}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E461C678-4D7C-42E5-BE44-510A18A17626}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E70C1D8D-BE0A-49CB-88E0-12D706F489FA}
+	EndGlobalSection
+EndGlobal

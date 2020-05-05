@@ -1,0 +1,355 @@
+﻿@model HistoryViewModel
+
+@if (Model.Revisions.Count == 0)
+{
+    <div id="wiki-history-nocontent">
+        <p>No revisions match the current filter.</p>
+    </div>
+}
+else
+{
+    <div id="wiki-history-filter">
+        <EditForm Model="_formModel" OnSubmit="FilterHistory">
+            <fieldset>
+                <legend role="button" tabindex="0" aria-expanded="false">
+                    <button id="wiki-history-filter-hide-button"
+                            type="button"
+                            aria-label="hide"
+                            style="display: none;"
+                            onclick="toggleWikiHistoryFilter(event, false);"
+                            onkeydown="toggleWikiHistoryFilter(event, false);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                            <title>collapse</title>
+                            <path d="M2.5 15.25l7.5-7.5 7.5 7.5 1.5-1.5-9-9-9 9z" />
+                        </svg>
+                    </button>
+                    <button id="wiki-history-filter-show-button"
+                            type="button"
+                            aria-label="show"
+                            onclick="toggleWikiHistoryFilter(event, true);"
+                            onkeydown="toggleWikiHistoryFilter(event, true);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                            <title>expand</title>
+                            <path d="M17.5 4.75l-7.5 7.5-7.5-7.5L1 6.25l9 9 9-9z" />
+                        </svg>
+                    </button>
+                    <span>Filter</span>
+                </legend>
+                <form id="wiki-history-filter-controls"
+                      style="display: none;"
+                      asp-controller="Wiki"
+                      asp-route-isCompact="@Model.Data.IsCompact"
+                     
+                      asp-action="History"
+                      method="get">
+                    <div class="form-group">
+                        <label for="wiki-history-filter-startdate">Start date</label>
+                        <input id="wiki-history-filter-startdate"
+                               class="form-control"
+                               type="datetime"
+                               name="start" />
+                    </div>
+                    <div class="form-group">
+                        <label for="wiki-history-filter-enddate">End date</label>
+                        <input id="wiki-history-filter-enddate"
+                               class="form-control"
+                               type="datetime"
+                               name="end" />
+                    </div>
+                    <div class="form-group">
+                        <label for="wiki-history-filter-user">User</label>
+                        <input id="wiki-history-filter-user"
+                               class="form-control"
+                               type="text"
+                               name="editor" />
+                    </div>
+                    <button class="btn btn-primary" type="submit" tabindex="0">Apply filter</button>
+                </form>
+            </fieldset>
+        </EditForm>
+    </div>
+    <div id="wiki-history-instructions">Click on the date/time to view a revision.</div>
+    <div class="wiki-pagecontrols">
+        <nav>
+            @if (Model.Revisions.HasPreviousPage)
+            {
+                <span><a asp-route-pageNumber="1">Newest</a></span>
+                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber - 1)">Newer</a></span>
+            }
+            else
+            {
+                <span>Newest</span>
+                <span>Newer</span>
+            }
+            @if (Model.Revisions.HasNextPage)
+            {
+                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber + 1)">Older</a></span>
+                <span><a asp-route-pageNumber="@(Model.Revisions.PageCount)">Oldest</a></span>
+            }
+            else
+            {
+                <span>Older</span>
+                <span>Oldest</span>
+            }
+        </nav>
+        <div>
+            <span>Number of revisions per page:</span>
+            <ul>
+                <li>
+                    @if (Model.Revisions.PageSize == 50)
+                    {
+                        <span>50</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="50">50</a>
+                    }
+                </li>
+                <li>
+                    @if (Model.Revisions.PageSize == 100)
+                    {
+                        <span>100</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="100">100</a>
+                    }
+                </li>
+                <li>
+                    @if (Model.Revisions.PageSize == 250)
+                    {
+                        <span>250</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="250">250</a>
+                    }
+                </li>
+                <li>
+                    @if (Model.Revisions.PageSize == 500)
+                    {
+                        <span>500</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="500">500</a>
+                    }
+                </li>
+            </ul>
+        </div>
+    </div>
+    <form id="wiki-history-list" asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Read" method="get">
+        <input id="wiki-history-check1" type="hidden" name="rev" value="" />
+        <input id="wiki-history-check2" type="hidden" name="diff" value="" />
+        @if (!Model.Data.IsFile)
+        {
+            <button type="submit" class="btn btn-outline-primary">Compare selected versions</button>
+        }
+        <ul>
+            <li>
+                @if (!Model.Data.IsFile)
+                {
+                    <span class="wiki-history-list-diffs">
+                        @if (Model.Revisions.HasPreviousPage)
+                        {
+                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.ToWikiDisplayString()" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                        }
+                        else
+                        {
+                            <span>cur</span>
+                        }
+                        @if (Model.Revisions.Count > 1)
+                        {
+                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.ToWikiDisplayString()" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                        }
+                        else
+                        {
+                            <span>prev</span>
+                        }
+                    </span>
+                    <input type="checkbox"
+                           onclick="checkWikiDiff(event, @Model.Revisions[0].Timestamp.ToWikiDisplayString());"
+                           onkeydown="checkWikiDiff(event, @Model.Revisions[0].Timestamp.ToWikiDisplayString());" />
+                }
+                <a class="wiki-history-list-timestamp" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.ToWikiDisplayString()">@Model.Revisions[0].Timestamp.ToWikiDisplayString()</a>
+                <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[0].Editor" />
+                <span>@Model.Revisions[0].Comment</span>
+            </li>
+            @for (var i = 1; i < Model.Revisions.Count - 2; i++)
+            {
+                <li>
+                    @if (!Model.Data.IsFile)
+                    {
+                        <span class="wiki-history-list-diffs">
+                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.ToWikiDisplayString()" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.ToWikiDisplayString()" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                        </span>
+                        <input type="checkbox"
+                               onclick="checkWikiDiff(event, @Model.Revisions[i].Timestamp.ToWikiDisplayString());"
+                               onkeydown="checkWikiDiff(event, @Model.Revisions[i].Timestamp.ToWikiDisplayString());" />
+                    }
+                    <a class="wiki-history-list-timestamp" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.ToWikiDisplayString()">@Model.Revisions[i].Timestamp.ToWikiDisplayString()</a>
+                    <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[i].Editor" />
+                    <span>@Model.Revisions[i].Comment</span>
+                </li>
+            }
+            @if (Model.Revisions.Count > 1)
+            {
+                <li>
+                    @if (!Model.Data.IsFile)
+                    {
+                        <span class="wiki-history-list-diffs">
+                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            @if (Model.Revisions.HasNextPage)
+                            {
+                                <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                            }
+                            else
+                            {
+                                <span>prev</span>
+                            }
+                        </span>
+                        <input type="checkbox"
+                               onclick="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString());"
+                               onkeydown="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString());" />
+                    }
+                    <a class="wiki-history-list-timestamp" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()">@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()</a>
+                    <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Editor" />
+                    <span>@Model.Revisions[(int)(Model.Revisions.Count - 1)].Comment</span>
+                </li>
+            }
+        </ul>
+        @if (!Model.Data.IsFile)
+        {
+            <button type="submit" class="btn btn-outline-primary">Compare selected versions</button>
+        }
+    </form>
+    <div class="wiki-pagecontrols">
+        <nav>
+            @if (Model.Revisions.HasPreviousPage)
+            {
+                <span><a asp-route-pageNumber="1">Newest</a></span>
+                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber - 1)">Newer</a></span>
+            }
+            else
+            {
+                <span>Newest</span>
+                <span>Newer</span>
+            }
+            @if (Model.Revisions.HasNextPage)
+            {
+                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber + 1)">Older</a></span>
+                <span><a asp-route-pageNumber="@(Model.Revisions.PageCount)">Oldest</a></span>
+            }
+            else
+            {
+                <span>Older</span>
+                <span>Oldest</span>
+            }
+        </nav>
+        <div>
+            <span>Number of revisions per page:</span>
+            <ul>
+                <li>
+                    @if (Model.Revisions.PageSize == 50)
+                    {
+                        <span>50</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="50">50</a>
+                    }
+                </li>
+                <li>
+                    @if (Model.Revisions.PageSize == 100)
+                    {
+                        <span>100</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="100">100</a>
+                    }
+                </li>
+                <li>
+                    @if (Model.Revisions.PageSize == 250)
+                    {
+                        <span>250</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="250">250</a>
+                    }
+                </li>
+                <li>
+                    @if (Model.Revisions.PageSize == 500)
+                    {
+                        <span>500</span>
+                    }
+                    else
+                    {
+                        <a asp-route-pageSize="500">500</a>
+                    }
+                </li>
+            </ul>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        function toggleWikiHistoryFilter(e, val) {
+            e = e || window.event;
+            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
+                return;
+            }
+            if (val) {
+                let x = document.getElementById('wiki-history-filter-hide-button');
+                x.style.display = 'inline-block';
+                let y = document.getElementById('wiki-history-filter-show-button');
+                y.style.display = 'none';
+                let z = document.getElementById('wiki-history-filter-controls');
+                z.style.display = 'block';
+            } else {
+                let x = document.getElementById('wiki-history-filter-hide-button');
+                x.style.display = 'none';
+                let y = document.getElementById('wiki-history-filter-show-button');
+                y.style.display = 'inline-block';
+                let z = document.getElementById('wiki-history-filter-controls');
+                z.style.display = 'none';
+            }
+        }
+        function checkWikiDiff(e, timestamp) {
+            e = e || window.event;
+            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
+                return;
+            }
+            const cb = e.currentTarget || {};
+            window.wikimvc.historyDiffCheckLast = window.wikimvc.historyDiffCheckLast || 2;
+            let input;
+            if (window.wikimvc.historyDiffCheckLast === 2) {
+                input = document.getElementById('wiki-history-check1');
+                if (cb.checked) {
+                    if (window.wikimvc.historyDiffCheck1) {
+                        window.wikimvc.historyDiffCheck1.checked = false;
+                    }
+                    window.wikimvc.historyDiffCheck1 = input;
+                    window.wikimvc.historyDiffCheckLast = 1;
+                }
+            } else {
+                input = document.getElementById('wiki-history-check2');
+                if (cb.checked) {
+                    if (window.wikimvc.historyDiffCheck2) {
+                        window.wikimvc.historyDiffCheck2.checked = false;
+                    }
+                    window.wikimvc.historyDiffCheck2 = input;
+                    window.wikimvc.historyDiffCheckLast = 2;
+                }
+            }
+            if (cb.checked) {
+                input.value = timestamp;
+            } else {
+                input.value = "";
+            }
+        }
+    </script>
+}

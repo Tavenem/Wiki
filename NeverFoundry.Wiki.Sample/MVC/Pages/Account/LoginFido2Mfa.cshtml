@@ -1,0 +1,46 @@
+﻿@page
+@model NeverFoundry.Wiki.MVCSample.Pages.Account.LoginFido2MfaModel
+
+@{
+    ViewData["Title"] = "Sign in with authenticator device";
+}
+
+<div class="jumbotron jumbotron-fluid">
+    <div class="container d-flex flex-column">
+        <h1 class="display-4">@ViewData["Title"]</h1>
+        <p class="lead">Please plug in your authenticator device now.</p>
+        <div id="fido2NotSupportedWarning" class="alert alert-danger mt-3" style="display: none;">
+            <p>Your browser does not seem to support the Web Authentication API yet.</p>
+            <p class="mb-0"><a href="https://caniuse.com/#search=webauthn" target="_blank" class="alert-link">Click here</a> to see a list of supported browser versions.</p>
+        </div>
+    </div>
+</div>
+<div class="row justify-content-center mb-3">
+    <div class="col-sm-6">
+        <form action="/mfa" method="post" id="fido2-signin">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <label name="username" asp-for="Input.Email"></label>
+                <input name="username" asp-for="Input.Email" class="form-control" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Sign in</button>
+            </div>
+            <div class="form-group">
+                <p>
+                    <a asp-page="./Login">Use a password</a>
+                </p>
+                <p>
+                    <a asp-page="./RegisterFido2Mfa" asp-route-returnUrl="@Model.ReturnUrl">Register a new device</a>
+                </p>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@9"></script>
+    <script src="js/fido2.js"></script>
+}

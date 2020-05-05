@@ -1,0 +1,11 @@
+﻿@model WikiItemViewModel
+
+<div id="wiki-site-subtitle">From @WikiConfig.SiteName</div>
+@if (Model.IsDiff)
+{
+    <div id="wiki-diff" class="wiki-parser-output">@Html.Raw(Model.Html)</div>
+}
+else
+{
+    <div class="wiki-parser-output">@Html.Raw(Model.Html)</div>
+}

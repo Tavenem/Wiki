@@ -1,0 +1,37 @@
+﻿@model UploadViewModel
+
+@{
+    ViewData["Title"] = "Upload";
+}
+
+<div class="wiki-upload">
+    <h4 id="wiki-overwrite-title" class="text-warning">This file already exists</h4>
+    @if (Model.OverwritePermission)
+    {
+        <p>Do you want to update it with a new version of the file?</p>
+    }
+    else
+    {
+        <p>You do not have edit permissions for the existing file. You will need to choose a new title for this upload.</p>
+    }
+    <form asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Upload">
+        <input asp-for="File" type="hidden" />
+        <input asp-for="Title" type="hidden" />
+        <input asp-for="Markdown" type="hidden" />
+        <input asp-for="Comment" type="hidden" />
+        <input asp-for="OverwriteConfirm" type="hidden" value="true" />
+        <input asp-for="Owner" type="hidden" />
+        <input asp-for="OwnerSelf" type="hidden" />
+        <input asp-for="AllowedEditors" type="hidden" />
+        <input asp-for="AllowedViewers" type="hidden" />
+        @if (Model.OverwritePermission)
+        {
+            <button class="btn btn-warning" type="submit" title="Erase the original file and replace it with this new submission">Overwrite</button>
+            <a class="btn btn-secondary" href="@Url.Action("ShowUpload", Model)" title="Go back to choose a new name, or make other changes">Cancel</a>
+        }
+        else
+        {
+            <a class="btn btn-primary" href="@Url.Action("ShowUpload", Model)">OK</a>
+        }
+    </form>
+</div>

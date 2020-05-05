@@ -1,0 +1,185 @@
+﻿@model SearchViewModel
+
+@{
+    ViewData["Title"] = "Search";
+}
+
+<div id="wiki-search-form">
+    <form asp-controller="Wiki" asp-route-wikiNamespace="@(WikiWebConfig.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
+        <input type="hidden" name="pageNumber" value="@Model.SearchResult.SearchHits.PageNumber" />
+        <input type="hidden" name="pageSize" value="@Model.SearchResult.SearchHits.PageSize" />
+        <div id="wiki-search-basic">
+            <div id="wiki-search-term">
+                <input id="mainSearchInput"
+                       type="search"
+                       name="query"
+                       placeholder="Search the wiki"
+                       autocomplete="off"
+                       list="mainSearchSuggestions"
+                       value="@Model.SearchResult.Query" />
+                <datalist id="mainSearchSuggestions" />
+                <button type="submit"
+                        name="go"
+                        title="Go to a page with this exact name, or search for the text">
+                    <svg xmlns="http://www.w3.org/2000/svg">
+                        <g fill="none" stroke-width="2">
+                            <path d="M11.29 11.71l-4-4" />
+                            <circle cx="5" cy="5" r="4" />
+                        </g>
+                    </svg>
+                </button>
+            </div>
+            <div id="wiki-search-resultcount">
+                <span>Results</span>
+                <strong>@((Model.SearchResult.SearchHits.FirstItemOnPage + 1).ToString("N0")) &mdash; @((Model.SearchResult.SearchHits.LastItemOnPage + 1).ToString("N0"))</strong>
+                <span>of</span>
+                <strong>@Model.SearchResult.SearchHits.TotalItemCount.ToString("N0")</strong>
+            </div>
+        </div>
+        <div id="wiki-search-advanced">
+            <a id="wiki-search-advanced-toggler"
+               href="javascript: void(0);"
+               onclick="wikiToggleAdvancedSearch(event);"
+               onkeydown="wikiToggleAdvancedSearch(event);">
+                <span>Advanced search:</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
+                    <path d="M2.5 15.25l7.5-7.5 7.5 7.5 1.5-1.5-9-9-9 9z" />
+                </svg>
+            </a>
+            <div id="wiki-search-advanced-controls" style="display: none;">
+                <div class="form-group">
+                    <label asp-for="SearchResult.Sort">Sort by</label>
+                    <select asp-for="SearchResult.Sort" class="custom-select">
+                        @if (string.Equals(Model.SearchResult.Sort, "timstamp", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <option value="">Default</option>
+                            <option selected value="timestamp">Last revision date/time</option>
+                        }
+                        else
+                        {
+                            <option selected value="">Default</option>
+                            <option value="timestamp">Last revision date/time</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-check">
+                    <input asp-for="SearchResult.Descending" class="form-check-input" />
+                    <label asp-for="SearchResult.Descending" class="form-check-label">Descending?</label>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<div id="wiki-search-results">
+    @if (!(Model.ExactMatch is null))
+    {
+        <p id="wiki-search-exact-match">There is an article with the exact name "<a href="@(Url.Action("Read", new { isCompact = false, title = Model.ExactMatch.Title, wikiNamespace = Model.ExactMatch.WikiNamespace }))" class="wiki-link wiki-link-exists">@Model.ExactMatch.Title</a>."</p>
+    }
+    @if (Model.SearchResult.SearchHits.Count > 0)
+    {
+        <ul>
+            @foreach (var result in Model.SearchResult.SearchHits)
+            {
+                if (string.IsNullOrEmpty(result.Title))
+                {
+                    continue;
+                }
+                <li>
+                    <div id="wiki-search-result-title"><a href="@(Url.Action("Read", new { isCompact = false, title = result.Title, wikiNamespace = result.WikiNamespace }))" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
+                    <div id="wiki-search-result-excerpt">@result.Excerpt</div>
+                </li>
+            }
+        </ul>
+    }
+    else
+    {
+        <p>No results</p>
+    }
+    <p class="wiki-pagecontrols">
+        <nav>
+            @if (Model.SearchResult.SearchHits.HasPreviousPage)
+            {
+                <span><a asp-route-pageNumber="1">First</a></span>
+                <span><a asp-route-pageNumber="@(Model.SearchResult.SearchHits.PageNumber - 1)">Previous</a></span>
+            }
+            else
+            {
+                <span>First</span>
+                <span>Previous</span>
+            }
+            @if (Model.SearchResult.SearchHits.HasNextPage)
+            {
+                <span><a asp-route-pageNumber="@(Model.SearchResult.SearchHits.PageNumber + 1)">Next</a></span>
+                <span><a asp-route-pageNumber="@Model.SearchResult.SearchHits.PageCount">Last</a></span>
+            }
+            else
+            {
+                <span>Next</span>
+                <span>Last</span>
+            }
+        </nav>
+        <div>
+            <span>Number of results per page:</span>
+            <ul>
+                <li><a asp-route-pageSize="25">25</a></li>
+                <li><a asp-route-pageSize="50">50</a></li>
+                <li><a asp-route-pageSize="100">100</a></li>
+            </ul>
+        </div>
+    </p>
+</div>
+
+@section Scripts {
+    <script>
+        window.addEventListener('load', function () {
+            var search = this.document.getElementById("mainSearchInput");
+            if (search) {
+                search.addEventListener('keyup', function (event) {
+                    const input = event.target;
+                    if (input.value.length < 3) {
+                        return;
+                    }
+                    var searchSuggestions = document.getElementById("mainSearchSuggestions");
+                    if (searchSuggestions) {
+                        window.wikiAutosuggestXHR.abort();
+                        window.wikiAutosuggestXHR.onreadystatechange = function () {
+                            if (this.readyState == 4 && this.status == 200) {
+                                var response = JSON.parse(this.responseText);
+                                searchSuggestions.innerHTML = "";
+                                response.forEach(function (item) {
+                                    var option = document.createElement('option');
+                                    option.value = item;
+                                    searchSuggestions.appendChild(option);
+                                });
+                            }
+                        };
+                        window.wikiAutosuggestXHR.open("GET", "/wiki/api/suggest?search=" + encodeURIComponent(input.value), true);
+                        window.wikiAutosuggestXHR.send();
+                    }
+                });
+            }
+        });
+
+        function wikiToggleAdvancedSearch(e) {
+            e = e || window.event;
+            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
+                return;
+            }
+            const l = document.getElementById('wiki-search-advanced-controls');
+            if (!l) {
+                return;
+            }
+            const t = document.getElementById('wiki-search-advanced-toggler');
+            if (!t) {
+                return;
+            }
+            window.wikimvc.editTransclusionsShown = !window.wikimvc.editTransclusionsShown;
+            t.classList.toggle("is-active");
+            if (window.wikimvc.editTransclusionsShown) {
+                l.style.display = 'block';
+            } else {
+                l.style.display = 'none';
+            }
+        }
+    </script>
+}

@@ -1,0 +1,45 @@
+version: '3.4'
+
+services:
+  neverfoundry.wiki.sample.mvc:
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Development"
+      ASPNETCORE_URLS: "https://+:5001;http://+:5000"
+      ConnectionStrings__Auth: "host=postgres;port=5432;database=neverfoundryauth;username=neverfoundryauthuser;password=neverfoundryauthuser"
+      ConnectionStrings__Default: "host=postgres;port=5432;database=postgres;username=pgadmin;password=pgadmin"
+      ConnectionStrings__Logging: "host=postgres;port=5432;database=logs;username=logger;password=logger"
+      ConnectionStrings__Wiki: "host=postgres;port=5432;database=neverfoundrywiki;username=neverfoundrywikiuser;password=neverfoundrywikiuser"
+      Database__Names__Auth: "neverfoundryauth"
+      Database__Names__Logs: "logs"
+      Database__Names__Wiki: "neverfoundrywiki"
+      Database__Logins__Auth: "neverfoundryauthuser"
+      Database__Logins__Logger: "logger"
+      Database__Logins__Wiki: "neverfoundrywikiuser"
+      Database__Passwords__Auth: "neverfoundryauthuser"
+      Database__Passwords__Logger: "logger"
+      Database__Passwords__Wiki: "neverfoundrywikiuser"
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    volumes:
+      - ${APPDATA}/Microsoft/UserSecrets:/root/.microsoft/usersecrets:ro
+      - ${USERPROFILE}/.aspnet/https:/root/.aspnet/https:ro
+  
+  kibana:
+    ports:
+      - "5601:5601"
+      
+  pgadmin:
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.net
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_LISTEN_PORT: 5050
+    ports:
+      - "5050:5050"
+  
+  postgres:
+    environment:
+      POSTGRES_USER: "pgadmin"
+      POSTGRES_PASSWORD: "pgadmin"
+    ports:
+      - "5432:5432"

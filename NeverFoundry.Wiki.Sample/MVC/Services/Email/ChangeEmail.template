@@ -1,0 +1,15 @@
+﻿﻿<div>
+  <h1>
+    <img style="width:64px; vertical-align: middle;" src="{siteUrl}/images/neverfoundry_anvilcolor_64.png" alt="NeverFoundry"/> NeverFoundry
+  </h1>
+  <h3>Password Reset</h3>
+  <p>
+    A request was received to transfer an account to this email address.
+  </p>
+  <p>
+    If you made this request, please click <a href="{callbackUrl}">here</a> to confirm this change.
+  </p>
+  <p>
+    If you did not make this request, please disregard this email.
+  </p>
+</div>

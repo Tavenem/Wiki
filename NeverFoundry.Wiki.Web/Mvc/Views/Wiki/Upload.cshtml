@@ -1,0 +1,173 @@
+﻿@model UploadViewModel
+
+@{
+    ViewData["Title"] = "Upload";
+}
+
+<div class="wiki-upload">
+    <p>This form allows authorized users to upload files to the wiki.</p>
+    <p>Images will be avilable for embedding in wiki articles. Many common audio/video files can also be embedded. Other file types will only be available as links to their wiki page, where the file can be either downloaded, or viewed in the browser when applicable.</p>
+    <p>
+        @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))
+        {
+            <span>Please note that all files submitted to this wiki are implicitly made available under the terms of the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
+            @if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+            {
+                <span>Other <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to content policies, may also apply.</span>
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+        {
+            <span>Please note that all files submitted to this wiki are subject to the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
+        }
+        else
+        {
+            <span>Please note that all files submitted to this wiki are subject to the site's copyright and content policies.</span>
+        }
+        <span>
+            If you are not sure whether the work you are submitting is available under the terms of
+            these policies, do not upload the file. In general, a work you have produced yourself
+            should be eligible to made available under the terms of the wiki's policies (but note
+            that you may be revoking certain rights by doing so). Works produced by others may not
+            be appropriate for upload. Consider linking such an item from its original source
+            instead, if its current host's licenses and policies allow this use.
+        </span>
+    </p>
+    <h2>Upload</h2>
+    @if (!string.IsNullOrEmpty(Model.Preview))
+    {
+        <div id="wiki-upload-preview">
+            @Html.Raw(Model.Preview)
+        </div>
+    }
+<form id="wiki-upload-form" class="dropzone" asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Upload">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <input id="wiki-upload-file" name="file" type="file" required />
+    <div id="wiki-edit-file-properties">
+        <div id="wiki-edit-titleinputgroup" class="form-group">
+            <label asp-for="Title"></label>
+            <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" />
+            <span asp-validation-for="Title" class="text-danger"></span>
+        </div>
+        <textarea asp-for="Markdown"></textarea>
+        <div id="wiki-edit-options">
+            <div class="form-group">
+                <label asp-for="Comment"></label>
+                <input asp-for="Comment" class="form-control" spellcheck="true" />
+            </div>
+            <div class="form-group">
+                <label asp-for="Owner" title="Should be a username or user ID. Can be left blank to make the file community-owned.">Owner (optional)</label>
+                <input asp-for="Owner" class="form-control" title="Should be a username or user ID. Can be left blank to make the file community-owned." readonly="@(Model.OwnerSelf ? "readonly" : null)" />
+            </div>
+            <div class="form-group form-check">
+                <input asp-for="OwnerSelf" class="form-check-input" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);" />
+                <label asp-for="OwnerSelf" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);"></label>
+            </div>
+            <div class="form-group">
+                <label asp-for="AllowedEditors" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included."></label>
+                <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
+            </div>
+            <div class="form-group">
+                <label asp-for="AllowedViewers" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included."></label>
+                <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
+            </div>
+            <div class="form-group wiki-edit-terms-notice">
+                @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+                {
+                    if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+                    {
+                        <div class="wiki-edit-terms-notice">
+                            <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="wiki-edit-terms-notice">
+                            <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+                        </div>
+                    }
+                }
+                else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+                {
+                    <div class="wiki-edit-terms-notice">
+                        <p>Content submitted to this wiki is subject to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="wiki-edit-terms-notice">
+                        <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div id="wiki-edit-submit-buttons" class="form-row">
+        <button id="wiki-edit-submit-button" class="btn btn-primary" type="submit" name="ShowPreview" value="false">Publish changes</button>
+        <button id="wiki-edit-preview-button" class="btn btn-info" type="submit" name="ShowPreview" value="true">Show full preview</button>
+        <a id="wiki-edit-cancel-button" class="btn btn-secondary" href="@Url.Action("Read", new { isCompact = false, title = WikiConfig.MainPageTitle, wikiNamespace = WikiConfig.DefaultNamespace })">Cancel</a>
+    </div>
+</form>
+</div>
+
+@section Scripts {
+    <script>
+        FilePond.registerPlugin(
+            FilePondPluginFileValidateSize,
+            FilePondPluginFileValidateType,
+            FilePondPluginImagePreview);
+        const i = document.getElementById('wiki-upload-file');
+        const p = FilePond.create(i, {
+            acceptedFileTypes: ['image/*', 'audio/*', 'video/*', 'application/pdf'],
+            dropOnElement: false,
+            dropOnPage: true,
+            fileValidateTypeLabelExpectedTypesMap: {
+                'image/*': 'images',
+                'audio/*': 'audio',
+                'video/*': 'video',
+                'application/pdf': 'PDF',
+            },
+            maxFileSize: '@(WikiWebConfig.MaxFileSize)B',
+            labelMaxFileSize: 'Maximum file size is @(WikiWebConfig.MaxFileSizeString)',
+            server: {
+                process: './api/fileupload',
+                revert: './api/fileupload',
+                restore: './api/fileupload/temp/',
+                load: './api/fileupload/',
+                fetch: './api/fileupload/fetch/',
+            },
+        });
+
+        const easyMDE = new EasyMDE({
+            autosave: {
+                enabled: true,
+                uniqueId: 'wiki-upload-editor-@(Model.Data?.WikiItem?.Id ?? "newitem")',
+            },
+            element: document.getElementById('Markdown'),
+            indentWithTabs: false,
+            initialValue: "@Html.Raw(Model.Markdown?.Replace(Environment.NewLine, @"\r\n").Replace(@"\""", @"\\""").Replace(@"""", @"\""") ?? string.Empty)",
+            placeholder: "Enter your content here, in markdown format.",
+            tabSize: 4,
+            toolbar: ['bold', 'italic', '|', 'heading-1', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'image']
+        });
+
+        function wikiToggleOwnerSelf(e) {
+            e = e || window.event;
+            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
+                return;
+            }
+            const i = document.getElementById('Owner');
+            if (!i) {
+                return;
+            }
+            const t = document.getElementById('OwnerSelf');
+            if (!t) {
+                return;
+            }
+            if (t.checked) {
+                i.value = "";
+            }
+            i.readonly = t.checked;
+        }
+    </script>
+}

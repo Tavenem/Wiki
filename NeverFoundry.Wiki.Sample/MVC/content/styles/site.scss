@@ -1,0 +1,230 @@
+﻿@import "custom";
+
+/* Layout */
+html, body {
+    height: 100% !important;
+    margin: 0;
+    min-height: 100%;
+    padding: 0;
+}
+
+#top-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.33em 0.75em;
+    z-index: 100;
+
+    @media screen and (min-width: 982px) {
+        padding-left: 1em;
+        padding-right: 1em;
+    }
+
+    > * {
+        font-size: 0.75em;
+        line-height: 1.166667;
+        padding-top: 0.5em;
+
+        &:not(:first-child) {
+            margin-left: 0.75em;
+        }
+    }
+
+    a {
+        white-space: nowrap;
+    }
+
+    .btn-link {
+        border: none;
+        font-size: inherit;
+        line-height: inherit;
+        padding: 0;
+    }
+}
+
+main.container-fluid {
+    margin-top: 0.25em;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+#account-header {
+    a {
+        vertical-align: text-bottom;
+    }
+
+    a:hover {
+        text-decoration: none;
+    }
+}
+
+#account-main {
+    background-color: $background-color;
+    background-image: linear-gradient(to bottom, $background-color-dark 0, transparent 2.5em);
+    color: $color;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    flex-shrink: 0;
+    font-family: sans-serif;
+    min-height: 100%;
+    width: 100%;
+
+    @media screen and (min-width: 982px) {
+        background-image: linear-gradient(to bottom, $background-color-dark 1.9em, transparent 4.4em);
+        flex-direction: row;
+    }
+
+    * {
+        border-color: $border-color;
+    }
+
+    a {
+        color: $link-color;
+        text-decoration: none;
+
+        &:hover {
+            color: darken($link-color, 15%);
+        }
+
+        &:visited {
+            color: lighten($link-color, 15%);
+        }
+
+        &:hover:visited {
+            color: $link-color;
+        }
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+        border-bottom: 1px solid $border-color;
+        font-family: $font-family-title;
+        font-weight: normal;
+        margin: 0;
+    }
+
+    form {
+        > * {
+            background-color: $background-color-dark;
+            color: $color;
+        }
+
+        input, select, option {
+            background-color: $background-color;
+            color: $color;
+        }
+    }
+
+    > nav { /* sidebar */
+        display: flex;
+        flex-direction: row;
+
+        @media screen and (min-width: 982px) {
+            flex-direction: column;
+            margin-right: 0.5em;
+            padding-left: 0.5em;
+            width: 10.5em;
+        }
+    }
+
+    > div {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+    }
+
+    .jumbotron {
+        padding: 0;
+        text-align: center;
+    }
+}
+
+#account-content {
+    background-color: $background-color-dark;
+    border-bottom: 1px solid $highlight-color;
+    border-left: 1px solid $highlight-color;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    padding: 1em;
+
+    @media screen and (min-width: 982px) {
+        padding: 1.25em 1.5em 1.5em 1.5em;
+    }
+}
+
+/* wiki */
+.wiki {
+    > nav {
+        margin-top: -1.9em;
+    }
+}
+
+#wiki-sidebar-logo-link {
+    background-image: url(images/neverfoundry_160.svg);
+}
+
+#wiki-heading-edit:after {
+    font-family: 'Material Icons';
+    content: 'create';
+}
+
+/* Validation */
+.form-control {
+    &.valid.modified:not([type=checkbox]) {
+        border-color: $form-feedback-valid-color;
+    }
+
+    &.invalid {
+        border-color: $form-feedback-invalid-color;
+    }
+}
+
+.form-check-label.valid.modified {
+    color: $form-feedback-valid-color;
+}
+
+.form-check-label.invalid {
+    color: $form-feedback-invalid-color;
+}
+
+.validation-message {
+    width: 100%;
+    margin-top: $form-feedback-margin-top;
+    font-size: $form-feedback-font-size;
+    color: $form-feedback-invalid-color;
+}
+
+/* Icons */
+.material-icons {
+    font-size: 1em;
+    line-height: inherit;
+    vertical-align: text-bottom;
+
+    &.icon {
+        font-size: 1.5rem;
+    }
+}
+
+/* Modal defaults */
+.modal--fade .modal-inner, .modal--show .modal-inner {
+    background: $gray-800;
+}
+
+.modal--fade .modal-content, .modal--show .modal-content {
+    background-color: $gray-700;
+    border-radius: 0;
+    border-top: unset;
+    border-left: unset;
+    border-right: unset;
+    border-bottom-color: $body-bg;
+    display: block;
+}
+
+.modal--fade header, .modal--show header {
+    border-bottom-color: $body-bg;
+}
+
+.modal--fade footer, .modal--show footer {
+    border-top-color: $body-bg;
+    background-color: $gray-800;
+}

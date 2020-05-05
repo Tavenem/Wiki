@@ -1,0 +1,47 @@
+﻿@inject NavigationManager NavigationManager
+
+@if (_wikiUri is null)
+{
+    <div class="wiki-view wiki-view-no-content"></div>
+}
+else
+{
+    <iframe class="wiki-view" src="@_wikiUri.ToString()">WikiView</iframe>
+}
+
+@code {
+    private Uri? _wikiUri;
+
+    /// <summary>
+    /// <para>
+    /// The relative path to the requested wiki page (including any query params).
+    /// </para>
+    /// <para>
+    /// May be left <see langword="null"/> to retrieve the main page.
+    /// </para>
+    /// </summary>
+    [Parameter] public string? WikiRoute { get; set; }
+
+    /// <summary>
+    /// <para>
+    /// The base URL of the wiki. May be relative or absolute.
+    /// </para>
+    /// <para>
+    /// May be omitted, in which case it will default to the app's base URI.
+    /// </para>
+    /// </summary>
+    [Parameter] public string? WikiServerBaseUrl { get; set; }
+
+    protected override void OnParametersSet()
+    {
+        var wikiServerBaseUri = Uri.TryCreate(WikiServerBaseUrl ?? NavigationManager.BaseUri, UriKind.RelativeOrAbsolute, out var baseUri)
+            ? baseUri
+            : null;
+        if (!(wikiServerBaseUri is null))
+        {
+            _wikiUri = Uri.TryCreate(wikiServerBaseUri, WikiRoute ?? WikiConfig.MainPageTitle, out var uri)
+                ? uri
+                : null;
+        }
+    }
+}

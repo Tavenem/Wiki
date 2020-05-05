@@ -1,0 +1,164 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Account";
+}
+
+<div class="jumbotron jumbotron-fluid">
+    <div class="container d-flex flex-column">
+        <h1 class="display-4">@ViewData["Title"]</h1>
+        <p class="lead">Manage your user profile and account settings.</p>
+    </div>
+</div>
+<partial name="_ErrorMessage" model="Model.ErrorMessage" />
+<partial name="_StatusMessage" model="Model.StatusMessage" />
+<div class="row justify-content-center mb-3">
+    <div class="col-sm-6">
+        <form id="profile-form" method="post">
+            <div asp-validation-summary="All" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="Input.UserName"></label>
+                <input asp-for="Input.UserName" class="form-control" />
+                <span asp-validation-for="Input.UserName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.Email"></label>
+                <input asp-for="Input.Email" class="form-control" />
+                <span asp-validation-for="Input.Email" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.CurrentPassword"></label>
+                <input asp-for="Input.CurrentPassword" class="form-control" />
+                <span asp-validation-for="Input.CurrentPassword" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.NewPassword"></label>
+                <input asp-for="Input.NewPassword" class="form-control" />
+                <span asp-validation-for="Input.NewPassword" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Input.ConfirmPassword"></label>
+                <input asp-for="Input.ConfirmPassword" class="form-control" />
+                <span asp-validation-for="Input.ConfirmPassword" class="text-danger"></span>
+            </div>
+            <button id="update-profile-button" type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+</div>
+<div class="row justify-content-center mb-3">
+    <div class="col-sm-6">
+        <h5>Authenticator app</h5>
+        @if (Model.Is2faEnabled)
+        {
+            if (Model.RecoveryCodesLeft == 0)
+            {
+                <div class="alert alert-danger">
+                    <strong>You have no recovery codes left.</strong>
+                    <p>You must <a asp-page="./ShowRecoveryCodes">get a new set of recovery codes</a> before you can log in with a recovery code.</p>
+                </div>
+            }
+            else if (Model.RecoveryCodesLeft <= 3)
+            {
+                <div class="alert alert-warning">
+                    @if (Model.RecoveryCodesLeft == 1)
+                    {
+                        <strong>You have 1 recovery code left.</strong>
+                    }
+                    else
+                    {
+                        <strong>You have @Model.RecoveryCodesLeft recovery codes left.</strong>
+                    }
+                    <p>You should <a asp-page="./ShowRecoveryCodes">get a new set of recovery codes</a>.</p>
+                </div>
+            }
+
+            if (Model.IsMachineRemembered)
+            {
+                <form method="post" asp-page-handler="ForgetBrowser" style="display: inline-block">
+                    <button type="submit" class="btn btn-primary">Forget this browser</button>
+                </form>
+            }
+            <p>
+                <a asp-page="./Disable2fa" class="btn btn-warning">Disable two-factor authentication</a>
+            </p>
+            <p>
+                <a asp-page="./ShowRecoveryCodes" class="btn btn-primary">Click here</a> to get
+                a set of recovery codes which can be used to regain access to your account if you
+                lose access to your authenticator device.
+            </p>
+        }
+
+        @if (!Model.HasAuthenticator)
+        {
+            <h4>Enable two-factor authentication (recommended)</h4>
+            <p><a id="enable-authenticator" asp-page="./EnableAuthenticator" class="btn btn-primary">Set up an authenticator app</a></p>
+            <p><a id="enable-authenticator" asp-page="./EnableFido2Mfa" class="btn btn-primary">Set up an authenticator key (physical device)</a></p>
+        }
+    </div>
+</div>
+@if (Model.CurrentLogins?.Count > 0)
+{
+    <div class="row justify-content-center mb-3">
+        <div class="col-sm-6">
+            <h4>Registered Logins</h4>
+            <table class="table">
+                <tbody>
+                    @foreach (var login in Model.CurrentLogins)
+                    {
+                        <tr>
+                            <td>@login.ProviderDisplayName</td>
+                            <td>
+                                @if (Model.ShowRemoveButton)
+                                {
+                                    <form id="remove-login" asp-page-handler="RemoveLogin" method="post">
+                                        <div>
+                                            <input asp-for="@login.LoginProvider" name="LoginProvider" type="hidden" />
+                                            <input asp-for="@login.ProviderKey" name="ProviderKey" type="hidden" />
+                                            <button type="submit" class="btn btn-primary" title="Remove this @login.ProviderDisplayName login from your account">Remove</button>
+                                        </div>
+                                    </form>
+                                }
+                                else
+                                {
+                                    @: &nbsp;
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+@if (Model.OtherLogins?.Count > 0)
+{
+    <div class="row justify-content-center mb-3">
+        <div class="col-sm-6">
+            <h4>Add another service to log in.</h4>
+            <hr />
+            <form id="link-login-form" asp-page-handler="LinkLogin" method="post" class="form-horizontal">
+                <div id="socialLoginList">
+                    <p>
+                        @foreach (var provider in Model.OtherLogins)
+                        {
+                            <button id="link-login-button" type="submit" class="btn btn-primary" name="provider" value="@provider.Name" title="Log in using your @provider.DisplayName account">@provider.DisplayName</button>
+                        }
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+<div class="row justify-content-center mb-3">
+    <div class="col-sm-6">
+        <p>Your account contains personal data that you have given us. You may download or delete that data.</p>
+        <p><strong class="text-danger">Deleting this data will permanently delete your account, and
+            cannot be undone.</strong></p>
+        <form id="download-data" asp-page="DownloadPersonalData" method="post" class="form-group">
+            <button class="btn btn-primary" type="submit">Download</button>
+        </form>
+        <p>
+            <a id="delete" asp-page="DeletePersonalData" class="btn btn-primary">Delete</a>
+        </p>
+    </div>
+</div>

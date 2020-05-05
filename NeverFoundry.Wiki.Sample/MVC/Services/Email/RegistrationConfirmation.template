@@ -1,0 +1,16 @@
+﻿﻿<div>
+  <h1>
+    <img style="width:64px; vertical-align: middle;" src="{siteUrl}/images/neverfoundry_anvilcolor_64.png" alt="NeverFoundry"/> NeverFoundry
+  </h1>
+  <h3>Confirm Your Account</h3>
+  <p>
+    A new account has been created for this email address.
+  </p>
+  <p>
+    If you created this account, please <a href='{callbackUrl}'>click here</a> to confirm your
+    email address and activate your new account.
+  </p>
+  <p>
+    If you did not create this account, please disregard this email.
+  </p>
+</div>

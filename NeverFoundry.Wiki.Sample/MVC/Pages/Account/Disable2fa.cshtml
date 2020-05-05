@@ -1,0 +1,20 @@
+﻿@page
+@model Disable2faModel
+@{
+    ViewData["Title"] = "Disable two-factor authentication";
+}
+
+<partial name="_ErrorMessage" for="ErrorMessage" />
+<partial name="_StatusMessage" for="StatusMessage" />
+
+<div class="jumbotron jumbotron-fluid">
+    <div class="container d-flex flex-column">
+        <h1 class="display-4">@ViewData["Title"]</h1>
+    </div>
+</div>
+
+<div>
+    <form method="post" class="form-group">
+        <button class="btn btn-danger" type="submit">Disable two-factor authentication</button>
+    </form>
+</div>

@@ -1,0 +1,23 @@
+﻿@model TalkViewModel
+
+<div id="wiki-talk-messages"></div>
+@if ((Model.Messages?.Count ?? 0) == 0)
+{
+    <div id="wiki-talk-nomessages"><p>No messages yet</p></div>
+}
+<div id="wiki-talk-newmessage">
+    <div class="form-group">
+        <label for="wiki-talk-newmessage-input">Add a new message</label>
+        <textarea id="wiki-talk-newmessage-input" class="form-control"></textarea>
+    </div>
+    <button id="wiki-talk-send" type="button" class="btn btn-primary">Post</button>
+</div>
+
+@section Scripts {
+    <script src="~/_content/NeverFoundry.Wiki.Mvc/chat.js"></script>
+    <script>
+        window.addEventListener("load", function () {
+            window.wikimvcchat.init(@WikiWebConfig.WikiTalkHubRoute, @WikiWebConfig.UserNamespace, @Model.TopicId, @(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Messages));
+        });
+    </script>
+}
