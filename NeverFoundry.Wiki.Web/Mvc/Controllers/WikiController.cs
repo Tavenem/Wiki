@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.Controllers
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class WikiController : Controller
     {
         private readonly IWebHostEnvironment _environment;
@@ -1340,4 +1341,5 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 : item.AllowedViewers?.Contains(user.Id) != false;
         }
     }
+#pragma warning restore CS1591
 }

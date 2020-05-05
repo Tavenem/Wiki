@@ -3,7 +3,7 @@
 namespace NeverFoundry.Wiki.Web.SignalR
 {
     /// <summary>
-    /// A compact form of <see cref="Message"/> suitable for SignalR transport.
+    /// A talk message for SignalR transport.
     /// </summary>
     public interface IMessageResponse
     {

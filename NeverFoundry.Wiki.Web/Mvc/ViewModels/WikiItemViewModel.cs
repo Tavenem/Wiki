@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class WikiItemViewModel
     {
         public WikiRouteData Data { get; }
@@ -61,4 +62,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             return new WikiItemViewModel(data, html, isDiff);
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

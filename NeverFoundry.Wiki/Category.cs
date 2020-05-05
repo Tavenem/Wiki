@@ -207,9 +207,6 @@ namespace NeverFoundry.Wiki
         /// langword="null"/>) list allows only the owner to view the category.
         /// </para>
         /// </param>
-        /// <param name="articleIds">
-        /// The list of IDs of the <see cref="Article"/> revisions which belong to this category.
-        /// </param>
         public static async Task<Category> NewAsync(
             string title,
             string editor,

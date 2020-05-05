@@ -137,7 +137,14 @@ namespace NeverFoundry.Wiki
         public bool IsLinkMatch(Article item) => string.CompareOrdinal(item.Title, Title) == 0
             && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0;
 
+        /// <summary>
+        /// Determines equality.
+        /// </summary>
         public static bool operator ==(WikiLink? left, WikiLink? right) => EqualityComparer<WikiLink?>.Default.Equals(left, right);
+
+        /// <summary>
+        /// Determines inequality.
+        /// </summary>
         public static bool operator !=(WikiLink? left, WikiLink? right) => !(left == right);
     }
 }

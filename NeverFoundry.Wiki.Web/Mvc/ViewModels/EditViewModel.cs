@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class EditViewModel
     {
         [Display(Name = "Allowed editors (optional)")]
@@ -144,4 +145,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 allowedViewers);
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

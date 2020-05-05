@@ -17,11 +17,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
         /// <summary>
         /// Initializes a new instance of <see cref="TableOfContentsBlockParser"/>.
         /// </summary>
-        /// <param name="defaultDepth">
-        /// The number of levels of hierarchy which will be shown, when not specified.
-        /// </param>
-        /// <param name="defaultStartingLevel">
-        /// The first level of hierarchy (0-based) which will be shown, when not specified.
+        /// <param name="options">
+        /// The options used during parsing.
         /// </param>
         public TableOfContentsBlockParser(TableOfContentsOptions options)
         {

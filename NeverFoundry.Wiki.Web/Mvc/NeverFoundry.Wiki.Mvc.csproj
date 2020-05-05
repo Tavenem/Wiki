@@ -7,6 +7,21 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>0.2.0-preview</Version>
+    <Authors>Wil Stead</Authors>
+    <Description>An implementation of NeverFoundry.Wiki for ASP.NET MVC.</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2019-2020 Wil Stead</Copyright>
+    <PackageTags>wiki neverfoundry</PackageTags>
+    <PackageId>NeverFoundry.Wiki.Mvc</PackageId>
+    <Product>NeverFoundry.Wiki.Mvc</Product>
+  </PropertyGroup>
+
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
@@ -15,11 +30,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.0-preview.3.20215.14" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.0-preview.3.20215.14" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.1.0" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.2.0-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\NeverFoundry.Wiki\NeverFoundry.Wiki.csproj" />
   </ItemGroup>
 
   <!-- npm -->
@@ -69,6 +81,14 @@
     <Exec Command="gulp --envir Production" ConsoleToMSBuild="True">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
+  </Target>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <Target Name="NugetAdd" AfterTargets="Pack">
+    <exec command="nuget push -Source &quot;WS-NuGet&quot; -ApiKey AzureDevOps $(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" />
   </Target>
 
 </Project>

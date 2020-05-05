@@ -41,6 +41,9 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// Initializes a new instance of <see cref="ReactionResponse"/>.
         /// </summary>
         /// <param name="reaction">A <see cref="Reaction"/>.</param>
+        /// <param name="senderExists">
+        /// <see langword="true"/> if the sender of the reaction still exists as a wiki user.
+        /// </param>
         public ReactionResponse(Reaction reaction, bool senderExists)
         {
             SenderExists = senderExists;

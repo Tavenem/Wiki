@@ -1,5 +1,6 @@
 ﻿namespace NeverFoundry.Wiki.Mvc.Models
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public enum SpecialListType
     {
         All_Categories,
@@ -17,4 +18,5 @@
         Unused_Categories,
         What_Links_Here
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

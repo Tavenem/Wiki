@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NeverFoundry.Wiki.Mvc.Models
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class EditModel
     {
         [Display(Name = "Allowed editors (optional)")]
@@ -34,4 +35,5 @@ namespace NeverFoundry.Wiki.Mvc.Models
         [Required]
         public string? Title { get; set; }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

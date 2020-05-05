@@ -22,6 +22,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
         /// </summary>
         public WikiLinkInlineParser() => OpeningCharacters = new[] { LinkOpenChar, LinkCloseChar, '!' };
 
+        /// <summary>
+        /// Tries to match the specified slice.
+        /// </summary>
+        /// <param name="processor">The parser processor.</param>
+        /// <param name="slice">The text slice.</param>
+        /// <returns><c>true</c> if this parser found a match; <c>false</c> otherwise</returns>
         public override bool Match(InlineProcessor processor, ref StringSlice slice)
         {
             var c = slice.CurrentChar;

@@ -4,6 +4,9 @@ using System.Collections.Generic;
 
 namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
 {
+    /// <summary>
+    /// A leaf block representing a table of contents.
+    /// </summary>
     public class TableOfContentsBlock : LeafBlock
     {
         /// <summary>

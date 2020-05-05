@@ -2,6 +2,7 @@
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class SearchViewModel
     {
         public Article? ExactMatch { get; set; }
@@ -14,4 +15,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             ExactMatch = exactMatch;
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

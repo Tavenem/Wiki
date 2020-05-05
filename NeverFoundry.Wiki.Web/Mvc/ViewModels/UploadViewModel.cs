@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class UploadViewModel
     {
         [Display(Name = "Allowed editors (optional)")]
@@ -60,4 +61,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             Title = previewTitle;
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

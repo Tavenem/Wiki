@@ -3,6 +3,7 @@ using System.Collections.Generic;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class TalkViewModel
     {
         public WikiRouteData Data { get; }
@@ -17,4 +18,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             TopicId = topicId;
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

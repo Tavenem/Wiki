@@ -1,7 +1,7 @@
 ﻿namespace NeverFoundry.Wiki.Web.SignalR
 {
     /// <summary>
-    /// A reply made to a <see cref="WikiTalkHub"/>
+    /// A reply made to an <see cref="IWikiTalkHub"/>
     /// </summary>
     public interface IReplyRequest
     {

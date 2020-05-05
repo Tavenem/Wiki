@@ -33,6 +33,10 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// </summary>
         public event EventHandler<IReactionResponse>? OnReceviedReaction;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiTalkClient"/>.
+        /// </summary>
+        /// <param name="url">The URL of the hub.</param>
         public WikiTalkClient(string url)
         {
             _hubConnection = new HubConnectionBuilder()

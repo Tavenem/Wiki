@@ -1,5 +1,6 @@
 ﻿namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class CategoryPageViewModel
     {
         public string FullTitle => Article.GetFullTitle(Title, WikiNamespace);
@@ -14,4 +15,5 @@
             WikiNamespace = wikiNamespace;
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

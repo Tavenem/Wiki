@@ -2,6 +2,9 @@
 
 namespace NeverFoundry.Wiki.Web.SignalR
 {
+    /// <summary>
+    /// A SignalR hub for wiki talk messages.
+    /// </summary>
     public interface IWikiTalkHub
     {
         /// <summary>

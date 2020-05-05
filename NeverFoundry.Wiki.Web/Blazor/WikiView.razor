@@ -39,7 +39,7 @@ else
             : null;
         if (!(wikiServerBaseUri is null))
         {
-            _wikiUri = Uri.TryCreate(wikiServerBaseUri, WikiRoute ?? WikiConfig.MainPageTitle, out var uri)
+            _wikiUri = Uri.TryCreate(wikiServerBaseUri, WikiRoute ?? NeverFoundry.Wiki.WikiConfig.MainPageTitle, out var uri)
                 ? uri
                 : null;
         }

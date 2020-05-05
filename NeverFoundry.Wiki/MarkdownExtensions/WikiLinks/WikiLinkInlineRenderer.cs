@@ -5,8 +5,16 @@ using System.Web;
 
 namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
 {
+    /// <summary>
+    /// An inline renderer for wiki links.
+    /// </summary>
     public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
     {
+        /// <summary>
+        /// Writes the specified Markdown object to the renderer.
+        /// </summary>
+        /// <param name="renderer">The renderer.</param>
+        /// <param name="link">The markdown object.</param>
         protected override void Write(HtmlRenderer renderer, WikiLinkInline link)
         {
             var title = link.Title;

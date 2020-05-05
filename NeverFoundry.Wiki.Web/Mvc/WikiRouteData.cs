@@ -106,12 +106,18 @@ namespace NeverFoundry.Wiki.Mvc
         /// </summary>
         public string WikiNamespace { get; set; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiRouteData"/>.
+        /// </summary>
         public WikiRouteData()
         {
             Title = string.Empty;
             WikiNamespace = string.Empty;
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiRouteData"/>.
+        /// </summary>
         public WikiRouteData(RouteData routeData, IQueryCollection query)
         {
             IsCompact = routeData.Values.TryGetValue(WikiWebConfig.IsCompact, out var c)

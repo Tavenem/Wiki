@@ -25,7 +25,14 @@ namespace NeverFoundry.Wiki
     [Serializable]
     public abstract class MarkdownItem : IdItem, ISerializable
     {
+        /// <summary>
+        /// The mininum number of characters taken when generating a preview.
+        /// </summary>
         public const int PreviewCharacterMin = 100;
+
+        /// <summary>
+        /// The maxinum number of characters taken when generating a preview.
+        /// </summary>
         public const int PreviewCharacterMax = 500;
 
         private const int NewLineWeight = 4;
@@ -40,12 +47,21 @@ namespace NeverFoundry.Wiki
         /// </summary>
         public IReadOnlyList<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>();
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="MarkdownItem"/>.
+        /// </summary>
+        /// <param name="markdown">The raw markdown.</param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         protected MarkdownItem(string? markdown, List<WikiLink> wikiLinks)
         {
             MarkdownContent = markdown ?? string.Empty;
             WikiLinks = wikiLinks;
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="MarkdownItem"/>.
+        /// </summary>
+        /// <param name="markdown">The raw markdown.</param>
         protected MarkdownItem(string? markdown) : this(markdown, GetWikiLinks(markdown)) { }
 
         private protected MarkdownItem(string id, string? markdown, IList<WikiLink> wikiLinks) : base(id)

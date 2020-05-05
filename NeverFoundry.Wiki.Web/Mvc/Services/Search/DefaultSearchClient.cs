@@ -24,6 +24,11 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
         private readonly ILogger<DefaultSearchClient> _logger;
         private readonly UserManager<WikiUser> _userManager;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="DefaultSearchClient"/>.
+        /// </summary>
+        /// <param name="logger">An <see cref="ILogger"/> instance.</param>
+        /// <param name="userManager">A <see cref="UserManager{TUser}"/> for <see cref="WikiUser"/> objects.</param>
         public DefaultSearchClient(
             ILogger<DefaultSearchClient> logger,
             UserManager<WikiUser> userManager)

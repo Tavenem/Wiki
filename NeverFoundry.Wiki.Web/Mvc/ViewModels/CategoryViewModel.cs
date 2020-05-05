@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class CategoryViewModel : WikiItemViewModel
     {
         public IList<IGrouping<string, CategoryPageViewModel>>? Articles { get; set; }
@@ -72,4 +73,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     .ToList());
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

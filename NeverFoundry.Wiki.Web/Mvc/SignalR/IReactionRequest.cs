@@ -2,6 +2,9 @@
 
 namespace NeverFoundry.Wiki.Web.SignalR
 {
+    /// <summary>
+    /// A reaction for SignalR transport.
+    /// </summary>
     public interface IReactionRequest
     {
         /// <summary>

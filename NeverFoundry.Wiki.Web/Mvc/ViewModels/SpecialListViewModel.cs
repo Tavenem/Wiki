@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
+#pragma warning disable CS1591 // No documentation for "internal" code
     public class SpecialListViewModel
     {
         public WikiRouteData Data { get; }
@@ -247,4 +248,5 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             return null;
         }
     }
+#pragma warning restore CS1591 // No documentation for "internal" code
 }

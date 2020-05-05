@@ -35,6 +35,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
         /// all articles referenced by the transclusions within the given <paramref
         /// name="markdown"/> (including nested transclusions).
         /// </param>
+        /// <param name="isTemplate">Whether the article is being rendered as a transclusion.</param>
+        /// <param name="isPreview">Whether a preview is being rendered.</param>
         /// <param name="parameterValues">
         /// A collection of supplied parameter values, if the markdown is itself a transclusion.
         /// </param>

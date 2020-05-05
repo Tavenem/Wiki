@@ -13,6 +13,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
     {
         private const string Tab = "   ";
 
+        /// <summary>
+        /// Writes the specified Markdown object to the renderer.
+        /// </summary>
+        /// <param name="renderer">The renderer.</param>
+        /// <param name="block">The markdown object.</param>
         protected override void Write(HtmlRenderer renderer, TableOfContentsBlock block)
         {
             if (block.Headings is null || block.Headings.Count == 0)

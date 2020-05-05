@@ -148,9 +148,8 @@ namespace NeverFoundry.Wiki
         /// <param name="editor">
         /// The ID of the user who created this file.
         /// </param>
-        /// <param name="bytes">
-        /// The contents of the file.
-        /// </param>
+        /// <param name="filePath">The relative path to the file.</param>
+        /// <param name="fileSize">The size of the file, in bytes.</param>
         /// <param name="type">
         /// The MIME type of the file.
         /// </param>
@@ -191,9 +190,6 @@ namespace NeverFoundry.Wiki
         /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
         /// langword="null"/>) list allows only the owner to view the file.
         /// </para>
-        /// </param>
-        /// <param name="categories">
-        /// The list of categories to which this item will belong.
         /// </param>
         public static async Task<WikiFile> NewAsync(
             string title,
@@ -318,14 +314,8 @@ namespace NeverFoundry.Wiki
         /// If left <see langword="null"/> the existing title will be retained.
         /// </para>
         /// </param>
-        /// <param name="bytes">
-        /// <para>
-        /// The contents of the file.
-        /// </para>
-        /// <para>
-        /// If left <see langword="null"/> the existing file will be retained.
-        /// </para>
-        /// </param>
+        /// <param name="path">The relative path to the file.</param>
+        /// <param name="fileSize">The size of the file, in bytes.</param>
         /// <param name="type">
         /// <para>
         /// The MIME type of the file.
@@ -334,14 +324,7 @@ namespace NeverFoundry.Wiki
         /// If left <see langword="null"/> the existing type will be retained.
         /// </para>
         /// </param>
-        /// <param name="description">
-        /// <para>
-        /// An optional description of the file (plain text).
-        /// </para>
-        /// <para>
-        /// If left <see langword="null"/> the existing description will be retained.
-        /// </para>
-        /// </param>
+        /// <param name="markdown">The markdown.</param>
         /// <param name="revisionComment">
         /// An optional comment supplied for this revision (e.g. to explain the changes).
         /// </param>
@@ -378,15 +361,6 @@ namespace NeverFoundry.Wiki
         /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
         /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
         /// langword="null"/>) list allows only the owner to view the file.
-        /// </para>
-        /// </param>
-        /// <param name="categories">
-        /// <para>
-        /// The list of categories to which this item will belong.
-        /// </para>
-        /// <para>
-        /// If left <see langword="null"/> the existing categories will be retained. To clear the
-        /// current collection a non-<see langword="null"/> empty list must be passed.
         /// </para>
         /// </param>
         public async Task ReviseAsync(

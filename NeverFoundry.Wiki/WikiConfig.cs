@@ -6,6 +6,9 @@ using System.Linq;
 
 namespace NeverFoundry.Wiki
 {
+    /// <summary>
+    /// A static class containing various customization and configuration options for the wiki system.
+    /// </summary>
     public static class WikiConfig
     {
         private const string CategoriesTitleDefault = "Categories";

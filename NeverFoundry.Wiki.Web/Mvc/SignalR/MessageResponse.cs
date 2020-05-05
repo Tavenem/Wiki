@@ -59,6 +59,10 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <param name="html">
         /// The HTML content of the message.
         /// </param>
+        /// <param name="senderExists">
+        /// <see langword="true"/> if the sender of the message still exists as a wiki user.
+        /// </param>
+        /// <param name="reactions">A collection of reactions to the message.</param>
         public MessageResponse(Message message, string html, bool senderExists, IList<IReactionResponse> reactions)
         {
             Content = html;
