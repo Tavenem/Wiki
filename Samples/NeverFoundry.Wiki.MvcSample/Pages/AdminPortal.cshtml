@@ -45,7 +45,7 @@
                             <div class="row align-items-center">
                                 <div class="col-auto d-flex align-items-start">
                                     <h5 class="mb-1 @(user.User.LastAccess.AddYears(1) < DateTimeOffset.UtcNow ? "text-muted" : string.Empty)">@user.User.UserName</h5>
-                                    @if (user.Claims.HasBoolClaim(Constants.Claim_SiteAdmin))
+                                    @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
                                     {
                                         <span class="badge badge-pill badge-primary">
                                             <i class="material-icons">star</i>
@@ -54,9 +54,9 @@
                                     }
                                     else if (Model.IsSiteAdmin)
                                     {
-                                        if (user.Claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                                        if (user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                                         {
-                                            @if (user.Claims.HasBoolClaim(Constants.Claim_SiteAdmin))
+                                            @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
                                             {
                                                 <form method="post" asp-page-handler="RemoveWikiAdmin" style="display: inline-block">
                                                     <input type="hidden" value="@user.User.Id" />
@@ -76,7 +76,7 @@
                                         }
                                         else if (!user.User.IsDeleted)
                                         {
-                                            @if (user.Claims.HasBoolClaim(Constants.Claim_SiteAdmin))
+                                            @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
                                             {
                                                 <form method="post" asp-page-handler="AddWikiAdmin" style="display: inline-block">
                                                     <input type="hidden" value="@user.User.Id" />
@@ -117,8 +117,8 @@
                                                 <button type="submit" class="btn btn-outline-danger">Enable</button>
                                             </form>
                                         }
-                                        else if (user.Claims.HasBoolClaim(Constants.Claim_SiteAdmin) != true
-                                            && user.Claims.HasBoolClaim(Constants.Claim_WikiAdmin) != true)
+                                        else if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin) != true
+                                            && user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin) != true)
                                         {
                                             <form method="post" asp-page-handler="DisableUser" style="display: inline-block">
                                                 <input type="hidden" value="@user.User.Id" />
@@ -132,8 +132,8 @@
                                     {
                                         <span class="text-danger">Account deleted</span>
                                     }
-                                    else if (user.Claims.HasBoolClaim(Constants.Claim_SiteAdmin) != true
-                                        && user.Claims.HasBoolClaim(Constants.Claim_WikiAdmin) != true)
+                                    else if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin) != true
+                                        && user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin) != true)
                                     {
                                         <a class="btn btn-danger" asp-page="./Account/ConfirmAdminDelete" asp-route-userId="@user.User.Id">
                                             Delete <i class="material-icons">warning</i>

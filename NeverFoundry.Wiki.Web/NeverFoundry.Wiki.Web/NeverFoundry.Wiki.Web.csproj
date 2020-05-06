@@ -1,0 +1,45 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Version>0.2.3-preview</Version>
+    <Authors>Wil Stead</Authors>
+    <Description>
+      Helper classes for a NeverFoundry.Wiki for the web.
+
+      Note that this package is not especially useful on its own, unless you are writing your own
+      web-based implementation of NeverFoundry.Wiki. It is intended to be used as a dependency of
+      packages like NeverFoundry.Wiki.Mvc.
+    </Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>Copyright (c) 2019-2020 Wil Stead</Copyright>
+    <PackageTags>wiki neverfoundry</PackageTags>
+    <PackageId>NeverFoundry.Wiki.Web</PackageId>
+    <Product>NeverFoundry.Wiki.Web</Product>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authorization" Version="5.0.0-preview.3.20215.14" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.0-preview.3.20215.14" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="5.0.0-preview.3.20215.14" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="5.0.0-preview.3.20215.14" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.2.1-preview" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(Configuration)'=='Release'">
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <Target Name="NugetAdd" AfterTargets="Pack">
+    <exec command="nuget push -Source &quot;WS-NuGet&quot; -ApiKey AzureDevOps $(OutputPath)..\$(PackageId).$(PackageVersion).nupkg" />
+  </Target>
+
+</Project>

@@ -1,5 +1,4 @@
-﻿
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29519.161
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -14,13 +13,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki", "NeverFoundry.Wiki\NeverFoundry.Wiki.csproj", "{8B69DAC5-8974-4E19-B850-A4C52E0E7869}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Blazor", "NeverFoundry.Wiki.Web\Blazor\NeverFoundry.Wiki.Blazor.csproj", "{57227CB8-6151-445D-A7A0-1BE932004F37}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Blazor", "NeverFoundry.Wiki.Web\NeverFoundry.Wiki.Blazor\NeverFoundry.Wiki.Blazor.csproj", "{57227CB8-6151-445D-A7A0-1BE932004F37}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Test", "NeverFoundry.Wiki.Test\NeverFoundry.Wiki.Test.csproj", "{951EED42-93C1-4CA0-8D79-C6261021BD4E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.MvcSample", "NeverFoundry.Wiki.Sample\MVC\NeverFoundry.Wiki.MvcSample.csproj", "{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.MvcSample", "Samples\NeverFoundry.Wiki.MvcSample\NeverFoundry.Wiki.MvcSample.csproj", "{B1AD3165-7EA6-42E3-9F50-99C51184E6E1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Mvc", "NeverFoundry.Wiki.Web\Mvc\NeverFoundry.Wiki.Mvc.csproj", "{E461C678-4D7C-42E5-BE44-510A18A17626}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Mvc", "NeverFoundry.Wiki.Web\NeverFoundry.Wiki.Mvc\NeverFoundry.Wiki.Mvc.csproj", "{E461C678-4D7C-42E5-BE44-510A18A17626}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeverFoundry.Wiki.Web", "NeverFoundry.Wiki.Web\NeverFoundry.Wiki.Web\NeverFoundry.Wiki.Web.csproj", "{C5F92199-230F-4BC9-933B-BB03630B51D9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +53,10 @@ Global
 		{E461C678-4D7C-42E5-BE44-510A18A17626}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E461C678-4D7C-42E5-BE44-510A18A17626}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E461C678-4D7C-42E5-BE44-510A18A17626}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5F92199-230F-4BC9-933B-BB03630B51D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C5F92199-230F-4BC9-933B-BB03630B51D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C5F92199-230F-4BC9-933B-BB03630B51D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5F92199-230F-4BC9-933B-BB03630B51D9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using NeverFoundry.Wiki.Mvc;
+using NeverFoundry.Wiki.Web;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.MVCSample.Pages
 {
-    [Authorize(Policy = Constants.Claim_WikiAdmin)]
+    [Authorize(Policy = WikiClaims.Claim_WikiAdmin)]
     public class AdminPortalModel : PageModel
     {
         private readonly UserManager<WikiUser> _userManager;
@@ -116,7 +116,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
                 ErrorMessage = "An error occurred. Please refresh the page and try again.";
                 return RedirectToPage();
             }
-            var identityResult = await _userManager.AddClaimAsync(user, new Claim(Constants.Claim_WikiAdmin, true.ToString(), ClaimValueTypes.Boolean)).ConfigureAwait(false);
+            var identityResult = await _userManager.AddClaimAsync(user, new Claim(WikiClaims.Claim_WikiAdmin, true.ToString(), ClaimValueTypes.Boolean)).ConfigureAwait(false);
             if (!identityResult.Succeeded)
             {
                 ErrorMessage = "An error occurred. Please refresh the page and try again.";
@@ -217,7 +217,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
             }
 
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            claims = claims.Where(x => x.Type == Constants.Claim_WikiAdmin).ToList();
+            claims = claims.Where(x => x.Type == WikiClaims.Claim_WikiAdmin).ToList();
             var identityResult = await _userManager.RemoveClaimsAsync(user, claims).ConfigureAwait(false);
             if (!identityResult.Succeeded)
             {
@@ -238,7 +238,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
             }
 
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+            if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
             {
                 return Unauthorized();
             }

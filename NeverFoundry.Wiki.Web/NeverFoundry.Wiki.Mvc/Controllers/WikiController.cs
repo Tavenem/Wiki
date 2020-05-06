@@ -80,7 +80,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 else if (WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                     {
                         return View("NotAuthorized", data);
                     }
@@ -142,7 +142,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 else if (WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                     {
                         return View("NotAuthorized", data);
                     }
@@ -407,7 +407,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 if (data.CanEdit && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     var claims = await _userManager.GetClaimsAsync(user!).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                     {
                         data.CanEdit = false;
                     }
@@ -459,7 +459,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 if (data.CanEdit && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     var claims = await _userManager.GetClaimsAsync(user!).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                     {
                         data.CanEdit = false;
                     }
@@ -739,7 +739,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 else if (WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                     {
                         return View("NotAuthorized", data);
                     }
@@ -1143,7 +1143,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (type == SpecialListType.What_Links_Here)
             {
-                if (!ControllerContext.RouteData.Values.TryGetValue(WikiWebConfig.Title, out var ti)
+                if (!ControllerContext.RouteData.Values.TryGetValue(WikiRouteData.RouteTitle, out var ti)
                     || !(ti is string wT)
                     || string.IsNullOrWhiteSpace(wT))
                 {
@@ -1160,7 +1160,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     if (data.CanEdit && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                     {
                         var claims = await _userManager.GetClaimsAsync(user!).ConfigureAwait(false);
-                        if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+                        if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                         {
                             data.CanEdit = false;
                         }

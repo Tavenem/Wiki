@@ -1,9 +1,9 @@
-﻿namespace NeverFoundry.Wiki.Mvc
+﻿namespace NeverFoundry.Wiki.Web
 {
     /// <summary>
-    /// Constants related to the MVC implementation of NeverFoundry.Wiki.
+    /// Claims related to a web implementation of NeverFoundry.Wiki.
     /// </summary>
-    public static class Constants
+    public static class WikiClaims
     {
         /// <summary>
         /// A site administrator authorization claim.

@@ -1,12 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore.Internal;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 
-namespace NeverFoundry.Wiki.Mvc
+namespace NeverFoundry.Wiki.Web
 {
     /// <summary>
-    /// A collection of extension methods related to the MVC implementation of NeverFoundry.Wiki.
+    /// A collection of extension methods related to a web implementation of NeverFoundry.Wiki.
     /// </summary>
     public static class AuthorizationExtensionMethods
     {

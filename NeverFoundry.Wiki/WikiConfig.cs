@@ -2,6 +2,7 @@
 using Markdig;
 using NeverFoundry.Wiki.MarkdownExtensions;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace NeverFoundry.Wiki
@@ -25,7 +26,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string CategoriesTitle
+        [NotNull]
+        public static string? CategoriesTitle
         {
             get => _CategoriesTitle;
             set
@@ -50,7 +52,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string DefaultNamespace
+        [NotNull]
+        public static string? DefaultNamespace
         {
             get => _DefaultNamespace;
             set
@@ -85,7 +88,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string DefaultTableOfContentsTitle
+        [NotNull]
+        public static string? DefaultTableOfContentsTitle
         {
             get => _DefaultTableOfContentsTitle;
             set
@@ -110,7 +114,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string FileNamespace
+        [NotNull]
+        public static string? FileNamespace
         {
             get => _FileNamespace;
             set
@@ -149,7 +154,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string MainPageTitle
+        [NotNull]
+        public static string? MainPageTitle
         {
             get => _MainPageTitle;
             set
@@ -213,7 +219,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string SiteName
+        [NotNull]
+        public static string? SiteName
         {
             get => _SiteName;
             set
@@ -239,7 +246,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string ServerUrl
+        [NotNull]
+        public static string? ServerUrl
         {
             get => _ServerUrl;
             set
@@ -264,7 +272,8 @@ namespace NeverFoundry.Wiki
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string TalkNamespace
+        [NotNull]
+        public static string? TalkNamespace
         {
             get => _TalkNamespace;
             set
@@ -286,7 +295,7 @@ namespace NeverFoundry.Wiki
         /// May be assigned a <see langword="null"/> or empty <see cref="string"/> value.
         /// </para>
         /// </summary>
-        public static string TransclusionNamespace { get; set; } = "Transclusion";
+        public static string? TransclusionNamespace { get; set; } = "Transclusion";
 
         private static IHtmlSanitizer? _HtmlSanitizer;
         internal static IHtmlSanitizer HtmlSanitizer

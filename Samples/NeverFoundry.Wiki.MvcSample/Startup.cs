@@ -10,11 +10,11 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nest;
 using NeverFoundry.Wiki.Mvc;
-using NeverFoundry.Wiki.Mvc.Authorization;
 using NeverFoundry.Wiki.Sample.Data;
 using NeverFoundry.Wiki.Sample.Logging;
 using NeverFoundry.Wiki.Sample.Providers;
 using NeverFoundry.Wiki.Sample.Services;
+using NeverFoundry.Wiki.Web;
 using System.Reflection;
 
 namespace NeverFoundry.Wiki.MVCSample
@@ -23,22 +23,14 @@ namespace NeverFoundry.Wiki.MVCSample
     {
         public IConfiguration Configuration { get; }
 
-        public IHostEnvironment Environment { get; }
-
-        public Startup(IConfiguration configuration, IWebHostEnvironment env)
-        {
-            Configuration = configuration;
-            Environment = env;
-        }
+        public Startup(IConfiguration configuration) => Configuration = configuration;
 
         public void ConfigureServices(IServiceCollection services)
         {
-            var migrationsAssembly = typeof(Startup).GetTypeInfo().Assembly.GetName().Name;
-
-            var connectionString = Configuration.GetConnectionString("Auth");
-
             services.AddDbContext<IdentityDbContext>(options =>
-                options.UseNpgsql(connectionString, a => a.MigrationsAssembly(migrationsAssembly)));
+                options.UseNpgsql(
+                    Configuration.GetConnectionString("Auth"),
+                    a => a.MigrationsAssembly(typeof(Startup).GetTypeInfo().Assembly.GetName().Name)));
             services.AddIdentity<WikiUser, IdentityRole>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = true;
@@ -57,8 +49,8 @@ namespace NeverFoundry.Wiki.MVCSample
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(Constants.Claim_SiteAdmin, Policies.IsSiteAdminPolicy());
-                options.AddPolicy(Constants.Claim_WikiAdmin, Policies.IsWikiAdminPolicy());
+                options.AddPolicy(WikiClaims.Claim_SiteAdmin, WikiPolicies.IsSiteAdminPolicy());
+                options.AddPolicy(WikiClaims.Claim_WikiAdmin, WikiPolicies.IsWikiAdminPolicy());
             });
 
             services.Configure<Fido2Configuration>(Configuration.GetSection("fido2"));

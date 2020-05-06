@@ -34,11 +34,9 @@ The `NeverFoundry.Wiki.MvcSample` project's `wwwroot` folder also contains multi
 should be replaced or customized, including the icons in the `images` folder, and the `index.html`
 file.
 
-The sample project has direct project references to the `NeverFoundry.Wiki` and
-`NeverFoundry.Wiki.Mvc` projects. If you intend to use the sample as the basis for a production app,
-you should instead reference the [`NeverFoundry.Wiki.Mvc` NuGet package](). Finally, see the
-`NeverFoundry.Wiki` and `NeverFoundry.Wiki.Mvc` [documentation]() for the many customization options
-available for the wiki itself, including some essential basics such as site identity and branding.
+Also see the `NeverFoundry.Wiki` and `NeverFoundry.Wiki.Mvc` [documentation]() for the many
+customization options available for the wiki itself, including some essential basics such as site
+identity and branding.
 
 The sample includes [Entity Framework Core](https://docs.microsoft.com/en-us/ef/core/) migrations
 for [ASP.NET Core

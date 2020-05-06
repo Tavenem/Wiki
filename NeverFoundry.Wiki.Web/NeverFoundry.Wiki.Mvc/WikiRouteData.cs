@@ -11,6 +11,11 @@ namespace NeverFoundry.Wiki.Mvc
     /// </summary>
     public class WikiRouteData
     {
+        internal const string RouteTitle = "title";
+
+        private const string RouteIsCompact = "isCompact";
+        private const string RouteWikiNamespace = "wikiNamespace";
+
         /// <summary>
         /// Whether the current user has edit permission for the current <see cref="WikiItem"/>.
         /// </summary>
@@ -120,12 +125,12 @@ namespace NeverFoundry.Wiki.Mvc
         /// </summary>
         public WikiRouteData(RouteData routeData, IQueryCollection query)
         {
-            IsCompact = routeData.Values.TryGetValue(WikiWebConfig.IsCompact, out var c)
+            IsCompact = routeData.Values.TryGetValue(RouteIsCompact, out var c)
                 && c is bool iC
                 && iC;
 
             string? wN = null;
-            if (routeData.Values.TryGetValue(WikiWebConfig.WikiNamespace, out var n)
+            if (routeData.Values.TryGetValue(RouteWikiNamespace, out var n)
                 && n is string w)
             {
                 wN = w;
@@ -144,7 +149,7 @@ namespace NeverFoundry.Wiki.Mvc
             WikiNamespace = defaultNamespace ? WikiConfig.DefaultNamespace : wN!;
             ShowNamespace = !defaultNamespace;
 
-            Title = routeData.Values.TryGetValue(WikiWebConfig.Title, out var t)
+            Title = routeData.Values.TryGetValue(RouteTitle, out var t)
                 && t is string wT
                 && !string.IsNullOrWhiteSpace(wT)
                 ? wT

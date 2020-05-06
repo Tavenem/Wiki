@@ -1,11 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace NeverFoundry.Wiki.Mvc.Authorization
+namespace NeverFoundry.Wiki.Web
 {
     /// <summary>
-    /// Authorization policies for the MVC implementation of NeverFoundry.Wiki.
+    /// Authorization policies for a web implementation of NeverFoundry.Wiki.
     /// </summary>
-    public static class Policies
+    public static class WikiPolicies
     {
         /// <summary>
         /// Requires that the user be authenticated, and have the site admin claim.
@@ -13,7 +13,7 @@ namespace NeverFoundry.Wiki.Mvc.Authorization
         public static AuthorizationPolicy IsSiteAdminPolicy()
             => new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .RequireClaim(Constants.Claim_SiteAdmin, "true")
+            .RequireClaim(WikiClaims.Claim_SiteAdmin, "true")
             .Build();
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace NeverFoundry.Wiki.Mvc.Authorization
         public static AuthorizationPolicy IsWikiAdminPolicy()
             => new AuthorizationPolicyBuilder()
             .RequireAuthenticatedUser()
-            .RequireClaim(Constants.Claim_WikiAdmin, "true")
+            .RequireClaim(WikiClaims.Claim_WikiAdmin, "true")
             .Build();
     }
 }

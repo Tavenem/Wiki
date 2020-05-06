@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using NeverFoundry.Wiki.Mvc;
+using NeverFoundry.Wiki.Web;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.MVCSample.Pages.Account
 {
-    [Authorize(Policy = Constants.Claim_WikiAdmin)]
+    [Authorize(Policy = WikiClaims.Claim_WikiAdmin)]
     public class ConfirmAdminDeleteModel : PageModel
     {
         private readonly UserManager<WikiUser> _userManager;
@@ -39,7 +39,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
             }
 
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+            if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
             {
                 return Unauthorized();
             }
@@ -70,7 +70,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
             }
 
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            if (!claims.HasBoolClaim(Constants.Claim_WikiAdmin))
+            if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
             {
                 return Unauthorized();
             }

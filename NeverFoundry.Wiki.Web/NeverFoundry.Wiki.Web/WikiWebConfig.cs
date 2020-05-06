@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace NeverFoundry.Wiki.Web
@@ -13,10 +14,8 @@ namespace NeverFoundry.Wiki.Web
         /// </summary>
         public const string WikiTalkHubRoute = "/wikiTalkHub";
 
-        internal const string DefaultLayoutPath = "/Views/Wiki/_DefaultWikiMainLayout.cshtml";
-        internal const string IsCompact = "isCompact";
-        internal const string Title = "title";
-        internal const string WikiNamespace = "wikiNamespace";
+        private const string DefaultLayoutPath = "/Views/Wiki/_DefaultWikiMainLayout.cshtml";
+        private const string DefaultLoginPath = "/Pages/Account/Login.cshtml";
 
         private static List<string>? _AdminNamespaces;
         /// <summary>
@@ -51,14 +50,15 @@ namespace NeverFoundry.Wiki.Web
         /// The layout used by wiki pages in compact view.
         /// </para>
         /// <para>
-        /// Normally set via options in <see
-        /// cref="Mvc.WikiEndpointRouteBuilderExtensions.AddWiki(Microsoft.Extensions.DependencyInjection.IServiceCollection,
-        /// Mvc.IWikiOptions?)"/> or <see
-        /// cref="Mvc.WikiEndpointRouteBuilderExtensions.AddWiki(Microsoft.Extensions.DependencyInjection.IServiceCollection,
-        /// System.Func{System.IServiceProvider, Mvc.IWikiOptions})"/>.
+        /// Default is "/Views/Wiki/_DefaultWikiMainLayout.cshtml"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string CompactLayoutPath
+        [NotNull]
+        public static string? CompactLayoutPath
         {
             get => _CompactLayoutPath ?? DefaultLayoutPath;
             set => _CompactLayoutPath = value;
@@ -124,20 +124,41 @@ namespace NeverFoundry.Wiki.Web
         /// </summary>
         public static string? HelpPageTitle { get; set; } = "Help";
 
+        private static string? _LoginPath;
+        /// <summary>
+        /// <para>
+        /// The path to the login page.
+        /// </para>
+        /// <para>
+        /// Default is "/Pages/Account/Login.cshtml"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public static string? LoginPath
+        {
+            get => _LoginPath ?? DefaultLoginPath;
+            set => _LoginPath = value;
+        }
+
         private static string? _MainLayoutPath;
         /// <summary>
         /// <para>
         /// The layout used by wiki pages.
         /// </para>
         /// <para>
-        /// Normally set via options in <see
-        /// cref="Mvc.WikiEndpointRouteBuilderExtensions.AddWiki(Microsoft.Extensions.DependencyInjection.IServiceCollection,
-        /// Mvc.IWikiOptions?)"/> or <see
-        /// cref="Mvc.WikiEndpointRouteBuilderExtensions.AddWiki(Microsoft.Extensions.DependencyInjection.IServiceCollection,
-        /// System.Func{System.IServiceProvider, Mvc.IWikiOptions})"/>.
+        /// Default is "/Views/Wiki/_DefaultWikiMainLayout.cshtml"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string MainLayoutPath
+        [NotNull]
+        public static string? MainLayoutPath
         {
             get => _MainLayoutPath ?? DefaultLayoutPath;
             set => _MainLayoutPath = value;
@@ -208,7 +229,8 @@ namespace NeverFoundry.Wiki.Web
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string SystemNamespace
+        [NotNull]
+        public static string? SystemNamespace
         {
             get => _SystemNamespace;
             set
@@ -233,7 +255,8 @@ namespace NeverFoundry.Wiki.Web
         /// all whitespace value resets it to the default.
         /// </para>
         /// </summary>
-        public static string UserNamespace
+        [NotNull]
+        public static string? UserNamespace
         {
             get => _UserNamespace;
             set
@@ -259,7 +282,5 @@ namespace NeverFoundry.Wiki.Web
                 }
             }
         }
-
-        internal static string? LoginPath { get; set; }
     }
 }

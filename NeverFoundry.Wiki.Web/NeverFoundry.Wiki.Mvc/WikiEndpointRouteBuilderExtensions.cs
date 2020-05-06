@@ -28,9 +28,9 @@ namespace NeverFoundry.Wiki.Mvc
         /// </param>
         public static void AddWiki(this IServiceCollection services, IWikiOptions? options = null)
         {
-            WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath ?? WikiWebConfig.DefaultLayoutPath;
+            WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
             WikiWebConfig.LoginPath = options?.LoginPath;
-            WikiWebConfig.MainLayoutPath = options?.MainLayoutPath ?? WikiWebConfig.DefaultLayoutPath;
+            WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
 
             if (options?.SearchClient is null)
             {
@@ -62,9 +62,9 @@ namespace NeverFoundry.Wiki.Mvc
             {
                 var options = builder.Invoke(provider);
 
-                WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath ?? WikiWebConfig.DefaultLayoutPath;
+                WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
                 WikiWebConfig.LoginPath = options?.LoginPath;
-                WikiWebConfig.MainLayoutPath = options?.MainLayoutPath ?? WikiWebConfig.DefaultLayoutPath;
+                WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
 
                 if (options?.SearchClient is null)
                 {

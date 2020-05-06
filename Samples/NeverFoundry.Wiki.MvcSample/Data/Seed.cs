@@ -582,8 +582,8 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
                 }
                 result = userMgr.AddClaimsAsync(admin, new Claim[]
                 {
-                    new Claim(Constants.Claim_SiteAdmin, "true", ClaimValueTypes.Boolean),
-                    new Claim(Constants.Claim_WikiAdmin, "true", ClaimValueTypes.Boolean),
+                    new Claim(WikiClaims.Claim_SiteAdmin, "true", ClaimValueTypes.Boolean),
+                    new Claim(WikiClaims.Claim_WikiAdmin, "true", ClaimValueTypes.Boolean),
                 }).GetAwaiter().GetResult();
                 if (!result.Succeeded)
                 {
