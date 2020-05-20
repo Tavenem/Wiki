@@ -1,7 +1,4 @@
-﻿using NeverFoundry.Wiki.Messaging;
-using System.Collections.Generic;
-
-namespace NeverFoundry.Wiki.Web.SignalR
+﻿namespace NeverFoundry.Wiki.Web.SignalR
 {
     /// <summary>
     /// A compact form of <see cref="Message"/> suitable for SignalR transport.
@@ -19,13 +16,10 @@ namespace NeverFoundry.Wiki.Web.SignalR
         public string Id { get; set; }
 
         /// <summary>
-        /// Any reactions to this message.
+        /// The ID of the message to which this reply is addressed (<see langword="null"/> for
+        /// messages addressed directly to a topic).
         /// </summary>
-        /// <remarks>
-        /// A message can have at most one reaction per sender. A new reaction from a sender
-        /// replaces any old reaction that sender may have made.
-        /// </remarks>
-        public IEnumerable<IReactionResponse>? Reactions { get; set; }
+        public string? ReplyMessageId { get; }
 
         /// <summary>
         /// Whether the sender of this message exists.
@@ -62,12 +56,11 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <param name="senderExists">
         /// <see langword="true"/> if the sender of the message still exists as a wiki user.
         /// </param>
-        /// <param name="reactions">A collection of reactions to the message.</param>
-        public MessageResponse(Message message, string html, bool senderExists, IList<IReactionResponse> reactions)
+        public MessageResponse(Message message, string html, bool senderExists)
         {
             Content = html;
             Id = message.Id;
-            Reactions = reactions;
+            ReplyMessageId = message.ReplyMessageId;
             SenderExists = senderExists;
             SenderId = message.SenderId;
             SenderName = message.SenderName;

@@ -9,10 +9,11 @@ services:
     image: ${DOCKER_REGISTRY-}neverfoundrywikisamplemvc
     depends_on:
       - elasticsearch
-    working_dir: /src/Samples/NeverFoundry.Wiki.MvcSample
     build:
-      context: ../..
-      dockerfile: Samples/NeverFoundry.Wiki.MvcSample/Dockerfile
+      context: ../../Samples/NeverFoundry.Wiki.MvcSample
+      dockerfile: Dockerfile
+      args:
+        PAT: 62kzc7ih47vjkvreblbrh3bjdsdwymk2k74jdu4mqbrqktpf4aea
     networks:
       - neverfoundrywikinet
   

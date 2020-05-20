@@ -3,6 +3,7 @@ using NeverFoundry.Wiki.Mvc.Models;
 using NeverFoundry.Wiki.Web;
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -65,16 +66,17 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 SpecialListType.All_Pages => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile)).ConfigureAwait(false),
                 SpecialListType.All_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !string.IsNullOrEmpty(x.RedirectTitle)).ConfigureAwait(false),
                 SpecialListType.Broken_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !string.IsNullOrEmpty(x.RedirectTitle)
-                    && Article.GetArticle(x.RedirectTitle, x.RedirectNamespace) is null).ConfigureAwait(false),
+                    && Article.GetArticle(x.RedirectTitle, x.RedirectNamespace) == null).ConfigureAwait(false),
                 SpecialListType.Double_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !string.IsNullOrEmpty(x.RedirectTitle)
-                    && !string.IsNullOrEmpty(Article.GetArticle(x.RedirectTitle, x.RedirectNamespace)?.RedirectTitle)).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile) && (x.Categories?.Count ?? 0) == 0).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => (x.Categories?.Count ?? 0) == 0).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => (x.Categories?.Count ?? 0) == 0).ConfigureAwait(false),
+                    && Article.GetArticle(x.RedirectTitle, x.RedirectNamespace) != null
+                    && !string.IsNullOrEmpty(Article.GetArticle(x.RedirectTitle, x.RedirectNamespace)!.RedirectTitle)).ConfigureAwait(false),
+                SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile) && (x.Categories == null || x.Categories.Count == 0)).ConfigureAwait(false),
+                SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count == 0).ConfigureAwait(false),
+                SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count == 0).ConfigureAwait(false),
                 SpecialListType.Unlinked_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => DataStore
-                    .GetFirstItemWhere<Article>(y => y.WikiLinks.Any(z => z.IsLinkMatch(x))) is null).ConfigureAwait(false),
+                    .GetFirstItemWhere<Article>(y => y.WikiLinks.Any(z => z.IsLinkMatch(x))) == null).ConfigureAwait(false),
                 SpecialListType.Unlinked_Pages => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile) && DataStore
-                    .GetFirstItemWhere<Article>(y => y.WikiLinks.Any(z => z.IsLinkMatch(x))) is null).ConfigureAwait(false),
+                    .GetFirstItemWhere<Article>(y => y.WikiLinks.Any(z => z.IsLinkMatch(x))) == null).ConfigureAwait(false),
                 SpecialListType.Unused_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.ChildIds.Count == 0).ConfigureAwait(false),
                 SpecialListType.What_Links_Here => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => ArticleLinksHere(x, data)).ConfigureAwait(false),
                 _ => new PagedList<Article>(null, 1, pageSize, 0),
@@ -122,7 +124,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             string? sort = null,
             bool descending = false,
             string? filter = null,
-            Func<T, bool>? condition = null) where T : Article
+            Expression<Func<T, bool>>? condition = null) where T : Article
         {
             var pageCondition = condition;
             if (!string.IsNullOrEmpty(filter))
@@ -133,7 +135,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 }
                 else
                 {
-                    pageCondition = (T x) => condition(x) && x.FullTitle.Contains(filter);
+                    Expression<Func<T, bool>> baseExp = x => x.FullTitle.Contains(filter);
+                    pageCondition = condition is null ? baseExp : baseExp.AndAlso(condition);
                 }
             }
 

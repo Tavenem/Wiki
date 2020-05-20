@@ -11,6 +11,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A particular revision of a wiki item.
     /// </summary>
+    [Serializable]
     public class WikiRevision : IdItem, ISerializable
     {
         /// <summary>
@@ -201,16 +202,16 @@ namespace NeverFoundry.Wiki
         }
 
         private WikiRevision(SerializationInfo info, StreamingContext context) : this(
-            (string)info.GetValue(nameof(Id), typeof(string)),
-            (string)info.GetValue(nameof(WikiId), typeof(string)),
-            (string)info.GetValue(nameof(Editor), typeof(string)),
-            (string)info.GetValue(nameof(Title), typeof(string)),
-            (string)info.GetValue(nameof(WikiNamespace), typeof(string)),
-            (string)info.GetValue(nameof(Revision), typeof(string)),
-            (bool)info.GetValue(nameof(IsDeleted), typeof(bool)),
-            (bool)info.GetValue(nameof(IsMilestone), typeof(bool)),
-            (string)info.GetValue(nameof(Comment), typeof(string)),
-            (DateTimeOffset)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)))
+            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(WikiId), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Editor), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Revision), typeof(string)) ?? string.Empty,
+            (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
+            (bool?)info.GetValue(nameof(IsMilestone), typeof(bool)) ?? default,
+            (string?)info.GetValue(nameof(Comment), typeof(string)) ?? string.Empty,
+            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? default)
         { }
 
         /// <summary>

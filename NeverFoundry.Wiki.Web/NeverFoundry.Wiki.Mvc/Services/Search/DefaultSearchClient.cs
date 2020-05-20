@@ -67,8 +67,8 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
                     articles = await DataStore.GetPageWhereOrderedByAsync<Article, DateTimeOffset>(x =>
-                        (x.AllowedViewers is null
-                        || (!(user is null) && (x.Owner == user.Id
+                        (x.AllowedViewers == null
+                        || (user != null && (x.Owner == user.Id
                         || x.AllowedViewers.Contains(user.Id))))
                         && (x.Title.Contains(request.Query)
                         || x.MarkdownContent.Contains(request.Query)),
@@ -81,9 +81,10 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                 else
                 {
                     articles = await DataStore.GetPageWhereOrderedByAsync<Article, string>(x =>
-                        (x.AllowedViewers is null
-                        || (!(user is null) && (x.Owner == user.Id
-                        || x.AllowedViewers?.Contains(user.Id) == true)))
+                        (x.AllowedViewers == null
+                        || (user != null && (x.Owner == user.Id
+                        || (x.AllowedViewers != null
+                        && x.AllowedViewers.Contains(user.Id)))))
                         && (x.Title.Contains(request.Query)
                         || x.MarkdownContent.Contains(request.Query)),
                         x => x.Title,

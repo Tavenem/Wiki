@@ -71,9 +71,9 @@ namespace NeverFoundry.Wiki
         }
 
         private MarkdownItem(SerializationInfo info, StreamingContext context) : this(
-            (string)info.GetValue(nameof(Id), typeof(string)),
-            (string)info.GetValue(nameof(MarkdownContent), typeof(string)),
-            (IList<WikiLink>)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)))
+            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0])
         { }
 
         /// <summary>

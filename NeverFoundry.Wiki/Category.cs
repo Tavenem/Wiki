@@ -89,13 +89,13 @@ namespace NeverFoundry.Wiki
                 transclusions) => ChildIds = childIds;
 
         private Category(SerializationInfo info, StreamingContext context) : this(
-            (string)info.GetValue(nameof(Id), typeof(string)),
-            (string)info.GetValue(nameof(Title), typeof(string)),
-            (string)info.GetValue(nameof(MarkdownContent), typeof(string)),
-            (IList<WikiLink>)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)),
-            (IList<string>)info.GetValue(nameof(ChildIds), typeof(IList<string>)),
-            (DateTimeOffset)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)),
-            (bool)info.GetValue(nameof(IsDeleted), typeof(bool)),
+            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
+            (IList<string>?)info.GetValue(nameof(ChildIds), typeof(IList<string>)) ?? new string[0],
+            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? DateTimeOffset.MinValue,
+            (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
             (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
             (IList<string>?)info.GetValue(nameof(AllowedViewers), typeof(IList<string>)),

@@ -1,5 +1,6 @@
 ﻿using NeverFoundry.DataStorage;
 using System;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
@@ -32,7 +33,14 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             }
 
             var history = await data.WikiItem
-                .GetHistoryAsync(pageNumber, pageSize, start, end, x => x.Editor.Equals(editor, StringComparison.OrdinalIgnoreCase))
+                .GetHistoryAsync(
+                    pageNumber,
+                    pageSize,
+                    start,
+                    end,
+                    editor is null
+                        ? (Expression<Func<WikiRevision, bool>>?)null
+                        : x => x.Editor.Equals(editor, StringComparison.OrdinalIgnoreCase))
                 .ConfigureAwait(false);
             return new HistoryViewModel(data, history);
         }

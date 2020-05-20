@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NeverFoundry.DataStorage;
 using NeverFoundry.DataStorage.Marten;
-using NeverFoundry.Wiki.Messaging;
 using NeverFoundry.Wiki.Mvc;
 using NeverFoundry.Wiki.Sample.Logging;
 using NeverFoundry.Wiki.Web;

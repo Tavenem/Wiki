@@ -105,7 +105,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
                 {
                     var stripRenderer = new HtmlRenderer(sw);
                     stripRenderer.Render(headings[i].Inline);
-                    headingText = stripRenderer.Writer.ToString();
+                    headingText = stripRenderer.Writer.ToString() ?? string.Empty;
                 }
 
                 renderer.Write(headingText);

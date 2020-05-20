@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using NeverFoundry.DataStorage;
-using NeverFoundry.Wiki.Messaging;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
 using System.Collections.Generic;
@@ -108,61 +107,8 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
 
             if (!string.IsNullOrWhiteSpace(html))
             {
-                var reactions = new List<IReactionResponse>();
-                if (!(message.Reactions is null))
-                {
-                    foreach (var reaction in message.Reactions)
-                    {
-                        var sender = await _userManager.FindByIdAsync(reaction.SenderId).ConfigureAwait(false);
-                        reactions.Add(new ReactionResponse(reaction, !(sender is null)));
-                    }
-                }
-                Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true, reactions));
+                Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true));
             }
-        }
-
-        /// <summary>
-        /// Notify clients who are viewing the relevant topic about a new reaction to a message, and
-        /// save the reaction to the persistent data source.
-        /// </summary>
-        /// <param name="reaction">
-        /// <para>
-        /// The reaction that has been sent.
-        /// </para>
-        /// <para>
-        /// Note: reactions to messages with unknown IDs are ignored.
-        /// </para>
-        /// </param>
-        public async Task SendReaction(IReactionRequest reaction)
-        {
-            if (string.IsNullOrWhiteSpace(reaction.TopicId)
-                || string.IsNullOrWhiteSpace(reaction.MessageId))
-            {
-                return;
-            }
-
-            var message = await DataStore.GetItemAsync<Message>(reaction.MessageId).ConfigureAwait(false);
-            if (message is null)
-            {
-                throw new HubException("No such message.");
-            }
-
-            var user = await _userManager.GetUserAsync(Context.User).ConfigureAwait(false);
-            if (user?.IsDeleted != false
-                || user.IsDisabled)
-            {
-                throw new HubException("You do not have permission to reply to this topic.");
-            }
-
-            var editPermission = await GetTopicEditPermissionAsync(reaction.TopicId, user).ConfigureAwait(false);
-            if (!editPermission)
-            {
-                throw new HubException("You do not have permission to reply to this topic.");
-            }
-
-            await message.ReactAsync(new Reaction(user.Id, user.UserName, reaction.Type, DateTimeOffset.UtcNow)).ConfigureAwait(false);
-
-            Clients.Group(reaction.TopicId).ReceiveReaction(new ReactionResponse(message.Id, user.Id, user.UserName, true, reaction.Type));
         }
 
         private Task<bool> GetTopicEditPermissionAsync(string topicId, WikiUser user)

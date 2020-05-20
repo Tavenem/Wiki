@@ -12,7 +12,9 @@ else
         <EditForm Model="_formModel" OnSubmit="FilterHistory">
             <fieldset>
                 <legend role="button" tabindex="0" aria-expanded="false">
+                    <span>Filter</span>
                     <button id="wiki-history-filter-hide-button"
+                            class="btn btn-outline-secondary"
                             type="button"
                             aria-label="hide"
                             style="display: none;"
@@ -24,6 +26,7 @@ else
                         </svg>
                     </button>
                     <button id="wiki-history-filter-show-button"
+                            class="btn btn-outline-secondary"
                             type="button"
                             aria-label="show"
                             onclick="toggleWikiHistoryFilter(event, true);"
@@ -33,13 +36,11 @@ else
                             <path d="M17.5 4.75l-7.5 7.5-7.5-7.5L1 6.25l9 9 9-9z" />
                         </svg>
                     </button>
-                    <span>Filter</span>
                 </legend>
                 <form id="wiki-history-filter-controls"
                       style="display: none;"
                       asp-controller="Wiki"
                       asp-route-isCompact="@Model.Data.IsCompact"
-                     
                       asp-action="History"
                       method="get">
                     <div class="form-group">
@@ -71,31 +72,33 @@ else
     <div id="wiki-history-instructions">Click on the date/time to view a revision.</div>
     <div class="wiki-pagecontrols">
         <nav>
-            @if (Model.Revisions.HasPreviousPage)
-            {
-                <span><a asp-route-pageNumber="1">Newest</a></span>
-                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber - 1)">Newer</a></span>
-            }
-            else
-            {
-                <span>Newest</span>
-                <span>Newer</span>
-            }
-            @if (Model.Revisions.HasNextPage)
-            {
-                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber + 1)">Older</a></span>
-                <span><a asp-route-pageNumber="@(Model.Revisions.PageCount)">Oldest</a></span>
-            }
-            else
-            {
-                <span>Older</span>
-                <span>Oldest</span>
-            }
+            <ul class="pagination">
+                @if (Model.Revisions.HasPreviousPage)
+                {
+                    <li class="page-item"><a asp-route-pageNumber="1">Newest</a></li>
+                    <li class="page-item"><a asp-route-pageNumber="@(Model.Revisions.PageNumber - 1)">Newer</a></li>
+                }
+                else
+                {
+                    <li class="page-item">Newest</li>
+                    <li class="page-item">Newer</li>
+                }
+                @if (Model.Revisions.HasNextPage)
+                {
+                    <li class="page-item"><a asp-route-pageNumber="@(Model.Revisions.PageNumber + 1)">Older</a></li>
+                    <li class="page-item"><a asp-route-pageNumber="@(Model.Revisions.PageCount)">Oldest</a></li>
+                }
+                else
+                {
+                    <li class="page-item">Older</li>
+                    <li class="page-item">Oldest</li>
+                }
+            </ul>
         </nav>
         <div>
             <span>Number of revisions per page:</span>
-            <ul>
-                <li>
+            <ul class="pagination">
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 50)
                     {
                         <span>50</span>
@@ -105,7 +108,7 @@ else
                         <a asp-route-pageSize="50">50</a>
                     }
                 </li>
-                <li>
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 100)
                     {
                         <span>100</span>
@@ -115,7 +118,7 @@ else
                         <a asp-route-pageSize="100">100</a>
                     }
                 </li>
-                <li>
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 250)
                     {
                         <span>250</span>
@@ -125,7 +128,7 @@ else
                         <a asp-route-pageSize="250">250</a>
                     }
                 </li>
-                <li>
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 500)
                     {
                         <span>500</span>
@@ -152,7 +155,7 @@ else
                     <span class="wiki-history-list-diffs">
                         @if (Model.Revisions.HasPreviousPage)
                         {
-                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.ToWikiDisplayString()" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.Ticks" asp-route-diff="cur" title="Compare with the current version">cur</a>
                         }
                         else
                         {
@@ -160,7 +163,7 @@ else
                         }
                         @if (Model.Revisions.Count > 1)
                         {
-                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.ToWikiDisplayString()" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.Ticks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
                         }
                         else
                         {
@@ -168,10 +171,10 @@ else
                         }
                     </span>
                     <input type="checkbox"
-                           onclick="checkWikiDiff(event, @Model.Revisions[0].Timestamp.ToWikiDisplayString());"
-                           onkeydown="checkWikiDiff(event, @Model.Revisions[0].Timestamp.ToWikiDisplayString());" />
+                           onclick="checkWikiDiff(event, @Model.Revisions[0].Timestamp.Ticks);"
+                           onkeydown="checkWikiDiff(event, @Model.Revisions[0].Timestamp.Ticks);" />
                 }
-                <a class="wiki-history-list-timestamp" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.ToWikiDisplayString()">@Model.Revisions[0].Timestamp.ToWikiDisplayString()</a>
+                <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.Ticks">@Model.Revisions[0].Timestamp.ToWikiDisplayString()</a>
                 <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[0].Editor" />
                 <span>@Model.Revisions[0].Comment</span>
             </li>
@@ -181,14 +184,14 @@ else
                     @if (!Model.Data.IsFile)
                     {
                         <span class="wiki-history-list-diffs">
-                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.ToWikiDisplayString()" asp-route-diff="cur" title="Compare with the current version">cur</a>
-                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.ToWikiDisplayString()" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.Ticks" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.Ticks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
                         </span>
                         <input type="checkbox"
-                               onclick="checkWikiDiff(event, @Model.Revisions[i].Timestamp.ToWikiDisplayString());"
-                               onkeydown="checkWikiDiff(event, @Model.Revisions[i].Timestamp.ToWikiDisplayString());" />
+                               onclick="checkWikiDiff(event, @Model.Revisions[i].Timestamp.Ticks);"
+                               onkeydown="checkWikiDiff(event, @Model.Revisions[i].Timestamp.Ticks);" />
                     }
-                    <a class="wiki-history-list-timestamp" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.ToWikiDisplayString()">@Model.Revisions[i].Timestamp.ToWikiDisplayString()</a>
+                    <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.Ticks">@Model.Revisions[i].Timestamp.ToWikiDisplayString()</a>
                     <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[i].Editor" />
                     <span>@Model.Revisions[i].Comment</span>
                 </li>
@@ -199,10 +202,10 @@ else
                     @if (!Model.Data.IsFile)
                     {
                         <span class="wiki-history-list-diffs">
-                            <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks" asp-route-diff="cur" title="Compare with the current version">cur</a>
                             @if (Model.Revisions.HasNextPage)
                             {
-                                <a asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                                <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
                             }
                             else
                             {
@@ -210,10 +213,10 @@ else
                             }
                         </span>
                         <input type="checkbox"
-                               onclick="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString());"
-                               onkeydown="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString());" />
+                               onclick="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks);"
+                               onkeydown="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks);" />
                     }
-                    <a class="wiki-history-list-timestamp" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()">@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()</a>
+                    <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks">@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()</a>
                     <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Editor" />
                     <span>@Model.Revisions[(int)(Model.Revisions.Count - 1)].Comment</span>
                 </li>
@@ -226,31 +229,33 @@ else
     </form>
     <div class="wiki-pagecontrols">
         <nav>
-            @if (Model.Revisions.HasPreviousPage)
-            {
-                <span><a asp-route-pageNumber="1">Newest</a></span>
-                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber - 1)">Newer</a></span>
-            }
-            else
-            {
-                <span>Newest</span>
-                <span>Newer</span>
-            }
-            @if (Model.Revisions.HasNextPage)
-            {
-                <span><a asp-route-pageNumber="@(Model.Revisions.PageNumber + 1)">Older</a></span>
-                <span><a asp-route-pageNumber="@(Model.Revisions.PageCount)">Oldest</a></span>
-            }
-            else
-            {
-                <span>Older</span>
-                <span>Oldest</span>
-            }
+            <ul class="pagination">
+                @if (Model.Revisions.HasPreviousPage)
+                {
+                    <li class="page-item"><a asp-route-pageNumber="1">Newest</a></li>
+                    <li class="page-item"><a asp-route-pageNumber="@(Model.Revisions.PageNumber - 1)">Newer</a></li>
+                }
+                else
+                {
+                    <li class="page-item">Newest</li>
+                    <li class="page-item">Newer</li>
+                }
+                @if (Model.Revisions.HasNextPage)
+                {
+                    <li class="page-item"><a asp-route-pageNumber="@(Model.Revisions.PageNumber + 1)">Older</a></li>
+                    <li class="page-item"><a asp-route-pageNumber="@(Model.Revisions.PageCount)">Oldest</a></li>
+                }
+                else
+                {
+                    <li class="page-item">Older</li>
+                    <li class="page-item">Oldest</li>
+                }
+            </ul>
         </nav>
         <div>
             <span>Number of revisions per page:</span>
-            <ul>
-                <li>
+            <ul class="pagination">
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 50)
                     {
                         <span>50</span>
@@ -260,7 +265,7 @@ else
                         <a asp-route-pageSize="50">50</a>
                     }
                 </li>
-                <li>
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 100)
                     {
                         <span>100</span>
@@ -270,7 +275,7 @@ else
                         <a asp-route-pageSize="100">100</a>
                     }
                 </li>
-                <li>
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 250)
                     {
                         <span>250</span>
@@ -280,7 +285,7 @@ else
                         <a asp-route-pageSize="250">250</a>
                     }
                 </li>
-                <li>
+                <li class="page-item">
                     @if (Model.Revisions.PageSize == 500)
                     {
                         <span>500</span>

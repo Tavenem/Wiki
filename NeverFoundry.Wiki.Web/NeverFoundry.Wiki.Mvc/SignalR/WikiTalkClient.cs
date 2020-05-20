@@ -29,11 +29,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         public event EventHandler<IMessageResponse>? OnRecevied;
 
         /// <summary>
-        /// Receive a new reaction to a message.
-        /// </summary>
-        public event EventHandler<IReactionResponse>? OnReceviedReaction;
-
-        /// <summary>
         /// Initializes a new instance of <see cref="WikiTalkClient"/>.
         /// </summary>
         /// <param name="url">The URL of the hub.</param>
@@ -90,19 +85,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         public void Receive(IMessageResponse message) => OnRecevied?.Invoke(this, message);
 
         /// <summary>
-        /// <para>
-        /// Receive a new reaction to a message.
-        /// </para>
-        /// <para>
-        /// Note: this method should only be invoked internally by an <see cref="IWikiTalkHub"/>.
-        /// </para>
-        /// </summary>
-        /// <param name="reaction">
-        /// An <see cref="IReactionResponse"/> with information about the reaction received.
-        /// </param>
-        public void ReceiveReaction(IReactionResponse reaction) => OnReceviedReaction?.Invoke(this, reaction);
-
-        /// <summary>
         /// Send a reply.
         /// </summary>
         /// <param name="reply">
@@ -121,26 +103,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
                 throw new Exception("Client has been disposed.");
             }
             await _hubConnection.SendAsync(nameof(IWikiTalkHub.Send), reply).ConfigureAwait(false);
-        }
-
-        /// <summary>
-        /// Send a reply.
-        /// </summary>
-        /// <param name="reaction">
-        /// <para>
-        /// The reaction that has been sent.
-        /// </para>
-        /// <para>
-        /// Note: reactions to messages with unknown IDs are ignored.
-        /// </para>
-        /// </param>
-        public async Task SendReactionAsync(IReactionRequest reaction)
-        {
-            if (_disposed)
-            {
-                throw new Exception("Client has been disposed.");
-            }
-            await _hubConnection.SendAsync(nameof(IWikiTalkHub.SendReaction), reaction).ConfigureAwait(false);
         }
 
         /// <summary>

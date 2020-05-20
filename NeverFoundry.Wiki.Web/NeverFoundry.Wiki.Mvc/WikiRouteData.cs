@@ -161,10 +161,16 @@ namespace NeverFoundry.Wiki.Mvc
             IsUserPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && string.Equals(WikiNamespace, WikiWebConfig.UserNamespace, StringComparison.OrdinalIgnoreCase);
 
             if (query.TryGetValue("rev", out var rev)
-                && rev.Count >= 1
-                && DateTimeOffset.TryParse(rev[0], out var timestamp))
+                && rev.Count >= 1)
             {
-                RequestedTimestamp = timestamp;
+                if (DateTimeOffset.TryParse(rev[0], out var timestamp))
+                {
+                    RequestedTimestamp = timestamp;
+                }
+                else if (long.TryParse(rev[0], out var ticks))
+                {
+                    RequestedTimestamp = new DateTimeOffset(ticks, TimeSpan.Zero);
+                }
             }
             if (query.TryGetValue("diff", out var diff)
                 && diff.Count >= 1)

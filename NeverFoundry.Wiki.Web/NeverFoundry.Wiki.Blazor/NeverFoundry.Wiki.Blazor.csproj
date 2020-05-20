@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RazorLangVersion>3.0</RazorLangVersion>
     <LangVersion>Latest</LangVersion>
     <Nullable>enable</Nullable>
@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.2.0-preview</Version>
+    <Version>0.5.0-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>
       An implementation of NeverFoundry.Wiki for Blazor.
@@ -33,7 +33,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="5.0.0-preview.3.20215.14" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0-preview.3.20215.14" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
-    <PackageReference Include="NeverFoundry.Wiki" Version="0.2.0-preview" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.5.0-preview" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

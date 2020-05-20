@@ -16,6 +16,7 @@ using NeverFoundry.Wiki.Sample.Providers;
 using NeverFoundry.Wiki.Sample.Services;
 using NeverFoundry.Wiki.Web;
 using System.Reflection;
+using System.Security.Claims;
 
 namespace NeverFoundry.Wiki.MVCSample
 {
@@ -31,6 +32,10 @@ namespace NeverFoundry.Wiki.MVCSample
                 options.UseNpgsql(
                     Configuration.GetConnectionString("Auth"),
                     a => a.MigrationsAssembly(typeof(Startup).GetTypeInfo().Assembly.GetName().Name)));
+
+            services.Configure<IdentityOptions>(options =>
+                options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier);
+
             services.AddIdentity<WikiUser, IdentityRole>(options =>
             {
                 options.SignIn.RequireConfirmedAccount = true;
@@ -75,7 +80,7 @@ namespace NeverFoundry.Wiki.MVCSample
             services.AddTransient<IEmailService, EmailService>();
 
             WikiConfig.ServerUrl = "https://localhost:5001/";
-            Web.WikiWebConfig.MaxFileSize = 100000000; // 100 MB
+            WikiWebConfig.MaxFileSize = 100000000; // 100 MB
             services.AddWiki(provider =>
             {
                 var loggerFactory = provider.GetRequiredService<ILoggerFactory>();

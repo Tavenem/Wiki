@@ -13,6 +13,12 @@ namespace NeverFoundry.Wiki.Web.SignalR
         public string Markdown { get; set; }
 
         /// <summary>
+        /// The ID of the message to which this reply is addressed (<see langword="null"/> for
+        /// messages addressed directly to a topic).
+        /// </summary>
+        public string? MessageId { get; }
+
+        /// <summary>
         /// The ID of the topic to which this reply has been addressed.
         /// </summary>
         public string TopicId { get; set; }
@@ -26,7 +32,11 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <param name="markdown">
         /// The markdown content of this reply.
         /// </param>
-        public ReplyRequest(string topicId, string markdown)
+        /// <param name="messageId">
+        /// The ID of the message to which this reply is addressed (<see langword="null"/> for
+        /// messages addressed directly to a topic).
+        /// </param>
+        public ReplyRequest(string topicId, string markdown, string? messageId = null)
         {
             if (string.IsNullOrWhiteSpace(topicId))
             {
@@ -34,6 +44,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
             }
             TopicId = topicId;
             Markdown = markdown;
+            MessageId = messageId;
         }
     }
 }

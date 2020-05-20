@@ -4,6 +4,7 @@ using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
@@ -202,13 +203,13 @@ namespace NeverFoundry.Wiki
         }
 
         private Article(SerializationInfo info, StreamingContext context) : this(
-            (string)info.GetValue(nameof(Id), typeof(string)),
-            (string)info.GetValue(nameof(Title), typeof(string)),
-            (string)info.GetValue(nameof(MarkdownContent), typeof(string)),
-            (IList<WikiLink>)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)),
-            (DateTimeOffset)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)),
-            (string)info.GetValue(nameof(WikiNamespace), typeof(string)),
-            (bool)info.GetValue(nameof(IsDeleted), typeof(bool)),
+            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
+            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? default,
+            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
+            (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
             (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
             (IList<string>?)info.GetValue(nameof(AllowedViewers), typeof(IList<string>)),
@@ -881,17 +882,26 @@ namespace NeverFoundry.Wiki
             int pageSize,
             DateTimeOffset? start = null,
             DateTimeOffset? end = null,
-            Func<WikiRevision, bool>? condition = null)
-            => await DataStore.GetPageWhereOrderedByAsync<WikiRevision, DateTimeOffset>(
-                x => x.WikiId == Id
-                    && (!start.HasValue || x.Timestamp >= start.Value)
-                    && (!end.HasValue || x.Timestamp >= end.Value)
-                    && (condition is null || condition(x)),
+            Expression<Func<WikiRevision, bool>>? condition = null)
+        {
+            Expression<Func<WikiRevision, bool>> exp = x => x.WikiId == Id;
+            if (start.HasValue)
+            {
+                exp = exp.AndAlso(x => x.Timestamp >= start);
+            }
+            if (end.HasValue)
+            {
+                exp = exp.AndAlso(x => x.Timestamp <= end);
+            }
+            exp = condition is null ? exp : exp.AndAlso(condition);
+            return await DataStore.GetPageWhereOrderedByAsync(
+                exp,
                 x => x.Timestamp,
                 pageNumber,
                 pageSize,
                 descending: true)
             .ConfigureAwait(false);
+        }
 
         /// <summary>
         /// Gets this item's content at the given <paramref name="time"/>.

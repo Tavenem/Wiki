@@ -1,12 +1,11 @@
 ﻿using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Messaging
+namespace NeverFoundry.Wiki
 {
     /// <summary>
     /// A message sent from a user to an audience.
@@ -15,13 +14,10 @@ namespace NeverFoundry.Wiki.Messaging
     public sealed class Message : MarkdownItem
     {
         /// <summary>
-        /// Any reactions to this message.
+        /// The ID of the message to which this reply is addressed (<see langword="null"/> for
+        /// messages addressed directly to a topic).
         /// </summary>
-        /// <remarks>
-        /// A message can have at most one reaction per sender. A new reaction from a sender
-        /// replaces any old reaction that sender may have made.
-        /// </remarks>
-        public IReadOnlyList<Reaction>? Reactions { get; private set; }
+        public string? ReplyMessageId { get; }
 
         /// <summary>
         /// The ID of the sender of this message.
@@ -48,8 +44,10 @@ namespace NeverFoundry.Wiki.Messaging
             string senderId,
             string senderName,
             string? markdown,
-            DateTimeOffset timestamp) : base(markdown)
+            DateTimeOffset timestamp,
+            string? replyMessageId = null) : base(markdown)
         {
+            ReplyMessageId = replyMessageId;
             SenderId = senderId;
             SenderName = senderName;
             Timestamp = timestamp;
@@ -64,24 +62,24 @@ namespace NeverFoundry.Wiki.Messaging
             string senderId,
             string senderName,
             DateTimeOffset timestamp,
-            IEnumerable<Reaction>? reactions) : base(id, markdown, wikiLinks)
+            string? replyMessageId = null) : base(id, markdown, wikiLinks)
         {
+            ReplyMessageId = replyMessageId;
             SenderId = senderId;
             SenderName = senderName;
             Timestamp = timestamp;
             TopicId = topicId;
-            Reactions = reactions?.ToList();
         }
 
         private Message(SerializationInfo info, StreamingContext context) : this(
-            (string)info.GetValue(nameof(Id), typeof(string)),
-            (string)info.GetValue(nameof(MarkdownContent), typeof(string)),
-            (IList<WikiLink>)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)),
-            (string)info.GetValue(nameof(TopicId), typeof(string)),
-            (string)info.GetValue(nameof(SenderId), typeof(string)),
-            (string)info.GetValue(nameof(SenderName), typeof(string)),
-            (DateTimeOffset)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)),
-            (IList<Reaction>?)info.GetValue(nameof(Reactions), typeof(IList<Reaction>)))
+            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
+            (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(SenderName), typeof(string)) ?? string.Empty,
+            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? DateTimeOffset.MinValue,
+            (string?)info.GetValue(nameof(ReplyMessageId), typeof(string)))
         { }
 
         /// <summary>
@@ -91,11 +89,16 @@ namespace NeverFoundry.Wiki.Messaging
         /// <param name="senderId">The ID of the sender of this message.</param>
         /// <param name="senderName">The name of the sender of this message.</param>
         /// <param name="markdown">The raw markdown content.</param>
+        /// <param name="replyMessageId">
+        /// The ID of the message to which this reply is addressed (<see langword="null"/> for
+        /// messages addressed directly to a topic).
+        /// </param>
         public static async Task<Message> ReplyAsync(
             string topicId,
             string senderId,
             string senderName,
-            string markdown)
+            string markdown,
+            string? replyMessageId = null)
         {
             if (!string.IsNullOrEmpty(markdown))
             {
@@ -111,7 +114,8 @@ namespace NeverFoundry.Wiki.Messaging
                 senderId,
                 senderName,
                 markdown,
-                DateTimeOffset.UtcNow);
+                DateTimeOffset.UtcNow,
+                replyMessageId);
             await message.SaveAsync().ConfigureAwait(false);
             return message;
         }
@@ -134,20 +138,7 @@ namespace NeverFoundry.Wiki.Messaging
             info.AddValue(nameof(SenderId), SenderId);
             info.AddValue(nameof(SenderName), SenderName);
             info.AddValue(nameof(Timestamp), Timestamp);
-            info.AddValue(nameof(Reactions), Reactions);
-        }
-
-        /// <summary>
-        /// React to this message.
-        /// </summary>
-        /// <param name="reaction">The <see cref="Reaction"/>.</param>
-        public async Task ReactAsync(Reaction reaction)
-        {
-            var reactions = Reactions?.ToList() ?? new List<Reaction>();
-            reactions.RemoveAll(x => x.SenderId == reaction.SenderId);
-            reactions.Add(reaction);
-            Reactions = reactions;
-            await SaveAsync().ConfigureAwait(false);
+            info.AddValue(nameof(ReplyMessageId), ReplyMessageId);
         }
     }
 }

@@ -20,20 +20,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         Task LeaveTopic(string topicId);
 
         /// <summary>
-        /// Notify clients who are viewing the relevant topic about a new reaction to a message, and
-        /// save the reaction to the persistent data source.
-        /// </summary>
-        /// <param name="reaction">
-        /// <para>
-        /// The reaction that has been sent.
-        /// </para>
-        /// <para>
-        /// Note: reactions to messages with unknown IDs are ignored.
-        /// </para>
-        /// </param>
-        Task SendReaction(IReactionRequest reaction);
-
-        /// <summary>
         /// Notify clients who are viewing the relevant topic about a new message, and save the
         /// message to the persistent data source.
         /// </summary>

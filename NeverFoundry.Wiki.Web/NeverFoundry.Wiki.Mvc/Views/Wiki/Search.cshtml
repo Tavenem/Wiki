@@ -17,7 +17,7 @@
                        autocomplete="off"
                        list="mainSearchSuggestions"
                        value="@Model.SearchResult.Query" />
-                <datalist id="mainSearchSuggestions" />
+                <datalist id="mainSearchSuggestions"></datalist>
                 <button type="submit"
                         name="go"
                         title="Go to a page with this exact name, or search for the text">
@@ -42,8 +42,8 @@
                onclick="wikiToggleAdvancedSearch(event);"
                onkeydown="wikiToggleAdvancedSearch(event);">
                 <span>Advanced search:</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20">
-                    <path d="M2.5 15.25l7.5-7.5 7.5 7.5 1.5-1.5-9-9-9 9z" />
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
+                    <path d="M4 1.533v9.671l4.752-4.871z" />
                 </svg>
             </a>
             <div id="wiki-search-advanced-controls" style="display: none;">

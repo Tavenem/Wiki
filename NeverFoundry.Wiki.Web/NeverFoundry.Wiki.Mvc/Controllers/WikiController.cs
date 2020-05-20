@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using NeverFoundry.DataStorage;
-using NeverFoundry.Wiki.Messaging;
 using NeverFoundry.Wiki.Mvc.Models;
 using NeverFoundry.Wiki.Mvc.Services.Search;
 using NeverFoundry.Wiki.Mvc.ViewModels;
@@ -484,24 +483,14 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                         .ConfigureAwait(false);
                     var responses = new ConcurrentBag<MessageResponse>();
                     var senders = new ConcurrentDictionary<string, bool>();
-                    await Task.Run(() => Parallel.ForEach(replies, async reply =>
+                    await Task.Run(() => Parallel.ForEach(replies, reply =>
                     {
                         var html = reply.GetHtml();
                         var exists = senders.GetOrAdd(reply.SenderId, _userManager.FindByIdAsync(reply.SenderId).GetAwaiter().GetResult()?.IsDeleted == false);
-                        var reactions = new List<IReactionResponse>();
-                        if (!(reply.Reactions is null))
-                        {
-                            foreach (var reaction in reply.Reactions)
-                            {
-                                var sender = await _userManager.FindByIdAsync(reaction.SenderId).ConfigureAwait(false);
-                                reactions.Add(new ReactionResponse(reaction, !(sender is null)));
-                            }
-                        }
                         responses.Add(new MessageResponse(
                             reply,
                             html,
-                            exists,
-                            reactions));
+                            exists));
                     })).ConfigureAwait(false);
                     vm.Messages = responses.ToList();
                 }
@@ -537,7 +526,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 if (data.IsSystem && string.Equals(data.Title, "Search", StringComparison.OrdinalIgnoreCase))
                 {
-                    return View(new SearchResult());
+                    return View(new SearchViewModel(new SearchResult()));
                 }
                 return RedirectToAction("Read");
             }
@@ -561,7 +550,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     isTalk = false,
                     wikiNamespace = WikiWebConfig.SystemNamespace,
                     title = "Search",
-                    original,
+                    query = original,
                     pageNumber,
                     pageSize,
                     sort,
@@ -1336,9 +1325,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             return string.Equals(item.Owner, user.Id)
-                || edit
+                || (edit
                 ? item.AllowedEditors?.Contains(user.Id) != false
-                : item.AllowedViewers?.Contains(user.Id) != false;
+                : item.AllowedViewers?.Contains(user.Id) != false);
         }
     }
 #pragma warning restore CS1591

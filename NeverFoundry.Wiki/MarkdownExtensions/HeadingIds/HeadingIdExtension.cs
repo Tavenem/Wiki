@@ -111,7 +111,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.HeadingIds
             {
                 var stripRenderer = new HtmlRenderer(sw);
                 stripRenderer.Render(headingBlock.Inline);
-                headingText = stripRenderer.Writer.ToString();
+                headingText = stripRenderer.Writer.ToString() ?? string.Empty;
             }
 
             var baseHeadingId = string.IsNullOrEmpty(headingText) ? "section" : headingText;

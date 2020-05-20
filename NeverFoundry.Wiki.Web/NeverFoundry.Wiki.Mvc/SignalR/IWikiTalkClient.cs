@@ -32,19 +32,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         void Receive(IMessageResponse message);
 
         /// <summary>
-        /// <para>
-        /// Receive a new reaction to a message.
-        /// </para>
-        /// <para>
-        /// Note: this method should only be invoked internally by an <see cref="IWikiTalkHub"/>.
-        /// </para>
-        /// </summary>
-        /// <param name="reaction">
-        /// An <see cref="IReactionResponse"/> with information about the reaction received.
-        /// </param>
-        void ReceiveReaction(IReactionResponse reaction);
-
-        /// <summary>
         /// Send a reply.
         /// </summary>
         /// <param name="reply">
@@ -57,19 +44,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// </para>
         /// </param>
         Task SendAsync(IReplyRequest reply);
-
-        /// <summary>
-        /// Send a reaction.
-        /// </summary>
-        /// <param name="reaction">
-        /// <para>
-        /// The reaction that has been sent.
-        /// </para>
-        /// <para>
-        /// Note: reactions to messages with unknown IDs are ignored.
-        /// </para>
-        /// </param>
-        Task SendReactionAsync(IReactionRequest reaction);
 
         /// <summary>
         /// <para>

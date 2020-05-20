@@ -437,49 +437,21 @@ html, body {
 
     nav {
         display: inline-block;
+    }
 
-        &::before {
-            content: '(';
-        }
+    ul {
+        display: inline-block;
+        list-style: none none;
+        margin: 0;
+        padding: 0;
 
-        &::after {
-            content: ')';
-        }
-
-        span + span {
-            &::before {
-                content: ' | ';
-            }
+        li {
+            display: inline-block;
         }
     }
 
     div {
         display: inline-block;
-
-        ul {
-            display: inline-block;
-            list-style: none none;
-            margin: 0;
-            padding: 0;
-
-            &::before {
-                content: '(';
-            }
-
-            &::after {
-                content: ')';
-            }
-
-            li {
-                display: inline-block;
-            }
-
-            li + li {
-                &::before {
-                    content: ' | ';
-                }
-            }
-        }
     }
 }
 
@@ -612,7 +584,7 @@ html, body {
     display: block;
 }
 
-.wiki-message-toggler {
+.wiki-message-collapse-toggler {
     background-color: $background-color;
     display: none;
     font-family: sans-serif;
@@ -629,6 +601,33 @@ html, body {
 
     .collapsible & {
         display: block;
+    }
+}
+
+.wiki-message-thread-toggler {
+    svg {
+        transition: all linear 0.25s;
+
+        path {
+            fill: currentColor;
+        }
+    }
+
+    &.expanded svg {
+        transform-origin: center;
+        transform: rotate(90deg);
+    }
+}
+
+.wiki-message-thread {
+    ul {
+        display: none;
+    }
+
+    &.expanded {
+        ul {
+            display: block;
+        }
     }
 }
 
@@ -711,7 +710,7 @@ html, body {
                 span + a,
                 span + span {
                     &::before {
-                        content: '&nbsp;|&nbsp;';
+                        content: '| ';
                     }
                 }
             }
@@ -795,17 +794,19 @@ html, body {
 }
 
 #wiki-edit-transclusions {
-    div > svg {
-        transition: all linear 0.25s;
-    }
+    div {
+        svg {
+            transition: all linear 0.25s;
 
-    div > svg > path {
-        fill: currentColor;
-    }
+            path {
+                fill: currentColor;
+            }
+        }
 
-    div.is-active > svg {
-        transform-origin: center;
-        transform: rotate(90deg);
+        &.is-active svg {
+            transform-origin: center;
+            transform: rotate(90deg);
+        }
     }
 
     ul {
@@ -845,25 +846,17 @@ html, body {
     flex-grow: 1;
     max-width: 50em;
 
-    div {
-        display: inline-block;
-        flex-grow: 1;
-        position: relative;
+    input {
+        padding-left: 2.43em;
+        padding-right: 28px;
+        width: 100%;
+    }
 
-        input {
-            border-bottom-right-radius: 0;
-            border-top-right-radius: 0;
-            margin-right: 0;
-            padding-left: 2.43em;
-            padding-right: 28px;
-        }
-
-        svg {
-            height: 100%;
-            opacity: 0.67;
-            position: absolute;
-            top: 0;
-        }
+    svg {
+        height: 100%;
+        opacity: 0.67;
+        position: absolute;
+        top: 0;
     }
 
     button {
@@ -910,14 +903,17 @@ html, body {
         border-top-right-radius: 2px;
         border-bottom-left-radius: 2px;
         border-bottom-right-radius: 2px;
-        margin-right: 8px;
-        padding: 6px 2.14em 6px 12px;
-        position: relative;
-        width: 100%;
+        padding: 6px 12px 6px 12px;
+        text-decoration: none;
 
         &.is-active {
             border-bottom-left-radius: 0;
             border-bottom-right-radius: 0;
+
+            svg {
+                transform-origin: center;
+                transform: rotate(90deg);
+            }
         }
 
         span {
@@ -927,14 +923,8 @@ html, body {
         }
 
         svg {
-            height: 100%;
-            min-height: 12px;
-            min-width: 12px;
             opacity: 0.87;
-            position: absolute;
-            right: 0.7em;
-            top: 0;
-            width: 0.86em;
+            transition: all linear 0.25s;
 
             path {
                 stroke: currentColor;
@@ -956,11 +946,13 @@ html, body {
     margin: 1em 0 1em 0.4em;
 
     ul {
+        display: inline-block;
         list-style: none none;
+        margin: 0;
+        padding: 0;
 
         li {
-            margin-bottom: 0.1em;
-            padding-bottom: 24px;
+            display: inline-block;
         }
     }
 

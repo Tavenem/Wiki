@@ -11,6 +11,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
     {
         private readonly ILogger<ErrorModel> _logger;
 
+        [BindProperty(SupportsGet = true)]
         public int? Code { get; set; }
 
         [TempData] public string? ErrorMessage { get; set; }

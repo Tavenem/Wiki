@@ -76,11 +76,11 @@ namespace NeverFoundry.Wiki
         }
 
         private WikiLink(SerializationInfo info, StreamingContext context) : this(
-            (bool)info.GetValue(nameof(IsCategory), typeof(bool)),
-            (bool)info.GetValue(nameof(IsNamespaceEscaped), typeof(bool)),
-            (bool)info.GetValue(nameof(IsTalk), typeof(bool)),
-            (string)info.GetValue(nameof(Title), typeof(string)),
-            (string)info.GetValue(nameof(WikiNamespace), typeof(string)))
+            (bool?)info.GetValue(nameof(IsCategory), typeof(bool)) ?? default,
+            (bool?)info.GetValue(nameof(IsNamespaceEscaped), typeof(bool)) ?? default,
+            (bool?)info.GetValue(nameof(IsTalk), typeof(bool)) ?? default,
+            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty)
         { }
 
         /// <summary>
@@ -91,7 +91,8 @@ namespace NeverFoundry.Wiki
         /// <see langword="true" /> if the current object is equal to the <paramref name="other" />
         /// parameter; otherwise, <see langword="false" />.
         /// </returns>
-        public bool Equals(WikiLink other) => IsNamespaceEscaped == other.IsNamespaceEscaped
+        public bool Equals(WikiLink? other) => !(other is null)
+            && IsNamespaceEscaped == other.IsNamespaceEscaped
             && IsTalk == other.IsTalk
             && Title == other.Title
             && WikiNamespace == other.WikiNamespace;

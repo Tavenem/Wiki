@@ -188,12 +188,12 @@
                                     <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
                                     <span class="wiki-main-heading-namespace-separator">:</span>
                                 }
+                                <span id="wiki-main-heading-title">@data.Title</span>
                                 @if (data.IsHistory)
                                 {
                                     <span class="wiki-main-heading-namespace-separator">:</span>
                                     <span id="wiki-main-heading-history">Revision history</span>
                                 }
-                                <span id="wiki-main-heading-title">@data.Title</span>
                             </a>
                         }
                         else
@@ -203,12 +203,12 @@
                                 <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
                                 <span class="wiki-main-heading-namespace-separator">:</span>
                             }
+                            <span id="wiki-main-heading-title">@data.Title</span>
                             @if (data.IsHistory)
                             {
                                 <span class="wiki-main-heading-namespace-separator">:</span>
                                 <span id="wiki-main-heading-history">Revision history</span>
                             }
-                            <span id="wiki-main-heading-title">@data.Title</span>
                         }
                     }
                 </h1>
@@ -220,10 +220,10 @@
             <div id="wiki-body">
                 @RenderBody()
                 @if (!data.IsCompact
-                    && !data.IsSystem
-                    && !data.IsTalk
-                    && !data.IsHistory
-                    && data.Categories?.Count > 0)
+                   && !data.IsSystem
+                   && !data.IsTalk
+                   && !data.IsHistory
+                   && data.Categories?.Count > 0)
                 {
                     <section id="wiki-category-list-section">
                         <a href="/Wiki/@WikiConfig.CategoriesTitle" id="wiki-category-list-category-link">@WikiConfig.CategoriesTitle</a>
@@ -246,13 +246,13 @@
                 <div id="wiki-top-footer" role="contentinfo">
                     <ul>
                         @if (!data.IsSystem
-                            && !data.IsTalk
-                            && data.WikiItem is Article tArticle)
+                           && !data.IsTalk
+                           && data.WikiItem is Article tArticle)
                         {
                             <li id="wiki-footer-timestamp">This page was last edited <span class="wiki-timestamp">@tArticle.Timestamp.ToWikiDisplayString()</span> (UTC).</li>
                         }
                         @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle)
-                            || !string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+                           || !string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
                         {
                             <li id="wiki-footer-copyright">
                                 @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))

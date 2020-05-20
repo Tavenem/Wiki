@@ -58,7 +58,11 @@ namespace NeverFoundry.Wiki.MVCSample
         public static IHostBuilder CreateHostBuilder(string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .UseSerilog()
-                .ConfigureWebHostDefaults(builder => builder.UseStartup<Startup>());
+                .ConfigureWebHostDefaults(builder =>
+                {
+                    builder.UseStaticWebAssets();
+                    builder.UseStartup<Startup>();
+                });
 
         private static void ConfigureDatabases(IConfigurationRoot configuration)
         {

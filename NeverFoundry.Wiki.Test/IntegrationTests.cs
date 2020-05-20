@@ -9,7 +9,7 @@ namespace NeverFoundry.Wiki.Test
         private const string ExpectedWelcome = "<p>Welcome to the <a href=\"http://neverfoundry.com\">NeverFoundry</a>.Wiki sample.</p>\n<p></p>\n";
         private const string ExpectedWelcomeTransclusion = @"Welcome to the <a href=""http://neverfoundry.com"">NeverFoundry</a>.Wiki sample.";
 
-        private static readonly string _ExpectedAbout = $"<p>{ExpectedWelcomeTransclusion}</p>\n<p>The <a href=\"http://neverfoundry.com\">NeverFoundry</a>.Wiki package is a <a href=\"https://dotnet.microsoft.com\">.NET</a> <a href=\"http://wikipedia.org/wiki/Wiki\">wiki</a> library.</p>\n<p>Unlike many wiki implementations, the main package (<code>NeverFoundry.Wiki</code>) is implementation-agnostic. It provides a set of core features which can be used to build a web-based wiki, a desktop application, a distributed cloud app with native clients, or any other architecture desired.</p>\n<p>The “reference” implementation included out-of-the-box (<code>NeverFoundry.Wiki.Blazor</code>) is a <a href=\"https://docs.microsoft.com/en-us/aspnet/core/blazor/class-libraries\">Razor components class library</a> which can be included in a <a href=\"http://blazor.net\">blazor</a> project to turn it into a wiki.</p>\n<p>The source code for <code>NeverFoundry.Wiki</code> is available online, and also includes a complete sample implementation (which you are viewing now).</p>\n<p>See the <a href=\"http://localhost/System:Help\" class=\"wiki-link-exists\">Help</a> page for usage information.</p>\n<p></p>\n";
+        private static readonly string _ExpectedAbout = $"<p>{ExpectedWelcomeTransclusion}</p>\n<p>The <a href=\"http://neverfoundry.com\">NeverFoundry</a>.Wiki package is a <a href=\"https://dotnet.microsoft.com\">.NET</a> <a href=\"http://wikipedia.org/wiki/Wiki\">wiki</a> library.</p>\n<p>Unlike many wiki implementations, the main package (<code>NeverFoundry.Wiki</code>) is implementation-agnostic. It provides a set of core features which can be used to build a web-based wiki, a desktop application, a distributed cloud app with native clients, or any other architecture desired.</p>\n<p>The “reference” implementation included out-of-the-box (<code>NeverFoundry.Wiki.Blazor</code>) is a <a href=\"https://docs.microsoft.com/en-us/aspnet/core/blazor/class-libraries\">Razor components class library</a> which can be included in a <a href=\"http://blazor.net\">blazor</a> project to turn it into a wiki.</p>\n<p>The source code for <code>NeverFoundry.Wiki</code> is available online, and also includes a complete sample implementation (which you are viewing now).</p>\n<p>See the <a href=\"http://localhost:5000/Wiki/System:Help\" class=\"wiki-link-exists\">Help</a> page for usage information.</p>\n<p></p>\n";
 
         [TestMethod]
         public void CreateWikiTest()
@@ -333,7 +333,7 @@ The `WikiConfig` static class contains a number of properties which can be set t
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 - **`ServerUrl`** - The primary URL of your wiki.
 
-   Default is ""http://localhost/wiki""; this is clearly not suitable for production, and should always be replaced.
+   Default is ""http://localhost:5000/Wiki/wiki""; this is clearly not suitable for production, and should always be replaced.
 
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 

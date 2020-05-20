@@ -59,9 +59,9 @@ namespace NeverFoundry.Wiki
         }
 
         private ParameterInclusion(SerializationInfo info, StreamingContext context) : this(
-            (string)info.GetValue(nameof(Name), typeof(string)),
-            (int)info.GetValue(nameof(Position), typeof(int)),
-            (int)info.GetValue(nameof(Length), typeof(int)),
+            (string?)info.GetValue(nameof(Name), typeof(string)) ?? string.Empty,
+            (int?)info.GetValue(nameof(Position), typeof(int)) ?? 0,
+            (int?)info.GetValue(nameof(Length), typeof(int)) ?? 0,
             (string?)info.GetValue(nameof(DefaultValue), typeof(string)))
         { }
 
