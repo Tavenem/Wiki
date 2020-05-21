@@ -146,7 +146,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
                     list = await DataStore
-                        .GetPageOrderedByAsync<T, DateTimeOffset>(x => x.Timestamp, pageNumber, pageSize, descending: descending)
+                        .GetPageOrderedByAsync<T, long>(x => x.TimestampTicks, pageNumber, pageSize, descending: descending)
                         .ConfigureAwait(false);
                 }
                 else
@@ -161,7 +161,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
                     list = await DataStore
-                        .GetPageWhereOrderedByAsync(pageCondition, x => x.Timestamp, pageNumber, pageSize, descending: descending)
+                        .GetPageWhereOrderedByAsync(pageCondition, x => x.TimestampTicks, pageNumber, pageSize, descending: descending)
                         .ConfigureAwait(false);
                 }
                 else

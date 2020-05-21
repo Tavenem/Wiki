@@ -48,7 +48,7 @@ namespace NeverFoundry.Wiki
             string fileType,
             string? markdown,
             IList<WikiLink> wikiLinks,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             bool isDeleted = false,
             string? owner = null,
             IEnumerable<string>? allowedEditors = null,
@@ -59,7 +59,7 @@ namespace NeverFoundry.Wiki
                 title,
                 markdown,
                 wikiLinks,
-                timestamp,
+                timestampTicks,
                 WikiConfig.FileNamespace,
                 isDeleted,
                 owner,
@@ -81,7 +81,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(FileType), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? default,
             (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
-            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? default,
+            (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
             (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
@@ -98,16 +98,16 @@ namespace NeverFoundry.Wiki
         /// langword="null"/> if no such file exists.</returns>
         public static WikiFile? GetFile(string title)
         {
-            var file = DataStore.GetFirstItemWhereOrderedBy<WikiFile, DateTimeOffset>(
+            var file = DataStore.GetFirstItemWhereOrderedBy<WikiFile, long>(
                 x => x.Title == title,
-                x => x.Timestamp,
+                x => x.TimestampTicks,
                 descending: true);
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
-                var files = DataStore.GetItemsWhereOrderedBy<WikiFile, DateTimeOffset>(
+                var files = DataStore.GetItemsWhereOrderedBy<WikiFile, long>(
                     x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase),
-                    x => x.Timestamp,
+                    x => x.TimestampTicks,
                     descending: true);
                 if (files.Count == 1)
                 {
@@ -126,13 +126,14 @@ namespace NeverFoundry.Wiki
         /// langword="null"/> if no such file exists.</returns>
         public static WikiFile? GetFile(string title, DateTimeOffset timestamp)
         {
+            var ticks = timestamp.ToUniversalTime().Ticks;
             var file = DataStore.GetFirstItemWhere<WikiFile>(x => x.Title == title
-                && x.Timestamp == timestamp);
+                && x.TimestampTicks == ticks);
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
                 var files = DataStore.GetItemsWhere<WikiFile>(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
-                    && x.Timestamp == timestamp);
+                    && x.TimestampTicks == ticks);
                 if (files.Count == 1)
                 {
                     file = files[0];
@@ -262,7 +263,7 @@ namespace NeverFoundry.Wiki
                 type,
                 markdown,
                 wikiLinks,
-                revision.Timestamp,
+                revision.TimestampTicks,
                 isDeleted: false,
                 owner,
                 allowedEditors,
@@ -291,7 +292,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(FileType), FileType);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
             info.AddValue(nameof(WikiLinks), WikiLinks);
-            info.AddValue(nameof(Timestamp), Timestamp);
+            info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
             info.AddValue(nameof(AllowedEditors), AllowedEditors);
@@ -477,7 +478,7 @@ namespace NeverFoundry.Wiki
                 revisionComment);
             await revision.SaveAsync().ConfigureAwait(false);
 
-            Timestamp = revision.Timestamp;
+            TimestampTicks = revision.TimestampTicks;
 
             await SaveAsync().ConfigureAwait(false);
         }

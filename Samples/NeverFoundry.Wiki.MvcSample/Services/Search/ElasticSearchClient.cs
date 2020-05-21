@@ -87,11 +87,11 @@ namespace NeverFoundry.Wiki.Sample.Services
                     }
                     else if (request.Descending)
                     {
-                        return s.Descending(a => a.Timestamp);
+                        return s.Descending(a => a.TimestampTicks);
                     }
                     else
                     {
-                        return s.Ascending(a => a.Timestamp);
+                        return s.Ascending(a => a.TimestampTicks);
                     }
                 })
                 .From((request.PageNumber - 1) * request.PageSize)

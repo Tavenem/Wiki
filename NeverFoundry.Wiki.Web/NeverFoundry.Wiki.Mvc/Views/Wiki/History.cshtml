@@ -155,7 +155,7 @@ else
                     <span class="wiki-history-list-diffs">
                         @if (Model.Revisions.HasPreviousPage)
                         {
-                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.Ticks" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].TimestampTicks" asp-route-diff="cur" title="Compare with the current version">cur</a>
                         }
                         else
                         {
@@ -163,7 +163,7 @@ else
                         }
                         @if (Model.Revisions.Count > 1)
                         {
-                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.Ticks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].TimestampTicks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
                         }
                         else
                         {
@@ -171,10 +171,10 @@ else
                         }
                     </span>
                     <input type="checkbox"
-                           onclick="checkWikiDiff(event, @Model.Revisions[0].Timestamp.Ticks);"
-                           onkeydown="checkWikiDiff(event, @Model.Revisions[0].Timestamp.Ticks);" />
+                           onclick="checkWikiDiff(event, @Model.Revisions[0].TimestampTicks);"
+                           onkeydown="checkWikiDiff(event, @Model.Revisions[0].TimestampTicks);" />
                 }
-                <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].Timestamp.Ticks">@Model.Revisions[0].Timestamp.ToWikiDisplayString()</a>
+                <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].TimestampTicks">@Model.Revisions[0].TimestampToWikiDisplayString()</a>
                 <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[0].Editor" />
                 <span>@Model.Revisions[0].Comment</span>
             </li>
@@ -184,14 +184,14 @@ else
                     @if (!Model.Data.IsFile)
                     {
                         <span class="wiki-history-list-diffs">
-                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.Ticks" asp-route-diff="cur" title="Compare with the current version">cur</a>
-                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.Ticks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].TimestampTicks" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].TimestampTicks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
                         </span>
                         <input type="checkbox"
-                               onclick="checkWikiDiff(event, @Model.Revisions[i].Timestamp.Ticks);"
-                               onkeydown="checkWikiDiff(event, @Model.Revisions[i].Timestamp.Ticks);" />
+                               onclick="checkWikiDiff(event, @Model.Revisions[i].TimestampTicks);"
+                               onkeydown="checkWikiDiff(event, @Model.Revisions[i].TimestampTicks);" />
                     }
-                    <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].Timestamp.Ticks">@Model.Revisions[i].Timestamp.ToWikiDisplayString()</a>
+                    <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[i].TimestampTicks">@Model.Revisions[i].Timestamp.ToWikiDisplayString()</a>
                     <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[i].Editor" />
                     <span>@Model.Revisions[i].Comment</span>
                 </li>
@@ -202,10 +202,10 @@ else
                     @if (!Model.Data.IsFile)
                     {
                         <span class="wiki-history-list-diffs">
-                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks" asp-route-diff="cur" title="Compare with the current version">cur</a>
+                            <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].TimestampTicks" asp-route-diff="cur" title="Compare with the current version">cur</a>
                             @if (Model.Revisions.HasNextPage)
                             {
-                                <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
+                                <a asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].TimestampTicks" asp-route-diff="prev" title="Compare with the previous version">prev</a>
                             }
                             else
                             {
@@ -213,10 +213,10 @@ else
                             }
                         </span>
                         <input type="checkbox"
-                               onclick="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks);"
-                               onkeydown="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks);" />
+                               onclick="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].TimestampTicks);"
+                               onkeydown="checkWikiDiff(event, @Model.Revisions[(int)(Model.Revisions.Count - 1)].TimestampTicks);" />
                     }
-                    <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.Ticks">@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()</a>
+                    <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[(int)(Model.Revisions.Count - 1)].TimestampTicks">@Model.Revisions[(int)(Model.Revisions.Count - 1)].Timestamp.ToWikiDisplayString()</a>
                     <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[(int)(Model.Revisions.Count - 1)].Editor" />
                     <span>@Model.Revisions[(int)(Model.Revisions.Count - 1)].Comment</span>
                 </li>

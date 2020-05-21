@@ -69,9 +69,14 @@ namespace NeverFoundry.Wiki
         public string? Revision { get; }
 
         /// <summary>
-        /// The timestamp of this revision.
+        /// The timestamp of this revision, in UTC.
         /// </summary>
-        public DateTimeOffset Timestamp { get; }
+        public DateTimeOffset Timestamp => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
+
+        /// <summary>
+        /// The timestamp of this revision, in UTC Ticks.
+        /// </summary>
+        public long TimestampTicks { get; }
 
         /// <summary>
         /// The title of the item at the time of this revision. Must be non-empty, but may not be
@@ -125,7 +130,7 @@ namespace NeverFoundry.Wiki
             string? newText = null,
             string? comment = null)
         {
-            Timestamp = DateTimeOffset.UtcNow;
+            TimestampTicks = DateTimeOffset.UtcNow.Ticks;
 
             Editor = editor;
             Comment = comment;
@@ -183,7 +188,7 @@ namespace NeverFoundry.Wiki
             bool isDeleted,
             bool isMilestone,
             string? comment,
-            DateTimeOffset timestamp) : base(id)
+            long timestampTicks) : base(id)
         {
             if (isDeleted && isMilestone)
             {
@@ -195,7 +200,7 @@ namespace NeverFoundry.Wiki
             IsMilestone = isMilestone;
             Comment = comment;
             Revision = isDeleted ? null : revision;
-            Timestamp = timestamp;
+            TimestampTicks = timestampTicks;
             Title = title;
             WikiId = wikiId;
             WikiNamespace = wikiNamespace;
@@ -211,7 +216,7 @@ namespace NeverFoundry.Wiki
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (bool?)info.GetValue(nameof(IsMilestone), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Comment), typeof(string)) ?? string.Empty,
-            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? default)
+            (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default)
         { }
 
         /// <summary>
@@ -382,7 +387,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(IsMilestone), IsMilestone);
             info.AddValue(nameof(Comment), Comment);
-            info.AddValue(nameof(Timestamp), Timestamp);
+            info.AddValue(nameof(TimestampTicks), TimestampTicks);
         }
     }
 }

@@ -107,9 +107,18 @@ namespace NeverFoundry.Wiki
         public string? RedirectTitle { get; private set; }
 
         /// <summary>
-        /// The timestamp of the latest revision to this item.
+        /// The timestamp of the latest revision to this item, in UTC.
         /// </summary>
-        public DateTimeOffset Timestamp { get; private protected set; }
+        public DateTimeOffset Timestamp
+        {
+            get => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
+            set => TimestampTicks = value.ToUniversalTime().Ticks;
+        }
+
+        /// <summary>
+        /// The timestamp of the latest revision to this item, in UTC Ticks.
+        /// </summary>
+        public long TimestampTicks { get; private protected set; }
 
         /// <summary>
         /// The title of this article. Must be unique and non-empty.
@@ -131,7 +140,7 @@ namespace NeverFoundry.Wiki
             string title,
             string? markdown,
             IList<WikiLink> wikiLinks,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             string? wikiNamespace = null,
             bool isDeleted = false,
             string? owner = null,
@@ -158,7 +167,7 @@ namespace NeverFoundry.Wiki
             Owner = owner;
             RedirectNamespace = redirectNamespace;
             RedirectTitle = redirectTitle;
-            Timestamp = timestamp;
+            TimestampTicks = timestampTicks;
             Title = title;
             Transclusions = (IReadOnlyList<string>?)transclusions ?? new List<string>();
             WikiNamespace = wikiNamespace;
@@ -169,7 +178,7 @@ namespace NeverFoundry.Wiki
             string title,
             string markdown,
             IList<WikiLink> wikiLinks,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             string? wikiNamespace = null,
             bool isDeleted = false,
             string? owner = null,
@@ -196,7 +205,7 @@ namespace NeverFoundry.Wiki
             Owner = owner;
             RedirectNamespace = redirectNamespace;
             RedirectTitle = redirectTitle;
-            Timestamp = timestamp;
+            TimestampTicks = timestampTicks;
             Title = title;
             Transclusions = (IReadOnlyList<string>?)transclusions ?? new List<string>();
             WikiNamespace = wikiNamespace;
@@ -207,7 +216,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
-            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? default,
+            (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
@@ -249,17 +258,17 @@ namespace NeverFoundry.Wiki
             do
             {
                 redirect = false;
-                article = DataStore.GetFirstItemWhereOrderedBy<Article, DateTimeOffset>(
+                article = DataStore.GetFirstItemWhereOrderedBy<Article, long>(
                     x => x.WikiNamespace == wikiNamespace && x.Title == title,
-                    x => x.Timestamp,
+                    x => x.TimestampTicks,
                     descending: true);
                 // If no exact match exists, ignore case if only one such match exists.
                 if (article is null)
                 {
-                    var articles = DataStore.GetItemsWhereOrderedBy<Article, DateTimeOffset>(
+                    var articles = DataStore.GetItemsWhereOrderedBy<Article, long>(
                         x => string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase),
-                        x => x.Timestamp,
+                        x => x.TimestampTicks,
                         descending: true)
                         .ToList();
                     if (articles.Count == 1)
@@ -307,15 +316,16 @@ namespace NeverFoundry.Wiki
             }
 
             wikiNamespace ??= WikiConfig.DefaultNamespace;
+            var ticks = timestamp.ToUniversalTime().Ticks;
             var article = DataStore.GetFirstItemWhere<Article>(x => x.WikiNamespace == wikiNamespace
                 && x.Title == title
-                && x.Timestamp == timestamp);
+                && x.TimestampTicks == ticks);
             // If no exact match exists, ignore case if only one such match exists.
             if (article is null)
             {
                 var articles = DataStore.GetItemsWhere<Article>(x => string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
-                    && x.Timestamp == timestamp)
+                    && x.TimestampTicks == ticks)
                     .ToList();
                 if (articles.Count == 1)
                 {
@@ -558,7 +568,7 @@ namespace NeverFoundry.Wiki
                 title,
                 markdown,
                 wikiLinks,
-                revision.Timestamp,
+                revision.TimestampTicks,
                 wikiNamespace,
                 isDeleted: false,
                 owner,
@@ -887,16 +897,16 @@ namespace NeverFoundry.Wiki
             Expression<Func<WikiRevision, bool>> exp = x => x.WikiId == Id;
             if (start.HasValue)
             {
-                exp = exp.AndAlso(x => x.Timestamp >= start);
+                exp = exp.AndAlso(x => x.TimestampTicks >= start.Value.ToUniversalTime().Ticks);
             }
             if (end.HasValue)
             {
-                exp = exp.AndAlso(x => x.Timestamp <= end);
+                exp = exp.AndAlso(x => x.TimestampTicks <= end.Value.ToUniversalTime().Ticks);
             }
             exp = condition is null ? exp : exp.AndAlso(condition);
             return await DataStore.GetPageWhereOrderedByAsync(
                 exp,
-                x => x.Timestamp,
+                x => x.TimestampTicks,
                 pageNumber,
                 pageSize,
                 descending: true)
@@ -932,7 +942,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
             info.AddValue(nameof(WikiLinks), WikiLinks);
-            info.AddValue(nameof(Timestamp), Timestamp);
+            info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(WikiNamespace), WikiNamespace);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
@@ -1129,22 +1139,23 @@ namespace NeverFoundry.Wiki
                 revisionComment);
             await revision.SaveAsync().ConfigureAwait(false);
 
-            Timestamp = revision.Timestamp;
+            TimestampTicks = revision.TimestampTicks;
 
             await SaveAsync().ConfigureAwait(false);
         }
 
         private async Task<IList<WikiRevision>> GetRevisionsUntilAsync(DateTimeOffset time)
         {
+            var ticks = time.ToUniversalTime().Ticks;
             var lastMilestone = await DataStore
-                .GetFirstItemWhereOrderedByAsync<WikiRevision, DateTimeOffset>(x => x.WikiId == Id && x.Timestamp <= time && x.IsMilestone, x => x.Timestamp, descending: true)
+                .GetFirstItemWhereOrderedByAsync<WikiRevision, long>(x => x.WikiId == Id && x.TimestampTicks <= ticks && x.IsMilestone, x => x.TimestampTicks, descending: true)
                 .ConfigureAwait(false);
             if (lastMilestone is null)
             {
                 return new List<WikiRevision>();
             }
             return await DataStore
-                .GetItemsWhereOrderedByAsync<WikiRevision, DateTimeOffset>(x => x.WikiId == Id && x.Timestamp >= lastMilestone.Timestamp && x.Timestamp <= time, x => x.Timestamp)
+                .GetItemsWhereOrderedByAsync<WikiRevision, long>(x => x.WikiId == Id && x.TimestampTicks >= lastMilestone.TimestampTicks && x.TimestampTicks <= ticks, x => x.TimestampTicks)
                 .ToListAsync()
                 .ConfigureAwait(false);
         }

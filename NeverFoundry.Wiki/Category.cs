@@ -39,7 +39,7 @@ namespace NeverFoundry.Wiki
             string title,
             string? markdown,
             List<WikiLink> wikiLinks,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             bool isDeleted = false,
             string? owner = null,
             IEnumerable<string>? allowedEditors = null,
@@ -50,7 +50,7 @@ namespace NeverFoundry.Wiki
                 title,
                 markdown,
                 wikiLinks,
-                timestamp,
+                timestampTicks,
                 WikiConfig.CategoriesTitle,
                 isDeleted,
                 owner,
@@ -66,7 +66,7 @@ namespace NeverFoundry.Wiki
             string markdown,
             IList<WikiLink> wikiLinks,
             IList<string> childIds,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             bool isDeleted = false,
             string? owner = null,
             IEnumerable<string>? allowedEditors = null,
@@ -77,7 +77,7 @@ namespace NeverFoundry.Wiki
                 title,
                 markdown,
                 wikiLinks,
-                timestamp,
+                timestampTicks,
                 WikiConfig.CategoriesTitle,
                 isDeleted,
                 owner,
@@ -94,7 +94,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
             (IList<string>?)info.GetValue(nameof(ChildIds), typeof(IList<string>)) ?? new string[0],
-            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? DateTimeOffset.MinValue,
+            (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
             (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
@@ -116,16 +116,16 @@ namespace NeverFoundry.Wiki
                 return null;
             }
 
-            var category = DataStore.GetFirstItemWhereOrderedBy<Category, DateTimeOffset>(
+            var category = DataStore.GetFirstItemWhereOrderedBy<Category, long>(
                 x => x.Title == title,
-                x => x.Timestamp,
+                x => x.TimestampTicks,
                 descending: true);
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
-                var categories = DataStore.GetItemsWhereOrderedBy<Category, DateTimeOffset>(
+                var categories = DataStore.GetItemsWhereOrderedBy<Category, long>(
                     x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase),
-                    x => x.Timestamp,
+                    x => x.TimestampTicks,
                     descending: true);
                 if (categories.Count == 1)
                 {
@@ -149,13 +149,14 @@ namespace NeverFoundry.Wiki
                 return null;
             }
 
+            var ticks = timestamp.ToUniversalTime().Ticks;
             var category = DataStore.GetFirstItemWhere<Category>(x => x.Title == title
-                && x.Timestamp == timestamp);
+                && x.TimestampTicks == ticks);
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
                 var categories = DataStore.GetItemsWhere<Category>(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
-                    && x.Timestamp == timestamp);
+                    && x.TimestampTicks == ticks);
                 if (categories.Count == 1)
                 {
                     category = categories[0];
@@ -270,7 +271,7 @@ namespace NeverFoundry.Wiki
                 title,
                 markdown,
                 wikiLinks,
-                revision.Timestamp,
+                revision.TimestampTicks,
                 isDeleted: false,
                 owner,
                 allowedEditors,
@@ -297,7 +298,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(ChildIds), ChildIds);
-            info.AddValue(nameof(Timestamp), Timestamp);
+            info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
             info.AddValue(nameof(AllowedEditors), AllowedEditors);
@@ -472,7 +473,7 @@ namespace NeverFoundry.Wiki
                 revisionComment);
             await revision.SaveAsync().ConfigureAwait(false);
 
-            Timestamp = revision.Timestamp;
+            TimestampTicks = revision.TimestampTicks;
 
             await SaveAsync().ConfigureAwait(false);
         }
