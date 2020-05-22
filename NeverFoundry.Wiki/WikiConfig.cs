@@ -320,6 +320,13 @@ namespace NeverFoundry.Wiki
             }
         }
 
+        private static IHtmlSanitizer? _HtmlSanitizerFull;
+        internal static IHtmlSanitizer HtmlSanitizerFull
+            => _HtmlSanitizerFull ??= new HtmlSanitizer(new string[0], new string[0], new string[0], new string[0], new string[0])
+            {
+                KeepChildNodes = true
+            };
+
         private static MarkdownPipeline? _MarkdownPipeline;
         internal static MarkdownPipeline MarkdownPipeline =>
             _MarkdownPipeline ??= new MarkdownPipelineBuilder()
@@ -346,6 +353,28 @@ namespace NeverFoundry.Wiki
             .UseListExtras()
             .UseTaskLists()
             .UseAutoLinks()
+            .UseGenericAttributes()
+            .UseSmartyPants()
+            .Build();
+
+        private static MarkdownPipeline? _MarkdownPipelinePlainText;
+        internal static MarkdownPipeline MarkdownPipelinePlainText =>
+            _MarkdownPipelinePlainText ??= new MarkdownPipelineBuilder()
+            .UseWikiLinks()
+            .UseAbbreviations()
+            .UseCitations()
+            .UseCustomContainers()
+            .UseDefinitionLists()
+            .UseEmphasisExtras()
+            .UseFigures()
+            .UseFooters()
+            .UseFootnotes()
+            .UseGridTables()
+            .UseMathematics()
+            .UseMediaLinks()
+            .UsePipeTables()
+            .UseListExtras()
+            .UseTaskLists()
             .UseGenericAttributes()
             .UseSmartyPants()
             .Build();

@@ -26,7 +26,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <summary>
         /// Receive a new message.
         /// </summary>
-        public event EventHandler<IMessageResponse>? OnRecevied;
+        public event EventHandler<MessageResponse>? OnRecevied;
 
         /// <summary>
         /// Initializes a new instance of <see cref="WikiTalkClient"/>.
@@ -38,7 +38,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
                 .WithUrl(url)
                 .WithAutomaticReconnect()
                 .Build();
-            _hubConnection.On<IMessageResponse>(nameof(Receive), Receive);
+            _hubConnection.On<MessageResponse>(nameof(Receive), Receive);
             _hubConnection.Reconnected += Reconnected;
         }
 
@@ -80,9 +80,9 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// </para>
         /// </summary>
         /// <param name="message">
-        /// An <see cref="IMessageResponse"/> with information about the message received.
+        /// A <see cref="MessageResponse"/> with information about the message received.
         /// </param>
-        public void Receive(IMessageResponse message) => OnRecevied?.Invoke(this, message);
+        public void Receive(MessageResponse message) => OnRecevied?.Invoke(this, message);
 
         /// <summary>
         /// Send a reply.
@@ -96,7 +96,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// clients. Messages with missing topic IDs are also ignored.
         /// </para>
         /// </param>
-        public async Task SendAsync(IReplyRequest reply)
+        public async Task SendAsync(ReplyRequest reply)
         {
             if (_disposed)
             {

@@ -45,18 +45,31 @@ namespace NeverFoundry.Wiki.Sample.Services
         public async Task<ISearchResult> SearchAsync(Mvc.Services.Search.ISearchRequest request, ClaimsPrincipal principal)
         {
             var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
+
+            CountResponse? count;
             if (user is null)
             {
-                return new SearchResult();
+                count = await _elasticClient.CountAsync<Article>(x =>
+                    x.Query(q => !q.Exists(e => e.Field(f => f.AllowedViewers))))
+                    .ConfigureAwait(false);
+                count = await _elasticClient.CountAsync<Article>(x =>
+                    x.Query(q =>
+                        !q.Exists(m => m.Field(f => f.AllowedViewers))
+                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query))
+                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query)))))
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                count = await _elasticClient.CountAsync<Article>(x =>
+                    x.Query(q =>
+                        (q.Match(m => m.Field(f => f.AllowedViewers).Query(user.Id).Verbatim())
+                        || q.Match(m => m.Field(f => f.Owner).Query(user.Id).Verbatim()))
+                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query))
+                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query)))))
+                    .ConfigureAwait(false);
             }
 
-            var count = await _elasticClient.CountAsync<Article>(x =>
-                x.Query(q =>
-                    (q.Match(m => m.Field(f => f.AllowedViewers).Query(user.Id).Verbatim())
-                    || q.Match(m => m.Field(f => f.Owner).Query(user.Id).Verbatim()))
-                    && (q.Match(m => m.Field(f => f.Title).Query(request.Query))
-                    || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query)))))
-                .ConfigureAwait(false);
             if (count?.IsValid != true)
             {
                 if (count?.OriginalException != null)
@@ -72,31 +85,62 @@ namespace NeverFoundry.Wiki.Sample.Services
 
             var sortDefault = string.CompareOrdinal(request.Sort, "timestamp") != 0;
 
-            var response = await _elasticClient.SearchAsync<Article>(x =>
-                x.Query(q =>
-                    (q.Match(m => m.Field(f => f.AllowedViewers).Query(user.Id).Verbatim())
-                    || q.Match(m => m.Field(f => f.Owner).Query(user.Id).Verbatim()))
-                    && (q.Match(m => m.Field(f => f.Title).Query(request.Query).Boost(3))
-                    || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query))))
-                .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
-                .Sort(s =>
-                {
-                    if (sortDefault)
+            ISearchResponse<Article>? response;
+            if (user is null)
+            {
+                response = await _elasticClient.SearchAsync<Article>(x =>
+                    x.Query(q =>
+                        !q.Exists(m => m.Field(f => f.AllowedViewers))
+                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query).Boost(3))
+                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query))))
+                    .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
+                    .Sort(s =>
                     {
-                        return s.Descending(SortSpecialField.Score);
-                    }
-                    else if (request.Descending)
+                        if (sortDefault)
+                        {
+                            return s.Descending(SortSpecialField.Score);
+                        }
+                        else if (request.Descending)
+                        {
+                            return s.Descending(a => a.TimestampTicks);
+                        }
+                        else
+                        {
+                            return s.Ascending(a => a.TimestampTicks);
+                        }
+                    })
+                    .From((request.PageNumber - 1) * request.PageSize)
+                    .Size(request.PageSize))
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                response = await _elasticClient.SearchAsync<Article>(x =>
+                    x.Query(q =>
+                        (q.Match(m => m.Field(f => f.AllowedViewers).Query(user.Id).Verbatim())
+                        || q.Match(m => m.Field(f => f.Owner).Query(user.Id).Verbatim()))
+                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query).Boost(3))
+                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query))))
+                    .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
+                    .Sort(s =>
                     {
-                        return s.Descending(a => a.TimestampTicks);
-                    }
-                    else
-                    {
-                        return s.Ascending(a => a.TimestampTicks);
-                    }
-                })
-                .From((request.PageNumber - 1) * request.PageSize)
-                .Size(request.PageSize))
-                .ConfigureAwait(false);
+                        if (sortDefault)
+                        {
+                            return s.Descending(SortSpecialField.Score);
+                        }
+                        else if (request.Descending)
+                        {
+                            return s.Descending(a => a.TimestampTicks);
+                        }
+                        else
+                        {
+                            return s.Ascending(a => a.TimestampTicks);
+                        }
+                    })
+                    .From((request.PageNumber - 1) * request.PageSize)
+                    .Size(request.PageSize))
+                    .ConfigureAwait(false);
+            }
             if (response?.IsValid != true)
             {
                 if (response?.OriginalException != null)

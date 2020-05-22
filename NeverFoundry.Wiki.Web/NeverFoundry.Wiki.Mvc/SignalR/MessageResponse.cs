@@ -3,7 +3,7 @@
     /// <summary>
     /// A compact form of <see cref="Message"/> suitable for SignalR transport.
     /// </summary>
-    public class MessageResponse : IMessageResponse
+    public class MessageResponse
     {
         /// <summary>
         /// The HTML content of the message.

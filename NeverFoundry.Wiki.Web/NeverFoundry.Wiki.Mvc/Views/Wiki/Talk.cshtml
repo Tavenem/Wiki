@@ -1,23 +1,30 @@
 ﻿@model TalkViewModel
 
-<div id="wiki-talk-messages"></div>
-@if ((Model.Messages?.Count ?? 0) == 0)
+<div id="wiki-talk-messages">
+    <ul id="wiki-talk-message-list"></ul>
+    @if ((Model.Messages?.Count ?? 0) == 0)
+    {
+        <div id="wiki-talk-nomessages"><p>No messages yet</p></div>
+    }
+</div>
+@if (Model.Data.CanEdit)
 {
-    <div id="wiki-talk-nomessages"><p>No messages yet</p></div>
-}
-<div id="wiki-talk-newmessage" class="wiki-talk-reply">
-    <div class="form-group">
+    <div id="wiki-talk-newmessage" class="wiki-talk-reply">
         <label for="wiki-talk-newmessage-input">Add a new message</label>
         <textarea id="wiki-talk-newmessage-input" class="form-control"></textarea>
+        <button id="wiki-talk-send" type="button" class="btn btn-primary">Post</button>
     </div>
-    <button id="wiki-talk-send" type="button" class="btn btn-primary">Post</button>
-</div>
+}
+else
+{
+    <div id="wiki-talk-signin-prompt">Sign in to post your own messages.</div>
+}
 
 @section Scripts {
     <script src="~/_content/NeverFoundry.Wiki.Mvc/chat.js"></script>
     <script>
-        window.addEventListener("load", function () {
-            window.wikimvcchat.init(@WikiWebConfig.WikiTalkHubRoute, @WikiWebConfig.UserNamespace, @Model.TopicId, @(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Messages));
-        });
+    window.addEventListener("load", function () {
+        window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiWebConfig.UserNamespace", "@Model.TopicId", "@(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Messages))");
+    });
     </script>
 }

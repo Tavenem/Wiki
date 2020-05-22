@@ -1,10 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -13,7 +11,6 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
     /// <summary>
     /// A SignalR hub for sending wiki discussion messages.
     /// </summary>
-    [Authorize]
     public class WikiTalkHub : Hub<IWikiTalkClient>, IWikiTalkHub
     {
         private readonly UserManager<WikiUser> _userManager;
@@ -44,10 +41,6 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         public async Task JoinTopic(string topicId)
         {
             var user = await _userManager.GetUserAsync(Context.User).ConfigureAwait(false);
-            if (user is null)
-            {
-                throw new HubException("You do not have permission to view this topic.");
-            }
             var viewPermission = await GetTopicViewPermissionAsync(topicId, user).ConfigureAwait(false);
             if (viewPermission)
             {
@@ -79,7 +72,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         /// clients. Messages with missing topic IDs are also ignored.
         /// </para>
         /// </param>
-        public async Task Send(IReplyRequest reply)
+        public async Task Send(ReplyRequest reply)
         {
             if (string.IsNullOrWhiteSpace(reply.TopicId)
                 || string.IsNullOrWhiteSpace(reply.Markdown))
@@ -114,7 +107,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         private Task<bool> GetTopicEditPermissionAsync(string topicId, WikiUser user)
             => GetTopicPermissionAsync(topicId, user, edit: true);
 
-        private async Task<bool> GetTopicPermissionAsync(string topicId, WikiUser user, bool edit)
+        private async Task<bool> GetTopicPermissionAsync(string topicId, WikiUser? user, bool edit)
         {
             if (string.IsNullOrWhiteSpace(topicId)
                 || string.IsNullOrEmpty(topicId))
@@ -129,11 +122,12 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             }
 
             return edit
-                ? article.AllowedEditors?.Contains(user.Id) == true
-                : article.AllowedViewers?.Contains(user.Id) == true;
+                ? !(user is null) && article.AllowedEditors?.Contains(user.Id) == true
+                : article.AllowedViewers is null
+                    || (!(user is null) && article.AllowedViewers.Contains(user.Id));
         }
 
-        private Task<bool> GetTopicViewPermissionAsync(string topicId, WikiUser user)
+        private Task<bool> GetTopicViewPermissionAsync(string topicId, WikiUser? user)
             => GetTopicPermissionAsync(topicId, user, edit: false);
     }
 }

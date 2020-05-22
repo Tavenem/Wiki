@@ -97,6 +97,8 @@ namespace NeverFoundry.Wiki.Mvc
         /// <param name="endpoints">An <see cref="IEndpointRouteBuilder"/> instance.</param>
         public static void MapWiki(this IEndpointRouteBuilder endpoints)
         {
+            endpoints.MapHub<WikiTalkHub>(WikiWebConfig.WikiTalkHubRoute);
+
             endpoints.MapControllerRoute(
                 name: "wiki-ns",
                 pattern: "Wiki/{wikiNamespace}:{title}/{action=Read}",
@@ -113,8 +115,6 @@ namespace NeverFoundry.Wiki.Mvc
                 name: "wiki-c",
                 pattern: $"Compact/Wiki/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
                 defaults: new { controller = WikiController, isCompact = true, wikiNamespace = WikiConfig.DefaultNamespace });
-
-            endpoints.MapHub<WikiTalkHub>(WikiWebConfig.WikiTalkHubRoute);
         }
     }
 }

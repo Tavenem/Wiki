@@ -3,6 +3,7 @@ import tippy from 'tippy.js';
 
 const sendButton = document.getElementById('wiki-talk-send');
 if (sendButton) {
+    sendButton.completelyDisabled = true;
     sendButton.disabled = true;
 }
 const chatInput = document.getElementById("wiki-talk-newmessage-input");
@@ -15,12 +16,10 @@ window.wikimvcchat = {
     init: function (url, userNamespace, topicId, messages) {
         window.wikimvcchat.userNamespace = userNamespace;
 
-        let messagesDiv = document.getElementById("wiki-talk-messages");
-        if (messagesDiv == null) {
+        window.wikimvcchat.messageListUl = document.getElementById("wiki-talk-message-list");
+        if (window.wikimvcchat.messageListUl == null) {
             return;
         }
-        let ul = document.createElement("ul");
-        window.wikimvcchat.messageListUl = ul;
 
         messages = JSON.parse(messages) || [];
         for (let i = 0; i < messages.length; i++) {
@@ -43,26 +42,35 @@ window.wikimvcchat = {
             window.wikimvcchat.connection.on("Receive", window.wikimvcchat.addMessage);
 
             window.wikimvcchat.connection.start().then(function () {
-                sendButton.disabled = false;
+                sendButton.completelyDisabled = false;
             }).catch(function (err) {
-                //return console.error(err.toString());
+                //return console.error(err);
                 return console.error("An error occurred while connecting to chat");
             });
 
-            sendButton.addEventListener("click", function (event) {
-                let message = chatInput.value;
-                if (message && message.length) {
-                    connection.invoke("Send", {
-                        markdown: message,
-                        topicId: topicId,
-                    }).catch(function (err) {
-                        //return console.error(err.toString());
-                        return console.error("An error occurred while sending a chat message");
-                    });
-                }
-                event.preventDefault();
-                event.stopPropagation();
-            });
+            if (chatInput) {
+                chatInput.addEventListener("input", function () {
+                    if (!sendButton.completelyDisabled) {
+                        sendButton.disabled = !chatInput.value || !(chatInput.value.length > 0);
+                    }
+                });
+
+                chatInput.addEventListener("keypress", function (event) {
+                    if (event.keyCode === 13 && !event.shiftKey) {
+                        window.wikimvcchat.sendMessage(topicId, chatInput.value);
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                });
+            }
+
+            if (sendButton) {
+                sendButton.addEventListener("click", function (event) {
+                    window.wikimvcchat.sendMessage(topicId, chatInput.value);
+                    event.preventDefault();
+                    event.stopPropagation();
+                });
+            }
         }
     },
 
@@ -194,9 +202,9 @@ window.wikimvcchat = {
                     return;
                 }
                 window.wikimvcchat.connection.invoke("Send", {
-                    markdown: reply,
-                    topicId: topicId,
-                    messageId: id,
+                    Markdown: reply,
+                    MessageId: id,
+                    TopicId: topicId,
                 }).catch(function (err) {
                     //return console.error(err.toString());
                     return console.error("An error occurred while sending a chat message");
@@ -256,9 +264,9 @@ window.wikimvcchat = {
         reactionIconSpan.classList.add("wiki-message-reaction-icon");
         reactionIconSpan.onclick = function (event) {
             window.wikimvcchat.connection.invoke("Send", {
-                markdown: content,
-                topicId: topicId,
-                messageId: messageId,
+                Markdown: content,
+                MessageId: messageId,
+                TopicId: topicId,
             }).catch(function (err) {
                 //return console.error(`An error occurred while attempting to send a chat reaction: ${err}`);
                 return console.error("An error occurred while attempting to send a chat reaction");
@@ -328,5 +336,17 @@ window.wikimvcchat = {
 
         let timestamp = document.createTextNode(new Date((list[i].timestamp / 10000) - 2208988800000).toLocaleString());
         reactionTimestamp.appendChild(timestamp);
-    }
+    },
+
+    sendMessage: function (topicId, message) {
+        if (message && message.length) {
+            window.wikimvcchat.connection.invoke("Send", {
+                Markdown: message,
+                TopicId: topicId,
+            }).catch(function (err) {
+                return console.error(err);
+                //return console.error("An error occurred while sending a chat message");
+            });
+        }
+    },
 };

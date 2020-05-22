@@ -140,7 +140,7 @@ namespace NeverFoundry.Wiki.Mvc
             if (separatorIndex != -1
                 && wN!.Substring(0, separatorIndex).Equals(WikiConfig.TalkNamespace, StringComparison.OrdinalIgnoreCase))
             {
-                wN = wN[separatorIndex..];
+                wN = wN[(separatorIndex + 1)..];
                 IsTalk = true;
             }
 

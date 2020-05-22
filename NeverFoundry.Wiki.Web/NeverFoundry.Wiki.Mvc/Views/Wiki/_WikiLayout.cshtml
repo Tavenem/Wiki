@@ -66,7 +66,7 @@
                         else if (data.IsTalk)
                         {
                             <li>
-                                <a href="@Url.Action("Read", new { isCompact = data.IsCompact })" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
                             </li>
                             <li class="is-active">
                                 <span title="View discussion">@WikiConfig.TalkNamespace</span>
@@ -78,7 +78,7 @@
                                 <span title="View article">@(data.IsCategory ? "Category" : "Article")</span>
                             </li>
                             <li>
-                                <a href="@Url.Action("Read", new { isCompact = data.IsCompact })" title="View discussion">@WikiConfig.TalkNamespace</a>
+                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = $"{WikiConfig.TalkNamespace}:{data.WikiNamespace}", title = data.Title, action = "Read" })" title="View discussion">@WikiConfig.TalkNamespace</a>
                             </li>
                         }
                     </ul>
@@ -91,7 +91,7 @@
                             @if (data.IsEdit || data.IsHistory)
                             {
                                 <li>
-                                    <a href="@Url.Action("Read", new { isCompact = data.IsCompact })">Read</a>
+                                    <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })">Read</a>
                                 </li>
                             }
                             else
@@ -111,7 +111,7 @@
                                 else
                                 {
                                     <li>
-                                        <a href="@Url.Action("Edit", new { isCompact = data.IsCompact })" title="Edit this page">Edit</a>
+                                        <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Edit" })" title="Edit this page">Edit</a>
                                     </li>
                                 }
                             }
@@ -124,7 +124,7 @@
                             else
                             {
                                 <li>
-                                    <a href="@Url.Action("History", new { isCompact = data.IsCompact })" title="Past revisions of this page">View history</a>
+                                    <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "History" })" title="Past revisions of this page">View history</a>
                                 </li>
                             }
                         </ul>

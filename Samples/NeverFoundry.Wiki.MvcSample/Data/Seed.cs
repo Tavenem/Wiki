@@ -2,11 +2,9 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NeverFoundry.DataStorage;
 using NeverFoundry.DataStorage.Marten;
-using NeverFoundry.Wiki.Mvc;
 using NeverFoundry.Wiki.Sample.Logging;
 using NeverFoundry.Wiki.Web;
 using System;
@@ -26,6 +24,7 @@ namespace NeverFoundry.Wiki.Sample.Data
             config.Connection(connectionString);
             config.Logger(logger);
             config.Schema.For<Article>()
+                .FullTextIndex(x => x.Title, x => x.WikiNamespace, x => x.MarkdownContent)
                 .AddSubClass<Category>()
                 .AddSubClass<WikiFile>()
                 .SoftDeleted();

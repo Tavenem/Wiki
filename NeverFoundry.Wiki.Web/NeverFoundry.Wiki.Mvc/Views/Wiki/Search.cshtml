@@ -10,6 +10,12 @@
         <input type="hidden" name="pageSize" value="@Model.SearchResult.SearchHits.PageSize" />
         <div id="wiki-search-basic">
             <div id="wiki-search-term">
+                <svg xmlns="http://www.w3.org/2000/svg" id="wiki-search-icon">
+                    <g fill="none" stroke-width="2">
+                        <path d="M11.29 11.71l-4-4" />
+                        <circle cx="5" cy="5" r="4" />
+                    </g>
+                </svg>
                 <input id="mainSearchInput"
                        type="search"
                        name="query"
@@ -20,13 +26,9 @@
                 <datalist id="mainSearchSuggestions"></datalist>
                 <button type="submit"
                         name="go"
+                        class="btn btn-primary"
                         title="Go to a page with this exact name, or search for the text">
-                    <svg xmlns="http://www.w3.org/2000/svg">
-                        <g fill="none" stroke-width="2">
-                            <path d="M11.29 11.71l-4-4" />
-                            <circle cx="5" cy="5" r="4" />
-                        </g>
-                    </svg>
+                    <strong>Search</strong>
                 </button>
             </div>
             <div id="wiki-search-resultcount">
@@ -95,7 +97,7 @@
     {
         <p>No results</p>
     }
-    <p class="wiki-pagecontrols">
+    <div class="wiki-pagecontrols">
         <nav>
             @if (Model.SearchResult.SearchHits.HasPreviousPage)
             {
@@ -126,7 +128,7 @@
                 <li><a asp-route-pageSize="100">100</a></li>
             </ul>
         </div>
-    </p>
+    </div>
 </div>
 
 @section Scripts {

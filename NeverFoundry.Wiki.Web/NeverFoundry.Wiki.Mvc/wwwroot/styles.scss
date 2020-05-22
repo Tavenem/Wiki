@@ -116,11 +116,23 @@ html, body {
     form {
         > * {
             background-color: $background-color-dark;
+            border-color: $border-color;
             color: $color;
-        }
 
-        input, select, option {
-            background-color: $background-color;
+            &:focus {
+                background-color: $background-color-dark;
+                color: $color;
+            }
+        }
+    }
+
+    input, select, option, textarea {
+        background-color: $background-color;
+        border-color: $border-color;
+        color: $color;
+
+        &:focus {
+            background-color: $background-color-dark;
             color: $color;
         }
     }
@@ -547,7 +559,10 @@ html, body {
 
 /* discussion */
 #wiki-talk-messages {
+    background-color: $background-color;
+    border-radius: 0.5em;
     flex-grow: 1;
+    position: relative;
 
     ul {
         list-style: none none;
@@ -559,6 +574,50 @@ html, body {
             margin-right: 1.25em;
         }
     }
+}
+
+#wiki-talk-nomessages {
+    align-items: center;
+    bottom: 0;
+    display: flex;
+    font-size: 1.5em;
+    justify-content: center;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+#wiki-talk-newmessage {
+    border: 1px solid $border-color;
+    border-radius: 0.25em;
+    display: flex;
+    flex-flow: column nowrap;
+    margin-top: 0.25em;
+    padding: 0.25em;
+
+    label {
+        font-size: small;
+        margin-bottom: 0;
+        padding-left: 0.25rem;
+    }
+
+    textarea {
+        border: none;
+        margin-bottom: 0.2rem;
+    }
+
+    button {
+        align-self: flex-end;
+    }
+}
+
+#wiki-talk-signin-prompt {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    margin-top: 0.25em;
+    padding: 0.25em;
 }
 
 .collapsed .wiki-message-content {
@@ -845,22 +904,22 @@ html, body {
     display: flex;
     flex-grow: 1;
     max-width: 50em;
+    position: relative;
 
     input {
-        padding-left: 2.43em;
+        border-right: none;
+        padding-left: 2em;
         padding-right: 28px;
         width: 100%;
     }
 
     svg {
-        height: 100%;
         opacity: 0.67;
         position: absolute;
-        top: 0;
+        top: 12px;
     }
 
     button {
-        height: 100%;
         margin-left: 0;
         border-top-left-radius: 0;
         border-bottom-left-radius: 0;
@@ -903,6 +962,9 @@ html, body {
         border-top-right-radius: 2px;
         border-bottom-left-radius: 2px;
         border-bottom-right-radius: 2px;
+        display: flex;
+        justify-content: space-between;
+        max-width: 50em;
         padding: 6px 12px 6px 12px;
         text-decoration: none;
 
@@ -923,6 +985,7 @@ html, body {
         }
 
         svg {
+            margin-top: 3px;
             opacity: 0.87;
             transition: all linear 0.25s;
 
@@ -946,18 +1009,25 @@ html, body {
     margin: 1em 0 1em 0.4em;
 
     ul {
-        display: inline-block;
         list-style: none none;
         margin: 0;
         padding: 0;
 
         li {
-            display: inline-block;
+            padding-bottom: 1em;
         }
     }
 
     .wiki-pagecontrols {
         margin: 0.5em 0;
+
+        ul {
+            display: inline-block;
+
+            li {
+                display: inline-block;
+            }
+        }
     }
 }
 

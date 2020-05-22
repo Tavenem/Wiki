@@ -174,7 +174,7 @@ else
                            onclick="checkWikiDiff(event, @Model.Revisions[0].TimestampTicks);"
                            onkeydown="checkWikiDiff(event, @Model.Revisions[0].TimestampTicks);" />
                 }
-                <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].TimestampTicks">@Model.Revisions[0].TimestampToWikiDisplayString()</a>
+                <a class="wiki-history-list-timestamp" asp-route-wikiNamespace="@Model.Data.WikiNamespace" asp-route-title="@Model.Data.Title" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="@Model.Revisions[0].TimestampTicks">@Model.Revisions[0].Timestamp.ToWikiDisplayString()</a>
                 <WikiUserLink class="wiki-history-list-editor" UserId="@Model.Revisions[0].Editor" />
                 <span>@Model.Revisions[0].Comment</span>
             </li>

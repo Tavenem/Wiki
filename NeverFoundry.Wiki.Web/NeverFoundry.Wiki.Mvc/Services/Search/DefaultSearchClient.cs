@@ -4,6 +4,7 @@ using NeverFoundry.DataStorage;
 using System;
 using System.Linq;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.Services.Search
@@ -62,16 +63,20 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
             var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
 
             IPagedList<Article> articles;
+            System.Linq.Expressions.Expression<Func<Article, bool>> exp = x => x.AllowedViewers == null;
+            if (!(user is null))
+            {
+                exp = exp.OrElse(x => x.AllowedViewers!.Contains(user.Id)
+                    || user.Id.Equals(x.Owner, StringComparison.OrdinalIgnoreCase));
+            }
+            exp = exp.AndAlso(x => x.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase)
+                || x.MarkdownContent.Contains(request.Query, StringComparison.OrdinalIgnoreCase));
             try
             {
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
-                    articles = await DataStore.GetPageWhereOrderedByAsync<Article, long>(x =>
-                        (x.AllowedViewers == null
-                        || (user != null && (x.Owner == user.Id
-                        || x.AllowedViewers.Contains(user.Id))))
-                        && (x.Title.Contains(request.Query)
-                        || x.MarkdownContent.Contains(request.Query)),
+                    articles = await DataStore.GetPageWhereOrderedByAsync(
+                        exp,
                         x => x.TimestampTicks,
                         request.PageNumber,
                         request.PageSize,
@@ -80,13 +85,8 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                 }
                 else
                 {
-                    articles = await DataStore.GetPageWhereOrderedByAsync<Article, string>(x =>
-                        (x.AllowedViewers == null
-                        || (user != null && (x.Owner == user.Id
-                        || (x.AllowedViewers != null
-                        && x.AllowedViewers.Contains(user.Id)))))
-                        && (x.Title.Contains(request.Query)
-                        || x.MarkdownContent.Contains(request.Query)),
+                    articles = await DataStore.GetPageWhereOrderedByAsync(
+                        exp,
                         x => x.Title,
                         request.PageNumber,
                         request.PageSize,
@@ -94,7 +94,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                         .ConfigureAwait(false);
                 }
                 var hits = new PagedList<SearchHit>(
-                    articles.Select(x => new SearchHit(x.Title, x.WikiNamespace, MarkdownItem.GetPlainText(x.MarkdownContent, characterLimit: 50, singleParagraph: true))),
+                    articles.Select(x => new SearchHit(x.Title, x.WikiNamespace, x.GetPlainText())),
                     articles.PageNumber,
                     articles.PageSize,
                     articles.TotalItemCount);

@@ -32,6 +32,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// clients. Messages with missing topic IDs are also ignored.
         /// </para>
         /// </param>
-        Task Send(IReplyRequest reply);
+        Task Send(ReplyRequest reply);
     }
 }

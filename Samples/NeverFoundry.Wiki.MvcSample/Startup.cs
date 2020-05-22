@@ -68,13 +68,13 @@ namespace NeverFoundry.Wiki.MVCSample
                 Configuration.GetConnectionString("Wiki"),
                 provider.GetRequiredService<MartenLogger>()));
 
-            services.AddElasticsearch(Configuration);
+            //services.AddElasticsearch(Configuration);
 
             services.AddControllersWithViews()
                 .AddNewtonsoftJson();
             services.AddRazorPages();
 
-            services.AddSignalR();
+            services.AddSignalR(options => options.EnableDetailedErrors = true);
 
             services.AddSingleton<IEmailConfiguration>(Configuration.GetSection("EmailConfiguration")?.Get<EmailConfiguration>() ?? new EmailConfiguration());
             services.AddTransient<IEmailService, EmailService>();
@@ -89,10 +89,10 @@ namespace NeverFoundry.Wiki.MVCSample
                     CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
                     MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
                     LoginPath = "/Account/Login",
-                    SearchClient = new ElasticSearchClient(
-                        provider.GetRequiredService<IElasticClient>(),
-                        loggerFactory.CreateLogger<ElasticSearchClient>(),
-                        provider.GetRequiredService<UserManager<WikiUser>>()),
+                    //SearchClient = new ElasticSearchClient(
+                    //    provider.GetRequiredService<IElasticClient>(),
+                    //    loggerFactory.CreateLogger<ElasticSearchClient>(),
+                    //    provider.GetRequiredService<UserManager<WikiUser>>()),
                 };
             });
         }

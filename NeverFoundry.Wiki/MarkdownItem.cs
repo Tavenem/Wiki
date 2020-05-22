@@ -16,6 +16,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
+using System.Text.RegularExpressions;
 
 namespace NeverFoundry.Wiki
 {
@@ -85,20 +86,58 @@ namespace NeverFoundry.Wiki
         /// If true, stops after the first paragraph break, even still under the allowed character limit.
         /// </param>
         /// <returns>The plain text.</returns>
-        public static string GetPlainText(string markdown, int characterLimit = 200, bool singleParagraph = true)
+        public static string GetPlainText(string markdown, int? characterLimit = 200, bool singleParagraph = true)
         {
-            if (singleParagraph)
+            if (singleParagraph && markdown.Length > 1)
             {
-                var paraIndex = markdown.IndexOf(Environment.NewLine + Environment.NewLine);
+                var paraIndex = markdown.IndexOf(Environment.NewLine + Environment.NewLine, 1);
                 if (paraIndex > 0)
                 {
                     markdown = markdown.Substring(0, paraIndex);
                 }
             }
-            markdown = markdown.Length <= characterLimit
-                ? markdown
-                : markdown.Substring(0, characterLimit);
-            return Markdown.ToPlainText(markdown, WikiConfig.MarkdownPipeline);
+
+            if (characterLimit.HasValue && markdown.Length > characterLimit.Value * 5)
+            {
+                markdown = markdown.Substring(0, characterLimit.Value * 5);
+            }
+
+            var html = Markdown.ToHtml(markdown, WikiConfig.MarkdownPipelinePlainText);
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return string.Empty;
+            }
+
+            if (!(WikiConfig.Postprocessors is null))
+            {
+                foreach (var preprocessor in WikiConfig.Postprocessors)
+                {
+                    html = preprocessor.Process.Invoke(html);
+                }
+            }
+
+            var sanitized = WikiConfig.HtmlSanitizerFull.Sanitize(html);
+            if (characterLimit.HasValue && sanitized.Length > characterLimit)
+            {
+                var substring = sanitized.Substring(0, characterLimit.Value);
+                var i = substring.Length - 1;
+                var whitespace = false;
+                for (; i > 0; i--)
+                {
+                    if (substring[i].IsWhiteSpaceOrZero())
+                    {
+                        whitespace = true;
+                    }
+                    else if (whitespace)
+                    {
+                        break;
+                    }
+                }
+                sanitized = whitespace
+                    ? substring.Substring(0, i + 1)
+                    : substring;
+            }
+            return sanitized;
         }
 
         /// <summary>
@@ -198,6 +237,17 @@ namespace NeverFoundry.Wiki
         /// </summary>
         /// <returns>The rendered HTML.</returns>
         public string GetHtml() => RenderHtml(PostprocessMarkdown(MarkdownContent));
+
+        /// <summary>
+        /// Gets this item's content as plain text (i.e. strips all formatting).
+        /// </summary>
+        /// <param name="characterLimit">The maximum number of characters to return.</param>
+        /// <param name="singleParagraph">
+        /// If true, stops after the first paragraph break, even still under the allowed character limit.
+        /// </param>
+        /// <returns>The plain text.</returns>
+        public string GetPlainText(int? characterLimit = 200, bool singleParagraph = true)
+            => GetPlainText(PostprocessMarkdown(MarkdownContent), characterLimit, singleParagraph);
 
         /// <summary>
         /// Gets a preview of this item's rendered HTML.

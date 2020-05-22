@@ -16,7 +16,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <summary>
         /// Receive a new message.
         /// </summary>
-        event EventHandler<IMessageResponse>? OnRecevied;
+        event EventHandler<MessageResponse>? OnRecevied;
 
         /// <summary>
         /// <para>
@@ -27,9 +27,9 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// </para>
         /// </summary>
         /// <param name="message">
-        /// An <see cref="IMessageResponse"/> with information about the message received.
+        /// A <see cref="MessageResponse"/> with information about the message received.
         /// </param>
-        void Receive(IMessageResponse message);
+        void Receive(MessageResponse message);
 
         /// <summary>
         /// Send a reply.
@@ -43,7 +43,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// clients. Messages with missing topic IDs are also ignored.
         /// </para>
         /// </param>
-        Task SendAsync(IReplyRequest reply);
+        Task SendAsync(ReplyRequest reply);
 
         /// <summary>
         /// <para>
