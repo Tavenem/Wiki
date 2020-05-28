@@ -50,23 +50,18 @@ namespace NeverFoundry.Wiki.Sample.Services
             if (user is null)
             {
                 count = await _elasticClient.CountAsync<Article>(x =>
-                    x.Query(q => !q.Exists(e => e.Field(f => f.AllowedViewers))))
-                    .ConfigureAwait(false);
-                count = await _elasticClient.CountAsync<Article>(x =>
                     x.Query(q =>
-                        !q.Exists(m => m.Field(f => f.AllowedViewers))
-                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query))
-                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query)))))
+                        +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .ConfigureAwait(false);
             }
             else
             {
                 count = await _elasticClient.CountAsync<Article>(x =>
                     x.Query(q =>
-                        (q.Match(m => m.Field(f => f.AllowedViewers).Query(user.Id).Verbatim())
-                        || q.Match(m => m.Field(f => f.Owner).Query(user.Id).Verbatim()))
-                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query))
-                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query)))))
+                        (+!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim()))
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .ConfigureAwait(false);
             }
 
@@ -90,9 +85,9 @@ namespace NeverFoundry.Wiki.Sample.Services
             {
                 response = await _elasticClient.SearchAsync<Article>(x =>
                     x.Query(q =>
-                        !q.Exists(m => m.Field(f => f.AllowedViewers))
-                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query).Boost(3))
-                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query))))
+                        +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
                     .Sort(s =>
                     {
@@ -117,10 +112,10 @@ namespace NeverFoundry.Wiki.Sample.Services
             {
                 response = await _elasticClient.SearchAsync<Article>(x =>
                     x.Query(q =>
-                        (q.Match(m => m.Field(f => f.AllowedViewers).Query(user.Id).Verbatim())
-                        || q.Match(m => m.Field(f => f.Owner).Query(user.Id).Verbatim()))
-                        && (q.Match(m => m.Field(f => f.Title).Query(request.Query).Boost(3))
-                        || q.Match(m => m.Field(f => f.MarkdownContent).Query(request.Query))))
+                        (+!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim()))
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
                     .Sort(s =>
                     {

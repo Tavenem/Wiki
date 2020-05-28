@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using NeverFoundry.Wiki.Sample.Logging;
 using NeverFoundry.Wiki.Web;
 using Npgsql;
 using Serilog;
@@ -29,12 +28,12 @@ namespace NeverFoundry.Wiki.MVCSample
             var logLevel = (Serilog.Events.LogEventLevel)(configuration.GetSection("Serilog")?.GetValue<int>("LogEventLevel") ?? 3);
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
-                .WriteTo.PostgreSql(
-                    configuration.GetConnectionString("Logging"),
-                    LoggingConfig.TableName,
-                    LoggingConfig.ColumnOptions,
-                    restrictedToMinimumLevel: logLevel,
-                    needAutoCreateTable: true)
+                .MinimumLevel.Is(logLevel)
+                .WriteTo.Elasticsearch(new Serilog.Sinks.Elasticsearch.ElasticsearchSinkOptions(new Uri(configuration.GetSection("Elasticsearch").GetValue<string>("Url")))
+                {
+                    AutoRegisterTemplate = true,
+                    AutoRegisterTemplateVersion = Serilog.Sinks.Elasticsearch.AutoRegisterTemplateVersion.ESv7,
+                })
                 .CreateLogger();
 
             WikiWebConfig.ContactPageTitle = null;
@@ -71,9 +70,6 @@ namespace NeverFoundry.Wiki.MVCSample
             var auth_db = configuration.GetValue<string>("Database:Names:Auth");
             var auth_un = configuration.GetValue<string>("Database:Logins:Auth");
             var auth_pw = configuration.GetValue<string>("Database:Passwords:Auth");
-            var log_db = configuration.GetValue<string>("Database:Names:Logs");
-            var logger_un = configuration.GetValue<string>("Database:Logins:Logger");
-            var logger_pw = configuration.GetValue<string>("Database:Passwords:Logger");
             var wiki_db = configuration.GetValue<string>("Database:Names:Wiki");
             var wiki_un = configuration.GetValue<string>("Database:Logins:Wiki");
             var wiki_pw = configuration.GetValue<string>("Database:Passwords:Wiki");
@@ -82,21 +78,12 @@ namespace NeverFoundry.Wiki.MVCSample
 
             var authusr_ifexists_cmd = new NpgsqlCommand($"SELECT 1 FROM pg_roles WHERE rolname='{auth_un}';", con);
             var authusr_create_cmd = new NpgsqlCommand($"CREATE ROLE {auth_un} LOGIN PASSWORD '{auth_pw}';", con);
-            var logusr_ifexists_cmd = new NpgsqlCommand($"SELECT 1 FROM pg_roles WHERE rolname='{logger_un}';", con);
-            var logusr_create_cmd = new NpgsqlCommand($"CREATE ROLE {logger_un} LOGIN PASSWORD '{logger_pw}';", con);
             var wikiusr_ifexists_cmd = new NpgsqlCommand($"SELECT 1 FROM pg_roles WHERE rolname='{wiki_un}';", con);
             var wikiusr_create_cmd = new NpgsqlCommand($"CREATE ROLE {wiki_un} LOGIN PASSWORD '{wiki_pw}';", con);
             var auth_db_ifexists_cmd = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname='{auth_db}';", con);
             var auth_db_cmd = new NpgsqlCommand(@$"
                     CREATE DATABASE {auth_db}
                     WITH OWNER = {auth_un}
-                    ENCODING = 'UTF8'
-                    CONNECTION LIMIT = -1;
-                    ", con);
-            var log_db_ifexists_cmd = new NpgsqlCommand($"SELECT 1 FROM pg_database WHERE datname='{log_db}';", con);
-            var log_db_cmd = new NpgsqlCommand(@$"
-                    CREATE DATABASE {log_db}
-                    WITH OWNER = {logger_un}
                     ENCODING = 'UTF8'
                     CONNECTION LIMIT = -1;
                     ", con);
@@ -115,11 +102,6 @@ namespace NeverFoundry.Wiki.MVCSample
             {
                 authusr_create_cmd.ExecuteNonQuery();
             }
-            result = logusr_ifexists_cmd.ExecuteScalar();
-            if (result is null)
-            {
-                logusr_create_cmd.ExecuteNonQuery();
-            }
             result = wikiusr_ifexists_cmd.ExecuteScalar();
             if (result is null)
             {
@@ -129,11 +111,6 @@ namespace NeverFoundry.Wiki.MVCSample
             if (result is null)
             {
                 auth_db_cmd.ExecuteNonQuery();
-            }
-            result = log_db_ifexists_cmd.ExecuteScalar();
-            if (result is null)
-            {
-                log_db_cmd.ExecuteNonQuery();
             }
             result = wiki_db_ifexists_cmd.ExecuteScalar();
             if (result is null)

@@ -37,9 +37,9 @@
         public string SenderName { get; set; }
 
         /// <summary>
-        /// The timestamp when this message was sent.
+        /// The timestamp when this message was sent, in UTC Ticks.
         /// </summary>
-        public long Timestamp { get; set; }
+        public long TimestampTicks { get; set; }
 
         /// <summary>
         /// The ID of the topic to which this message was addressed.
@@ -64,7 +64,7 @@
             SenderExists = senderExists;
             SenderId = message.SenderId;
             SenderName = message.SenderName;
-            Timestamp = message.Timestamp.ToUniversalTime().Ticks;
+            TimestampTicks = message.TimestampTicks;
             TopicId = message.TopicId;
         }
     }

@@ -12,6 +12,7 @@ using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using NeverFoundry.Wiki.MarkdownExtensions.WikiLinks;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -46,7 +47,7 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
-        public IReadOnlyList<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>();
+        public IReadOnlyList<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
 
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
@@ -68,13 +69,13 @@ namespace NeverFoundry.Wiki
         private protected MarkdownItem(string id, string? markdown, IList<WikiLink> wikiLinks) : base(id)
         {
             MarkdownContent = markdown ?? string.Empty;
-            WikiLinks = (IReadOnlyList<WikiLink>)wikiLinks;
+            WikiLinks = new ReadOnlyCollection<WikiLink>(wikiLinks);
         }
 
         private MarkdownItem(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0])
+            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0])
         { }
 
         /// <summary>
@@ -177,7 +178,7 @@ namespace NeverFoundry.Wiki
         {
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks);
+            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
         }
 
         /// <summary>

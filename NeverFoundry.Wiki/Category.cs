@@ -64,15 +64,15 @@ namespace NeverFoundry.Wiki
             string id,
             string title,
             string markdown,
-            IList<WikiLink> wikiLinks,
-            IList<string> childIds,
+            WikiLink[] wikiLinks,
+            string[] childIds,
             long timestampTicks,
-            bool isDeleted = false,
-            string? owner = null,
-            IEnumerable<string>? allowedEditors = null,
-            IEnumerable<string>? allowedViewers = null,
-            IList<string>? categories = null,
-            IList<string>? transclusions = null) : base(
+            bool isDeleted,
+            string? owner,
+            string[]? allowedEditors,
+            string[]? allowedViewers,
+            string[] categories,
+            string[] transclusions) : base(
                 id,
                 title,
                 markdown,
@@ -92,15 +92,15 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
-            (IList<string>?)info.GetValue(nameof(ChildIds), typeof(IList<string>)) ?? new string[0],
+            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
+            (string[]?)info.GetValue(nameof(ChildIds), typeof(string[])) ?? new string[0],
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(AllowedViewers), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(Categories), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(Transclusions), typeof(IList<string>)))
+            (string[]?)info.GetValue(nameof(AllowedEditors), typeof(string[])),
+            (string[]?)info.GetValue(nameof(AllowedViewers), typeof(string[])),
+            (string[]?)info.GetValue(nameof(Categories), typeof(string[])) ?? new string[0],
+            (string[]?)info.GetValue(nameof(Transclusions), typeof(string[])) ?? new string[0])
         { }
 
         /// <summary>
@@ -296,15 +296,15 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks);
-            info.AddValue(nameof(ChildIds), ChildIds);
+            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
+            info.AddValue(nameof(ChildIds), ChildIds.ToArray());
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
-            info.AddValue(nameof(AllowedEditors), AllowedEditors);
-            info.AddValue(nameof(AllowedViewers), AllowedViewers);
-            info.AddValue(nameof(Categories), Categories);
-            info.AddValue(nameof(Transclusions), Transclusions);
+            info.AddValue(nameof(AllowedEditors), AllowedEditors?.ToArray());
+            info.AddValue(nameof(AllowedViewers), AllowedViewers?.ToArray());
+            info.AddValue(nameof(Categories), Categories.ToArray());
+            info.AddValue(nameof(Transclusions), Transclusions.ToArray());
         }
 
         /// <summary>

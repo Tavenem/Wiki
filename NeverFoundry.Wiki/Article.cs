@@ -3,6 +3,7 @@ using NeverFoundry.DiffPatchMerge;
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Runtime.Serialization;
@@ -177,17 +178,17 @@ namespace NeverFoundry.Wiki
             string id,
             string title,
             string markdown,
-            IList<WikiLink> wikiLinks,
+            WikiLink[] wikiLinks,
             long timestampTicks,
-            string? wikiNamespace = null,
-            bool isDeleted = false,
-            string? owner = null,
-            IEnumerable<string>? allowedEditors = null,
-            IEnumerable<string>? allowedViewers = null,
-            string? redirectNamespace = null,
-            string? redirectTitle = null,
-            IList<string>? categories = null,
-            IList<string>? transclusions = null) : base(id, markdown, wikiLinks)
+            string? wikiNamespace,
+            bool isDeleted,
+            string? owner,
+            string[]? allowedEditors,
+            string[]? allowedViewers,
+            string? redirectNamespace,
+            string? redirectTitle,
+            string[] categories,
+            string[] transclusions) : base(id, markdown, wikiLinks)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -197,17 +198,17 @@ namespace NeverFoundry.Wiki
 
             if (!string.IsNullOrEmpty(owner))
             {
-                AllowedEditors = allowedEditors?.ToList();
-                AllowedViewers = allowedViewers?.ToList();
+                AllowedEditors = allowedEditors?.ToList().AsReadOnly();
+                AllowedViewers = allowedViewers?.ToList().AsReadOnly();
             }
-            Categories = (IReadOnlyList<string>?)categories ?? new List<string>();
+            Categories = new ReadOnlyCollection<string>(categories);
             IsDeleted = isDeleted;
             Owner = owner;
             RedirectNamespace = redirectNamespace;
             RedirectTitle = redirectTitle;
             TimestampTicks = timestampTicks;
             Title = title;
-            Transclusions = (IReadOnlyList<string>?)transclusions ?? new List<string>();
+            Transclusions = new ReadOnlyCollection<string>(transclusions);
             WikiNamespace = wikiNamespace;
         }
 
@@ -215,17 +216,17 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
+            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(AllowedViewers), typeof(IList<string>)),
+            (string[]?)info.GetValue(nameof(AllowedEditors), typeof(string[])),
+            (string[]?)info.GetValue(nameof(AllowedViewers), typeof(string[])),
             (string?)info.GetValue(nameof(RedirectNamespace), typeof(string)),
             (string?)info.GetValue(nameof(RedirectTitle), typeof(string)),
-            (IList<string>?)info.GetValue(nameof(Categories), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(Transclusions), typeof(IList<string>)))
+            (string[]?)info.GetValue(nameof(Categories), typeof(string[])) ?? new string[0],
+            (string[]?)info.GetValue(nameof(Transclusions), typeof(string[])) ?? new string[0])
         { }
 
         /// <summary>
@@ -941,17 +942,17 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks);
+            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(WikiNamespace), WikiNamespace);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
-            info.AddValue(nameof(AllowedEditors), AllowedEditors);
-            info.AddValue(nameof(AllowedViewers), AllowedViewers);
+            info.AddValue(nameof(AllowedEditors), AllowedEditors?.ToArray());
+            info.AddValue(nameof(AllowedViewers), AllowedViewers?.ToArray());
             info.AddValue(nameof(RedirectNamespace), RedirectNamespace);
             info.AddValue(nameof(RedirectTitle), RedirectTitle);
-            info.AddValue(nameof(Categories), Categories);
-            info.AddValue(nameof(Transclusions), Transclusions);
+            info.AddValue(nameof(Categories), Categories.ToArray());
+            info.AddValue(nameof(Transclusions), Transclusions.ToArray());
         }
 
         /// <summary>

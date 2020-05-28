@@ -1,6 +1,7 @@
 ﻿using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
@@ -30,9 +31,14 @@ namespace NeverFoundry.Wiki
         public string SenderName { get; }
 
         /// <summary>
-        /// The timestamp when this message was sent.
+        /// The timestamp when this message was sent, in UTC.
         /// </summary>
-        public DateTimeOffset Timestamp { get; }
+        public DateTimeOffset Timestamp => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
+
+        /// <summary>
+        /// The timestamp when this message was sent, in UTC Ticks.
+        /// </summary>
+        public long TimestampTicks { get; }
 
         /// <summary>
         /// The ID of the topic to which this message has been addressed.
@@ -44,41 +50,41 @@ namespace NeverFoundry.Wiki
             string senderId,
             string senderName,
             string? markdown,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             string? replyMessageId = null) : base(markdown)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
             SenderName = senderName;
-            Timestamp = timestamp;
+            TimestampTicks = timestampTicks;
             TopicId = topicId;
         }
 
         private Message(
             string id,
             string markdown,
-            IList<WikiLink> wikiLinks,
+            WikiLink[] wikiLinks,
             string topicId,
             string senderId,
             string senderName,
-            DateTimeOffset timestamp,
+            long timestampTicks,
             string? replyMessageId = null) : base(id, markdown, wikiLinks)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
             SenderName = senderName;
-            Timestamp = timestamp;
+            TimestampTicks = timestampTicks;
             TopicId = topicId;
         }
 
         private Message(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
+            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderName), typeof(string)) ?? string.Empty,
-            (DateTimeOffset?)info.GetValue(nameof(Timestamp), typeof(DateTimeOffset)) ?? DateTimeOffset.MinValue,
+            (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(ReplyMessageId), typeof(string)))
         { }
 
@@ -114,7 +120,7 @@ namespace NeverFoundry.Wiki
                 senderId,
                 senderName,
                 markdown,
-                DateTimeOffset.UtcNow,
+                DateTimeOffset.UtcNow.Ticks,
                 replyMessageId);
             await message.SaveAsync().ConfigureAwait(false);
             return message;
@@ -133,11 +139,11 @@ namespace NeverFoundry.Wiki
         {
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks);
+            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
             info.AddValue(nameof(TopicId), TopicId);
             info.AddValue(nameof(SenderId), SenderId);
             info.AddValue(nameof(SenderName), SenderName);
-            info.AddValue(nameof(Timestamp), Timestamp);
+            info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(ReplyMessageId), ReplyMessageId);
         }
     }

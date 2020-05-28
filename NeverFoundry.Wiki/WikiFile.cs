@@ -73,21 +73,56 @@ namespace NeverFoundry.Wiki
             FileType = fileType;
         }
 
+        private WikiFile(
+            string id,
+            string title,
+            string filePath,
+            int fileSize,
+            string fileType,
+            string markdown,
+            WikiLink[] wikiLinks,
+            long timestampTicks,
+            bool isDeleted,
+            string? owner,
+            string[]? allowedEditors,
+            string[]? allowedViewers,
+            string[] categories,
+            string[] transclusions) : base(
+                id,
+                title,
+                markdown,
+                wikiLinks,
+                timestampTicks,
+                WikiConfig.FileNamespace,
+                isDeleted,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                null,
+                null,
+                categories,
+                transclusions)
+        {
+            FilePath = filePath;
+            FileSize = fileSize;
+            FileType = fileType;
+        }
+
         private WikiFile(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(FilePath), typeof(string)) ?? string.Empty,
             (int?)info.GetValue(nameof(FileSize), typeof(int)) ?? default,
             (string?)info.GetValue(nameof(FileType), typeof(string)) ?? string.Empty,
-            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? default,
-            (IList<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IList<WikiLink>)) ?? new WikiLink[0],
+            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (IList<string>?)info.GetValue(nameof(AllowedEditors), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(AllowedViewers), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(Categories), typeof(IList<string>)),
-            (IList<string>?)info.GetValue(nameof(Transclusions), typeof(IList<string>)))
+            (string[]?)info.GetValue(nameof(AllowedEditors), typeof(string[])),
+            (string[]?)info.GetValue(nameof(AllowedViewers), typeof(string[])),
+            (string[]?)info.GetValue(nameof(Categories), typeof(string[])) ?? new string[0],
+            (string[]?)info.GetValue(nameof(Transclusions), typeof(string[])) ?? new string[0])
         { }
 
         /// <summary>
@@ -291,14 +326,14 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(FileSize), FileSize);
             info.AddValue(nameof(FileType), FileType);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks);
+            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
-            info.AddValue(nameof(AllowedEditors), AllowedEditors);
-            info.AddValue(nameof(AllowedViewers), AllowedViewers);
-            info.AddValue(nameof(Categories), Categories);
-            info.AddValue(nameof(Transclusions), Transclusions);
+            info.AddValue(nameof(AllowedEditors), AllowedEditors?.ToArray());
+            info.AddValue(nameof(AllowedViewers), AllowedViewers?.ToArray());
+            info.AddValue(nameof(Categories), Categories.ToArray());
+            info.AddValue(nameof(Transclusions), Transclusions.ToArray());
         }
 
         /// <summary>

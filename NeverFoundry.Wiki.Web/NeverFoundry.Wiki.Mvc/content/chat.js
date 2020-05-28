@@ -131,7 +131,7 @@ window.wikimvcchat = {
         messageHeader.appendChild(messageTimestamp);
         messageTimestamp.classList.add("wiki-message-timestamp");
 
-        let timestamp = document.createTextNode(new Date((message.timestamp / 10000) - 2208988800000).toLocaleString());
+        let timestamp = document.createTextNode(new Date((message.timestampTicks / 10000) - 2208988800000).toLocaleString());
         messageTimestamp.appendChild(timestamp);
 
         let threadToggler = document.createElement("div");
@@ -334,7 +334,7 @@ window.wikimvcchat = {
         let reactionTimestamp = document.createElement("span");
         reactionListItem.appendChild(reactionTimestamp);
 
-        let timestamp = document.createTextNode(new Date((list[i].timestamp / 10000) - 2208988800000).toLocaleString());
+        let timestamp = document.createTextNode(new Date((list[i].timestampTicks / 10000) - 2208988800000).toLocaleString());
         reactionTimestamp.appendChild(timestamp);
     },
 
