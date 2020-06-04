@@ -2,6 +2,7 @@
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
@@ -12,6 +13,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A file tracked by the wiki system.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public sealed class WikiFile : Article
     {
@@ -33,6 +35,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets the full title of this item (including namespace).
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public override string FullTitle => $"{WikiConfig.FileNamespace}:{Title}";
 
         /// <summary>
@@ -73,24 +77,26 @@ namespace NeverFoundry.Wiki
             FileType = fileType;
         }
 
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         private WikiFile(
             string id,
             string title,
             string filePath,
             int fileSize,
             string fileType,
-            string markdown,
-            WikiLink[] wikiLinks,
+            string markdownContent,
+            IList<WikiLink> wikiLinks,
             long timestampTicks,
             bool isDeleted,
             string? owner,
-            string[]? allowedEditors,
-            string[]? allowedViewers,
-            string[] categories,
-            string[] transclusions) : base(
+            ReadOnlyCollection<string>? allowedEditors,
+            ReadOnlyCollection<string>? allowedViewers,
+            ReadOnlyCollection<string> categories,
+            ReadOnlyCollection<string> transclusions) : base(
                 id,
                 title,
-                markdown,
+                markdownContent,
                 wikiLinks,
                 timestampTicks,
                 WikiConfig.FileNamespace,
@@ -115,14 +121,14 @@ namespace NeverFoundry.Wiki
             (int?)info.GetValue(nameof(FileSize), typeof(int)) ?? default,
             (string?)info.GetValue(nameof(FileType), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
+            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (string[]?)info.GetValue(nameof(AllowedEditors), typeof(string[])),
-            (string[]?)info.GetValue(nameof(AllowedViewers), typeof(string[])),
-            (string[]?)info.GetValue(nameof(Categories), typeof(string[])) ?? new string[0],
-            (string[]?)info.GetValue(nameof(Transclusions), typeof(string[])) ?? new string[0])
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(ReadOnlyCollection<string>)),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(ReadOnlyCollection<string>)),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]))
         { }
 
         /// <summary>
@@ -326,14 +332,14 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(FileSize), FileSize);
             info.AddValue(nameof(FileType), FileType);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
+            info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
-            info.AddValue(nameof(AllowedEditors), AllowedEditors?.ToArray());
-            info.AddValue(nameof(AllowedViewers), AllowedViewers?.ToArray());
-            info.AddValue(nameof(Categories), Categories.ToArray());
-            info.AddValue(nameof(Transclusions), Transclusions.ToArray());
+            info.AddValue(nameof(AllowedEditors), AllowedEditors);
+            info.AddValue(nameof(AllowedViewers), AllowedViewers);
+            info.AddValue(nameof(Categories), Categories);
+            info.AddValue(nameof(Transclusions), Transclusions);
         }
 
         /// <summary>

@@ -241,6 +241,16 @@ namespace NeverFoundry.Wiki.Web
             }
         }
 
+        /// <summary>
+        /// <para>
+        /// The API key to be used for Tenor GIF integration.
+        /// </para>
+        /// <para>
+        /// Leave <see langword="null"/> (the default) to omit GIF functionality.
+        /// </para>
+        /// </summary>
+        public static string? TenorAPIKey { get; set; }
+
         private const string UserNamespaceDefault = "Users";
         private static string _UserNamespace = UserNamespaceDefault;
         /// <summary>

@@ -28,6 +28,7 @@
     <PackageReference Include="NeverFoundry.DataStore" Version="0.12.0" />
     <PackageReference Include="NeverFoundry.DiffPatchMerge" Version="1.0.1" />
     <PackageReference Include="NeverFoundry.MathAndScience" Version="0.14.17" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.Linq.Async" Version="4.1.1" />
   </ItemGroup>
 

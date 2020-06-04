@@ -63,7 +63,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthenticated");
             }
 
-            var wikiItem = GetWikiItem(data.Title, data.WikiNamespace);
+            var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
             if (!data.CanEdit)
@@ -125,7 +125,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             data.Title = title;
             data.WikiNamespace = wikiNamespace;
 
-            var wikiItem = GetWikiItem(data.Title, data.WikiNamespace);
+            var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
             if (!data.CanEdit)
@@ -398,7 +398,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
 
-            var wikiItem = GetWikiItem(data.Title, data.WikiNamespace);
+            var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             if (wikiItem is null)
             {
                 data.CanEdit = !(user is null)
@@ -450,7 +450,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 data.IsSystem = false;
             }
 
-            var wikiItem = GetWikiItem(data.Title, data.WikiNamespace);
+            var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             if (wikiItem?.IsDeleted != false)
             {
                 data.CanEdit = !(user is null)
@@ -481,18 +481,43 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var replies = await DataStore.GetItemsWhereAsync<Message>(x => x.TopicId == wikiItem.Id)
                         .ToListAsync()
                         .ConfigureAwait(false);
-                    var responses = new ConcurrentBag<MessageResponse>();
-                    var senders = new ConcurrentDictionary<string, bool>();
-                    await Task.Run(() => Parallel.ForEach(replies, reply =>
+                    var responses = new List<MessageResponse>();
+                    var senders = new Dictionary<string, bool>();
+                    var senderPages = new Dictionary<string, bool>();
+                    foreach (var reply in replies)
                     {
-                        var html = reply.GetHtml();
-                        var exists = senders.GetOrAdd(reply.SenderId, _userManager.FindByIdAsync(reply.SenderId).GetAwaiter().GetResult()?.IsDeleted == false);
+                        var html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(reply.GetHtml());
+                        WikiUser? replyUser = null;
+                        if (!senders.TryGetValue(reply.SenderId, out var exists))
+                        {
+                            replyUser = await _userManager.FindByIdAsync(reply.SenderId).ConfigureAwait(false);
+                            exists = replyUser?.IsDeleted == false;
+                            senders.Add(reply.SenderId, exists);
+                        }
+                        if (!senderPages.TryGetValue(reply.SenderId, out var pageExists))
+                        {
+                            if (!exists)
+                            {
+                                pageExists = false;
+                            }
+                            else
+                            {
+                                if (replyUser is null)
+                                {
+                                    replyUser = await _userManager.FindByIdAsync(reply.SenderId).ConfigureAwait(false);
+                                }
+                                pageExists = replyUser?.IsDeleted == false
+                                    && !(Article.GetArticle(replyUser.Id, WikiWebConfig.UserNamespace) is null);
+                            }
+                            senderPages.Add(reply.SenderId, pageExists);
+                        }
                         responses.Add(new MessageResponse(
                             reply,
                             html,
-                            exists));
-                    })).ConfigureAwait(false);
-                    vm.Messages = responses.ToList();
+                            exists,
+                            pageExists));
+                    }
+                    vm.Messages = responses.OrderBy(x => x.TimestampTicks).ToList();
                 }
                 return View("Talk", vm);
             }
@@ -1141,7 +1166,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                 var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
 
-                var wikiItem = GetWikiItem(data.Title, data.WikiNamespace);
+                var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
                 if (wikiItem is null)
                 {
                     data.CanEdit = !(user is null)
@@ -1187,6 +1212,32 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 return Article.GetArticle(title, wikiNamespace);
             }
+        }
+
+        private async Task<Article?> GetWikiItemAsync(WikiRouteData data)
+        {
+            var article = GetWikiItem(data.Title, data.WikiNamespace);
+
+            if (string.Equals(article?.WikiNamespace ?? data.WikiNamespace, WikiWebConfig.UserNamespace, StringComparison.OrdinalIgnoreCase))
+            {
+                var user = await _userManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false);
+                if (!(user is null))
+                {
+                    data.DisplayTitle = user.UserName;
+                    ViewData["Title"] = Article.GetFullTitle(data.DisplayTitle, data.WikiNamespace, data.IsTalk);
+
+                    if (article is null)
+                    {
+                        article = GetWikiItem(user.Id, data.WikiNamespace);
+                        if (!(article is null))
+                        {
+                            data.Title = article.Title;
+                        }
+                    }
+                }
+            }
+
+            return article;
         }
 
         private WikiRouteData GetWikiRouteData()

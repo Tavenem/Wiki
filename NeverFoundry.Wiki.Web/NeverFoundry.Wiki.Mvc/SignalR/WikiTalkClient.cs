@@ -8,7 +8,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
     /// <summary>
     /// A client for receiving wiki discussion messages.
     /// </summary>
-    public class WikiTalkClient : IWikiTalkClient
+    public class WikiTalkClient : IWikiTalkClient, IAsyncDisposable
     {
         private static readonly TimeSpan _ConnectionTimeout = TimeSpan.FromSeconds(30);
 
@@ -82,7 +82,11 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <param name="message">
         /// A <see cref="MessageResponse"/> with information about the message received.
         /// </param>
-        public void Receive(MessageResponse message) => OnRecevied?.Invoke(this, message);
+        public Task Receive(MessageResponse message)
+        {
+            OnRecevied?.Invoke(this, message);
+            return Task.CompletedTask;
+        }
 
         /// <summary>
         /// Send a reply.
@@ -114,11 +118,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// </para>
         /// </summary>
         /// <param name="topicId">The ID of the topic to join.</param>
-        /// <returns>
-        /// <see langword="true"/> if the connection was successfully established; otherwise <see
-        /// langword="false"/>
-        /// </returns>
-        public async Task<bool> StartAsync(string topicId)
+        public async Task StartAsync(string topicId)
         {
             if (_disposed)
             {
@@ -128,7 +128,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
             // Retry until server is ready, or timeout.
             _cts?.Dispose();
             _cts = new CancellationTokenSource((int)_ConnectionTimeout.TotalMilliseconds);
-            var joinedGroup = false;
             if (_hubConnection.State == HubConnectionState.Connected && !string.IsNullOrEmpty(_topicId))
             {
                 while (!_cts.IsCancellationRequested)
@@ -158,18 +157,20 @@ namespace NeverFoundry.Wiki.Web.SignalR
             }
             if (_hubConnection.State == HubConnectionState.Connected)
             {
-                try
+                while (!_cts.IsCancellationRequested)
                 {
-                    await _hubConnection.InvokeAsync(nameof(IWikiTalkHub.JoinTopic), topicId, _cts.Token).ConfigureAwait(false);
-                    joinedGroup = true;
-                    _topicId = topicId;
-                }
-                catch
-                {
-                    await Task.Delay(1000, _cts.Token).ConfigureAwait(false);
+                    try
+                    {
+                        await _hubConnection.InvokeAsync(nameof(IWikiTalkHub.JoinTopic), topicId, _cts.Token).ConfigureAwait(false);
+                        _topicId = topicId;
+                        break;
+                    }
+                    catch
+                    {
+                        await Task.Delay(1000, _cts.Token).ConfigureAwait(false);
+                    }
                 }
             }
-            return joinedGroup;
         }
 
         private async Task Reconnected(string arg)

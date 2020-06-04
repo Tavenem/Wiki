@@ -11,6 +11,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A particular revision of a wiki item.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class WikiRevision : IdItem, ISerializable
     {
@@ -71,6 +72,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The timestamp of this revision, in UTC.
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public DateTimeOffset Timestamp => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
 
         /// <summary>
@@ -178,6 +181,8 @@ namespace NeverFoundry.Wiki
             }
         }
 
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         private WikiRevision(
             string id,
             string wikiId,

@@ -31,6 +31,7 @@ namespace NeverFoundry.Wiki.Mvc
             WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
             WikiWebConfig.LoginPath = options?.LoginPath;
             WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
+            WikiWebConfig.TenorAPIKey = options?.TenorAPIKey;
 
             if (options?.SearchClient is null)
             {
@@ -65,6 +66,7 @@ namespace NeverFoundry.Wiki.Mvc
                 WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
                 WikiWebConfig.LoginPath = options?.LoginPath;
                 WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
+                WikiWebConfig.TenorAPIKey = options?.TenorAPIKey;
 
                 if (options?.SearchClient is null)
                 {

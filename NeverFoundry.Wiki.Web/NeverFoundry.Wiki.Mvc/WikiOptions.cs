@@ -60,5 +60,15 @@
         /// </para>
         /// </summary>
         public ISearchClient? SearchClient { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The API key to be used for Tenor GIF integration.
+        /// </para>
+        /// <para>
+        /// Leave <see langword="null"/> (the default) to omit GIF functionality.
+        /// </para>
+        /// </summary>
+        public string? TenorAPIKey { get; set; }
     }
 }

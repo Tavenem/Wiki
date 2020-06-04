@@ -88,7 +88,13 @@ namespace NeverFoundry.Wiki.Sample.Services
                         +!q.Exists(m => m.Field(f => f.AllowedViewers))
                         && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
                         || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
-                    .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
+                    .Highlight(h =>
+                        h.Fields(f =>
+                            f.Field(ff => ff.MarkdownContent)
+                            .FragmentSize(200)
+                            .NoMatchSize(200))
+                        .PreTags("#H#H#")
+                        .PostTags("%H%H%"))
                     .Sort(s =>
                     {
                         if (sortDefault)
@@ -116,7 +122,13 @@ namespace NeverFoundry.Wiki.Sample.Services
                         || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim()))
                         && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
                         || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
-                    .Highlight(h => h.Fields(f => f.Field(ff => ff.MarkdownContent)))
+                    .Highlight(h =>
+                        h.Fields(f =>
+                            f.Field(ff => ff.MarkdownContent)
+                            .FragmentSize(200)
+                            .NoMatchSize(200))
+                        .PreTags("#H#H#")
+                        .PostTags("%H%H%"))
                     .Sort(s =>
                     {
                         if (sortDefault)
@@ -155,7 +167,12 @@ namespace NeverFoundry.Wiki.Sample.Services
                 Query = request.Query,
                 Sort = request.Sort,
                 SearchHits = new PagedList<ISearchHit>(
-                    response.Hits.Select(x => new SearchHit(x.Source.Title, x.Source.WikiNamespace, x.Highlight.FirstOrDefault().Value?.FirstOrDefault())),
+                    response.Hits.Select(x => new SearchHit(
+                        x.Source.Title,
+                        x.Source.WikiNamespace,
+                        x.Source.GetPlainText(x.Highlight.FirstOrDefault().Value?.FirstOrDefault())
+                        .Replace("#H#H#", "<strong class=\"wiki-search-hit\">")
+                        .Replace("%H%H%", "</strong>"))),
                     request.PageNumber,
                     request.PageSize,
                     response.Total),

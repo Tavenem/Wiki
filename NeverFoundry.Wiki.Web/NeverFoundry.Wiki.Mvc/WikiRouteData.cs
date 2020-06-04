@@ -24,7 +24,17 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// The categories to which the requested page belongs (if any).
         /// </summary>
-        public IReadOnlyList<string>? Categories { get; set; }
+        public IReadOnlyCollection<string>? Categories { get; set; }
+
+        private string? _displayTitle;
+        /// <summary>
+        /// The title to display.
+        /// </summary>
+        public string DisplayTitle
+        {
+            get => _displayTitle ?? Title;
+            set => _displayTitle = value;
+        }
 
         /// <summary>
         /// Whether the requested page is a category.

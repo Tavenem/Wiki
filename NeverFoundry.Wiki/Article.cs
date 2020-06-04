@@ -15,6 +15,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A wiki article revision.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class Article : MarkdownItem
     {
@@ -34,7 +35,8 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
         /// </remarks>
-        public IReadOnlyList<string>? AllowedEditors { get; private protected set; }
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        public IReadOnlyCollection<string>? AllowedEditors { get; private protected set; }
 
         /// <summary>
         /// <para>
@@ -58,7 +60,8 @@ namespace NeverFoundry.Wiki
         /// exists (to avoid confusion about creating a new article with that title).
         /// </para>
         /// </remarks>
-        public IReadOnlyList<string>? AllowedViewers { get; private protected set; }
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        public IReadOnlyCollection<string>? AllowedViewers { get; private protected set; }
 
         /// <summary>
         /// <para>
@@ -72,12 +75,15 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Updates to this list (due to changes in transcluded articles) do not count as revisions.
         /// </remarks>
-        public IReadOnlyList<string> Categories { get; private protected set; } = new List<string>().AsReadOnly();
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        public IReadOnlyCollection<string> Categories { get; private protected set; } = new List<string>().AsReadOnly();
 
         /// <summary>
         /// Gets the full title of this article (including namespace if the namespace is not
         /// <see cref="WikiConfig.DefaultNamespace"/>).
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public virtual string FullTitle => string.CompareOrdinal(WikiNamespace, WikiConfig.DefaultNamespace) == 0
             ? Title
             : $"{WikiNamespace}:{Title}";
@@ -110,6 +116,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The timestamp of the latest revision to this item, in UTC.
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public DateTimeOffset Timestamp
         {
             get => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
@@ -129,6 +137,7 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The transclusions within this article.
         /// </summary>
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyList<string> Transclusions { get; private protected set; } = new List<string>().AsReadOnly();
 
         /// <summary>
@@ -160,35 +169,37 @@ namespace NeverFoundry.Wiki
 
             if (!string.IsNullOrEmpty(owner))
             {
-                AllowedEditors = allowedEditors?.ToList();
-                AllowedViewers = allowedViewers?.ToList();
+                AllowedEditors = allowedEditors?.ToList().AsReadOnly();
+                AllowedViewers = allowedViewers?.ToList().AsReadOnly();
             }
-            Categories = (IReadOnlyList<string>?)categories ?? new List<string>();
+            Categories = new ReadOnlyCollection<string>(categories ?? new List<string>());
             IsDeleted = isDeleted;
             Owner = owner;
             RedirectNamespace = redirectNamespace;
             RedirectTitle = redirectTitle;
             TimestampTicks = timestampTicks;
             Title = title;
-            Transclusions = (IReadOnlyList<string>?)transclusions ?? new List<string>();
+            Transclusions = new ReadOnlyCollection<string>(transclusions ?? new List<string>());
             WikiNamespace = wikiNamespace;
         }
 
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         private protected Article(
             string id,
             string title,
-            string markdown,
-            WikiLink[] wikiLinks,
+            string markdownContent,
+            IList<WikiLink> wikiLinks,
             long timestampTicks,
             string? wikiNamespace,
             bool isDeleted,
             string? owner,
-            string[]? allowedEditors,
-            string[]? allowedViewers,
+            ReadOnlyCollection<string>? allowedEditors,
+            ReadOnlyCollection<string>? allowedViewers,
             string? redirectNamespace,
             string? redirectTitle,
-            string[] categories,
-            string[] transclusions) : base(id, markdown, wikiLinks)
+            ReadOnlyCollection<string> categories,
+            ReadOnlyCollection<string> transclusions) : base(id, markdownContent, wikiLinks)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -198,17 +209,17 @@ namespace NeverFoundry.Wiki
 
             if (!string.IsNullOrEmpty(owner))
             {
-                AllowedEditors = allowedEditors?.ToList().AsReadOnly();
-                AllowedViewers = allowedViewers?.ToList().AsReadOnly();
+                AllowedEditors = allowedEditors;
+                AllowedViewers = allowedViewers;
             }
-            Categories = new ReadOnlyCollection<string>(categories);
+            Categories = categories;
             IsDeleted = isDeleted;
             Owner = owner;
             RedirectNamespace = redirectNamespace;
             RedirectTitle = redirectTitle;
             TimestampTicks = timestampTicks;
             Title = title;
-            Transclusions = new ReadOnlyCollection<string>(transclusions);
+            Transclusions = transclusions;
             WikiNamespace = wikiNamespace;
         }
 
@@ -216,17 +227,17 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
+            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (string[]?)info.GetValue(nameof(AllowedEditors), typeof(string[])),
-            (string[]?)info.GetValue(nameof(AllowedViewers), typeof(string[])),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(ReadOnlyCollection<string>)),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(ReadOnlyCollection<string>)),
             (string?)info.GetValue(nameof(RedirectNamespace), typeof(string)),
             (string?)info.GetValue(nameof(RedirectTitle), typeof(string)),
-            (string[]?)info.GetValue(nameof(Categories), typeof(string[])) ?? new string[0],
-            (string[]?)info.GetValue(nameof(Transclusions), typeof(string[])) ?? new string[0])
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]))
         { }
 
         /// <summary>
@@ -942,17 +953,17 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
+            info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(WikiNamespace), WikiNamespace);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
-            info.AddValue(nameof(AllowedEditors), AllowedEditors?.ToArray());
-            info.AddValue(nameof(AllowedViewers), AllowedViewers?.ToArray());
+            info.AddValue(nameof(AllowedEditors), AllowedEditors);
+            info.AddValue(nameof(AllowedViewers), AllowedViewers);
             info.AddValue(nameof(RedirectNamespace), RedirectNamespace);
             info.AddValue(nameof(RedirectTitle), RedirectTitle);
-            info.AddValue(nameof(Categories), Categories.ToArray());
-            info.AddValue(nameof(Transclusions), Transclusions.ToArray());
+            info.AddValue(nameof(Categories), Categories);
+            info.AddValue(nameof(Transclusions), Transclusions);
         }
 
         /// <summary>
@@ -1161,8 +1172,13 @@ namespace NeverFoundry.Wiki
                 .ConfigureAwait(false);
         }
 
-        private protected override string PostprocessMarkdown(string markdown, bool isPreview = false)
+        private protected override string PostprocessMarkdown(string? markdown, bool isPreview = false)
         {
+            if (string.IsNullOrEmpty(markdown))
+            {
+                return string.Empty;
+            }
+
             var md = TransclusionParser.Transclude(
                   Title,
                   FullTitle,

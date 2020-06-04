@@ -8,6 +8,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// Represents an intra-wiki link.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class WikiLink : ISerializable, IEquatable<WikiLink>
     {
@@ -16,6 +17,8 @@ namespace NeverFoundry.Wiki
         /// <see cref="WikiConfig.DefaultNamespace"/>, and the Talk pseudo-namespace if this is a
         /// discussion link).
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public string FullTitle => Article.GetFullTitle(Title, WikiNamespace, IsTalk);
 
         /// <summary>
@@ -61,6 +64,8 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiNamespace">
         /// The namespace for the linked article.
         /// </param>
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         public WikiLink(
             bool isCategory,
             bool isNamespaceEscaped,

@@ -170,7 +170,7 @@ namespace NeverFoundry.Wiki.Blazor
             return Task.CompletedTask;
         }
 
-        private void OnLocationChanged(object sender, LocationChangedEventArgs args)
+        private void OnLocationChanged(object? sender, LocationChangedEventArgs args)
         {
             _locationAbsolute = args.Location;
             if (_renderHandle.IsInitialized && Routes != null)
@@ -469,7 +469,7 @@ namespace NeverFoundry.Wiki.Blazor
                     return resolvedComponents;
                 }
 
-                var componentTypes = key.Assemblies.SelectMany(a => a.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t)));
+                var componentTypes = key.Assemblies?.SelectMany(a => a.ExportedTypes.Where(t => typeof(IComponent).IsAssignableFrom(t))) ?? Enumerable.Empty<Type>();
                 var routeTable = Create(componentTypes);
                 _Cache.TryAdd(key, routeTable);
                 return routeTable;
@@ -582,7 +582,7 @@ namespace NeverFoundry.Wiki.Blazor
 
                 public Key(Assembly[]? assemblies) => Assemblies = assemblies;
 
-                public override bool Equals(object obj) => obj is Key other && base.Equals(other);
+                public override bool Equals(object? obj) => obj is Key other && base.Equals(other);
 
                 public bool Equals(Key other)
                 {

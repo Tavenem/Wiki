@@ -1,7 +1,7 @@
 ﻿using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
@@ -11,6 +11,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A message sent from a user to an audience.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public sealed class Message : MarkdownItem
     {
@@ -33,6 +34,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The timestamp when this message was sent, in UTC.
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public DateTimeOffset Timestamp => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
 
         /// <summary>
@@ -60,15 +63,17 @@ namespace NeverFoundry.Wiki
             TopicId = topicId;
         }
 
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         private Message(
             string id,
-            string markdown,
-            WikiLink[] wikiLinks,
+            string markdownContent,
+            IList<WikiLink> wikiLinks,
             string topicId,
             string senderId,
             string senderName,
             long timestampTicks,
-            string? replyMessageId = null) : base(id, markdown, wikiLinks)
+            string? replyMessageId = null) : base(id, markdownContent, wikiLinks)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
@@ -80,7 +85,7 @@ namespace NeverFoundry.Wiki
         private Message(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
+            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderName), typeof(string)) ?? string.Empty,
@@ -139,7 +144,7 @@ namespace NeverFoundry.Wiki
         {
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
+            info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TopicId), TopicId);
             info.AddValue(nameof(SenderId), SenderId);
             info.AddValue(nameof(SenderName), SenderName);

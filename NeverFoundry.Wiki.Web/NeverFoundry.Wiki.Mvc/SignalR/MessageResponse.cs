@@ -37,6 +37,11 @@
         public string SenderName { get; set; }
 
         /// <summary>
+        /// Whether the sender of this message has a wiki user page.
+        /// </summary>
+        public bool SenderPageExists { get; set; }
+
+        /// <summary>
         /// The timestamp when this message was sent, in UTC Ticks.
         /// </summary>
         public long TimestampTicks { get; set; }
@@ -56,7 +61,10 @@
         /// <param name="senderExists">
         /// <see langword="true"/> if the sender of the message still exists as a wiki user.
         /// </param>
-        public MessageResponse(Message message, string html, bool senderExists)
+        /// <param name="senderPageExists">
+        /// <see langword="true"/> if the sender of the message has a wiki user page.
+        /// </param>
+        public MessageResponse(Message message, string html, bool senderExists, bool senderPageExists)
         {
             Content = html;
             Id = message.Id;
@@ -64,6 +72,7 @@
             SenderExists = senderExists;
             SenderId = message.SenderId;
             SenderName = message.SenderName;
+            SenderPageExists = senderPageExists;
             TimestampTicks = message.TimestampTicks;
             TopicId = message.TopicId;
         }

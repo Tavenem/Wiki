@@ -13,7 +13,7 @@
   <ItemGroup>
     <PackageReference Include="Fido2" Version="1.1.0" />
     <PackageReference Include="HaemmerElectronics.SeppPenner.SerilogSinkForPostgreSQL" Version="1.7.0" />
-    <PackageReference Include="MailKit" Version="2.6.0" />
+    <PackageReference Include="MailKit" Version="2.7.0" />
     <PackageReference Include="Marten" Version="3.11.0" />
     <PackageReference Include="Marten.AspNetCore.Mvc" Version="1.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="5.0.0-preview.4.20257.10" />
@@ -24,6 +24,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
     <PackageReference Include="NEST" Version="7.7.1" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.7.1" />
     <PackageReference Include="NeverFoundry.DataStore.Marten" Version="0.12.0" />
     <PackageReference Include="Npgsql" Version="4.1.3.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.0-preview4" />
@@ -39,6 +40,14 @@
   
   <ItemGroup>
     <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\chat.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\libs.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\script.js">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
     </Content>

@@ -133,6 +133,7 @@
                         <form asp-controller="Wiki" asp-route-isCompact="@data.IsCompact" asp-route-wikiNamespace="@(WikiWebConfig.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
                             <input id="searchInput"
                                    type="search"
+                                   role="search"
                                    name="query"
                                    placeholder="Search the wiki"
                                    autocomplete="off"
@@ -164,7 +165,7 @@
                     {
                         <span id="wiki-main-heading-special">Special page</span>
                         <span class="wiki-main-heading-namespace-separator">:</span>
-                        <span id="wiki-main-heading-title">@data.Title</span>
+                        <span id="wiki-main-heading-title">@data.DisplayTitle</span>
                     }
                     else
                     {
@@ -188,7 +189,7 @@
                                     <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
                                     <span class="wiki-main-heading-namespace-separator">:</span>
                                 }
-                                <span id="wiki-main-heading-title">@data.Title</span>
+                                <span id="wiki-main-heading-title">@data.DisplayTitle</span>
                                 @if (data.IsHistory)
                                 {
                                     <span class="wiki-main-heading-namespace-separator">:</span>
@@ -203,7 +204,7 @@
                                 <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
                                 <span class="wiki-main-heading-namespace-separator">:</span>
                             }
-                            <span id="wiki-main-heading-title">@data.Title</span>
+                            <span id="wiki-main-heading-title">@data.DisplayTitle</span>
                             @if (data.IsHistory)
                             {
                                 <span class="wiki-main-heading-namespace-separator">:</span>

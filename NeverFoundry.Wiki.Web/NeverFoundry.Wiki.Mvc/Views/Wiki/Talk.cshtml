@@ -10,9 +10,32 @@
 @if (Model.Data.CanEdit)
 {
     <div id="wiki-talk-newmessage" class="wiki-talk-reply">
-        <label for="wiki-talk-newmessage-input">Add a new message</label>
-        <textarea id="wiki-talk-newmessage-input" class="form-control"></textarea>
-        <button id="wiki-talk-send" type="button" class="btn btn-primary">Post</button>
+        <textarea id="wiki-talk-newmessage-input" class="form-control" placeholder="Add a new message"></textarea>
+        <div class="wiki-message-controls">
+            <div>
+                <button id="wiki-talk-emoji" class="btn btn-sm btn-outline-light">😀</button>
+                @if (!string.IsNullOrEmpty(WikiWebConfig.TenorAPIKey))
+                {
+                    <button id="wiki-talk-gif" class="btn btn-sm btn-outline-light">GIF</button>
+                }
+                <button id="wiki-talk-editor" class="btn btn-sm btn-outline-light">✏️</button>
+            </div>
+            <button id="wiki-talk-send" type="button" class="btn btn-sm btn-primary">Post</button>
+        </div>
+    </div>
+    <div id="wiki-talk-tenor">
+        <div id="wiki-talk-tenor-search">
+            <svg xmlns="http://www.w3.org/2000/svg" id="wiki-search-icon">
+                <g fill="none" stroke-width="2">
+                    <path d="M11.29 11.71l-4-4" />
+                    <circle cx="5" cy="5" r="4" />
+                </g>
+            </svg>
+            <input id="wiki-talk-tenor-search-text" type="search" role="search" placeholder="Search Tenor" autocomplete="off" list="wiki-talk-tenor-suggestions" />
+            <datalist id="wiki-talk-tenor-suggestions"></datalist>
+        </div>
+        <div id="wiki-talk-tenor-search-suggestions"></div>
+        <div id="wiki-talk-tenor-content"><span>Loading...</span></div>
     </div>
 }
 else
@@ -21,10 +44,20 @@ else
 }
 
 @section Scripts {
+    <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>
     <script src="~/_content/NeverFoundry.Wiki.Mvc/chat.js"></script>
     <script>
-    window.addEventListener("load", function () {
-        window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiWebConfig.UserNamespace", "@Model.TopicId", "@(Newtonsoft.Json.JsonConvert.SerializeObject(Model.Messages))");
-    });
+        window.addEventListener("load", function () {
+            window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiWebConfig.UserNamespace", "@WikiWebConfig.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
+                Newtonsoft.Json.JsonConvert.SerializeObject(
+                    Model.Messages,
+                    new Newtonsoft.Json.JsonSerializerSettings
+                    {
+                        ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
+                        {
+                            NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy()
+                        },
+                    }))');
+        });
     </script>
 }

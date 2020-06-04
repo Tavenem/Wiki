@@ -20,6 +20,7 @@ namespace NeverFoundry.Wiki.Sample.Data
 
         public static IDocumentStore GetDocumentStore(string connectionString, MartenLogger logger) => DocumentStore.For(config =>
         {
+            config.UseDefaultSerialization(collectionStorage: CollectionStorage.AsArray);
             config.AutoCreateSchemaObjects = AutoCreate.CreateOrUpdate;
             config.Connection(connectionString);
             config.Logger(logger);

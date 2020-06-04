@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
 using System.Linq;
@@ -93,14 +94,16 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 throw new HubException("You do not have permission to reply to this topic.");
             }
 
-            var message = await Message.ReplyAsync(reply.TopicId, user.Id, user.UserName, reply.Markdown).ConfigureAwait(false);
+            var message = await Message.ReplyAsync(reply.TopicId, user.Id, user.UserName, reply.Markdown, reply.MessageId).ConfigureAwait(false);
             var html = string.Empty;
             var preview = string.Empty;
             await Task.Run(() => html = message.GetHtml()).ConfigureAwait(false);
 
             if (!string.IsNullOrWhiteSpace(html))
             {
-                Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true));
+                var senderPage = Article.GetArticle(user.Id, WikiWebConfig.UserNamespace);
+
+                await Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true, !(senderPage is null))).ConfigureAwait(false);
             }
         }
 

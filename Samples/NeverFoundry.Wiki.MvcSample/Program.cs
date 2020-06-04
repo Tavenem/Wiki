@@ -25,11 +25,11 @@ namespace NeverFoundry.Wiki.MVCSample
 
             ConfigureDatabases(configuration);
 
-            var logLevel = (Serilog.Events.LogEventLevel)(configuration.GetSection("Serilog")?.GetValue<int>("LogEventLevel") ?? 3);
+            var logLevel = (Serilog.Events.LogEventLevel)configuration.GetValue("Serilog:LogEventLevel", defaultValue: 3);
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
                 .MinimumLevel.Is(logLevel)
-                .WriteTo.Elasticsearch(new Serilog.Sinks.Elasticsearch.ElasticsearchSinkOptions(new Uri(configuration.GetSection("Elasticsearch").GetValue<string>("Url")))
+                .WriteTo.Elasticsearch(new Serilog.Sinks.Elasticsearch.ElasticsearchSinkOptions(new Uri(configuration.GetValue<string>("Elasticsearch:Url")))
                 {
                     AutoRegisterTemplate = true,
                     AutoRegisterTemplateVersion = Serilog.Sinks.Elasticsearch.AutoRegisterTemplateVersion.ESv7,

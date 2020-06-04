@@ -18,6 +18,7 @@
                 </svg>
                 <input id="mainSearchInput"
                        type="search"
+                       role="search"
                        name="query"
                        placeholder="Search the wiki"
                        autocomplete="off"
@@ -88,7 +89,7 @@
                 }
                 <li>
                     <div id="wiki-search-result-title"><a href="@(Url.Action("Read", new { isCompact = false, title = result.Title, wikiNamespace = result.WikiNamespace }))" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
-                    <div id="wiki-search-result-excerpt">@result.Excerpt</div>
+                    <div id="wiki-search-result-excerpt">@Html.Raw(result.Excerpt)</div>
                 </li>
             }
         </ul>

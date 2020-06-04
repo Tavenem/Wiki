@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Test
@@ -172,6 +173,30 @@ Fourth section text";
 
         [TestMethod]
         public void SiteNameTest() => TestTemplate("{{sitename}}", "A NeverFoundry Wiki Sample");
+
+        [TestMethod]
+        public void SerializeNewtonsoftTest()
+        {
+            var article = GetArticle("Content with a [[WikiLink]].");
+            var json = Newtonsoft.Json.JsonConvert.SerializeObject(article, new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto });
+            Console.WriteLine(json);
+            var result = Newtonsoft.Json.JsonConvert.DeserializeObject<Article>(json);
+            Assert.AreEqual(article.MarkdownContent, result.MarkdownContent);
+        }
+
+        [TestMethod]
+        public void SerializeSystemTextJsonTest()
+        {
+            var article = GetArticle("Content with a [[WikiLink]].");
+            var json = System.Text.Json.JsonSerializer.Serialize(article);
+            Console.WriteLine(json);
+            Article? result = null;
+
+            // Ctor attribute does not yet function as expected on private constructors.
+            Assert.ThrowsException<NotSupportedException>(() => result = System.Text.Json.JsonSerializer.Deserialize<Article>(json));
+
+            //Assert.AreEqual(article.MarkdownContent, result?.MarkdownContent);
+        }
 
         [TestMethod]
         public void ServerUrlTest() => TestTemplate("{{serverurl}}", "http://localhost:5000/");

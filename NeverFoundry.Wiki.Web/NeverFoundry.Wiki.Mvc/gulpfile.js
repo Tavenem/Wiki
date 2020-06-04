@@ -6,7 +6,6 @@ const buffer = require('vinyl-buffer');
 const concat = require('gulp-concat');
 const cssnano = require('cssnano');
 const gulp = require('gulp');
-const merge = require('merge-stream');
 const postcss = require('gulp-postcss');
 const postcssPresetEnv = require('postcss-preset-env');
 const sass = require('gulp-sass');
@@ -18,6 +17,7 @@ var paths = {
     chat: "./content/chat.js",
     easymdecss: "./node_modules/easymde/dist/easymde.min.css",
     easymdejs: "./node_modules/easymde/dist/easymde.min.js",
+    emojibuttonjs: "./node_modules/@joeattardi/emoji-button/dist/index.js",
     filepondcss: "./node_modules/filepond/dist/filepond.min.css",
     filepondjs: "./node_modules/filepond/dist/filepond.min.js",
     filepondpreviewcss: "./node_modules/filepond-plugin-image-preview/dist/filepond-plugin-image-preview.min.css",
@@ -35,7 +35,7 @@ function compileChat() {
     return browserify({
         entries: paths.chat,
         debug: true,
-    }).transform(babelify, { presets: ['@babel/preset-env'] })
+    }).transform(babelify, { presets: ['@babel/preset-env'], sourceMaps: true })
         .bundle()
         .pipe(source('chat.js'))
         .pipe(buffer())
@@ -45,26 +45,29 @@ function compileChat() {
         .pipe(gulp.dest(paths.webroot));
 }
 
-function compileScripts() {
-    return merge(browserify({
-        entries: paths.script,
-        debug: true,
-    }).transform(babelify, { presets: ['@babel/preset-env'], plugins: ['@babel/plugin-transform-runtime'] })
-        .bundle()
-        .pipe(source('script.js'))
-        .pipe(buffer())
-        .pipe(sourcemaps.init({ loadMaps: true }))
-        .pipe(uglify())
-        .pipe(sourcemaps.write()),
-        gulp.src([
+function compileScriptLibs() {
+    return gulp.src([
             paths.easymdejs,
             paths.filepondjs,
             paths.filepondpreviewjs,
             paths.filepondsizejs,
             paths.filepondtypejs,
-            paths.signalrjs,
-        ]))
-        .pipe(concat('script.js'))
+        ])
+        .pipe(concat('libs.js'))
+        .pipe(gulp.dest(paths.webroot));
+}
+
+function compileScripts() {
+    return browserify({
+        entries: paths.script,
+        debug: true,
+    }).transform(babelify, { presets: ['@babel/preset-env'], plugins: ['@babel/plugin-transform-runtime'], sourceMaps: true })
+        .bundle()
+        .pipe(source('script.js'))
+        .pipe(buffer())
+        .pipe(sourcemaps.init({ loadMaps: true }))
+        .pipe(uglify())
+        .pipe(sourcemaps.write())
         .pipe(gulp.dest(paths.webroot));
 }
 
@@ -84,6 +87,7 @@ function compileStyles() {
 }
 
 exports.default = gulp.parallel([
+    compileScriptLibs,
     compileScripts,
     compileChat,
     compileStyleLibs,

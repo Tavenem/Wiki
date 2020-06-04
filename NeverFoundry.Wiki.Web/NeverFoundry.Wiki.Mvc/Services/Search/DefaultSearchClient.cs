@@ -4,7 +4,6 @@ using NeverFoundry.DataStorage;
 using System;
 using System.Linq;
 using System.Security.Claims;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.Services.Search

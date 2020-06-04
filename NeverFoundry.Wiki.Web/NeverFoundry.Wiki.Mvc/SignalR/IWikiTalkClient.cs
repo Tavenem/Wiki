@@ -1,23 +1,12 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Web.SignalR
 {
     /// <summary>
     /// A client for receiving wiki discussion messages.
     /// </summary>
-    public interface IWikiTalkClient : IAsyncDisposable
+    public interface IWikiTalkClient
     {
-        /// <summary>
-        /// Whether the connection is active.
-        /// </summary>
-        public bool IsConnected { get; }
-
-        /// <summary>
-        /// Receive a new message.
-        /// </summary>
-        event EventHandler<MessageResponse>? OnRecevied;
-
         /// <summary>
         /// <para>
         /// Receive a new message.
@@ -29,7 +18,7 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// <param name="message">
         /// A <see cref="MessageResponse"/> with information about the message received.
         /// </param>
-        void Receive(MessageResponse message);
+        Task Receive(MessageResponse message);
 
         /// <summary>
         /// Send a reply.
@@ -54,10 +43,6 @@ namespace NeverFoundry.Wiki.Web.SignalR
         /// </para>
         /// </summary>
         /// <param name="topicId">The ID of the topic to join.</param>
-        /// <returns>
-        /// <see langword="true"/> if the connection was successfully established; otherwise <see
-        /// langword="false"/>
-        /// </returns>
-        Task<bool> StartAsync(string topicId);
+        Task StartAsync(string topicId);
     }
 }

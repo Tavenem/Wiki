@@ -2,6 +2,7 @@
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
@@ -12,6 +13,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A wiki category revision.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public sealed class Category : Article
     {
@@ -22,11 +24,14 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Updates to this cache do not count as a revision.
         /// </remarks>
-        public IList<string> ChildIds { get; } = new List<string>();
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        public ICollection<string> ChildIds { get; } = new List<string>();
 
         /// <summary>
         /// Gets the full title of this item (including namespace).
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
         public override string FullTitle => $"{WikiConfig.CategoriesTitle}:{Title}";
 
         /// <summary>
@@ -60,22 +65,24 @@ namespace NeverFoundry.Wiki
                 transclusions)
         { }
 
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
         private Category(
             string id,
             string title,
-            string markdown,
-            WikiLink[] wikiLinks,
-            string[] childIds,
+            string markdownContent,
+            IList<WikiLink> wikiLinks,
+            List<string> childIds,
             long timestampTicks,
             bool isDeleted,
             string? owner,
-            string[]? allowedEditors,
-            string[]? allowedViewers,
-            string[] categories,
-            string[] transclusions) : base(
+            ReadOnlyCollection<string>? allowedEditors,
+            ReadOnlyCollection<string>? allowedViewers,
+            ReadOnlyCollection<string> categories,
+            ReadOnlyCollection<string> transclusions) : base(
                 id,
                 title,
-                markdown,
+                markdownContent,
                 wikiLinks,
                 timestampTicks,
                 WikiConfig.CategoriesTitle,
@@ -92,15 +99,15 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0],
-            (string[]?)info.GetValue(nameof(ChildIds), typeof(string[])) ?? new string[0],
+            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
+            (List<string>?)info.GetValue(nameof(ChildIds), typeof(List<string>)) ?? new List<string>(),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (string[]?)info.GetValue(nameof(AllowedEditors), typeof(string[])),
-            (string[]?)info.GetValue(nameof(AllowedViewers), typeof(string[])),
-            (string[]?)info.GetValue(nameof(Categories), typeof(string[])) ?? new string[0],
-            (string[]?)info.GetValue(nameof(Transclusions), typeof(string[])) ?? new string[0])
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(ReadOnlyCollection<string>)),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(ReadOnlyCollection<string>)),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (ReadOnlyCollection<string>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]))
         { }
 
         /// <summary>
@@ -296,15 +303,15 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
-            info.AddValue(nameof(ChildIds), ChildIds.ToArray());
+            info.AddValue(nameof(WikiLinks), WikiLinks);
+            info.AddValue(nameof(ChildIds), ChildIds);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
-            info.AddValue(nameof(AllowedEditors), AllowedEditors?.ToArray());
-            info.AddValue(nameof(AllowedViewers), AllowedViewers?.ToArray());
-            info.AddValue(nameof(Categories), Categories.ToArray());
-            info.AddValue(nameof(Transclusions), Transclusions.ToArray());
+            info.AddValue(nameof(AllowedEditors), AllowedEditors);
+            info.AddValue(nameof(AllowedViewers), AllowedViewers);
+            info.AddValue(nameof(Categories), Categories);
+            info.AddValue(nameof(Transclusions), Transclusions);
         }
 
         /// <summary>

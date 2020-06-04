@@ -93,6 +93,7 @@ namespace NeverFoundry.Wiki.MVCSample
                         provider.GetRequiredService<IElasticClient>(),
                         loggerFactory.CreateLogger<ElasticSearchClient>(),
                         provider.GetRequiredService<UserManager<WikiUser>>()),
+                    TenorAPIKey = "ZB1P1TN5PVFQ",
                 };
             });
         }

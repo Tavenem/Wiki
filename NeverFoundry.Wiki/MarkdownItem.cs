@@ -17,13 +17,13 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
-using System.Text.RegularExpressions;
 
 namespace NeverFoundry.Wiki
 {
     /// <summary>
     /// An item which contains markdown.
     /// </summary>
+    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public abstract class MarkdownItem : IdItem, ISerializable
     {
@@ -47,7 +47,10 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
-        public IReadOnlyList<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
+        [Newtonsoft.Json.JsonProperty(
+            TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None,
+            ItemTypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        public IReadOnlyCollection<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
 
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
@@ -57,7 +60,7 @@ namespace NeverFoundry.Wiki
         protected MarkdownItem(string? markdown, List<WikiLink> wikiLinks)
         {
             MarkdownContent = markdown ?? string.Empty;
-            WikiLinks = wikiLinks;
+            WikiLinks = wikiLinks.AsReadOnly();
         }
 
         /// <summary>
@@ -66,16 +69,18 @@ namespace NeverFoundry.Wiki
         /// <param name="markdown">The raw markdown.</param>
         protected MarkdownItem(string? markdown) : this(markdown, GetWikiLinks(markdown)) { }
 
-        private protected MarkdownItem(string id, string? markdown, IList<WikiLink> wikiLinks) : base(id)
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
+        private protected MarkdownItem(string id, string? markdownContent, IList<WikiLink> wikiLinks) : base(id)
         {
-            MarkdownContent = markdown ?? string.Empty;
+            MarkdownContent = markdownContent ?? string.Empty;
             WikiLinks = new ReadOnlyCollection<WikiLink>(wikiLinks);
         }
 
         private MarkdownItem(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (WikiLink[]?)info.GetValue(nameof(WikiLinks), typeof(WikiLink[])) ?? new WikiLink[0])
+            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>)
         { }
 
         /// <summary>
@@ -87,8 +92,13 @@ namespace NeverFoundry.Wiki
         /// If true, stops after the first paragraph break, even still under the allowed character limit.
         /// </param>
         /// <returns>The plain text.</returns>
-        public static string GetPlainText(string markdown, int? characterLimit = 200, bool singleParagraph = true)
+        public static string FormatPlainText(string? markdown, int? characterLimit = 200, bool singleParagraph = true)
         {
+            if (string.IsNullOrEmpty(markdown))
+            {
+                return string.Empty;
+            }
+
             if (singleParagraph && markdown.Length > 1)
             {
                 var paraIndex = markdown.IndexOf(Environment.NewLine + Environment.NewLine, 1);
@@ -178,7 +188,7 @@ namespace NeverFoundry.Wiki
         {
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
-            info.AddValue(nameof(WikiLinks), WikiLinks.ToArray());
+            info.AddValue(nameof(WikiLinks), WikiLinks);
         }
 
         /// <summary>
@@ -240,6 +250,18 @@ namespace NeverFoundry.Wiki
         public string GetHtml() => RenderHtml(PostprocessMarkdown(MarkdownContent));
 
         /// <summary>
+        /// Gets the given markdown content as plain text (i.e. strips all formatting).
+        /// </summary>
+        /// <param name="markdown">The markdown content.</param>
+        /// <param name="characterLimit">The maximum number of characters to return.</param>
+        /// <param name="singleParagraph">
+        /// If true, stops after the first paragraph break, even still under the allowed character limit.
+        /// </param>
+        /// <returns>The plain text.</returns>
+        public string GetPlainText(string? markdown, int? characterLimit = 200, bool singleParagraph = true)
+            => FormatPlainText(PostprocessMarkdown(markdown), characterLimit, singleParagraph);
+
+        /// <summary>
         /// Gets this item's content as plain text (i.e. strips all formatting).
         /// </summary>
         /// <param name="characterLimit">The maximum number of characters to return.</param>
@@ -248,7 +270,7 @@ namespace NeverFoundry.Wiki
         /// </param>
         /// <returns>The plain text.</returns>
         public string GetPlainText(int? characterLimit = 200, bool singleParagraph = true)
-            => GetPlainText(PostprocessMarkdown(MarkdownContent), characterLimit, singleParagraph);
+            => FormatPlainText(PostprocessMarkdown(MarkdownContent), characterLimit, singleParagraph);
 
         /// <summary>
         /// Gets a preview of this item's rendered HTML.
@@ -594,6 +616,6 @@ namespace NeverFoundry.Wiki
             }
         }
 
-        private protected virtual string PostprocessMarkdown(string markdown, bool isPreview = false) => markdown;
+        private protected virtual string PostprocessMarkdown(string? markdown, bool isPreview = false) => markdown ?? string.Empty;
     }
 }

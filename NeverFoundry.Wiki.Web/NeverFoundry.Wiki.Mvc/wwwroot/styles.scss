@@ -1,11 +1,13 @@
 ﻿$background-color: #1d1e22 !default;
 $background-color-dark: adjust-color($background-color, $lightness: -4%) !default;
+$background-color-darker: adjust-color($background-color, $lightness: -8%) !default;
 $border-color: adjust-color($background-color, $lightness: 15%) !default;
 $color: #f2f2f2 !default;
 $color-muted: #6c757d !default;
 $link-color: #68b2fa !default;
 $link-color-missing: rgb(255, 92, 92) !default;
 $highlight-color: #0058ff !default;
+$result-color: #00ff89 !default;
 $font-family-title: serif !default;
 
 html, body {
@@ -115,12 +117,12 @@ html, body {
 
     form {
         > * {
-            background-color: $background-color-dark;
+            background-color: $background-color-darker;
             border-color: $border-color;
             color: $color;
 
             &:focus {
-                background-color: $background-color-dark;
+                background-color: $background-color-darker;
                 color: $color;
             }
         }
@@ -132,7 +134,7 @@ html, body {
         color: $color;
 
         &:focus {
-            background-color: $background-color-dark;
+            background-color: $background-color-darker;
             color: $color;
         }
     }
@@ -244,10 +246,6 @@ html, body {
                 }
             }
         }
-    }
-
-    img {
-        float: right;
     }
 }
 
@@ -374,6 +372,10 @@ html, body {
 
 .wiki-parser-output {
     flex-grow: 1;
+
+    img {
+        float: right;
+    }
 }
 
 #wiki-category-list-section {
@@ -562,18 +564,37 @@ html, body {
     background-color: $background-color;
     border-radius: 0.5em;
     flex-grow: 1;
+    overflow: auto;
     position: relative;
 
     ul {
         list-style: none none;
-        margin-left: 1em;
-        margin-right: 1em;
+        padding: 0;
 
         @media screen and (min-width: 982px) {
-            margin-left: 1.25em;
-            margin-right: 1.25em;
+            margin-left: 0.25em;
+            margin-right: 0.25em;
+        }
+
+        &.wiki-message-replies {
+            padding-left: 1.25em;
         }
     }
+
+    li {
+        background-color: $background-color-dark;
+        border: 1px solid $border-color;
+        border-radius: 5px;
+        margin: 0.25em;
+
+        &.wiki-message-reply {
+            border: none;
+        }
+    }
+}
+
+.wiki-message-reply-emoji {
+    margin-right: 0.5em;
 }
 
 #wiki-talk-nomessages {
@@ -588,28 +609,26 @@ html, body {
     top: 0;
 }
 
-#wiki-talk-newmessage {
-    border: 1px solid $border-color;
-    border-radius: 0.25em;
+.wiki-talk-reply {
     display: flex;
     flex-flow: column nowrap;
+    margin-bottom: 0.25em;
     margin-top: 0.25em;
-    padding: 0.25em;
+    padding: 0.25rem;
 
-    label {
-        font-size: small;
-        margin-bottom: 0;
-        padding-left: 0.25rem;
+    &.collapsed {
+        display: none;
     }
 
     textarea {
         border: none;
-        margin-bottom: 0.2rem;
     }
+}
 
-    button {
-        align-self: flex-end;
-    }
+.wiki-talk-reply-toggle {
+    font-size: smaller;
+    padding-left: 0.25rem;
+    padding-top: 0.25rem;
 }
 
 #wiki-talk-signin-prompt {
@@ -620,27 +639,106 @@ html, body {
     padding: 0.25em;
 }
 
-.collapsed .wiki-message-content {
-    max-height: 11em;
-    overflow: hidden;
-    position: relative;
+.wiki-message-header {
+    display: flex;
+    flex-flow: row wrap;
+    padding-left: 0.25em;
+    padding-right: 0.25em;
+}
 
-    &:after {
-        content: " ";
-        display: none;
-        z-index: 10;
-        display: block;
-        position: absolute;
-        height: 100%;
-        top: 0;
-        left: 0;
-        right: 0;
-        background: linear-gradient(to top, $background-color, transparent 1.1em, transparent);
+.wiki-message-body {
+    border-bottom: 1px solid $border-color;
+    padding: 0.25em;
+    padding-left: 1.25em;
+    padding-top: 0;
+
+    .wiki-message-reply & {
+        border-bottom: none;
+    }
+
+    &.wiki-message-readonly {
+        border-bottom: none;
     }
 }
 
-.collapsible .wiki-message-content:after {
-    display: block;
+.wiki-message-footer {
+    padding-left: 1.25em;
+    padding-right: 0.25em;
+
+    .wiki-message-readonly & {
+        display: none;
+    }
+}
+
+.wiki-message-content {
+    p:last-of-type {
+        margin-bottom: 0;
+    }
+
+    .collapsible &:after {
+        display: block;
+    }
+
+    .collapsible.collapsed & {
+        max-height: 11em;
+        overflow: hidden;
+        position: relative;
+
+        &:after {
+            content: " ";
+            display: none;
+            z-index: 10;
+            display: block;
+            position: absolute;
+            height: 100%;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, $background-color, transparent 1.1em, transparent);
+        }
+    }
+}
+
+.wiki-message-controls {
+    display: flex;
+    flex-flow: row wrap;
+    margin-top: 0.2rem;
+    justify-content: space-between;
+
+    div {
+        display: flex;
+        flex-flow: row wrap;
+    }
+
+    & > div > button, & > div > div {
+        margin-right: 0.25em;
+    }
+}
+
+.wiki-message-sender {
+    font-size: small;
+    font-weight: bold;
+}
+
+.wiki-message-timestamp {
+    font-size: smaller;
+    margin-left: 1em;
+}
+
+.wiki-message-reactions {
+    display: flex;
+    flex-flow: row wrap;
+    font-size: larger;
+    margin-left: 1em;
+    margin-bottom: -0.5em
+}
+
+.wiki-message-reaction-count-one {
+    display: none;
+}
+
+.wiki-message-reaction-icon {
+    vertical-align: text-bottom;
 }
 
 .wiki-message-collapse-toggler {
@@ -664,6 +762,22 @@ html, body {
 }
 
 .wiki-message-thread-toggler {
+    display: none;
+    font-size: smaller;
+    margin-left: 0.25em;
+
+    .wiki-message-thread & {
+        display: block;
+    }
+
+    a:after {
+        content: "show replies";
+
+        .expanded & {
+            content: "hide replies";
+        }
+    }
+
     svg {
         transition: all linear 0.25s;
 
@@ -672,9 +786,9 @@ html, body {
         }
     }
 
-    &.expanded svg {
+    .expanded & svg {
         transform-origin: center;
-        transform: rotate(90deg);
+        transform: rotate(-90deg);
     }
 }
 
@@ -688,6 +802,93 @@ html, body {
             display: block;
         }
     }
+}
+
+#wiki-talk-tenor {
+    align-items: stretch;
+    background-color: $background-color-dark;
+    border: 1px solid $border-color;
+    border-radius: 5px;
+    display: none;
+    flex-flow: column nowrap;
+    height: 26em;
+    padding: 0.25em;
+    width: 20em;
+    z-index: 10000;
+
+    &[data-show] {
+        display: flex;
+    }
+}
+
+#wiki-talk-tenor-search {
+    border-bottom: 1px solid $border-color;
+    display: flex;
+    position: relative;
+
+    input {
+        padding-left: 2em;
+        width: 100%;
+    }
+
+    svg {
+        opacity: 0.67;
+        position: absolute;
+        top: 8px;
+    }
+}
+
+#wiki-talk-tenor-content {
+    display: flex;
+    flex-flow: row wrap;
+    flex-grow: 1;
+    justify-content: space-evenly;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.wiki-talk-tenor-item {
+    align-items: center;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    max-height: 9em;
+    max-width: 9em;
+    position: relative;
+    text-align: center;
+
+    img {
+        max-width: inherit;
+    }
+
+    span {
+        background-color: #000;
+        background-color: rgba(0,0,0,0.5);
+        border-radius: 5px;
+        left: 50%;
+        padding-left: 0.25em;
+        padding-right: 0.25em;
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+
+        &:after {
+            content: "\2060🔍";
+        }
+    }
+}
+
+#wiki-talk-tenor-search-suggestions {
+    border-bottom: 1px solid $border-color;
+    display: flex;
+    flex-flow: row wrap;
+}
+
+.wiki-talk-tenor-search-suggestion {
+    border: 1px solid $background-color;
+    border-radius: 3px;
+    font-family: sans-serif;
+    padding: 0.5em;
 }
 
 /* revision history */
@@ -797,7 +998,10 @@ html, body {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
+}
 
+#wiki-edit-editor,
+.wiki-talk-reply {
     .editor-toolbar {
         background-color: $background-color;
 
@@ -808,8 +1012,10 @@ html, body {
     }
 
     .CodeMirror {
+        background-color: $background-color-darker;
         border-bottom-left-radius: 0;
         border-bottom-right-radius: 0;
+        color: $color;
     }
 
     .CodeMirror-focused .CodeMirror-selected,
@@ -883,7 +1089,6 @@ html, body {
         margin-left: 0.5em;
     }
 }
-
 /* search */
 #wiki-search-form {
     min-height: 122.6px;
@@ -1040,6 +1245,9 @@ html, body {
     font-size: 108%;
 }
 
+.wiki-search-hit {
+    color: $result-color;
+}
 /* specials */
 .wiki-special-group {
     columns: 16em 2;
@@ -1073,7 +1281,6 @@ html, body {
     columns: 22em 3;
     page-break-inside: avoid;
 }
-
 /* upload */
 #wiki-upload-form {
     #wiki-upload-file {
@@ -1116,7 +1323,6 @@ html, body {
         border-top: 0;
     }
 }
-
 /* tooltips */
 .tippy-box {
     font-size: 80%;
@@ -1141,7 +1347,6 @@ html, body {
         font-size: 1.1rem;
     }
 }
-
 /* loading dots */
 .is-loading {
     margin-right: 0.5em;

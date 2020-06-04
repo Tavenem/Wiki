@@ -1,6 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Elasticsearch.Net;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nest;
+using Nest.JsonNetSerializer;
 using System;
 
 namespace NeverFoundry.Wiki.Sample.Services
@@ -12,33 +14,48 @@ namespace NeverFoundry.Wiki.Sample.Services
             var url = configuration.GetValue<string>("Elasticsearch:Url");
             var defaultIndex = configuration.GetValue<string>("Elasticsearch:Index");
 
-            var settings = new ConnectionSettings(new Uri(url))
+            var settings = new ConnectionSettings(
+                    new SingleNodeConnectionPool(new Uri(url)),
+                    sourceSerializer: JsonNetSerializer.Default)
                 .DefaultIndex(defaultIndex)
                 .DefaultFieldNameInferrer(x => x)
                 .DefaultMappingFor<WikiLink>(m =>
                     m.Ignore(i => i.FullTitle))
                 .DefaultMappingFor<Article>(m =>
-                    m.Ignore(i => i.FullTitle)
+                    m.IndexName(defaultIndex)
+                    .Ignore(i => i.FullTitle)
                     .Ignore(i => i.Timestamp))
                 .DefaultMappingFor<Category>(m =>
-                    m.Ignore(i => i.FullTitle))
+                    m.IndexName(defaultIndex)
+                    .Ignore(i => i.FullTitle)
+                    .Ignore(i => i.Timestamp))
                 .DefaultMappingFor<WikiFile>(m =>
-                    m.Ignore(i => i.FullTitle));
+                    m.IndexName(defaultIndex)
+                    .Ignore(i => i.FullTitle)
+                    .Ignore(i => i.Timestamp));
 
             var client = new ElasticClient(settings);
 
-            var response = client.Indices.Create(defaultIndex, i =>
-                i.Map<Article>(m =>
-                    m.AutoMap<Article>()
-                    .Properties(p =>
-                        p.Nested<WikiLink>(n =>
-                            n.Name(nn => nn.WikiLinks)
-                            .AutoMap()))
-                    .AutoMap<Category>()
-                    .AutoMap<WikiFile>()));
-            if (!response.ApiCall.Success)
+            var result = client.Indices.Exists(defaultIndex);
+            if (!result.Exists)
             {
-                throw response.ApiCall.OriginalException;
+                var response = client.Indices.Create(defaultIndex, i =>
+                    i.Map<Article>(m =>
+                        m.AutoMap<Article>()
+                        .Properties(p =>
+                            p.Nested<WikiLink>(n =>
+                                n.Name(nn => nn.WikiLinks)
+                                .AutoMap())
+                            .Keyword(k => k.Name(n => n.AllowedEditors))
+                            .Keyword(k => k.Name(n => n.AllowedViewers))
+                            .Keyword(k => k.Name(n => n.Categories))
+                            .Keyword(k => k.Name(n => n.Transclusions)))
+                        .AutoMap<Category>()
+                        .AutoMap<WikiFile>()));
+                if (!response.ApiCall.Success)
+                {
+                    throw response.ApiCall.OriginalException;
+                }
             }
 
             services.AddSingleton<IElasticClient>(client);

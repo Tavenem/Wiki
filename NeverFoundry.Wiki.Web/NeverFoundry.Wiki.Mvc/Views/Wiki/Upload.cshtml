@@ -40,77 +40,78 @@
             @Html.Raw(Model.Preview)
         </div>
     }
-<form id="wiki-upload-form" class="dropzone" asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Upload">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input id="wiki-upload-file" name="file" type="file" required />
-    <div id="wiki-edit-file-properties">
-        <div id="wiki-edit-titleinputgroup" class="form-group">
-            <label asp-for="Title"></label>
-            <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" />
-            <span asp-validation-for="Title" class="text-danger"></span>
-        </div>
-        <textarea asp-for="Markdown"></textarea>
-        <div id="wiki-edit-options">
-            <div class="form-group">
-                <label asp-for="Comment"></label>
-                <input asp-for="Comment" class="form-control" spellcheck="true" />
+    <form id="wiki-upload-form" class="dropzone" asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Upload">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <input id="wiki-upload-file" name="file" type="file" required />
+        <div id="wiki-edit-file-properties">
+            <div id="wiki-edit-titleinputgroup" class="form-group">
+                <label asp-for="Title"></label>
+                <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" />
+                <span asp-validation-for="Title" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="Owner" title="Should be a username or user ID. Can be left blank to make the file community-owned.">Owner (optional)</label>
-                <input asp-for="Owner" class="form-control" title="Should be a username or user ID. Can be left blank to make the file community-owned." readonly="@(Model.OwnerSelf ? "readonly" : null)" />
-            </div>
-            <div class="form-group form-check">
-                <input asp-for="OwnerSelf" class="form-check-input" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);" />
-                <label asp-for="OwnerSelf" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);"></label>
-            </div>
-            <div class="form-group">
-                <label asp-for="AllowedEditors" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included."></label>
-                <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
-            </div>
-            <div class="form-group">
-                <label asp-for="AllowedViewers" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included."></label>
-                <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
-            </div>
-            <div class="form-group wiki-edit-terms-notice">
-                @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
-                {
-                    if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+            <textarea asp-for="Markdown"></textarea>
+            <div id="wiki-edit-options">
+                <div class="form-group">
+                    <label asp-for="Comment"></label>
+                    <input asp-for="Comment" class="form-control" spellcheck="true" />
+                </div>
+                <div class="form-group">
+                    <label asp-for="Owner" title="Should be a username or user ID. Can be left blank to make the file community-owned.">Owner (optional)</label>
+                    <input asp-for="Owner" class="form-control" title="Should be a username or user ID. Can be left blank to make the file community-owned." readonly="@(Model.OwnerSelf ? "readonly" : null)" />
+                </div>
+                <div class="form-group form-check">
+                    <input asp-for="OwnerSelf" class="form-check-input" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);" />
+                    <label asp-for="OwnerSelf" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);"></label>
+                </div>
+                <div class="form-group">
+                    <label asp-for="AllowedEditors" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included."></label>
+                    <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
+                </div>
+                <div class="form-group">
+                    <label asp-for="AllowedViewers" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included."></label>
+                    <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
+                </div>
+                <div class="form-group wiki-edit-terms-notice">
+                    @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+                    {
+                        if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+                        {
+                            <div class="wiki-edit-terms-notice">
+                                <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="wiki-edit-terms-notice">
+                                <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+                            </div>
+                        }
+                    }
+                    else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
                     {
                         <div class="wiki-edit-terms-notice">
-                            <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                            <p>Content submitted to this wiki is subject to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
                         </div>
                     }
                     else
                     {
                         <div class="wiki-edit-terms-notice">
-                            <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+                            <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
                         </div>
                     }
-                }
-                else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
-                {
-                    <div class="wiki-edit-terms-notice">
-                        <p>Content submitted to this wiki is subject to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="wiki-edit-terms-notice">
-                        <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
-                    </div>
-                }
+                </div>
             </div>
         </div>
-    </div>
-    <div id="wiki-edit-submit-buttons" class="form-row">
-        <button id="wiki-edit-submit-button" class="btn btn-primary" type="submit" name="ShowPreview" value="false">Publish changes</button>
-        <button id="wiki-edit-preview-button" class="btn btn-info" type="submit" name="ShowPreview" value="true">Show full preview</button>
-        <a id="wiki-edit-cancel-button" class="btn btn-secondary" href="@Url.Action("Read", new { isCompact = false, title = WikiConfig.MainPageTitle, wikiNamespace = WikiConfig.DefaultNamespace })">Cancel</a>
-    </div>
-</form>
+        <div id="wiki-edit-submit-buttons" class="form-row">
+            <button id="wiki-edit-submit-button" class="btn btn-primary" type="submit" name="ShowPreview" value="false">Publish changes</button>
+            <button id="wiki-edit-preview-button" class="btn btn-info" type="submit" name="ShowPreview" value="true">Show full preview</button>
+            <a id="wiki-edit-cancel-button" class="btn btn-secondary" href="@Url.Action("Read", new { isCompact = false, title = WikiConfig.MainPageTitle, wikiNamespace = WikiConfig.DefaultNamespace })">Cancel</a>
+        </div>
+    </form>
 </div>
 
 @section Scripts {
+    <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>
     <script>
         FilePond.registerPlugin(
             FilePondPluginFileValidateSize,
