@@ -36,11 +36,8 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.0-preview.4.20257.10" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.0-preview.4.20257.10" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.6.0-preview" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\NeverFoundry.Wiki\NeverFoundry.Wiki.csproj" />
   </ItemGroup>
 
   <!-- npm -->
@@ -62,8 +59,7 @@
   </Target>
 
   <!-- Gulp -->
-  <!-- Gulp Debug -->
-  <Target Name="GulpDebug" BeforeTargets="Build" Condition="'$(Configuration)' == 'Debug'" Inputs="gulpfile.js;package.json;package-lock.json;content\script.js;content\chat.js;wwwroot\styles.scss" Outputs="wwwroot\script.js;wwwroot\chat.js;wwwroot\styles.css">
+  <Target Name="Gulp" BeforeTargets="Build" Inputs="gulpfile.js;package.json;package-lock.json;content\script.js;content\chat.js;wwwroot\styles.scss" Outputs="wwwroot\script.js;wwwroot\chat.js;wwwroot\styles.css">
     <!-- Ensure Node.js is installed -->
     <Exec Command="node --version" ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
@@ -72,22 +68,7 @@
 
     <!-- Gulp -->
     <Exec Command="npm install --global gulp-cli" />
-    <Exec Command="gulp --envir Development" ConsoleToMSBuild="True">
-      <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
-    </Exec>
-  </Target>
-
-  <!-- Gulp Release -->
-  <Target Name="GulpRelease" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release'" Inputs="gulpfile.js;package.json;package-lock.json;content\script.js;content\chat.js;wwwroot\styles.scss" Outputs="wwwroot\script.js;wwwroot\chat.js;wwwroot\styles.css">
-    <!-- Ensure Node.js is installed -->
-    <Exec Command="node --version" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-    </Exec>
-    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-
-    <!-- Gulp -->
-    <Exec Command="npm install --global gulp-cli" />
-    <Exec Command="gulp --envir Production" ConsoleToMSBuild="True">
+    <Exec Command="gulp" ConsoleToMSBuild="True">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>

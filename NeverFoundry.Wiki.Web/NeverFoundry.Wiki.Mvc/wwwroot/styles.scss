@@ -1001,6 +1001,7 @@ html, body {
 }
 
 #wiki-edit-editor,
+#wiki-upload-form,
 .wiki-talk-reply {
     .editor-toolbar {
         background-color: $background-color;
@@ -1089,6 +1090,7 @@ html, body {
         margin-left: 0.5em;
     }
 }
+
 /* search */
 #wiki-search-form {
     min-height: 122.6px;
@@ -1248,6 +1250,7 @@ html, body {
 .wiki-search-hit {
     color: $result-color;
 }
+
 /* specials */
 .wiki-special-group {
     columns: 16em 2;
@@ -1281,48 +1284,20 @@ html, body {
     columns: 22em 3;
     page-break-inside: avoid;
 }
+
 /* upload */
-#wiki-upload-form {
-    #wiki-upload-file {
-        margin-top: 1em;
+#wiki-upload-file {
+    margin-top: 1em;
 
-        .filepond--panel-root {
-            background-color: $background-color;
-        }
-
-        .filepond--drop-label {
-            color: $color;
-        }
-    }
-
-    .editor-toolbar {
+    .filepond--panel-root {
         background-color: $background-color;
-
-        button.active, button:hover {
-            background: $background-color;
-            border-color: $border-color;
-        }
     }
 
-    .CodeMirror {
-        background: inherit;
-        border-bottom-left-radius: 0;
-        border-bottom-right-radius: 0;
-        color: inherit;
-    }
-
-    .CodeMirror-focused .CodeMirror-selected,
-    .CodeMirror-selected {
-        background-color: $border-color;
-    }
-
-    .editor-statusbar {
-        background-color: $background-color;
-        border: 1px solid $border-color;
-        border-color: $border-color;
-        border-top: 0;
+    .filepond--drop-label {
+        color: $color;
     }
 }
+
 /* tooltips */
 .tippy-box {
     font-size: 80%;
@@ -1347,6 +1322,7 @@ html, body {
         font-size: 1.1rem;
     }
 }
+
 /* loading dots */
 .is-loading {
     margin-right: 0.5em;

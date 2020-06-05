@@ -26,31 +26,13 @@
     <PackageReference Include="NEST" Version="7.7.1" />
     <PackageReference Include="NEST.JsonNetSerializer" Version="7.7.1" />
     <PackageReference Include="NeverFoundry.DataStore.Marten" Version="0.12.0" />
+    <PackageReference Include="NeverFoundry.Wiki.Mvc" Version="0.6.0-preview" />
     <PackageReference Include="Npgsql" Version="4.1.3.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.0-preview4" />
     <PackageReference Include="Serilog" Version="2.9.0" />
     <PackageReference Include="Serilog.AspNetCore" Version="3.2.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="3.1.0" />
     <PackageReference Include="Serilog.Sinks.Elasticsearch" Version="8.1.0" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <ProjectReference Include="..\..\NeverFoundry.Wiki.Web\NeverFoundry.Wiki.Mvc\NeverFoundry.Wiki.Mvc.csproj" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\chat.js">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\libs.js">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
-    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\script.js">
-      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-    </Content>
   </ItemGroup>
 
   <!-- npm -->
@@ -71,8 +53,8 @@
     <Touch Files="$(NpmStamp)" AlwaysCreate="true" />
   </Target>
 
-  <!-- Gulp Debug -->
-  <Target Name="GulpDebug" BeforeTargets="Build" Condition="'$(Configuration)' == 'Debug'" Inputs="gulpfile.js;package.json;package-lock.json;content\styles\_custom.scss;content\styles\site.scss" Outputs="wwwroot\site.css">
+  <!-- Gulp -->
+  <Target Name="Gulp" BeforeTargets="Build" Inputs="gulpfile.js;package.json;package-lock.json;content\styles\_custom.scss;content\styles\site.scss" Outputs="wwwroot\site.css">
     <!-- Ensure Node.js is installed -->
     <Exec Command="node --version" ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
@@ -81,22 +63,7 @@
 
     <!-- Gulp -->
     <Exec Command="npm install --global gulp-cli" />
-    <Exec Command="gulp --envir Development" ConsoleToMSBuild="True">
-      <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
-    </Exec>
-  </Target>
-
-  <!-- Gulp Release -->
-  <Target Name="GulpRelease" BeforeTargets="Build" Condition="'$(Configuration)' == 'GulpRelease'" Inputs="gulpfile.js;package.json;package-lock.json;content\styles\_custom.scss;content\styles\site.scss" Outputs="wwwroot\site.css">
-    <!-- Ensure Node.js is installed -->
-    <Exec Command="node --version" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-    </Exec>
-    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-
-    <!-- Gulp -->
-    <Exec Command="npm install --global gulp-cli" />
-    <Exec Command="gulp --envir Production" ConsoleToMSBuild="True">
+    <Exec Command="gulp" ConsoleToMSBuild="True">
       <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
     </Exec>
   </Target>
