@@ -67,8 +67,8 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
                 }
             }
 
-            var result = await _userManager.DeleteAsync(user).ConfigureAwait(false);
             var userId = await _userManager.GetUserIdAsync(user).ConfigureAwait(false);
+            var result = await _userManager.DeleteAsync(user).ConfigureAwait(false);
             if (!result.Succeeded)
             {
                 _logger.LogError("Error occurred deleting user with ID '{UserId}'.", userId);

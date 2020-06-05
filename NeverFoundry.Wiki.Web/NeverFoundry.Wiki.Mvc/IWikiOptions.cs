@@ -1,4 +1,6 @@
-﻿namespace NeverFoundry.Wiki.Mvc
+﻿using System;
+
+namespace NeverFoundry.Wiki.Mvc
 {
     /// <summary>
     /// Options used to configure the wiki system.
