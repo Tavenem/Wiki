@@ -27,12 +27,10 @@ namespace NeverFoundry.Wiki.Sample.Data
             config.Schema.For<Article>()
                 .FullTextIndex(x => x.Title, x => x.WikiNamespace, x => x.MarkdownContent)
                 .AddSubClass<Category>()
-                .AddSubClass<WikiFile>()
-                .SoftDeleted();
-            config.Schema.For<WikiRevision>()
-                .SoftDeleted();
-            config.Schema.For<Message>()
-                .SoftDeleted();
+                .AddSubClass<WikiFile>();
+            config.Schema.For<WikiRevision>();
+            config.Schema.For<MissingPage>();
+            config.Schema.For<Message>();
         });
 
         public static async Task InitializeDatabasesAsync(IApplicationBuilder app)
@@ -114,7 +112,7 @@ The source code for `NeverFoundry.Wiki` is available online, and also includes a
 
 See the [[System:Help|]] page for usage information.
 
-[[{WikiConfig.CategoriesTitle}:System pages]]",
+[[{WikiConfig.CategoryNamespace}:System pages]]",
             WikiWebConfig.SystemNamespace,
             adminId,
             new[] { adminId });
@@ -149,7 +147,7 @@ In order to integrate it into a Blazor site, there are a number of steps to foll
 
    The `WikiRouter` component overrides the default routing behavior of a Blazor site in order to treat all routes which begin with a predetermined relative path as valid wiki pages (whether or not they already exist). URLs which match a page with an `@page` route will still go where they belong, even if they start with the defined wiki prefix. All unmatched URLs relative to the wiki prefix will be interpreted as a request for a wiki page by that name, and will not fall back to the defined ""not found"" handling (the standard wiki content shown for articles which don't exists will be shown instead).
 
-[[" + WikiConfig.CategoriesTitle + ":Help pages]]",
+[[" + WikiConfig.CategoryNamespace + ":Help pages]]",
             WikiConfig.DefaultNamespace,
             adminId,
             new[] { adminId });
@@ -323,9 +321,14 @@ The `WikiConfig` static class contains a number of properties which can be set t
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 
 ##  Site pages
-- **`CategoriesTitle`** - The title of the categories namespace, and the article on categories in the main wiki.
+- **`CategoriesTitle`** - The title of the article on categories in the main wiki.
 
    Default is ""Categories""
+
+   May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
+- **`CategoryNamespace`** - The title of the categories namespace.
+
+   Default is ""Category""
 
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 - **`DefaultNamespace`** - The name of the default namespace.
@@ -389,8 +392,8 @@ The `NeverFoundry.Wiki.Mvc` package contains a sample/default implementation of 
 # Blazor
 The `NeverFoundry.Wiki.Blazor` package contains a sample/default implementation of `NeverFoundry.Wiki` for use with a [Blazor](http://blazor.net) site (which depends on NeverFoundry.Wiki.Mvc as a back-end). This implementation can be used as-is, or you can use the source as the starting point to build your own implementation. See [[Blazor|the Blazor page]] for more information.
 
-[[" + WikiConfig.CategoriesTitle + @":System pages]]
-[[" + WikiConfig.CategoriesTitle + ":Help pages]]",
+[[" + WikiConfig.CategoryNamespace + @":System pages]]
+[[" + WikiConfig.CategoryNamespace + ":Help pages]]",
             WikiWebConfig.SystemNamespace,
             adminId,
             new[] { adminId });
@@ -402,7 +405,7 @@ The `NeverFoundry.Wiki.Blazor` package contains a sample/default implementation 
 
 See the [[System:About|]] page or the [[System:Help|]] page for more information.
 
-[[{WikiConfig.CategoriesTitle}:System pages]]",
+[[{WikiConfig.CategoryNamespace}:System pages]]",
             WikiConfig.DefaultNamespace,
             adminId,
             new[] { adminId });
@@ -542,7 +545,7 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
 
    This limit is observed regardless of the implementation assigned to `SaveFile`, but if you wish to employ more complex logic to determine the allowed size of uploads (e.g. based on file type or individual user permissions), you can set this to the largest limit you wish to allow, then provide more fine-grained limits in your `SaveFile` implementation.
 
-[[" + WikiConfig.CategoriesTitle + ":Help pages]]",
+[[" + WikiConfig.CategoryNamespace + ":Help pages]]",
             WikiConfig.DefaultNamespace,
             adminId,
             new[] { adminId });
@@ -552,7 +555,7 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
             adminId,
 @$"Welcome to the [NeverFoundry](http://neverfoundry.com).Wiki sample.
 
-{{{{ifnottemplate|[[{WikiConfig.CategoriesTitle}:System pages]]}}}}",
+{{{{ifnottemplate|[[{WikiConfig.CategoryNamespace}:System pages]]}}}}",
             WikiConfig.TransclusionNamespace,
             adminId,
             new[] { adminId });

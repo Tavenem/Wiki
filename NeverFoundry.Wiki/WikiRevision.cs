@@ -267,7 +267,7 @@ namespace NeverFoundry.Wiki
         /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
         /// order given.
         /// </exception>
-        public static string GetDiff(IList<WikiRevision> revisions, string format = "md")
+        public static string GetDiff(IReadOnlyList<WikiRevision> revisions, string format = "md")
         {
             if (revisions.Count == 0)
             {

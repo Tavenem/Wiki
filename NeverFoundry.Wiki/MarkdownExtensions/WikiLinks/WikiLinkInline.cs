@@ -18,6 +18,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
         public string? Endmatter { get; set; }
 
         /// <summary>
+        /// Whether this is a link to a missing page.
+        /// </summary>
+        public bool Missing { get; set; }
+
+        /// <summary>
         /// Whether this link has an explicit display label.
         /// </summary>
         public bool HasDisplay { get; set; }

@@ -49,15 +49,15 @@ html, body {
         &:hover {
             color: darken($link-color, 15%);
 
-            .wiki-link-missing {
+            &.wiki-link-missing {
                 color: darken($link-color-missing, 15%);
 
-                .wiki-link-namespace {
+                &.wiki-link-namespace {
                     color: darken($link-color-missing, 30%);
                 }
             }
 
-            .wiki-link-namespace {
+            &.wiki-link-namespace {
                 color: darken($link-color, 30%);
             }
         }
@@ -65,15 +65,15 @@ html, body {
         &:visited {
             color: lighten($link-color, 15%);
 
-            .wiki-link-missing {
+            &.wiki-link-missing {
                 color: lighten($link-color-missing, 15%);
 
-                .wiki-link-namespace {
+                &.wiki-link-namespace {
                     color: $link-color-missing;
                 }
             }
 
-            .wiki-link-namespace {
+            &.wiki-link-namespace {
                 color: $link-color;
             }
         }
@@ -81,15 +81,15 @@ html, body {
         &:hover:visited {
             color: $link-color;
 
-            .wiki-link-missing {
+            &.wiki-link-missing {
                 color: $link-color-missing;
 
-                .wiki-link-namespace {
+                &.wiki-link-namespace {
                     color: darken($link-color-missing, 15%);
                 }
             }
 
-            .wiki-link-namespace {
+            &.wiki-link-namespace {
                 color: darken($link-color, 15%);
             }
         }
@@ -101,7 +101,7 @@ html, body {
                 content: ':',
             }
 
-            .wiki-link-missing & {
+            &.wiki-link-missing & {
                 color: darken($link-color-missing, 15%);
             }
         }

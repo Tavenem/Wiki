@@ -81,7 +81,7 @@ namespace NeverFoundry.Wiki.MVCSample
 
             WikiConfig.ServerUrl = "https://localhost:5001/";
             WikiWebConfig.MaxFileSize = 100000000; // 100 MB
-            services.AddWiki(provider =>
+            services.AddWiki<WikiUser>(provider =>
             {
                 var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
                 return new WikiOptions

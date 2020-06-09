@@ -82,6 +82,11 @@ namespace NeverFoundry.Wiki.Mvc
         public bool IsUserPage { get; }
 
         /// <summary>
+        /// Whether a no redirect request was made.
+        /// </summary>
+        public bool NoRedirect { get; }
+
+        /// <summary>
         /// Whether a diff with the current version was requested.
         /// </summary>
         public bool RequestedDiffCurrent { get; }
@@ -165,7 +170,7 @@ namespace NeverFoundry.Wiki.Mvc
                 ? wT
                 : WikiConfig.MainPageTitle;
 
-            IsCategory = !defaultNamespace && string.Equals(WikiNamespace, WikiConfig.CategoriesTitle, StringComparison.OrdinalIgnoreCase);
+            IsCategory = !defaultNamespace && string.Equals(WikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase);
             IsSystem = !defaultNamespace && !IsCategory && string.Equals(WikiNamespace, WikiWebConfig.SystemNamespace, StringComparison.OrdinalIgnoreCase);
             IsFile = !defaultNamespace && !IsCategory && !IsSystem && string.Equals(WikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase);
             IsUserPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && string.Equals(WikiNamespace, WikiWebConfig.UserNamespace, StringComparison.OrdinalIgnoreCase);
@@ -196,6 +201,22 @@ namespace NeverFoundry.Wiki.Mvc
                 else if (DateTimeOffset.TryParse(diff[0], out var diffTimestamp))
                 {
                     RequestedDiffTimestamp = diffTimestamp;
+                }
+            }
+            if (query.TryGetValue("noredirect", out var nr)
+                && nr.Count >= 1)
+            {
+                if (bool.TryParse(nr[0], out var noRedirect))
+                {
+                    NoRedirect = noRedirect;
+                }
+                else if (int.TryParse(nr[0], out var noRedirectInt) && noRedirectInt > 0)
+                {
+                    NoRedirect = true;
+                }
+                else if (string.Equals(nr[0], "yes", StringComparison.OrdinalIgnoreCase))
+                {
+                    NoRedirect = true;
                 }
             }
         }

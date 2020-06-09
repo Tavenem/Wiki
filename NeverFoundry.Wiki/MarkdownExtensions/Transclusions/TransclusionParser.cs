@@ -45,12 +45,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             string? title,
             string? fullTitle,
             string markdown,
-            out List<string> articles,
+            out List<Wiki.Transclusion> articles,
             bool isTemplate = false,
             bool isPreview = false,
             Dictionary<string, string>? parameterValues = null)
         {
-            articles = new List<string>();
+            articles = new List<Wiki.Transclusion>();
 
             if (string.IsNullOrWhiteSpace(markdown))
             {
@@ -128,9 +128,9 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             bool isPreview,
             List<Transclusion> transclusions,
             List<Transclusion> parameterInclusions,
-            out List<string> articles)
+            out List<Wiki.Transclusion> articles)
         {
-            articles = new List<string>();
+            articles = new List<Wiki.Transclusion>();
 
             var includedTransclusions = new List<Transclusion>();
             var j = 0;
@@ -240,7 +240,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 return template;
             }
 
-            articles.Add(article.FullTitle);
+            articles.Add(new Wiki.Transclusion(article.Title, article.WikiNamespace));
 
             parameterValues = ParseParameters(parameters);
 

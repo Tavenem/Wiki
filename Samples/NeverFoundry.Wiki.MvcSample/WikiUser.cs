@@ -6,13 +6,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A user of the wiki.
     /// </summary>
-    /// <remarks>
-    /// You are not required to use this class (or ASP.NET Identity at all) for your primary
-    /// identity store, if you have other business requirements. In such cases you may maintain a
-    /// separate user store for the wiki, and coordinate between the two sets of users via their
-    /// IDs.
-    /// </remarks>
-    public class WikiUser : IdentityUser
+    public class WikiUser : IdentityUser, IWikiUser
     {
         /// <summary>
         /// <para>

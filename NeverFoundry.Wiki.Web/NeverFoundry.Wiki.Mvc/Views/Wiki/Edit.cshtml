@@ -126,7 +126,7 @@ else
         </div>
     </div>
 </form>
-@if (Model.Data.WikiItem?.Transclusions.Count > 0)
+@if ((Model.Data.WikiItem?.Transclusions?.Count ?? 0) > 0)
 {
     <div id="wiki-edit-transclusions">
         <div id="wiki-edit-transclusions-toggler" onclick="wikiToggleTransclusions(event);" onkeydown="wikiToggleTransclusions(event);">
@@ -137,9 +137,9 @@ else
         </div>
         <div class="wiki-edit-transclusionlist" style="display: none;">
             <ul>
-                @foreach (var transclusion in Model.Data.WikiItem.Transclusions)
+                @foreach (var transclusion in Model.Data.WikiItem!.Transclusions!)
                 {
-                    <li><a href="/Wiki/@transclusion">@transclusion</a></li>
+                    <li><a href="/Wiki/@(transclusion.FullTitle)">@(transclusion.FullTitle)</a></li>
                 }
             </ul>
         </div>

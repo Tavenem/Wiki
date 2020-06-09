@@ -18,6 +18,11 @@ namespace NeverFoundry.Wiki
     public sealed class Category : Article
     {
         /// <summary>
+        /// The type of page represented by this item.
+        /// </summary>
+        public override ArticleType ArticleType => ArticleType.Category;
+
+        /// <summary>
         /// The list of IDs of the items (including child <see cref="Category"/> items) which belong
         /// to this category.
         /// </summary>
@@ -32,12 +37,12 @@ namespace NeverFoundry.Wiki
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
         [Newtonsoft.Json.JsonIgnore]
-        public override string FullTitle => $"{WikiConfig.CategoriesTitle}:{Title}";
+        public override string FullTitle => $"{WikiConfig.CategoryNamespace}:{Title}";
 
         /// <summary>
         /// The namespace to which this category belongs.
         /// </summary>
-        public override string WikiNamespace => WikiConfig.CategoriesTitle;
+        public override string WikiNamespace => WikiConfig.CategoryNamespace;
 
         private Category(
             string id,
@@ -50,13 +55,13 @@ namespace NeverFoundry.Wiki
             IEnumerable<string>? allowedEditors = null,
             IEnumerable<string>? allowedViewers = null,
             IList<string>? categories = null,
-            IList<string>? transclusions = null) : base(
+            IList<Transclusion>? transclusions = null) : base(
                 id,
                 title,
                 markdown,
                 wikiLinks,
                 timestampTicks,
-                WikiConfig.CategoriesTitle,
+                WikiConfig.CategoryNamespace,
                 isDeleted,
                 owner,
                 allowedEditors,
@@ -79,19 +84,21 @@ namespace NeverFoundry.Wiki
             ReadOnlyCollection<string>? allowedEditors,
             ReadOnlyCollection<string>? allowedViewers,
             ReadOnlyCollection<string> categories,
-            ReadOnlyCollection<string> transclusions) : base(
+            ReadOnlyCollection<Transclusion>? transclusions) : base(
                 id,
                 title,
                 markdownContent,
                 wikiLinks,
                 timestampTicks,
-                WikiConfig.CategoriesTitle,
+                WikiConfig.CategoryNamespace,
                 isDeleted,
                 owner,
                 allowedEditors,
                 allowedViewers,
                 null,
                 null,
+                false,
+                false,
                 categories,
                 transclusions) => ChildIds = childIds;
 
@@ -107,7 +114,7 @@ namespace NeverFoundry.Wiki
             (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(ReadOnlyCollection<string>)),
             (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(ReadOnlyCollection<string>)),
             (ReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]))
+            (ReadOnlyCollection<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<Transclusion>)))
         { }
 
         /// <summary>
@@ -123,17 +130,17 @@ namespace NeverFoundry.Wiki
                 return null;
             }
 
-            var category = DataStore.GetFirstItemWhereOrderedBy<Category, long>(
-                x => x.Title == title,
-                x => x.TimestampTicks,
-                descending: true);
+            var category = DataStore.Query<Category>()
+                .Where(x => x.Title == title)
+                .OrderBy(x => x.TimestampTicks, descending: true)
+                .FirstOrDefault();
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
-                var categories = DataStore.GetItemsWhereOrderedBy<Category, long>(
-                    x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase),
-                    x => x.TimestampTicks,
-                    descending: true);
+                var categories = DataStore.Query<Category>()
+                    .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(x => x.TimestampTicks, descending: true)
+                    .ToList();
                 if (categories.Count == 1)
                 {
                     category = categories[0];
@@ -157,13 +164,15 @@ namespace NeverFoundry.Wiki
             }
 
             var ticks = timestamp.ToUniversalTime().Ticks;
-            var category = DataStore.GetFirstItemWhere<Category>(x => x.Title == title
-                && x.TimestampTicks == ticks);
+            var category = DataStore.Query<Category>()
+                .FirstOrDefault(x => x.Title == title && x.TimestampTicks == ticks);
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
-                var categories = DataStore.GetItemsWhere<Category>(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
-                    && x.TimestampTicks == ticks);
+                var categories = DataStore.Query<Category>()
+                    .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
+                        && x.TimestampTicks == ticks)
+                    .ToList();
                 if (categories.Count == 1)
                 {
                     category = categories[0];
@@ -228,37 +237,52 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             title = title.ToWikiTitleCase();
-            if (DataStore.GetItemsWhere<Category>(x => x.Title == title).Count > 0)
+            if (DataStore.Query<Category>().Any(x => x.Title == title))
             {
                 throw new ArgumentException("The given category title is already in use", nameof(title));
             }
-            var wikiId = Guid.NewGuid().ToString();
+            var wikiId = DataStore.CreateNewIdFor<Category>();
 
             var revision = new WikiRevision(
                 wikiId,
                 editor,
                 title,
-                WikiConfig.CategoriesTitle,
+                WikiConfig.CategoryNamespace,
                 null,
                 markdown);
             await revision.SaveAsync().ConfigureAwait(false);
 
             var md = markdown;
-            List<string> transclusions;
+            List<Transclusion> transclusions;
             if (string.IsNullOrEmpty(markdown))
             {
-                transclusions = new List<string>();
+                transclusions = new List<Transclusion>();
             }
             else
             {
                 md = TransclusionParser.Transclude(
                     title,
-                    GetFullTitle(title, WikiConfig.CategoriesTitle),
+                    GetFullTitle(title, WikiConfig.CategoryNamespace),
                     markdown,
                     out transclusions);
             }
 
             var wikiLinks = GetWikiLinks(md);
+            foreach (var link in wikiLinks.Where(x => x.Missing))
+            {
+                var existing = await DataStore.Query<MissingPage>()
+                    .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
+                    .ConfigureAwait(false);
+                if (existing is null)
+                {
+                    var missingPage = await MissingPage.NewAsync(
+                        DataStore.CreateNewIdFor<MissingPage>(),
+                        link.Title,
+                        link.WikiNamespace,
+                        wikiId)
+                        .ConfigureAwait(false);
+                }
+            }
 
             var categories = new List<string>();
             var categoryTitles = wikiLinks
@@ -286,6 +310,15 @@ namespace NeverFoundry.Wiki
                 categories,
                 transclusions);
             await category.SaveAsync().ConfigureAwait(false);
+
+            var missing = await DataStore.Query<MissingPage>()
+                .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.CategoryNamespace)
+                .ConfigureAwait(false);
+            if (!(missing is null))
+            {
+                await missing.DeleteAsync().ConfigureAwait(false);
+            }
+
             return category;
         }
 
@@ -391,12 +424,13 @@ namespace NeverFoundry.Wiki
 
             title ??= Title;
 
-            if (DataStore.GetItemsWhere<Category>(x => x.Id != Id
-                && x.Title == title).Count > 0)
+            if (DataStore.Query<Category>()
+                .Any(x => x.Id != Id && x.Title == title))
             {
                 throw new ArgumentException("The given category title is already in use", nameof(title));
             }
 
+            var previousTitle = Title;
             Title = title;
 
             var previousMarkdown = MarkdownContent;
@@ -407,7 +441,21 @@ namespace NeverFoundry.Wiki
                 MarkdownContent = string.Empty;
                 WikiLinks = new List<WikiLink>().AsReadOnly();
                 Categories = new List<string>().AsReadOnly();
-                Transclusions = new List<string>().AsReadOnly();
+                Transclusions = null;
+
+                foreach (var link in WikiLinks)
+                {
+                    var missing = await DataStore.Query<MissingPage>()
+                        .FirstOrDefaultAsync(x => x.Title == link.Title
+                            && x.WikiNamespace == link.WikiNamespace
+                            && x.References.Count == 1
+                            && x.References.Contains(Id))
+                        .ConfigureAwait(false);
+                    if (!(missing is null))
+                    {
+                        await missing.DeleteAsync().ConfigureAwait(false);
+                    }
+                }
             }
             else if (!(markdown is null))
             {
@@ -417,7 +465,21 @@ namespace NeverFoundry.Wiki
                     MarkdownContent = string.Empty;
                     WikiLinks = new List<WikiLink>().AsReadOnly();
                     Categories = new List<string>().AsReadOnly();
-                    Transclusions = new List<string>().AsReadOnly();
+                    Transclusions = null;
+
+                    foreach (var link in WikiLinks)
+                    {
+                        var missingLink = await DataStore.Query<MissingPage>()
+                            .FirstOrDefaultAsync(x => x.Title == link.Title
+                                && x.WikiNamespace == link.WikiNamespace
+                                && x.References.Count == 1
+                                && x.References.Contains(Id))
+                            .ConfigureAwait(false);
+                        if (!(missingLink is null))
+                        {
+                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                        }
+                    }
                 }
                 else
                 {
@@ -425,12 +487,43 @@ namespace NeverFoundry.Wiki
 
                     var md = TransclusionParser.Transclude(
                         title,
-                        GetFullTitle(title, WikiConfig.CategoriesTitle),
+                        GetFullTitle(title, WikiConfig.CategoryNamespace),
                         markdown,
                         out var transclusions);
-                    Transclusions = transclusions.AsReadOnly();
+                    Transclusions = transclusions.Count == 0
+                        ? null
+                        : transclusions.AsReadOnly();
 
+                    var previousWikiLinks = WikiLinks.ToList();
                     WikiLinks = GetWikiLinks(md).AsReadOnly();
+                    foreach (var link in previousWikiLinks.Except(WikiLinks))
+                    {
+                        var missingLink = await DataStore.Query<MissingPage>()
+                            .FirstOrDefaultAsync(x => x.Title == link.Title
+                                && x.WikiNamespace == link.WikiNamespace
+                                && x.References.Count == 1
+                                && x.References.Contains(Id))
+                            .ConfigureAwait(false);
+                        if (!(missingLink is null))
+                        {
+                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                        }
+                    }
+                    foreach (var link in WikiLinks.Except(previousWikiLinks).Where(x => x.Missing))
+                    {
+                        var existing = await DataStore.Query<MissingPage>()
+                            .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
+                            .ConfigureAwait(false);
+                        if (existing is null)
+                        {
+                            var missingPage = await MissingPage.NewAsync(
+                                DataStore.CreateNewIdFor<MissingPage>(),
+                                link.Title,
+                                link.WikiNamespace,
+                                Id)
+                                .ConfigureAwait(false);
+                        }
+                    }
 
                     var categories = Categories.ToList();
                     var categoryTitles = WikiLinks
@@ -464,6 +557,17 @@ namespace NeverFoundry.Wiki
                     }
                     Categories = categories.AsReadOnly();
                 }
+
+                if (!string.Equals(title, previousTitle, StringComparison.Ordinal))
+                {
+                    var missing = await DataStore.Query<MissingPage>()
+                        .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.CategoryNamespace)
+                        .ConfigureAwait(false);
+                    if (!(missing is null))
+                    {
+                        await missing.DeleteAsync().ConfigureAwait(false);
+                    }
+                }
             }
 
             Owner = owner;
@@ -474,7 +578,7 @@ namespace NeverFoundry.Wiki
                 Id,
                 editor,
                 title,
-                WikiConfig.CategoriesTitle,
+                WikiConfig.CategoryNamespace,
                 previousMarkdown,
                 MarkdownContent,
                 revisionComment);

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Mvc.Services;
 using NeverFoundry.Wiki.Web;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
@@ -14,7 +15,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
     /// </summary>
     public class WikiTalkHub : Hub<IWikiTalkClient>, IWikiTalkHub
     {
-        private readonly UserManager<WikiUser> _userManager;
+        private readonly IUserManager _userManager;
 
         /// <summary>
         /// <para>
@@ -27,13 +28,13 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         /// </summary>
         /// <param name="userManager">
         /// <para>
-        /// A <see cref="UserManager{T}"/> of <see cref="WikiUser"/> instance.
+        /// An <see cref="IUserManager"/> instance.
         /// </para>
         /// <para>
         /// Note: this is expected to be provided by dependency injection.
         /// </para>
         /// </param>
-        public WikiTalkHub(UserManager<WikiUser> userManager) => _userManager = userManager;
+        public WikiTalkHub(IUserManager userManager) => _userManager = userManager;
 
         /// <summary>
         /// Begin listening for messages sent to the given topic.
@@ -107,10 +108,10 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             }
         }
 
-        private Task<bool> GetTopicEditPermissionAsync(string topicId, WikiUser user)
+        private Task<bool> GetTopicEditPermissionAsync(string topicId, IWikiUser user)
             => GetTopicPermissionAsync(topicId, user, edit: true);
 
-        private async Task<bool> GetTopicPermissionAsync(string topicId, WikiUser? user, bool edit)
+        private async Task<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user, bool edit)
         {
             if (string.IsNullOrWhiteSpace(topicId)
                 || string.IsNullOrEmpty(topicId))
@@ -130,7 +131,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                     || (!(user is null) && article.AllowedViewers.Contains(user.Id));
         }
 
-        private Task<bool> GetTopicViewPermissionAsync(string topicId, WikiUser? user)
+        private Task<bool> GetTopicViewPermissionAsync(string topicId, IWikiUser? user)
             => GetTopicPermissionAsync(topicId, user, edit: false);
     }
 }

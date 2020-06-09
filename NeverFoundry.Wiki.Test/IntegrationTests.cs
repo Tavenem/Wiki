@@ -49,7 +49,7 @@ The source code for `NeverFoundry.Wiki` is available online, and also includes a
 
 See the [[System:Help|]] page for usage information.
 
-[[{WikiConfig.CategoriesTitle}:System pages]]",
+[[{WikiConfig.CategoryNamespace}:System pages]]",
             "System",
             adminId,
             new[] { adminId });
@@ -202,7 +202,7 @@ The `BlazorConfig` static class in the `NeverFoundry.Wiki.Blazor` namespace cont
 
    This limit is observed regardless of the implementation assigned to `SaveFile`, but if you wish to employ more complex logic to determine the allowed size of uploads (e.g. based on file type or individual user permissions), you can set this to the largest limit you wish to allow, then provide more fine-grained limits in your `SaveFile` implementation.
 
-[[" + WikiConfig.CategoriesTitle + ":System pages]]",
+[[" + WikiConfig.CategoryNamespace + ":System pages]]",
             "System",
             adminId,
             new[] { adminId });
@@ -338,7 +338,7 @@ The `WikiConfig` static class contains a number of properties which can be set t
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 
 ##  Site pages
-- **`CategoriesTitle`** - The title of the categories namespace, and the article on categories in the main wiki.
+- **`CategoryNamespace`** - The title of the categories namespace, and the article on categories in the main wiki.
 
    Default is ""Categories""
 
@@ -416,7 +416,7 @@ The `WikiConfig` static class contains a number of properties which can be set t
 # Blazor
 The `NeverFoundry.Wiki.Blazor` package contains a sample/default implementation of `NeverFoundry.Wiki` for use with a [Blazor](http://blazor.net) site. This implementation can be used as-is, or you can use the source as the starting point to build your own implementation. See [[Blazor|the Blazor page]] for more information.
 
-[[" + WikiConfig.CategoriesTitle + ":System pages]]",
+[[" + WikiConfig.CategoryNamespace + ":System pages]]",
             "System",
             adminId,
             new[] { adminId });
@@ -428,7 +428,7 @@ The `NeverFoundry.Wiki.Blazor` package contains a sample/default implementation 
 
 See the [[System:About|]] page or the [[System:Help|]] page for more information.
 
-[[{WikiConfig.CategoriesTitle}:System pages]]",
+[[{WikiConfig.CategoryNamespace}:System pages]]",
             WikiConfig.DefaultNamespace,
             adminId,
             new[] { adminId });
@@ -438,7 +438,7 @@ See the [[System:About|]] page or the [[System:Help|]] page for more information
             adminId,
 @$"Welcome to the [NeverFoundry](http://neverfoundry.com).Wiki sample.
 
-{{{{ifnottemplate|[[{WikiConfig.CategoriesTitle}:System pages]]}}}}",
+{{{{ifnottemplate|[[{WikiConfig.CategoryNamespace}:System pages]]}}}}",
             WikiConfig.TransclusionNamespace,
             adminId,
             new[] { adminId });

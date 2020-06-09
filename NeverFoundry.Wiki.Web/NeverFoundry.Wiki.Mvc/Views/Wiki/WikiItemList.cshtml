@@ -61,7 +61,7 @@
             @if (Model.Items.HasNextPage)
             {
                 <span><a asp-route-pageNumber="@(Model.Items.PageNumber + 1)">Next</a></span>
-                <span><a asp-route-pageNumber="@Model.Items.PageCount">Last</a></span>
+                <span><a asp-route-pageNumber="@Model.Items.TotalPages">Last</a></span>
             }
             else
             {
@@ -131,7 +131,7 @@
             @if (Model.MissingItems.HasNextPage)
             {
                 <span><a asp-route-pageNumber="@(Model.MissingItems.PageNumber + 1)">Next</a></span>
-                <span><a asp-route-pageNumber="@Model.MissingItems.PageCount">Last</a></span>
+                <span><a asp-route-pageNumber="@Model.MissingItems.TotalPages">Last</a></span>
             }
             else
             {
@@ -248,7 +248,7 @@
             @if (Model.Items.HasNextPage)
             {
                 <span><a asp-route-pageNumber="@(Model.Items.PageNumber + 1)">Next</a></span>
-                <span><a asp-route-pageNumber="@Model.Items.PageCount">Last</a></span>
+                <span><a asp-route-pageNumber="@Model.Items.TotalPages">Last</a></span>
             }
             else
             {
@@ -318,7 +318,7 @@
             @if (Model.MissingItems.HasNextPage)
             {
                 <span><a asp-route-pageNumber="@(Model.MissingItems.PageNumber + 1)">Next</a></span>
-                <span><a asp-route-pageNumber="@Model.MissingItems.PageCount">Last</a></span>
+                <span><a asp-route-pageNumber="@Model.MissingItems.TotalPages">Last</a></span>
             }
             else
             {

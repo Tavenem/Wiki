@@ -46,10 +46,12 @@ namespace NeverFoundry.Wiki.Sample.Services
                             p.Nested<WikiLink>(n =>
                                 n.Name(nn => nn.WikiLinks)
                                 .AutoMap())
+                            .Nested<Transclusion>(n =>
+                                n.Name(nn => nn.Transclusions)
+                                .AutoMap())
                             .Keyword(k => k.Name(n => n.AllowedEditors))
                             .Keyword(k => k.Name(n => n.AllowedViewers))
-                            .Keyword(k => k.Name(n => n.Categories))
-                            .Keyword(k => k.Name(n => n.Transclusions)))
+                            .Keyword(k => k.Name(n => n.Categories)))
                         .AutoMap<Category>()
                         .AutoMap<WikiFile>()));
                 if (!response.ApiCall.Success)

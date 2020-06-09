@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace NeverFoundry.Wiki.Mvc
+﻿namespace NeverFoundry.Wiki.Mvc
 {
     /// <summary>
     /// Options used to configure the wiki system.
@@ -57,7 +55,7 @@ namespace NeverFoundry.Wiki.Mvc
         /// The <see cref="ISearchClient"/> implementation used to search for wiki content.
         /// </para>
         /// <para>
-        /// If omitted, an instance of <see cref="Services.Search.DefaultSearchClient"/> will be
+        /// If omitted, an instance of <see cref="Services.Search.DefaultSearchClient{T}"/> will be
         /// used. Note: the default is not recommended for production use.
         /// </para>
         /// </summary>

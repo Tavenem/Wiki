@@ -1,6 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Test
@@ -47,7 +46,7 @@ Fourth section text";
             TestTemplate("{{format|52|D3}}", "052");
             TestTemplate("{{format|54321}}", "54,321");
 
-            TestTemplate("{{format|5.2}}", "5.20");
+            TestTemplate("{{format|5.2}}", "5.200");
             TestTemplate("{{format|5.2|C2}}", "$5.20");
             TestTemplate("{{format|54321|e5}}", "5.43210e+004");
 

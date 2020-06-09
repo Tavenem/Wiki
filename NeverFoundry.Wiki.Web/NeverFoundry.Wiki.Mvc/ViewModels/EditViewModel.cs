@@ -1,6 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
+using NeverFoundry.Wiki.Mvc.Services;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
@@ -43,7 +43,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
         public EditViewModel(
             WikiRouteData data,
-            WikiUser user,
+            IWikiUser user,
             string markdown,
             string? previewTitle = null,
             string? preview = null,
@@ -67,9 +67,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         }
 
         public static async Task<EditViewModel> NewAsync(
-            UserManager<WikiUser> userManager,
+            IUserManager userManager,
             WikiRouteData data,
-            WikiUser user,
+            IWikiUser user,
             string? markdown = null,
             string? previewTitle = null)
         {

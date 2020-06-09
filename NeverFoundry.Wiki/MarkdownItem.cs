@@ -366,7 +366,7 @@ namespace NeverFoundry.Wiki
             : Markdown.Parse(markdown, WikiConfig.MarkdownPipeline)
             .Descendants<WikiLinkInline>()
             .Where(x => !x.IsWikipedia && !x.IsCommons)
-            .Select(x => new WikiLink(x.IsCategory, x.IsNamespaceEscaped, x.IsTalk, x.Title, x.WikiNamespace))
+            .Select(x => new WikiLink(x.Missing, x.IsCategory, x.IsNamespaceEscaped, x.IsTalk, x.Title, x.WikiNamespace))
             .ToList();
 
         private static void Trim(MarkdownObject obj, ref int minCharactersAvailable, ref int maxCharactersAvailable)

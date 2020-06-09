@@ -22,7 +22,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
         public IPagedList<Article> Items { get; }
 
-        public IPagedList<WikiListItemViewModel>? MissingItems { get; }
+        public IPagedList<MissingPage>? MissingItems { get; }
 
         public string? SecondaryDescription { get; }
 
@@ -35,7 +35,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             SpecialListType type,
             bool descending,
             IPagedList<Article> items,
-            IPagedList<WikiListItemViewModel>? missingItems = null,
+            IPagedList<MissingPage>? missingItems = null,
             string? sort = null,
             string? filter = null)
         {
@@ -63,22 +63,24 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             {
                 SpecialListType.All_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
                 SpecialListType.All_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
-                SpecialListType.All_Pages => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile)).ConfigureAwait(false),
-                SpecialListType.All_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !string.IsNullOrEmpty(x.RedirectTitle)).ConfigureAwait(false),
-                SpecialListType.Broken_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !string.IsNullOrEmpty(x.RedirectTitle)
-                    && Article.GetArticle(x.RedirectTitle, x.RedirectNamespace) == null).ConfigureAwait(false),
-                SpecialListType.Double_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !string.IsNullOrEmpty(x.RedirectTitle)
-                    && Article.GetArticle(x.RedirectTitle, x.RedirectNamespace) != null
-                    && !string.IsNullOrEmpty(Article.GetArticle(x.RedirectTitle, x.RedirectNamespace)!.RedirectTitle)).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile) && (x.Categories == null || x.Categories.Count == 0)).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count == 0).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count == 0).ConfigureAwait(false),
-                SpecialListType.Unlinked_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => DataStore
-                    .GetFirstItemWhere<Article>(y => y.WikiLinks.Any(z => z.IsLinkMatch(x))) == null).ConfigureAwait(false),
-                SpecialListType.Unlinked_Pages => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => !(x is Category) && !(x is WikiFile) && DataStore
-                    .GetFirstItemWhere<Article>(y => y.WikiLinks.Any(z => z.IsLinkMatch(x))) == null).ConfigureAwait(false),
-                SpecialListType.Unused_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.ChildIds.Count == 0).ConfigureAwait(false),
-                SpecialListType.What_Links_Here => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => ArticleLinksHere(x, data)).ConfigureAwait(false),
+                SpecialListType.All_Pages => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.ArticleType == ArticleType.Article).ConfigureAwait(false),
+#pragma warning disable RCS1113 // Use 'string.IsNullOrEmpty' method: not necessarily supported by data provider
+                SpecialListType.All_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.RedirectTitle != null && x.RedirectTitle != "").ConfigureAwait(false),
+#pragma warning restore RCS1113 // Use 'string.IsNullOrEmpty' method.
+                SpecialListType.Broken_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsBrokenRedirect).ConfigureAwait(false),
+                SpecialListType.Double_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsDoubleRedirect).ConfigureAwait(false),
+#pragma warning disable RCS1077 // Optimize LINQ method call: Count() is translated to SQL by various data providers (Relinq), while the Count property is not necessarily serialized/recognized
+                SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.ArticleType == ArticleType.Article && (x.Categories == null || x.Categories.Count() == 0)).ConfigureAwait(false),
+                SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count() == 0).ConfigureAwait(false),
+                SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count() == 0).ConfigureAwait(false),
+                SpecialListType.Unused_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.ChildIds.Count() == 0).ConfigureAwait(false),
+#pragma warning restore RCS1077 // Optimize LINQ method call.
+                SpecialListType.What_Links_Here => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.WikiLinks.Any(y => y.Title == data.Title
+                    && y.WikiNamespace == data.WikiNamespace
+                    && y.IsTalk == data.IsTalk)
+                    || (!data.IsTalk && x.Transclusions != null
+                    && x.Transclusions.Any(y => y.Title == data.Title && y.WikiNamespace == data.WikiNamespace)))
+                    .ConfigureAwait(false),
                 _ => new PagedList<Article>(null, 1, pageSize, 0),
             };
             var missing = type == SpecialListType.Missing_Pages
@@ -87,17 +89,6 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
             return new SpecialListViewModel(data, type, descending, list, missing, sort, filter);
         }
-
-        private static bool ArticleLinksHere(Article article, WikiRouteData data)
-            => article.WikiLinks.Any(y => string.Equals(y.Title, data.Title, StringComparison.OrdinalIgnoreCase)
-            && string.Equals(y.WikiNamespace, data.WikiNamespace, StringComparison.OrdinalIgnoreCase)
-            && y.IsTalk == data.IsTalk)
-            || (!data.IsTalk && article.Transclusions.Any(y =>
-            {
-                var (wikiNamespace, title, _, __) = Article.GetTitleParts(y);
-                return string.Equals(title, data.Title, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(wikiNamespace, data.WikiNamespace, StringComparison.OrdinalIgnoreCase);
-            }));
 
         private static string GetDescription(SpecialListType type, WikiRouteData data) => type switch
         {
@@ -111,8 +102,6 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             SpecialListType.Uncategorized_Articles => "This page lists all articles which are not categorized, either alphabetically or by most recent update.",
             SpecialListType.Uncategorized_Categories => "This page lists all categories which are not categorized, either alphabetically or by most recent update.",
             SpecialListType.Uncategorized_Files => "This page lists all files which are not categorized, either alphabetically or by most recent update.",
-            SpecialListType.Unlinked_Files => "This page lists all files which are not linked from any articles, either alphabetically or by most recent update.",
-            SpecialListType.Unlinked_Pages => "This page lists all articles which are not linked from any other articles, either alphabetically or by most recent update.",
             SpecialListType.Unused_Categories => "This page lists all categories which have no articles or subcategories, either alphabetically or by most recent update.",
             SpecialListType.What_Links_Here => $"The following pages link to {Article.GetFullTitle(data.Title, data.WikiNamespace, data.IsTalk)}.",
             _ => string.Empty,
@@ -140,78 +129,41 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 }
             }
 
-            IPagedList<T> list;
-            if (pageCondition is null)
+            var query = DataStore.Query<T>();
+            if (!(pageCondition is null))
             {
-                if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
-                {
-                    list = await DataStore
-                        .GetPageOrderedByAsync<T, long>(x => x.TimestampTicks, pageNumber, pageSize, descending: descending)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    list = await DataStore
-                        .GetPageOrderedByAsync<T, string>(x => x.Title, pageNumber, pageSize, descending: descending)
-                        .ConfigureAwait(false);
-                }
+                query = query.Where(pageCondition);
+            }
+            if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.OrderBy(x => x.TimestampTicks, descending: descending);
             }
             else
             {
-                if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
-                {
-                    list = await DataStore
-                        .GetPageWhereOrderedByAsync(pageCondition, x => x.TimestampTicks, pageNumber, pageSize, descending: descending)
-                        .ConfigureAwait(false);
-                }
-                else
-                {
-                    list = await DataStore
-                        .GetPageWhereOrderedByAsync(pageCondition, x => x.Title, pageNumber, pageSize, descending: descending)
-                        .ConfigureAwait(false);
-                }
+                query = query.OrderBy(x => x.Title, descending: descending);
             }
 
-            return list;
+            return await query
+                .GetPageAsync(pageNumber, pageSize)
+                .ConfigureAwait(false);
         }
 
-        private static async Task<IPagedList<WikiListItemViewModel>> GetMissingAsync(
+        private static async Task<IPagedList<MissingPage>> GetMissingAsync(
             int pageNumber = 1,
             int pageSize = 50,
             bool descending = false,
             string? filter = null)
         {
-            Func<WikiLink, bool> condition;
-            if (string.IsNullOrEmpty(filter))
+            var query = DataStore.Query<MissingPage>();
+            if (!string.IsNullOrEmpty(filter))
             {
-                condition = x => Article.GetArticle(x.Title, x.WikiNamespace) is null;
-            }
-            else
-            {
-                condition = x => x.FullTitle.Contains(filter)
-                    && Article.GetArticle(x.Title, x.WikiNamespace) is null;
+                query = query.Where(x => x.Title.Contains(filter) || x.WikiNamespace.Contains(filter));
             }
 
-            var result = DataStore
-                .GetItemsAsync<Article>()
-                .SelectMany(x => x.WikiLinks.ToAsyncEnumerable())
-                .Where(condition)
-                .Distinct()
-                .Select(x => new WikiListItemViewModel(x.Title, x.WikiNamespace));
-            if (descending)
-            {
-                result = result.OrderByDescending(x => x.Title);
-            }
-            else
-            {
-                result = result.OrderBy(x => x.Title);
-            }
-            var total = await result.LongCountAsync().ConfigureAwait(false);
-            return new PagedList<WikiListItemViewModel>(
-                await result.Skip((pageNumber - 1) * pageSize).Take(pageSize).ToListAsync().ConfigureAwait(false),
-                pageNumber,
-                pageSize,
-                total);
+            return await query
+                .OrderBy(x => x.Title, descending: descending)
+                .GetPageAsync(pageNumber, pageSize)
+                .ConfigureAwait(false);
         }
 
         private static string? GetSecondaryDescription(SpecialListType type)

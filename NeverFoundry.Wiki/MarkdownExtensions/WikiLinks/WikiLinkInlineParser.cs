@@ -376,13 +376,32 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(title);
                     isTalk = wIsTalk;
                     wikiNamespace = wWikiNamespace;
-                    isCategory = string.Equals(wikiNamespace, WikiConfig.CategoriesTitle, StringComparison.CurrentCultureIgnoreCase);
+                    isCategory = string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
                     if (isCategory)
                     {
                         isNamespaceEscaped = title.StartsWith(':');
-                        wikiNamespace = WikiConfig.CategoriesTitle; // normalize casing
+                        wikiNamespace = WikiConfig.CategoryNamespace; // normalize casing
                     }
                     title = wTitle;
+                }
+
+                var articleMissing = false;
+                if (!isWikipedia && !isCommons)
+                {
+                    var articleExists = false;
+                    if (isCategory)
+                    {
+                        articleExists = Category.GetCategory(title)?.IsDeleted == false;
+                    }
+                    else if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        articleExists = WikiFile.GetFile(title)?.IsDeleted == false;
+                    }
+                    else
+                    {
+                        articleExists = Article.GetArticle(title, wikiNamespace)?.IsDeleted == false;
+                    }
+                    articleMissing = !articleExists;
                 }
 
                 var wikiLink = new WikiLinkInline()
@@ -396,6 +415,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     IsWikipedia = isWikipedia,
                     IsNamespaceEscaped = isNamespaceEscaped,
                     IsTalk = isTalk,
+                    Missing = articleMissing,
                     Endmatter = endmatter,
                     WikiNamespace = wikiNamespace,
                     Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),

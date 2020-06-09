@@ -13,8 +13,6 @@
         Uncategorized_Articles,
         Uncategorized_Categories,
         Uncategorized_Files,
-        Unlinked_Files,
-        Unlinked_Pages,
         Unused_Categories,
         What_Links_Here
     }

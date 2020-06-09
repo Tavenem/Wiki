@@ -19,19 +19,19 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
     /// only to ensure that search functions when no client is provided.
     /// </para>
     /// </summary>
-    public class DefaultSearchClient : ISearchClient
+    public class DefaultSearchClient<TUser> : ISearchClient where TUser : IdentityUser, IWikiUser
     {
-        private readonly ILogger<DefaultSearchClient> _logger;
-        private readonly UserManager<WikiUser> _userManager;
+        private readonly ILogger<DefaultSearchClient<TUser>> _logger;
+        private readonly Microsoft.AspNetCore.Identity.UserManager<TUser> _userManager;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="DefaultSearchClient"/>.
+        /// Initializes a new instance of <see cref="DefaultSearchClient{T}"/>.
         /// </summary>
         /// <param name="logger">An <see cref="ILogger"/> instance.</param>
-        /// <param name="userManager">A <see cref="UserManager{TUser}"/> for <see cref="WikiUser"/> objects.</param>
+        /// <param name="userManager">A <see cref="UserManager{TUser}"/>.</param>
         public DefaultSearchClient(
-            ILogger<DefaultSearchClient> logger,
-            UserManager<WikiUser> userManager)
+            ILogger<DefaultSearchClient<TUser>> logger,
+            Microsoft.AspNetCore.Identity.UserManager<TUser> userManager)
         {
             _logger = logger;
             _userManager = userManager;
@@ -74,29 +74,25 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
             {
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
-                    articles = await DataStore.GetPageWhereOrderedByAsync(
-                        exp,
-                        x => x.TimestampTicks,
-                        request.PageNumber,
-                        request.PageSize,
-                        request.Descending)
+                    articles = await DataStore.Query<Article>()
+                        .Where(exp)
+                        .OrderBy(x => x.TimestampTicks, request.Descending)
+                        .GetPageAsync(request.PageNumber, request.PageSize)
                         .ConfigureAwait(false);
                 }
                 else
                 {
-                    articles = await DataStore.GetPageWhereOrderedByAsync(
-                        exp,
-                        x => x.Title,
-                        request.PageNumber,
-                        request.PageSize,
-                        request.Descending)
+                    articles = await DataStore.Query<Article>()
+                        .Where(exp)
+                        .OrderBy(x => x.Title, request.Descending)
+                        .GetPageAsync(request.PageNumber, request.PageSize)
                         .ConfigureAwait(false);
                 }
                 var hits = new PagedList<SearchHit>(
                     articles.Select(x => new SearchHit(x.Title, x.WikiNamespace, x.GetPlainText())),
                     articles.PageNumber,
                     articles.PageSize,
-                    articles.TotalItemCount);
+                    articles.TotalCount);
 
                 return new SearchResult
                 {

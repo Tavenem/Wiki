@@ -16,7 +16,7 @@ namespace NeverFoundry.Wiki
         private static string _CategoriesTitle = CategoriesTitleDefault;
         /// <summary>
         /// <para>
-        /// The title of the categories namespace, and the article on categories in the main wiki.
+        /// The name of the article on categories in the main wiki.
         /// </para>
         /// <para>
         /// Default is "Categories"
@@ -34,6 +34,32 @@ namespace NeverFoundry.Wiki
             {
                 _CategoriesTitle = string.IsNullOrWhiteSpace(value)
                     ? CategoriesTitleDefault
+                    : value;
+            }
+        }
+
+        private const string CategoryNamespaceDefault = "Category";
+        private static string _CategoryNamespace = CategoryNamespaceDefault;
+        /// <summary>
+        /// <para>
+        /// The name of the categories namespace.
+        /// </para>
+        /// <para>
+        /// Default is "Category"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public static string? CategoryNamespace
+        {
+            get => _CategoryNamespace;
+            set
+            {
+                _CategoryNamespace = string.IsNullOrWhiteSpace(value)
+                    ? CategoryNamespaceDefault
                     : value;
             }
         }
@@ -197,12 +223,12 @@ namespace NeverFoundry.Wiki
         /// An optional collection of namespaces which may not be assigned to pages by users.
         /// </para>
         /// <para>
-        /// The namespaces assigned to <see cref="CategoriesTitle"/>, <see cref="FileNamespace"/>,
+        /// The namespaces assigned to <see cref="CategoryNamespace"/>, <see cref="FileNamespace"/>,
         /// and <see cref="TalkNamespace"/> are included automatically.
         /// </para>
         /// </summary>
         public static IEnumerable<string> ReservedNamespaces => (_ReservedNamespaces ?? Enumerable.Empty<string>())
-            .Concat(new[] { CategoriesTitle, FileNamespace, TalkNamespace });
+            .Concat(new[] { CategoryNamespace, FileNamespace, TalkNamespace });
 
         private const string SiteNameDefault = "A NeverFoundry Wiki Sample";
         private static string _SiteName = SiteNameDefault;
@@ -385,7 +411,7 @@ namespace NeverFoundry.Wiki
         /// pages by users.
         /// </para>
         /// <para>
-        /// The namespaces assigned to <see cref="CategoriesTitle"/>, <see cref="FileNamespace"/>,
+        /// The namespaces assigned to <see cref="CategoryNamespace"/>, <see cref="FileNamespace"/>,
         /// and <see cref="TalkNamespace"/> are included automatically.
         /// </para>
         /// </summary>

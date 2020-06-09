@@ -1,18 +1,17 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Mvc.Models;
+using NeverFoundry.Wiki.Mvc.Services;
 using NeverFoundry.Wiki.Mvc.Services.Search;
 using NeverFoundry.Wiki.Mvc.ViewModels;
 using NeverFoundry.Wiki.Web;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -28,13 +27,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<WikiController> _logger;
         private readonly ISearchClient _searchClient;
-        private readonly UserManager<WikiUser> _userManager;
+        private readonly IUserManager _userManager;
 
         public WikiController(
             IWebHostEnvironment environment,
             ILogger<WikiController> logger,
             ISearchClient searchClient,
-            UserManager<WikiUser> userManager)
+            IUserManager userManager)
         {
             _environment = environment;
             _logger = logger;
@@ -352,7 +351,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 article = WikiFile.GetFile(title);
             }
-            else if (string.Equals(wikiNamespace, WikiConfig.CategoriesTitle, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
             {
                 article = Category.GetCategory(title);
             }
@@ -478,7 +477,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 var vm = new TalkViewModel(data, wikiItem?.Id);
                 if (!(wikiItem is null))
                 {
-                    var replies = await DataStore.GetItemsWhereAsync<Message>(x => x.TopicId == wikiItem.Id)
+                    var replies = await DataStore.Query<Message>().Where(x => x.TopicId == wikiItem.Id)
                         .ToListAsync()
                         .ConfigureAwait(false);
                     var responses = new List<MessageResponse>();
@@ -487,7 +486,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     foreach (var reply in replies)
                     {
                         var html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(reply.GetHtml());
-                        WikiUser? replyUser = null;
+                        IWikiUser? replyUser = null;
                         if (!senders.TryGetValue(reply.SenderId, out var exists))
                         {
                             replyUser = await _userManager.FindByIdAsync(reply.SenderId).ConfigureAwait(false);
@@ -609,29 +608,29 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return Json(new string[0]);
             }
 
-            List<string> items;
+            IReadOnlyList<string> items;
             if (defaultNamespace)
             {
                 if (wikiNamespace == WikiConfig.FileNamespace)
                 {
-                    items = await DataStore
-                        .GetItemsWhereAsync<WikiFile>(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase))
+                    items = await DataStore.Query<WikiFile>()
+                        .Where(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase))
                         .Select(x => x.FullTitle)
                         .ToListAsync()
                         .ConfigureAwait(false);
                 }
-                else if (wikiNamespace == WikiConfig.CategoriesTitle)
+                else if (wikiNamespace == WikiConfig.CategoryNamespace)
                 {
-                    items = await DataStore
-                        .GetItemsWhereAsync<Category>(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase))
+                    items = await DataStore.Query<Category>()
+                        .Where(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase))
                         .Select(x => x.FullTitle)
                         .ToListAsync()
                         .ConfigureAwait(false);
                 }
                 else
                 {
-                    items = await DataStore
-                        .GetItemsWhereAsync<Article>(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase)
+                    items = await DataStore.Query<Article>()
+                        .Where(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase)
                             && x.WikiNamespace == WikiConfig.DefaultNamespace)
                         .Select(x => x.FullTitle)
                         .ToListAsync()
@@ -640,8 +639,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             else
             {
-                items = await DataStore
-                    .GetItemsWhereAsync<Article>(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase)
+                items = await DataStore.Query<Article>()
+                    .Where(x => x.Title.StartsWith(title, StringComparison.CurrentCultureIgnoreCase)
                         && x.WikiNamespace == wikiNamespace)
                     .Select(x => x.FullTitle)
                     .ToListAsync()
@@ -1198,9 +1197,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View("WikiItemList", vm);
         }
 
-        private Article? GetWikiItem(string title, string wikiNamespace)
+        private Article? GetWikiItem(string title, string wikiNamespace, bool noRedirect = false)
         {
-            if (string.Equals(wikiNamespace, WikiConfig.CategoriesTitle, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
             {
                 return Category.GetCategory(title);
             }
@@ -1210,13 +1209,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             else
             {
-                return Article.GetArticle(title, wikiNamespace);
+                return Article.GetArticle(title, wikiNamespace, noRedirect);
             }
         }
 
         private async Task<Article?> GetWikiItemAsync(WikiRouteData data)
         {
-            var article = GetWikiItem(data.Title, data.WikiNamespace);
+            var article = GetWikiItem(data.Title, data.WikiNamespace, data.NoRedirect);
 
             if (string.Equals(article?.WikiNamespace ?? data.WikiNamespace, WikiWebConfig.UserNamespace, StringComparison.OrdinalIgnoreCase))
             {
@@ -1228,7 +1227,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                     if (article is null)
                     {
-                        article = GetWikiItem(user.Id, data.WikiNamespace);
+                        article = GetWikiItem(user.Id, data.WikiNamespace, data.NoRedirect);
                         if (!(article is null))
                         {
                             data.Title = article.Title;
@@ -1267,7 +1266,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             || type.StartsWith("video/")
             || type.Equals("application/pdf");
 
-        private async Task<IActionResult?> TryGettingSystemPage(WikiRouteData data, WikiUser? user)
+        private async Task<IActionResult?> TryGettingSystemPage(WikiRouteData data, IWikiUser? user)
         {
             if (string.Equals(data.Title, "Search", StringComparison.OrdinalIgnoreCase))
             {
@@ -1338,10 +1337,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return null;
         }
 
-        private bool VerifyPermission(WikiRouteData data, WikiUser? user, bool edit = false)
+        private bool VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
             => VerifyPermission(data.WikiItem, user, data.IsUserPage, edit);
 
-        private bool VerifyPermission(Article? item, WikiUser? user, bool userPage = false, bool edit = false)
+        private bool VerifyPermission(Article? item, IWikiUser? user, bool userPage = false, bool edit = false)
         {
             if (user?.IsDeleted == true || user?.IsDisabled == true)
             {

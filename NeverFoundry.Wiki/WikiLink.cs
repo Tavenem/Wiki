@@ -22,6 +22,19 @@ namespace NeverFoundry.Wiki
         public string FullTitle => Article.GetFullTitle(Title, WikiNamespace, IsTalk);
 
         /// <summary>
+        /// <para>
+        /// Whether this is a link to an existing page.
+        /// </para>
+        /// <para>
+        /// Note: this property is not persisted to storage, and should only be considered valid
+        /// immediately after parsing.
+        /// </para>
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
+        public bool Missing { get; set; }
+
+        /// <summary>
         /// Whether this is a link to a category.
         /// </summary>
         public bool IsCategory { get; }
@@ -49,6 +62,9 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Initializes a new instance of <see cref="WikiLink"/>.
         /// </summary>
+        /// <param name="missing">
+        /// Whether this is a link to a missing page.
+        /// </param>
         /// <param name="isCategory">
         /// Whether this is a link to a category.
         /// </param>
@@ -64,9 +80,25 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiNamespace">
         /// The namespace for the linked article.
         /// </param>
+        public WikiLink(
+            bool missing,
+            bool isCategory,
+            bool isNamespaceEscaped,
+            bool isTalk,
+            string title,
+            string? wikiNamespace)
+        {
+            Missing = missing;
+            IsCategory = isCategory;
+            IsNamespaceEscaped = isNamespaceEscaped;
+            IsTalk = isTalk;
+            Title = title;
+            WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
+        }
+
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        public WikiLink(
+        private WikiLink(
             bool isCategory,
             bool isNamespaceEscaped,
             bool isTalk,
