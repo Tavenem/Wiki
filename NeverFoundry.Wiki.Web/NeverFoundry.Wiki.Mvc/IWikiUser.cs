@@ -31,7 +31,16 @@
         string Id { get; }
 
         /// <summary>
+        /// <para>
         /// Whether this user may upload files.
+        /// </para>
+        /// <para>
+        /// If <see langword="false"/>, this user may still upload if it belongs to a <see
+        /// cref="IWikiGroup"/> with this property set to <see langword="true"/>. If <see
+        /// langword="true"/>, this user may upload regardless of the setting of any group to which
+        /// it belongs. This allows upload permission to be granted either individually, or to
+        /// entire groups.
+        /// </para>
         /// </summary>
         bool HasUploadPermission { get; }
 

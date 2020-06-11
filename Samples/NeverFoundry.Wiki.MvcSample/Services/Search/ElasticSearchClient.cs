@@ -4,6 +4,8 @@ using Nest;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Mvc;
 using NeverFoundry.Wiki.Mvc.Services.Search;
+using NeverFoundry.Wiki.Web;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -45,13 +47,21 @@ namespace NeverFoundry.Wiki.Sample.Services
         public async Task<ISearchResult> SearchAsync(Mvc.Services.Search.ISearchRequest request, ClaimsPrincipal principal)
         {
             var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
+            var claims = user is null
+                ? new List<Claim>()
+                : await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+            var groupIds = claims
+                .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
+                .Select(x => x.Value)
+                .ToList();
 
             CountResponse? count;
             if (user is null)
             {
                 count = await _elasticClient.CountAsync<Article>(x =>
                     x.Query(q =>
-                        +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        +!q.Exists(m => m.Field(f => f.Owner))
+                        && +!q.Exists(m => m.Field(f => f.AllowedViewers))
                         && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .ConfigureAwait(false);
             }
@@ -59,8 +69,11 @@ namespace NeverFoundry.Wiki.Sample.Services
             {
                 count = await _elasticClient.CountAsync<Article>(x =>
                     x.Query(q =>
-                        (+!q.Exists(m => m.Field(f => f.AllowedViewers))
-                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim()))
+                        ((+!q.Exists(m => m.Field(f => f.Owner))
+                        && +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
                         && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .ConfigureAwait(false);
             }
@@ -85,7 +98,8 @@ namespace NeverFoundry.Wiki.Sample.Services
             {
                 response = await _elasticClient.SearchAsync<Article>(x =>
                     x.Query(q =>
-                        +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        +!q.Exists(m => m.Field(f => f.Owner))
+                        && +!q.Exists(m => m.Field(f => f.AllowedViewers))
                         && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
                         || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .Highlight(h =>
@@ -118,8 +132,11 @@ namespace NeverFoundry.Wiki.Sample.Services
             {
                 response = await _elasticClient.SearchAsync<Article>(x =>
                     x.Query(q =>
-                        (+!q.Exists(m => m.Field(f => f.AllowedViewers))
-                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim()))
+                        ((+!q.Exists(m => m.Field(f => f.Owner))
+                        && +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
                         && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
                         || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
                     .Highlight(h =>

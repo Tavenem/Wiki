@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Web;
 using System;
 using System.Collections.Generic;
@@ -15,11 +16,16 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
     [Authorize(Policy = WikiClaims.Claim_WikiAdmin)]
     public class AdminPortalModel : PageModel
     {
+        private readonly IDataStore _dataStore;
         private readonly UserManager<WikiUser> _userManager;
 
         public int CurrentPage { get; set; }
 
         [TempData] public string? ErrorMessage { get; set; }
+
+        public long GroupCount { get; set; }
+
+        public List<WikiGroup>? Groups { get; set; }
 
         [BindProperty] public InputModel Input { get; set; } = new InputModel();
 
@@ -28,6 +34,8 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
         public int ItemsPerPage { get; set; }
 
         public long PageCount { get; set; }
+
+        public bool ShowGroups { get; set; }
 
         [TempData] public string? StatusMessage { get; set; }
 
@@ -57,15 +65,21 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
             [Required] public string? Id { get; set; }
         }
 
-        public AdminPortalModel(UserManager<WikiUser> userManager) => _userManager = userManager;
+        public AdminPortalModel(IDataStore dataStore, UserManager<WikiUser> userManager)
+        {
+            _dataStore = dataStore;
+            _userManager = userManager;
+        }
 
-        public async Task<IActionResult> OnGetAsync(int page = 1, int count = 25)
+        public async Task<IActionResult> OnGetAsync(int page = 1, int count = 25, bool groups = false)
         {
             var result = await VerifyAdminAsync().ConfigureAwait(false);
             if (result != null)
             {
                 return result;
             }
+
+            ShowGroups = groups;
 
             CurrentPage = page;
             ItemsPerPage = count;
@@ -76,21 +90,34 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
             UserCountInactive = _userManager.Users.LongCount(x => !x.IsDeleted && !x.IsDisabled && x.LastAccess.AddYears(1) < DateTimeOffset.UtcNow);
             UserCountTotal = _userManager.Users.LongCount();
 
-            PageCount = UserCountTotal / ItemsPerPage;
-            if (UserCountTotal % ItemsPerPage != 0)
+            if (groups)
             {
-                PageCount++;
+                var groupPage = await _dataStore.Query<WikiGroup>()
+                    .OrderBy(x => x.GroupName)
+                    .GetPageAsync(CurrentPage, ItemsPerPage)
+                    .ConfigureAwait(false);
+                Groups = groupPage.ToList();
+                GroupCount = groupPage.TotalCount;
+                PageCount = groupPage.TotalPages;
             }
-
-            Users = _userManager.Users
-                .OrderBy(x => x.UserName)
-                .Skip((CurrentPage - 1) * ItemsPerPage)
-                .Take(ItemsPerPage)
-                .Select(x => new UserWithClaims(x))
-                .ToList();
-            foreach (var user in Users)
+            else
             {
-                user.Claims = await _userManager.GetClaimsAsync(user.User).ConfigureAwait(false);
+                PageCount = UserCountTotal / ItemsPerPage;
+                if (UserCountTotal % ItemsPerPage != 0)
+                {
+                    PageCount++;
+                }
+
+                Users = _userManager.Users
+                    .OrderBy(x => x.UserName)
+                    .Skip((CurrentPage - 1) * ItemsPerPage)
+                    .Take(ItemsPerPage)
+                    .Select(x => new UserWithClaims(x))
+                    .ToList();
+                foreach (var user in Users)
+                {
+                    user.Claims = await _userManager.GetClaimsAsync(user.User).ConfigureAwait(false);
+                }
             }
 
             return Page();
@@ -226,6 +253,72 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
             }
 
             StatusMessage = "User is no longer an admin";
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> ToggleGroupUploadPermission()
+        {
+            var result = await VerifyAdminAsync().ConfigureAwait(false);
+            if (result != null)
+            {
+                return result;
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ErrorMessage = "An error occurred. Please refresh the page and try again.";
+                return RedirectToPage();
+            }
+
+            var group = await _dataStore.GetItemAsync<WikiGroup>(Input.Id).ConfigureAwait(false);
+            if (group is null)
+            {
+                ErrorMessage = "An error occurred. Please refresh the page and try again.";
+                return RedirectToPage();
+            }
+
+            group.HasUploadPermission = !group.HasUploadPermission;
+            var dataResult = await _dataStore.StoreItemAsync(group).ConfigureAwait(false);
+            if (!dataResult)
+            {
+                ErrorMessage = "An error occurred. Please refresh the page and try again.";
+                return RedirectToPage();
+            }
+
+            StatusMessage = $"Group {(group.HasUploadPermission ? "now has" : "no longer has ")} permission to upload files";
+            return RedirectToPage();
+        }
+
+        public async Task<IActionResult> ToggleUploadPermission()
+        {
+            var result = await VerifyAdminAsync().ConfigureAwait(false);
+            if (result != null)
+            {
+                return result;
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ErrorMessage = "An error occurred. Please refresh the page and try again.";
+                return RedirectToPage();
+            }
+
+            var user = await _userManager.FindByIdAsync(Input.Id).ConfigureAwait(false);
+            if (user is null)
+            {
+                ErrorMessage = "An error occurred. Please refresh the page and try again.";
+                return RedirectToPage();
+            }
+
+            user.HasUploadPermission = !user.HasUploadPermission;
+            var identityResult = await _userManager.UpdateAsync(user).ConfigureAwait(false);
+            if (!identityResult.Succeeded)
+            {
+                ErrorMessage = "An error occurred. Please refresh the page and try again.";
+                return RedirectToPage();
+            }
+
+            StatusMessage = $"User {(user.HasUploadPermission ? "now has" : "no longer has ")} permission to upload files";
             return RedirectToPage();
         }
 

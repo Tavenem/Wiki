@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -10,7 +12,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
 {
     /// <summary>
     /// <para>
-    /// The default search client performs a naive search of the <see cref="DataStore"/>, looking
+    /// The default search client performs a naive search of the <see cref="WikiConfig.DataStore"/>, looking
     /// for exact string matches of the query in the title and markdown of each item.
     /// </para>
     /// <para>
@@ -60,13 +62,22 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
             }
 
             var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
+            var claims = user is null
+                ? new List<Claim>()
+                : await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+            var groupIds = claims
+                .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
+                .Select(x => x.Value)
+                .ToList();
 
             IPagedList<Article> articles;
-            System.Linq.Expressions.Expression<Func<Article, bool>> exp = x => x.AllowedViewers == null;
+            System.Linq.Expressions.Expression<Func<Article, bool>> exp = x => x.Owner == null || x.AllowedViewers == null;
             if (!(user is null))
             {
                 exp = exp.OrElse(x => x.AllowedViewers!.Contains(user.Id)
-                    || user.Id.Equals(x.Owner, StringComparison.OrdinalIgnoreCase));
+                    || user.Id.Equals(x.Owner, StringComparison.OrdinalIgnoreCase)
+                    || groupIds.Contains(x.Owner!)
+                    || x.AllowedViewers!.Any(y => groupIds.Contains(y)));
             }
             exp = exp.AndAlso(x => x.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase)
                 || x.MarkdownContent.Contains(request.Query, StringComparison.OrdinalIgnoreCase));
@@ -74,7 +85,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
             {
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
-                    articles = await DataStore.Query<Article>()
+                    articles = await WikiConfig.DataStore.Query<Article>()
                         .Where(exp)
                         .OrderBy(x => x.TimestampTicks, request.Descending)
                         .GetPageAsync(request.PageNumber, request.PageSize)
@@ -82,7 +93,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                 }
                 else
                 {
-                    articles = await DataStore.Query<Article>()
+                    articles = await WikiConfig.DataStore.Query<Article>()
                         .Where(exp)
                         .OrderBy(x => x.Title, request.Descending)
                         .GetPageAsync(request.PageNumber, request.PageSize)

@@ -108,10 +108,10 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             }
         }
 
-        private Task<bool> GetTopicEditPermissionAsync(string topicId, IWikiUser user)
+        private ValueTask<bool> GetTopicEditPermissionAsync(string topicId, IWikiUser user)
             => GetTopicPermissionAsync(topicId, user, edit: true);
 
-        private async Task<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user, bool edit)
+        private async ValueTask<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user, bool edit)
         {
             if (string.IsNullOrWhiteSpace(topicId)
                 || string.IsNullOrEmpty(topicId))
@@ -119,19 +119,64 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 return false;
             }
 
-            var article = await DataStore.GetItemAsync<Article>(topicId).ConfigureAwait(false);
+            var article = await WikiConfig.DataStore.GetItemAsync<Article>(topicId).ConfigureAwait(false);
             if (article is null)
             {
                 return false;
             }
 
-            return edit
-                ? !(user is null) && article.AllowedEditors?.Contains(user.Id) == true
-                : article.AllowedViewers is null
-                    || (!(user is null) && article.AllowedViewers.Contains(user.Id));
+            if (string.IsNullOrEmpty(article.Owner)
+                || article.Owner == user?.Id)
+            {
+                return true;
+            }
+
+            if (edit)
+            {
+                if (user is null)
+                {
+                    return false;
+                }
+                else if (article.AllowedEditors?.Contains(user.Id) == true)
+                {
+                    return true;
+                }
+                else
+                {
+                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+                    var groupIds = claims
+                        .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
+                        .Select(x => x.Value)
+                        .ToList();
+                    return groupIds.Contains(article.Owner)
+                        || article.AllowedEditors?.Intersect(groupIds).Any() != false;
+                }
+            }
+            else if (article.AllowedViewers is null)
+            {
+                return true;
+            }
+            else if (user is null)
+            {
+                return false;
+            }
+            else if (article.AllowedViewers.Contains(user.Id))
+            {
+                return true;
+            }
+            else
+            {
+                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+                var groupIds = claims
+                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
+                    .Select(x => x.Value)
+                    .ToList();
+                return groupIds.Contains(article.Owner)
+                    || article.AllowedViewers?.Intersect(groupIds).Any() != false;
+            }
         }
 
-        private Task<bool> GetTopicViewPermissionAsync(string topicId, IWikiUser? user)
+        private ValueTask<bool> GetTopicViewPermissionAsync(string topicId, IWikiUser? user)
             => GetTopicPermissionAsync(topicId, user, edit: false);
     }
 }

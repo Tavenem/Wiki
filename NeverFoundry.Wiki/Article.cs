@@ -313,14 +313,14 @@ namespace NeverFoundry.Wiki
             do
             {
                 redirect = false;
-                article = DataStore.Query<Article>()
+                article = WikiConfig.DataStore.Query<Article>()
                     .Where(x => x.WikiNamespace == wikiNamespace && x.Title == title)
                     .OrderBy(x => x.TimestampTicks, descending: true)
                     .FirstOrDefault();
                 // If no exact match exists, ignore case if only one such match exists.
                 if (article is null)
                 {
-                    var articles = DataStore.Query<Article>()
+                    var articles = WikiConfig.DataStore.Query<Article>()
                         .Where(x => string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.OrdinalIgnoreCase)
                             && string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
                         .OrderBy(x => x.TimestampTicks, descending: true)
@@ -371,7 +371,7 @@ namespace NeverFoundry.Wiki
 
             wikiNamespace ??= WikiConfig.DefaultNamespace;
             var ticks = timestamp.ToUniversalTime().Ticks;
-            var article = DataStore.Query<Article>()
+            var article = WikiConfig.DataStore.Query<Article>()
                 .Where(x => x.WikiNamespace == wikiNamespace
                     && x.Title == title
                     && x.TimestampTicks == ticks)
@@ -379,7 +379,7 @@ namespace NeverFoundry.Wiki
             // If no exact match exists, ignore case if only one such match exists.
             if (article is null)
             {
-                var articles = DataStore.Query<Article>()
+                var articles = WikiConfig.DataStore.Query<Article>()
                     .Where(x => string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.OrdinalIgnoreCase)
                         && string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
                         && x.TimestampTicks == ticks)
@@ -563,12 +563,12 @@ namespace NeverFoundry.Wiki
             }
 
             title = title.ToWikiTitleCase();
-            if (DataStore.Query<Article>().Any(x => x.WikiNamespace == wikiNamespace && x.Title == title))
+            if (WikiConfig.DataStore.Query<Article>().Any(x => x.WikiNamespace == wikiNamespace && x.Title == title))
             {
                 throw new ArgumentException("The given title is already in use for this namespace", nameof(title));
             }
 
-            var wikiId = DataStore.CreateNewIdFor<Article>();
+            var wikiId = WikiConfig.DataStore.CreateNewIdFor<Article>();
 
             var revision = new WikiRevision(
                 wikiId,
@@ -577,7 +577,7 @@ namespace NeverFoundry.Wiki
                 wikiNamespace,
                 null,
                 markdown);
-            await revision.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             string? redirectNamespace = null;
             string? redirectTitle = null;
@@ -628,13 +628,13 @@ namespace NeverFoundry.Wiki
             var wikiLinks = GetWikiLinks(md);
             foreach (var link in wikiLinks.Where(x => x.Missing))
             {
-                var existing = await DataStore.Query<MissingPage>()
+                var existing = await WikiConfig.DataStore.Query<MissingPage>()
                     .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (existing is null)
                 {
                     var missingPage = await MissingPage.NewAsync(
-                        DataStore.CreateNewIdFor<MissingPage>(),
+                        WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
                         link.Title,
                         link.WikiNamespace,
                         wikiId)
@@ -672,23 +672,23 @@ namespace NeverFoundry.Wiki
                 redirectTitle,
                 isBrokenRedirect,
                 isDoubleRedirect);
-            await article.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(article).ConfigureAwait(false);
 
-            var missing = await DataStore.Query<MissingPage>()
+            var missing = await WikiConfig.DataStore.Query<MissingPage>()
                 .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == wikiNamespace)
                 .ConfigureAwait(false);
             if (!(missing is null))
             {
-                await missing.DeleteAsync().ConfigureAwait(false);
+                await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
             }
 
-            var brokenRedirect = await DataStore.Query<Article>()
+            var brokenRedirect = await WikiConfig.DataStore.Query<Article>()
                 .FirstOrDefaultAsync(x => x.IsBrokenRedirect && x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
                 .ConfigureAwait(false);
             if (!(brokenRedirect is null))
             {
                 brokenRedirect.IsBrokenRedirect = false;
-                await brokenRedirect.SaveAsync().ConfigureAwait(false);
+                await WikiConfig.DataStore.StoreItemAsync(brokenRedirect).ConfigureAwait(false);
             }
 
             return article;
@@ -1016,7 +1016,7 @@ namespace NeverFoundry.Wiki
                 exp = exp.AndAlso(x => x.TimestampTicks <= end.Value.ToUniversalTime().Ticks);
             }
             exp = condition is null ? exp : exp.AndAlso(condition);
-            return await DataStore.Query<WikiRevision>()
+            return await WikiConfig.DataStore.Query<WikiRevision>()
                 .Where(exp)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .GetPageAsync(pageNumber, pageSize)
@@ -1154,7 +1154,7 @@ namespace NeverFoundry.Wiki
             }
             wikiNamespace ??= WikiNamespace;
 
-            if (DataStore.Query<Article>()
+            if (WikiConfig.DataStore.Query<Article>()
                 .Any(x => x.Id != Id
                     && x.WikiNamespace == wikiNamespace
                     && x.Title == title))
@@ -1182,7 +1182,7 @@ namespace NeverFoundry.Wiki
 
                 foreach (var link in WikiLinks)
                 {
-                    var missing = await DataStore.Query<MissingPage>()
+                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
                         .FirstOrDefaultAsync(x => x.Title == link.Title
                             && x.WikiNamespace == link.WikiNamespace
                             && x.References.Count == 1
@@ -1190,17 +1190,17 @@ namespace NeverFoundry.Wiki
                         .ConfigureAwait(false);
                     if (!(missing is null))
                     {
-                        await missing.DeleteAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
                     }
                 }
 
-                await foreach (var redirect in DataStore.Query<Article>()
+                await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
                     .Where(x => x.RedirectTitle == previousTitle && x.RedirectNamespace == previousNamespace)
                     .AsAsyncEnumerable())
                 {
                     redirect.IsBrokenRedirect = true;
                     redirect.IsDoubleRedirect = false;
-                    await redirect.SaveAsync().ConfigureAwait(false);
+                    await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
                 }
             }
             else if (!(markdown is null))
@@ -1219,7 +1219,7 @@ namespace NeverFoundry.Wiki
 
                     foreach (var link in WikiLinks)
                     {
-                        var missingLink = await DataStore.Query<MissingPage>()
+                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title
                                 && x.WikiNamespace == link.WikiNamespace
                                 && x.References.Count == 1
@@ -1227,7 +1227,7 @@ namespace NeverFoundry.Wiki
                             .ConfigureAwait(false);
                         if (!(missingLink is null))
                         {
-                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                         }
                     }
                 }
@@ -1246,12 +1246,12 @@ namespace NeverFoundry.Wiki
                         if (string.Equals(title, previousTitle, StringComparison.Ordinal)
                             && string.Equals(wikiNamespace, previousNamespace, StringComparison.Ordinal))
                         {
-                            await foreach (var redirect in DataStore.Query<Article>()
+                            await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
                                 .Where(x => x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
                                 .AsAsyncEnumerable())
                             {
                                 redirect.IsDoubleRedirect = true;
-                                await redirect.SaveAsync().ConfigureAwait(false);
+                                await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
                             }
                         }
                     }
@@ -1259,12 +1259,12 @@ namespace NeverFoundry.Wiki
                         && string.Equals(title, previousTitle, StringComparison.Ordinal)
                         && string.Equals(wikiNamespace, previousNamespace, StringComparison.Ordinal))
                     {
-                        await foreach (var redirect in DataStore.Query<Article>()
+                        await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
                             .Where(x => x.IsDoubleRedirect && x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
                             .AsAsyncEnumerable())
                         {
                             redirect.IsDoubleRedirect = false;
-                            await redirect.SaveAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
                         }
                     }
 
@@ -1281,7 +1281,7 @@ namespace NeverFoundry.Wiki
                     WikiLinks = GetWikiLinks(md).AsReadOnly();
                     foreach (var link in previousWikiLinks.Except(WikiLinks))
                     {
-                        var missingLink = await DataStore.Query<MissingPage>()
+                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title
                                 && x.WikiNamespace == link.WikiNamespace
                                 && x.References.Count == 1
@@ -1289,18 +1289,18 @@ namespace NeverFoundry.Wiki
                             .ConfigureAwait(false);
                         if (!(missingLink is null))
                         {
-                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                         }
                     }
                     foreach (var link in WikiLinks.Except(previousWikiLinks).Where(x => x.Missing))
                     {
-                        var existing = await DataStore.Query<MissingPage>()
+                        var existing = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
                             .ConfigureAwait(false);
                         if (existing is null)
                         {
                             var missingPage = await MissingPage.NewAsync(
-                                DataStore.CreateNewIdFor<MissingPage>(),
+                                WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
                                 link.Title,
                                 link.WikiNamespace,
                                 Id)
@@ -1344,29 +1344,29 @@ namespace NeverFoundry.Wiki
                 if (!string.Equals(title, previousTitle, StringComparison.Ordinal)
                     || !string.Equals(wikiNamespace, previousNamespace, StringComparison.Ordinal))
                 {
-                    var missing = await DataStore.Query<MissingPage>()
+                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
                         .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == wikiNamespace)
                         .ConfigureAwait(false);
                     if (!(missing is null))
                     {
-                        await missing.DeleteAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
                     }
 
-                    await foreach (var redirect in DataStore.Query<Article>()
+                    await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
                         .Where(x => x.RedirectTitle == previousTitle && x.RedirectNamespace == previousNamespace)
                         .AsAsyncEnumerable())
                     {
                         redirect.IsBrokenRedirect = true;
                         redirect.IsDoubleRedirect = false;
-                        await redirect.SaveAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
                     }
 
-                    await foreach (var redirect in DataStore.Query<Article>()
+                    await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
                         .Where(x => x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
                         .AsAsyncEnumerable())
                     {
                         redirect.IsBrokenRedirect = false;
-                        await redirect.SaveAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
                     }
                 }
             }
@@ -1383,17 +1383,17 @@ namespace NeverFoundry.Wiki
                 previousMarkdown,
                 MarkdownContent,
                 revisionComment);
-            await revision.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             TimestampTicks = revision.TimestampTicks;
 
-            await SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
         }
 
         private async Task<IReadOnlyList<WikiRevision>> GetRevisionsUntilAsync(DateTimeOffset time)
         {
             var ticks = time.ToUniversalTime().Ticks;
-            var lastMilestone = await DataStore.Query<WikiRevision>()
+            var lastMilestone = await WikiConfig.DataStore.Query<WikiRevision>()
                 .Where(x => x.WikiId == Id && x.TimestampTicks <= ticks && x.IsMilestone)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .FirstOrDefaultAsync()
@@ -1402,7 +1402,7 @@ namespace NeverFoundry.Wiki
             {
                 return new List<WikiRevision>();
             }
-            return await DataStore.Query<WikiRevision>()
+            return await WikiConfig.DataStore.Query<WikiRevision>()
                 .Where(x => x.WikiId == Id && x.TimestampTicks >= lastMilestone.TimestampTicks && x.TimestampTicks <= ticks)
                 .OrderBy(x => x.TimestampTicks)
                 .ToListAsync()
@@ -1462,7 +1462,7 @@ namespace NeverFoundry.Wiki
                 }
                 Categories = categories.AsReadOnly();
 
-                SaveAsync().GetAwaiter().GetResult();
+                WikiConfig.DataStore.StoreItemAsync(this).GetAwaiter().GetResult();
             }
 
             return md;

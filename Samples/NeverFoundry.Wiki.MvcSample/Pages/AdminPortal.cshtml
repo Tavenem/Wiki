@@ -28,12 +28,58 @@
                 <div class="col-2">Deleted users:</div>
                 <div class="col-1"><strong class="text-danger">@Model.UserCountDeleted.ToString("N0")</strong></div>
             </div>
+            <div class="row justify-content-center">
+                <div class="col-2">Groups:</div>
+                <div class="col-1"><strong class="text-info">@Model.GroupCount.ToString("N0")</strong></div>
+            </div>
         </div>
     </div>
 </div>
 <partial name="_ErrorMessage" for="ErrorMessage" />
 <partial name="_StatusMessage" for="StatusMessage" />
-@if ((Model.Users?.Count ?? 0) > 0)
+@if (Model.ShowGroups)
+{
+    @if ((Model.Groups?.Count ?? 0) > 0)
+    {
+        <div class="row justify-content-center mb-3">
+            <div class="col-sm-10">
+                <ul class="list-group d-flex flex-wrap">
+                    @foreach (var group in Model.Groups!)
+                    {
+                        <li class="list-group-item">
+                            <div class="container-fluid">
+                                <div class="row align-items-center">
+                                    <div class="col-auto d-flex align-items-start">
+                                        <h5 class="mb-1">@group.GroupName</h5>
+                                    </div>
+                                    @if (Model.IsSiteAdmin)
+                                    {
+                                        <div class="col-auto">
+                                            <form method="post" asp-page-handler="ToggleGroupUploadPermission" style="display: inline-block">
+                                                <input type="hidden" value="@group.Id" />
+                                                <button type="submit" class="btn btn-info">
+                                                    @if (group.HasUploadPermission)
+                                                    {
+                                                        <span>Remove Upload Permission</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span>Grant Upload Permission</span>
+                                                    }
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    }
+}
+else if ((Model.Users?.Count ?? 0) > 0)
 {
     <div class="row justify-content-center mb-3">
         <div class="col-sm-10">
@@ -45,7 +91,7 @@
                             <div class="row align-items-center">
                                 <div class="col-auto d-flex align-items-start">
                                     <h5 class="mb-1 @(user.User.LastAccess.AddYears(1) < DateTimeOffset.UtcNow ? "text-muted" : string.Empty)">@user.User.UserName</h5>
-                                    @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
+                                    @if (user.Claims.HasBoolClaim(WikiMvcClaims.Claim_SiteAdmin))
                                     {
                                         <span class="badge badge-pill badge-primary">
                                             <i class="material-icons">star</i>
@@ -56,7 +102,7 @@
                                     {
                                         if (user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                                         {
-                                            @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
+                                            @if (user.Claims.HasBoolClaim(WikiMvcClaims.Claim_SiteAdmin))
                                             {
                                                 <form method="post" asp-page-handler="RemoveWikiAdmin" style="display: inline-block">
                                                     <input type="hidden" value="@user.User.Id" />
@@ -76,7 +122,7 @@
                                         }
                                         else if (!user.User.IsDeleted)
                                         {
-                                            @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
+                                            @if (user.Claims.HasBoolClaim(WikiMvcClaims.Claim_SiteAdmin))
                                             {
                                                 <form method="post" asp-page-handler="AddWikiAdmin" style="display: inline-block">
                                                     <input type="hidden" value="@user.User.Id" />
@@ -117,7 +163,7 @@
                                                 <button type="submit" class="btn btn-outline-danger">Enable</button>
                                             </form>
                                         }
-                                        else if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin) != true
+                                        else if (user.Claims.HasBoolClaim(WikiMvcClaims.Claim_SiteAdmin) != true
                                             && user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin) != true)
                                         {
                                             <form method="post" asp-page-handler="DisableUser" style="display: inline-block">
@@ -132,7 +178,7 @@
                                     {
                                         <span class="text-danger">Account deleted</span>
                                     }
-                                    else if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin) != true
+                                    else if (user.Claims.HasBoolClaim(WikiMvcClaims.Claim_SiteAdmin) != true
                                         && user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin) != true)
                                     {
                                         <a class="btn btn-danger" asp-page="./Account/ConfirmAdminDelete" asp-route-userId="@user.User.Id">
@@ -140,6 +186,24 @@
                                         </a>
                                     }
                                 </div>
+                                @if (Model.IsSiteAdmin)
+                                {
+                                    <div class="col-auto">
+                                        <form method="post" asp-page-handler="ToggleUploadPermission" style="display: inline-block">
+                                            <input type="hidden" value="@user.User.Id" />
+                                            <button type="submit" class="btn btn-info">
+                                                @if (user.User.HasUploadPermission)
+                                                {
+                                                    <span>Remove Upload Permission</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Grant Upload Permission</span>
+                                                }
+                                            </button>
+                                        </form>
+                                    </div>
+                                }
                             </div>
                         </div>
                     </li>
@@ -153,14 +217,24 @@
         <nav>
             <ul class="pagination justify-content-center">
                 <li class="page-item @(Model.CurrentPage == 0 ? "disabled" : string.Empty)">
-                    <a class="page-link" asp-page="./AdminPortal" asp-route-page="@(Model.CurrentPage - 1)" asp-route-count="@Model.ItemsPerPage" aria-label="Previous" aria-disabled="@(Model.CurrentPage == 0)">
+                    <a class="page-link"
+                       asp-page="./AdminPortal"
+                       asp-route-page="@(Model.CurrentPage - 1)"
+                       asp-route-count="@Model.ItemsPerPage"
+                       asp-route-groups="@Model.ShowGroups"
+                       aria-label="Previous"
+                       aria-disabled="@(Model.CurrentPage == 0)">
                         <span aria-hidden="true">&laquo;</span>
                     </a>
                 </li>
                 @if (Model.PageCount > 5 && Model.CurrentPage > 3)
                 {
                     <li class="page-item">
-                        <a class="page-link" asp-page="./AdminPortal" asp-route-page="@(Model.CurrentPage - 5)" asp-route-count="@Model.ItemsPerPage">&hellip;</a>
+                        <a class="page-link"
+                           asp-page="./AdminPortal"
+                           asp-route-page="@(Model.CurrentPage - 5)"
+                           asp-route-count="@Model.ItemsPerPage"
+                           asp-route-groups="@Model.ShowGroups">&hellip;</a>
                     </li>
                 }
                 @for (var i = Math.Max(0L, Model.CurrentPage - 2); i < Math.Min(Model.PageCount - 1, Model.CurrentPage + 2); i++)
@@ -174,22 +248,50 @@
                     else
                     {
                         <li class="page-item">
-                            <a class="page-link" asp-page="./AdminPortal" asp-route-page="@i" asp-route-count="@Model.ItemsPerPage">@i</a>
+                            <a class="page-link"
+                               asp-page="./AdminPortal"
+                               asp-route-page="@i"
+                               asp-route-count="@Model.ItemsPerPage"
+                               asp-route-groups="@Model.ShowGroups">@i</a>
                         </li>
                     }
                 }
                 @if (Model.PageCount > 5 && Model.CurrentPage < Model.PageCount - 3)
                 {
                     <li class="page-item">
-                        <a class="page-link" asp-page="./AdminPortal" asp-route-page="@(Model.CurrentPage + 5)" asp-route-count="@Model.ItemsPerPage">&hellip;</a>
+                        <a class="page-link"
+                           asp-page="./AdminPortal"
+                           asp-route-page="@(Model.CurrentPage + 5)"
+                           asp-route-count="@Model.ItemsPerPage"
+                           asp-route-groups="@Model.ShowGroups">&hellip;</a>
                     </li>
                 }
                 <li class="page-item @(Model.CurrentPage == Model.PageCount ? "disabled" : string.Empty)">
-                    <a class="page-link" asp-page="./AdminPortal" asp-route-page="@(Model.CurrentPage + 1)" asp-route-count="@Model.ItemsPerPage" aria-label="Next" aria-disabled="@(Model.CurrentPage == Model.PageCount)">
+                    <a class="page-link"
+                       asp-page="./AdminPortal"
+                       asp-route-page="@(Model.CurrentPage + 1)"
+                       asp-route-count="@Model.ItemsPerPage"
+                       asp-route-groups="@Model.ShowGroups"
+                       aria-label="Next"
+                       aria-disabled="@(Model.CurrentPage == Model.PageCount)">
                         <span aria-hidden="true">&raquo;</span>
                     </a>
                 </li>
             </ul>
         </nav>
+    </div>
+</div>
+<div class="row justify-content-center mb-3">
+    <div class="col-sm-10 text-right">
+        <button class="btn btn-info">
+            @if (Model.ShowGroups)
+            {
+                <span>Show Users</span>
+            }
+            else
+            {
+                <span>Show Groups</span>
+            }
+        </button>
     </div>
 </div>

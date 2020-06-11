@@ -75,7 +75,7 @@ namespace NeverFoundry.Wiki
             string referenceId)
         {
             var result = new MissingPage(id, title, wikiNamespace, new List<string> { referenceId });
-            await result.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
         }
 

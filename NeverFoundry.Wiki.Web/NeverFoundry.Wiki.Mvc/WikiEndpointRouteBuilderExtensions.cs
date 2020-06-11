@@ -37,6 +37,8 @@ namespace NeverFoundry.Wiki.Mvc
         /// </param>
         public static void AddWiki<TUser>(this IServiceCollection services, IWikiOptions? options = null) where TUser : IdentityUser, IWikiUser
         {
+            WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+
             WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
             WikiWebConfig.LoginPath = options?.LoginPath;
             WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
@@ -91,6 +93,8 @@ namespace NeverFoundry.Wiki.Mvc
             services.AddScoped(provider =>
             {
                 var options = builder.Invoke(provider);
+
+                WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
 
                 WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
                 WikiWebConfig.LoginPath = options?.LoginPath;

@@ -35,7 +35,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             {
                 foreach (var id in category.ChildIds)
                 {
-                    var child = await DataStore.GetItemAsync<Article>(id).ConfigureAwait(false);
+                    var child = await WikiConfig.DataStore.GetItemAsync<Article>(id).ConfigureAwait(false);
                     if (child is null)
                     {
                         continue;

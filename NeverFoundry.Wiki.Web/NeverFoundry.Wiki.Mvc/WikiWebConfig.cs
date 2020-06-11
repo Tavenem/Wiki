@@ -110,6 +110,32 @@ namespace NeverFoundry.Wiki.Web
         /// </summary>
         public static string? CopyrightPageTitle { get; set; } = "Copyright";
 
+        private const string GroupNamespaceDefault = "Group";
+        private static string _GroupNamespace = GroupNamespaceDefault;
+        /// <summary>
+        /// <para>
+        /// The name of the user group namespace.
+        /// </para>
+        /// <para>
+        /// Default is "Group"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public static string? GroupNamespace
+        {
+            get => _GroupNamespace;
+            set
+            {
+                _GroupNamespace = string.IsNullOrWhiteSpace(value)
+                    ? GroupNamespaceDefault
+                    : value;
+            }
+        }
+
         /// <summary>
         /// <para>
         /// The title of the main help page.
@@ -251,14 +277,14 @@ namespace NeverFoundry.Wiki.Web
         /// </summary>
         public static string? TenorAPIKey { get; set; }
 
-        private const string UserNamespaceDefault = "Users";
+        private const string UserNamespaceDefault = "User";
         private static string _UserNamespace = UserNamespaceDefault;
         /// <summary>
         /// <para>
         /// The name of the user namespace.
         /// </para>
         /// <para>
-        /// Default is "Users"
+        /// Default is "User"
         /// </para>
         /// <para>
         /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or

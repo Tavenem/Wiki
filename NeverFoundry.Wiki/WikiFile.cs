@@ -146,14 +146,14 @@ namespace NeverFoundry.Wiki
         /// langword="null"/> if no such file exists.</returns>
         public static WikiFile? GetFile(string title)
         {
-            var file = DataStore.Query<WikiFile>()
+            var file = WikiConfig.DataStore.Query<WikiFile>()
                 .Where(x => x.Title == title)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .FirstOrDefault();
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
-                var files = DataStore.Query<WikiFile>()
+                var files = WikiConfig.DataStore.Query<WikiFile>()
                     .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
                     .OrderBy(x => x.TimestampTicks, descending: true)
                     .ToList();
@@ -175,11 +175,11 @@ namespace NeverFoundry.Wiki
         public static WikiFile? GetFile(string title, DateTimeOffset timestamp)
         {
             var ticks = timestamp.ToUniversalTime().Ticks;
-            var file = DataStore.Query<WikiFile>().FirstOrDefault(x => x.Title == title && x.TimestampTicks == ticks);
+            var file = WikiConfig.DataStore.Query<WikiFile>().FirstOrDefault(x => x.Title == title && x.TimestampTicks == ticks);
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
-                var files = DataStore.Query<WikiFile>()
+                var files = WikiConfig.DataStore.Query<WikiFile>()
                     .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
                         && x.TimestampTicks == ticks)
                     .ToList();
@@ -258,12 +258,12 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             title = title.ToWikiTitleCase();
-            if (DataStore.Query<WikiFile>().Any(x => x.Title == title))
+            if (WikiConfig.DataStore.Query<WikiFile>().Any(x => x.Title == title))
             {
                 throw new ArgumentException("The given title is already in use", nameof(title));
             }
 
-            var wikiId = DataStore.CreateNewIdFor<WikiFile>();
+            var wikiId = WikiConfig.DataStore.CreateNewIdFor<WikiFile>();
 
             var revision = new WikiRevision(
                 wikiId,
@@ -273,7 +273,7 @@ namespace NeverFoundry.Wiki
                 null,
                 markdown,
                 revisionComment);
-            await revision.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             var md = markdown;
             List<Transclusion> transclusions;
@@ -293,13 +293,13 @@ namespace NeverFoundry.Wiki
             var wikiLinks = GetWikiLinks(md);
             foreach (var link in wikiLinks.Where(x => x.Missing))
             {
-                var existing = await DataStore.Query<MissingPage>()
+                var existing = await WikiConfig.DataStore.Query<MissingPage>()
                     .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (existing is null)
                 {
                     var missingPage = await MissingPage.NewAsync(
-                        DataStore.CreateNewIdFor<MissingPage>(),
+                        WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
                         link.Title,
                         link.WikiNamespace,
                         wikiId)
@@ -335,14 +335,14 @@ namespace NeverFoundry.Wiki
                 allowedViewers,
                 categories,
                 transclusions);
-            await file.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(file).ConfigureAwait(false);
 
-            var missing = await DataStore.Query<MissingPage>()
+            var missing = await WikiConfig.DataStore.Query<MissingPage>()
                 .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.FileNamespace)
                 .ConfigureAwait(false);
             if (!(missing is null))
             {
-                await missing.DeleteAsync().ConfigureAwait(false);
+                await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
             }
 
             return file;
@@ -452,7 +452,7 @@ namespace NeverFoundry.Wiki
             IEnumerable<string>? allowedViewers = null)
         {
             title ??= Title;
-            if (DataStore.Query<WikiFile>().Any(x => x.Id != Id && x.Title == title))
+            if (WikiConfig.DataStore.Query<WikiFile>().Any(x => x.Id != Id && x.Title == title))
             {
                 throw new ArgumentException("The given title is already in use", nameof(title));
             }
@@ -484,7 +484,7 @@ namespace NeverFoundry.Wiki
 
                 foreach (var link in WikiLinks)
                 {
-                    var missingLink = await DataStore.Query<MissingPage>()
+                    var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                         .FirstOrDefaultAsync(x => x.Title == link.Title
                             && x.WikiNamespace == link.WikiNamespace
                             && x.References.Count == 1
@@ -492,7 +492,7 @@ namespace NeverFoundry.Wiki
                         .ConfigureAwait(false);
                     if (!(missingLink is null))
                     {
-                        await missingLink.DeleteAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                     }
                 }
             }
@@ -508,7 +508,7 @@ namespace NeverFoundry.Wiki
 
                     foreach (var link in WikiLinks)
                     {
-                        var missingLink = await DataStore.Query<MissingPage>()
+                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title
                                 && x.WikiNamespace == link.WikiNamespace
                                 && x.References.Count == 1
@@ -516,7 +516,7 @@ namespace NeverFoundry.Wiki
                             .ConfigureAwait(false);
                         if (!(missingLink is null))
                         {
-                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                         }
                     }
                 }
@@ -537,7 +537,7 @@ namespace NeverFoundry.Wiki
                     WikiLinks = GetWikiLinks(md).AsReadOnly();
                     foreach (var link in previousWikiLinks.Except(WikiLinks))
                     {
-                        var missingLink = await DataStore.Query<MissingPage>()
+                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title
                                 && x.WikiNamespace == link.WikiNamespace
                                 && x.References.Count == 1
@@ -545,18 +545,18 @@ namespace NeverFoundry.Wiki
                             .ConfigureAwait(false);
                         if (!(missingLink is null))
                         {
-                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                         }
                     }
                     foreach (var link in WikiLinks.Except(previousWikiLinks).Where(x => x.Missing))
                     {
-                        var existing = await DataStore.Query<MissingPage>()
+                        var existing = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
                             .ConfigureAwait(false);
                         if (existing is null)
                         {
                             var missingPage = await MissingPage.NewAsync(
-                                DataStore.CreateNewIdFor<MissingPage>(),
+                                WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
                                 link.Title,
                                 link.WikiNamespace,
                                 Id)
@@ -599,12 +599,12 @@ namespace NeverFoundry.Wiki
 
                 if (!string.Equals(title, previousTitle, StringComparison.Ordinal))
                 {
-                    var missing = await DataStore.Query<MissingPage>()
+                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
                         .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.FileNamespace)
                         .ConfigureAwait(false);
                     if (!(missing is null))
                     {
-                        await missing.DeleteAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
                     }
                 }
             }
@@ -621,11 +621,11 @@ namespace NeverFoundry.Wiki
                 previousMarkdown,
                 MarkdownContent,
                 revisionComment);
-            await revision.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             TimestampTicks = revision.TimestampTicks;
 
-            await SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
         }
 
         /// <summary>

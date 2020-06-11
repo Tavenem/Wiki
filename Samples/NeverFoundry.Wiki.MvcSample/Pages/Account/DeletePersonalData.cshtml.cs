@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
+using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.MVCSample.Pages.Account
@@ -11,9 +14,10 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
     [Authorize]
     public class DeletePersonalDataModel : PageModel
     {
-        private readonly UserManager<WikiUser> _userManager;
-        private readonly SignInManager<WikiUser> _signInManager;
+        private readonly IDataStore _dataStore;
         private readonly ILogger<DeletePersonalDataModel> _logger;
+        private readonly SignInManager<WikiUser> _signInManager;
+        private readonly UserManager<WikiUser> _userManager;
 
         [TempData] public string? ErrorMessage { get; set; }
 
@@ -28,13 +32,15 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
         }
 
         public DeletePersonalDataModel(
-            UserManager<WikiUser> userManager,
+            IDataStore dataStore,
+            ILogger<DeletePersonalDataModel> logger,
             SignInManager<WikiUser> signInManager,
-            ILogger<DeletePersonalDataModel> logger)
+            UserManager<WikiUser> userManager)
         {
-            _userManager = userManager;
-            _signInManager = signInManager;
+            _dataStore = dataStore;
             _logger = logger;
+            _signInManager = signInManager;
+            _userManager = userManager;
         }
 
         public async Task<IActionResult> OnGet()
@@ -68,6 +74,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
             }
 
             var userId = await _userManager.GetUserIdAsync(user).ConfigureAwait(false);
+            var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
             var result = await _userManager.DeleteAsync(user).ConfigureAwait(false);
             if (!result.Succeeded)
             {
@@ -79,6 +86,28 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
             await _signInManager.SignOutAsync().ConfigureAwait(false);
 
             _logger.LogInformation("User with ID '{UserId}' deleted themselves.", userId);
+
+            var groups = claims
+                .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
+                .ToList();
+            foreach (var groupClaim in groups)
+            {
+                var members = await _userManager.GetUsersForClaimAsync(groupClaim).ConfigureAwait(false);
+                if (!members.Except(new[] { user }).Any())
+                {
+                    var group = await _dataStore.GetItemAsync<WikiGroup>(groupClaim.Value).ConfigureAwait(false);
+                    if (!(group is null))
+                    {
+                        await _dataStore.RemoveItemAsync(group).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            var userPage = Article.GetArticle(userId, WikiWebConfig.UserNamespace);
+            if (!(userPage is null))
+            {
+                await userPage.ReviseAsync(userId, isDeleted: true).ConfigureAwait(false);
+            }
 
             return Redirect("~/");
         }

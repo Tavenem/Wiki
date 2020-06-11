@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using NeverFoundry.Wiki.Mvc.Services;
 using System.Collections.Generic;
@@ -105,7 +106,15 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     var editor = await userManager.FindByIdAsync(editorId).ConfigureAwait(false);
                     if (editor is null)
                     {
-                        editors.Add(editorId);
+                        var group = await WikiConfig.DataStore.GetItemAsync<IWikiGroup>(editorId).ConfigureAwait(false);
+                        if (group is null)
+                        {
+                            editors.Add(editorId);
+                        }
+                        else
+                        {
+                            editors.Add(group.GroupName);
+                        }
                     }
                     else
                     {
@@ -124,7 +133,15 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     var viewer = await userManager.FindByIdAsync(viewerId).ConfigureAwait(false);
                     if (viewer is null)
                     {
-                        viewers.Add(viewerId);
+                        var group = await WikiConfig.DataStore.GetItemAsync<IWikiGroup>(viewerId).ConfigureAwait(false);
+                        if (group is null)
+                        {
+                            viewers.Add(viewerId);
+                        }
+                        else
+                        {
+                            viewers.Add(group.GroupName);
+                        }
                     }
                     else
                     {

@@ -63,6 +63,15 @@
                                 <span title="View article">@(data.IsCategory ? "Category" : "Article")</span>
                             </li>
                         }
+                        else if (data.IsSpecialList)
+                        {
+                            <li>
+                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                            </li>
+                            <li>
+                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = $"{WikiConfig.TalkNamespace}:{data.WikiNamespace}", title = data.Title, action = "Read" })" title="View discussion">@WikiConfig.TalkNamespace</a>
+                            </li>
+                        }
                         else if (data.IsTalk)
                         {
                             <li>
@@ -88,7 +97,7 @@
                     @if (!data.IsSystem && !data.IsTalk)
                     {
                         <ul>
-                            @if (data.IsEdit || data.IsHistory)
+                            @if (data.IsEdit || data.IsHistory || data.IsSpecialList)
                             {
                                 <li>
                                     <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })">Read</a>
@@ -178,10 +187,25 @@
                         {
                             <span id="wiki-main-heading-editnotice">Editing</span>
                         }
-                        if ((!(data.WikiItem is Article article)
-                            || article.IsDeleted)
-                            && data.CanEdit
-                            && !data.IsEdit)
+                        if (data.IsCategory
+                            || data.IsGroupPage
+                            || !data.CanEdit
+                            || (data.WikiItem is Article article
+                            && !article.IsDeleted))
+                        {
+                            @if (data.ShowNamespace)
+                            {
+                                <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
+                                <span class="wiki-main-heading-namespace-separator">:</span>
+                            }
+                            <span id="wiki-main-heading-title">@data.DisplayTitle</span>
+                            @if (data.IsHistory)
+                            {
+                                <span class="wiki-main-heading-namespace-separator">:</span>
+                                <span id="wiki-main-heading-history">Revision history</span>
+                            }
+                        }
+                        else
                         {
                             <a href="@Url.Action("Edit", new { isCompact = data.IsCompact })" class="wiki-link-missing" title="Create this page">
                                 @if (data.ShowNamespace)
@@ -196,20 +220,6 @@
                                     <span id="wiki-main-heading-history">Revision history</span>
                                 }
                             </a>
-                        }
-                        else
-                        {
-                            @if (data.ShowNamespace)
-                            {
-                                <span id="wiki-main-heading-namespace">@data.WikiNamespace</span>
-                                <span class="wiki-main-heading-namespace-separator">:</span>
-                            }
-                            <span id="wiki-main-heading-title">@data.DisplayTitle</span>
-                            @if (data.IsHistory)
-                            {
-                                <span class="wiki-main-heading-namespace-separator">:</span>
-                                <span id="wiki-main-heading-history">Revision history</span>
-                            }
                         }
                     }
                 </h1>

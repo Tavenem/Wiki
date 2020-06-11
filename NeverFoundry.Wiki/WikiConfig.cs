@@ -1,5 +1,6 @@
 ﻿using Ganss.XSS;
 using Markdig;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.MarkdownExtensions;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -62,6 +63,21 @@ namespace NeverFoundry.Wiki
                     ? CategoryNamespaceDefault
                     : value;
             }
+        }
+
+        private static IDataStore? _DataStore;
+        /// <summary>
+        /// <para>
+        /// The <see cref="IDataStore"/> to be used by the wiki.
+        /// </para>
+        /// <para>
+        /// If omitted, the static <see cref="DataStorage.DataStore.Instance"/> will be used.
+        /// </para>
+        /// </summary>
+        public static IDataStore DataStore
+        {
+            get => _DataStore ??= DataStorage.DataStore.Instance;
+            set => _DataStore = value;
         }
 
         private const string DefaultNamespaceDefault = "Wiki";

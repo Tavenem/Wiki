@@ -1,11 +1,8 @@
-﻿using Marten;
-using Microsoft.AspNetCore.Builder;
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NeverFoundry.DataStorage;
-using NeverFoundry.DataStorage.Marten;
-using NeverFoundry.Wiki.Sample.Logging;
 using NeverFoundry.Wiki.Web;
 using System;
 using System.Linq;
@@ -18,29 +15,12 @@ namespace NeverFoundry.Wiki.Sample.Data
     {
         private const string AdminUsername = "Admin";
 
-        public static IDocumentStore GetDocumentStore(string connectionString, MartenLogger logger) => DocumentStore.For(config =>
-        {
-            config.UseDefaultSerialization(collectionStorage: CollectionStorage.AsArray);
-            config.AutoCreateSchemaObjects = AutoCreate.CreateOrUpdate;
-            config.Connection(connectionString);
-            config.Logger(logger);
-            config.Schema.For<Article>()
-                .FullTextIndex(x => x.Title, x => x.WikiNamespace, x => x.MarkdownContent)
-                .AddSubClass<Category>()
-                .AddSubClass<WikiFile>();
-            config.Schema.For<WikiRevision>();
-            config.Schema.For<MissingPage>();
-            config.Schema.For<Message>();
-        });
-
         public static async Task InitializeDatabasesAsync(IApplicationBuilder app)
         {
             using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
             serviceScope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.Migrate();
 
             SeedUsers(serviceScope);
-
-            DataStore.Instance = new MartenDataStore(serviceScope.ServiceProvider.GetRequiredService<IDocumentStore>());
 
             await AddDefaultWikiPagesAsync(serviceScope).ConfigureAwait(false);
         }
@@ -55,6 +35,8 @@ namespace NeverFoundry.Wiki.Sample.Data
             {
                 throw new Exception("Admin not found");
             }
+
+            WikiConfig.DataStore = serviceScope.ServiceProvider.GetRequiredService<IDataStore>();
 
             if (Article.GetArticle("Welcome", WikiConfig.TransclusionNamespace) is null)
             {
@@ -517,6 +499,11 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
    May be set to `null` or an empty string, which disables the copyright page (i.e. hides the link).
 
    Consider carefully before omitting this special page, unless you supply an alternate copyright notice on your wiki.
+- **`GroupNamespace`** - The name of the user group namespace.
+
+   Default is ""Group""
+
+   May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 - **`HelpPageTitle`** - The title of the main help page.
 
    Default is ""Help""
@@ -534,7 +521,7 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 - **`UserNamespace`** - The name of the user namespace.
 
-   Default is ""Users""
+   Default is ""User""
 
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 
@@ -584,7 +571,7 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
                 }
                 result = userMgr.AddClaimsAsync(admin, new Claim[]
                 {
-                    new Claim(WikiClaims.Claim_SiteAdmin, "true", ClaimValueTypes.Boolean),
+                    new Claim(WikiMvcClaims.Claim_SiteAdmin, "true", ClaimValueTypes.Boolean),
                     new Claim(WikiClaims.Claim_WikiAdmin, "true", ClaimValueTypes.Boolean),
                 }).GetAwaiter().GetResult();
                 if (!result.Succeeded)

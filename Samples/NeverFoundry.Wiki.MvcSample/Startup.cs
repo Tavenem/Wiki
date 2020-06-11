@@ -1,4 +1,5 @@
 using Fido2NetLib;
+using Marten;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -9,6 +10,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Nest;
+using NeverFoundry.DataStorage;
+using NeverFoundry.DataStorage.Marten;
 using NeverFoundry.Wiki.Mvc;
 using NeverFoundry.Wiki.Sample.Data;
 using NeverFoundry.Wiki.Sample.Logging;
@@ -54,7 +57,7 @@ namespace NeverFoundry.Wiki.MVCSample
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(WikiClaims.Claim_SiteAdmin, WikiPolicies.IsSiteAdminPolicy());
+                options.AddPolicy(WikiMvcClaims.Claim_SiteAdmin, WikiPolicies.IsSiteAdminPolicy());
                 options.AddPolicy(WikiClaims.Claim_WikiAdmin, WikiPolicies.IsWikiAdminPolicy());
             });
 
@@ -64,9 +67,20 @@ namespace NeverFoundry.Wiki.MVCSample
             services.AddSession();
 
             services.AddSingleton<MartenLogger>();
-            services.AddSingleton(provider => Seed.GetDocumentStore(
-                Configuration.GetConnectionString("Wiki"),
-                provider.GetRequiredService<MartenLogger>()));
+            services.AddSingleton<IDataStore>(provider => new MartenDataStore(DocumentStore.For(config =>
+            {
+                config.UseDefaultSerialization(collectionStorage: CollectionStorage.AsArray);
+                config.AutoCreateSchemaObjects = AutoCreate.CreateOrUpdate;
+                config.Connection(Configuration.GetConnectionString("Wiki"));
+                config.Logger(provider.GetRequiredService<MartenLogger>());
+                config.Schema.For<Article>()
+                    .AddSubClass<Category>()
+                    .AddSubClass<WikiFile>();
+                config.Schema.For<WikiRevision>();
+                config.Schema.For<MissingPage>();
+                config.Schema.For<Message>();
+                config.Schema.For<WikiGroup>();
+            })));
 
             services.AddElasticsearch(Configuration);
 
@@ -86,6 +100,7 @@ namespace NeverFoundry.Wiki.MVCSample
                 var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
                 return new WikiOptions
                 {
+                    DataStore = provider.GetRequiredService<IDataStore>(),
                     CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
                     MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
                     LoginPath = "/Account/Login",

@@ -423,6 +423,18 @@ html, body {
     }
 }
 
+.wiki-group-list {
+    column-count: 3;
+    column-width: 24em;
+    margin-top: 0;
+    margin-bottom: 0;
+
+    li {
+        page-break-inside: avoid;
+        break-inside: avoid-column;
+    }
+}
+
 #wiki-image-link > a > img {
     float: unset;
     max-width: 200px;

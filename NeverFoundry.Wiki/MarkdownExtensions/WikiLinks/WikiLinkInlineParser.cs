@@ -386,14 +386,10 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
 
                 var articleMissing = false;
-                if (!isWikipedia && !isCommons)
+                if (!isCategory && !isWikipedia && !isCommons)
                 {
                     var articleExists = false;
-                    if (isCategory)
-                    {
-                        articleExists = Category.GetCategory(title)?.IsDeleted == false;
-                    }
-                    else if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.CurrentCultureIgnoreCase))
                     {
                         articleExists = WikiFile.GetFile(title)?.IsDeleted == false;
                     }

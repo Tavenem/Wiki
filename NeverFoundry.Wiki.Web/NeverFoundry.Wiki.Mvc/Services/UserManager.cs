@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -99,6 +100,24 @@ namespace NeverFoundry.Wiki.Mvc.Services
                 return null;
             }
             return await _userManager.GetUserAsync(principal).ConfigureAwait(false);
+        }
+
+        /// <summary>
+        /// Returns a list of users from the user store who have the specified <paramref
+        /// name="claim"/>.
+        /// </summary>
+        /// <param name="claim">The claim to look for.</param>
+        /// <returns>
+        /// A <see cref="Task{T}"/> that represents the result of the asynchronous query, a list of
+        /// <see cref="IWikiUser"/>s who have the specified <paramref name="claim"/>.
+        /// </returns>
+        public async Task<IList<IWikiUser>> GetUsersForClaimAsync(Claim? claim)
+        {
+            if (claim is null)
+            {
+                return new List<IWikiUser>();
+            }
+            return (IList<IWikiUser>)await _userManager.GetUsersForClaimAsync(claim).ConfigureAwait(false);
         }
     }
 #pragma warning restore CS1591 // No documentation for "internal" code

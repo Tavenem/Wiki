@@ -130,14 +130,14 @@ namespace NeverFoundry.Wiki
                 return null;
             }
 
-            var category = DataStore.Query<Category>()
+            var category = WikiConfig.DataStore.Query<Category>()
                 .Where(x => x.Title == title)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .FirstOrDefault();
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
-                var categories = DataStore.Query<Category>()
+                var categories = WikiConfig.DataStore.Query<Category>()
                     .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
                     .OrderBy(x => x.TimestampTicks, descending: true)
                     .ToList();
@@ -164,12 +164,12 @@ namespace NeverFoundry.Wiki
             }
 
             var ticks = timestamp.ToUniversalTime().Ticks;
-            var category = DataStore.Query<Category>()
+            var category = WikiConfig.DataStore.Query<Category>()
                 .FirstOrDefault(x => x.Title == title && x.TimestampTicks == ticks);
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
-                var categories = DataStore.Query<Category>()
+                var categories = WikiConfig.DataStore.Query<Category>()
                     .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
                         && x.TimestampTicks == ticks)
                     .ToList();
@@ -237,11 +237,11 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             title = title.ToWikiTitleCase();
-            if (DataStore.Query<Category>().Any(x => x.Title == title))
+            if (WikiConfig.DataStore.Query<Category>().Any(x => x.Title == title))
             {
                 throw new ArgumentException("The given category title is already in use", nameof(title));
             }
-            var wikiId = DataStore.CreateNewIdFor<Category>();
+            var wikiId = WikiConfig.DataStore.CreateNewIdFor<Category>();
 
             var revision = new WikiRevision(
                 wikiId,
@@ -250,7 +250,7 @@ namespace NeverFoundry.Wiki
                 WikiConfig.CategoryNamespace,
                 null,
                 markdown);
-            await revision.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             var md = markdown;
             List<Transclusion> transclusions;
@@ -270,13 +270,13 @@ namespace NeverFoundry.Wiki
             var wikiLinks = GetWikiLinks(md);
             foreach (var link in wikiLinks.Where(x => x.Missing))
             {
-                var existing = await DataStore.Query<MissingPage>()
+                var existing = await WikiConfig.DataStore.Query<MissingPage>()
                     .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (existing is null)
                 {
                     var missingPage = await MissingPage.NewAsync(
-                        DataStore.CreateNewIdFor<MissingPage>(),
+                        WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
                         link.Title,
                         link.WikiNamespace,
                         wikiId)
@@ -309,14 +309,14 @@ namespace NeverFoundry.Wiki
                 allowedViewers,
                 categories,
                 transclusions);
-            await category.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(category).ConfigureAwait(false);
 
-            var missing = await DataStore.Query<MissingPage>()
+            var missing = await WikiConfig.DataStore.Query<MissingPage>()
                 .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.CategoryNamespace)
                 .ConfigureAwait(false);
             if (!(missing is null))
             {
-                await missing.DeleteAsync().ConfigureAwait(false);
+                await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
             }
 
             return category;
@@ -424,7 +424,7 @@ namespace NeverFoundry.Wiki
 
             title ??= Title;
 
-            if (DataStore.Query<Category>()
+            if (WikiConfig.DataStore.Query<Category>()
                 .Any(x => x.Id != Id && x.Title == title))
             {
                 throw new ArgumentException("The given category title is already in use", nameof(title));
@@ -445,7 +445,7 @@ namespace NeverFoundry.Wiki
 
                 foreach (var link in WikiLinks)
                 {
-                    var missing = await DataStore.Query<MissingPage>()
+                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
                         .FirstOrDefaultAsync(x => x.Title == link.Title
                             && x.WikiNamespace == link.WikiNamespace
                             && x.References.Count == 1
@@ -453,7 +453,7 @@ namespace NeverFoundry.Wiki
                         .ConfigureAwait(false);
                     if (!(missing is null))
                     {
-                        await missing.DeleteAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
                     }
                 }
             }
@@ -469,7 +469,7 @@ namespace NeverFoundry.Wiki
 
                     foreach (var link in WikiLinks)
                     {
-                        var missingLink = await DataStore.Query<MissingPage>()
+                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title
                                 && x.WikiNamespace == link.WikiNamespace
                                 && x.References.Count == 1
@@ -477,7 +477,7 @@ namespace NeverFoundry.Wiki
                             .ConfigureAwait(false);
                         if (!(missingLink is null))
                         {
-                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                         }
                     }
                 }
@@ -498,7 +498,7 @@ namespace NeverFoundry.Wiki
                     WikiLinks = GetWikiLinks(md).AsReadOnly();
                     foreach (var link in previousWikiLinks.Except(WikiLinks))
                     {
-                        var missingLink = await DataStore.Query<MissingPage>()
+                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title
                                 && x.WikiNamespace == link.WikiNamespace
                                 && x.References.Count == 1
@@ -506,18 +506,18 @@ namespace NeverFoundry.Wiki
                             .ConfigureAwait(false);
                         if (!(missingLink is null))
                         {
-                            await missingLink.DeleteAsync().ConfigureAwait(false);
+                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
                         }
                     }
                     foreach (var link in WikiLinks.Except(previousWikiLinks).Where(x => x.Missing))
                     {
-                        var existing = await DataStore.Query<MissingPage>()
+                        var existing = await WikiConfig.DataStore.Query<MissingPage>()
                             .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
                             .ConfigureAwait(false);
                         if (existing is null)
                         {
                             var missingPage = await MissingPage.NewAsync(
-                                DataStore.CreateNewIdFor<MissingPage>(),
+                                WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
                                 link.Title,
                                 link.WikiNamespace,
                                 Id)
@@ -560,12 +560,12 @@ namespace NeverFoundry.Wiki
 
                 if (!string.Equals(title, previousTitle, StringComparison.Ordinal))
                 {
-                    var missing = await DataStore.Query<MissingPage>()
+                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
                         .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.CategoryNamespace)
                         .ConfigureAwait(false);
                     if (!(missing is null))
                     {
-                        await missing.DeleteAsync().ConfigureAwait(false);
+                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
                     }
                 }
             }
@@ -582,17 +582,17 @@ namespace NeverFoundry.Wiki
                 previousMarkdown,
                 MarkdownContent,
                 revisionComment);
-            await revision.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             TimestampTicks = revision.TimestampTicks;
 
-            await SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
         }
 
         internal async Task AddArticleAsync(string wikiId)
         {
             ChildIds.Add(wikiId);
-            await SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
         }
 
         internal Task AddArticleAsync(Article child) => AddArticleAsync(child.Id);
@@ -600,7 +600,7 @@ namespace NeverFoundry.Wiki
         internal async Task RemoveChildAsync(Article child)
         {
             ChildIds.Remove(child.Id);
-            await SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
         }
     }
 }

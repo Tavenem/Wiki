@@ -37,6 +37,11 @@ namespace NeverFoundry.Wiki.Mvc
         }
 
         /// <summary>
+        /// The user group associated with the current page, if any.
+        /// </summary>
+        public IWikiGroup? Group { get; set; }
+
+        /// <summary>
         /// Whether the requested page is a category.
         /// </summary>
         public bool IsCategory { get; }
@@ -57,6 +62,11 @@ namespace NeverFoundry.Wiki.Mvc
         public bool IsFile { get; }
 
         /// <summary>
+        /// Whether the requested page is a user group page.
+        /// </summary>
+        public bool IsGroupPage { get; }
+
+        /// <summary>
         /// Whether this is a request to view the history of an item.
         /// </summary>
         public bool IsHistory { get; set; }
@@ -70,6 +80,11 @@ namespace NeverFoundry.Wiki.Mvc
         /// Whether the requested page is the search page.
         /// </summary>
         public bool IsSearch { get; set; }
+
+        /// <summary>
+        /// Whether the requested page is a list page.
+        /// </summary>
+        public bool IsSpecialList { get; set; }
 
         /// <summary>
         /// Whether the requested page is a system page.
@@ -174,6 +189,7 @@ namespace NeverFoundry.Wiki.Mvc
             IsSystem = !defaultNamespace && !IsCategory && string.Equals(WikiNamespace, WikiWebConfig.SystemNamespace, StringComparison.OrdinalIgnoreCase);
             IsFile = !defaultNamespace && !IsCategory && !IsSystem && string.Equals(WikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase);
             IsUserPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && string.Equals(WikiNamespace, WikiWebConfig.UserNamespace, StringComparison.OrdinalIgnoreCase);
+            IsGroupPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && !IsUserPage && string.Equals(WikiNamespace, WikiWebConfig.GroupNamespace, StringComparison.OrdinalIgnoreCase);
 
             if (query.TryGetValue("rev", out var rev)
                 && rev.Count >= 1)

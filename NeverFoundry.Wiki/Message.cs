@@ -127,7 +127,7 @@ namespace NeverFoundry.Wiki
                 markdown,
                 DateTimeOffset.UtcNow.Ticks,
                 replyMessageId);
-            await message.SaveAsync().ConfigureAwait(false);
+            await WikiConfig.DataStore.StoreItemAsync(message).ConfigureAwait(false);
             return message;
         }
 

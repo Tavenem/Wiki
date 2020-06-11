@@ -1,5 +1,7 @@
 ﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Mvc.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
@@ -10,15 +12,16 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     {
         public WikiRouteData Data { get; }
 
-        public IPagedList<WikiRevision> Revisions { get; }
+        public IPagedList<RevisionViewModel> Revisions { get; }
 
-        public HistoryViewModel(WikiRouteData data, IPagedList<WikiRevision> revisions)
+        public HistoryViewModel(WikiRouteData data, IPagedList<RevisionViewModel> revisions)
         {
             Data = data;
             Revisions = revisions;
         }
 
         public static async Task<HistoryViewModel> NewAsync(
+            IUserManager userManager,
             WikiRouteData data,
             int pageNumber = 1,
             int pageSize = 50,
@@ -29,7 +32,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             if (data.WikiItem is null
                 || start > end)
             {
-                return new HistoryViewModel(data, new PagedList<WikiRevision>(null, 1, pageSize, 0));
+                return new HistoryViewModel(data, new PagedList<RevisionViewModel>(null, 1, pageSize, 0));
             }
 
             var history = await data.WikiItem
@@ -42,7 +45,14 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                         ? (Expression<Func<WikiRevision, bool>>?)null
                         : x => x.Editor.Equals(editor, StringComparison.OrdinalIgnoreCase))
                 .ConfigureAwait(false);
-            return new HistoryViewModel(data, history);
+            var list = new List<RevisionViewModel>();
+            foreach (var item in history)
+            {
+                list.Add(await RevisionViewModel.NewAsync(userManager, item).ConfigureAwait(false));
+            }
+            return new HistoryViewModel(
+                data,
+                new PagedList<RevisionViewModel>(list, history.PageNumber, history.PageSize, history.TotalCount));
         }
     }
 #pragma warning restore CS1591 // No documentation for "internal" code

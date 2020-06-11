@@ -59,6 +59,17 @@ namespace NeverFoundry.Wiki.Mvc.Services
         /// the <paramref name="principal"/> or <see langword="null"/>
         /// </returns>
         Task<IWikiUser?> GetUserAsync(ClaimsPrincipal? principal);
+
+        /// <summary>
+        /// Returns a list of users from the user store who have the specified <paramref
+        /// name="claim"/>.
+        /// </summary>
+        /// <param name="claim">The claim to look for.</param>
+        /// <returns>
+        /// A <see cref="Task{T}"/> that represents the result of the asynchronous query, a list of
+        /// <see cref="IWikiUser"/>s who have the specified <paramref name="claim"/>.
+        /// </returns>
+        Task<IList<IWikiUser>> GetUsersForClaimAsync(Claim? claim);
     }
 #pragma warning restore CS1591 // No documentation for "internal" code
 }

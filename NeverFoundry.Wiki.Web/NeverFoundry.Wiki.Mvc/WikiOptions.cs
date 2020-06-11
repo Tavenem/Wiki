@@ -1,4 +1,6 @@
-﻿namespace NeverFoundry.Wiki.Mvc
+﻿using NeverFoundry.DataStorage;
+
+namespace NeverFoundry.Wiki.Mvc
 {
     /// <summary>
     /// Options used to configure the wiki system.
@@ -15,6 +17,16 @@
         /// </para>
         /// </summary>
         public string? CompactLayoutPath { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The <see cref="IDataStore"/> to be used by the wiki.
+        /// </para>
+        /// <para>
+        /// If omitted, the static <see cref="DataStorage.DataStore.Instance"/> will be used.
+        /// </para>
+        /// </summary>
+        public IDataStore? DataStore { get; set; }
 
         /// <summary>
         /// <para>

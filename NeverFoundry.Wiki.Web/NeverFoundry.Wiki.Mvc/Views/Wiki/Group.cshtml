@@ -1,0 +1,29 @@
+﻿@model GroupViewModel
+
+<div id="wiki-site-subtitle">From @WikiConfig.SiteName</div>
+@if (Model.IsDiff)
+{
+    <div id="wiki-diff" class="wiki-parser-output">@Html.Raw(Model.Html)</div>
+}
+else
+{
+    <div class="wiki-parser-output">@Html.Raw(Model.Html)</div>
+}
+@if (Model.Users.Count > 0)
+{
+    <h2>Members</h2>
+    <p>This group has the following @($"{Model.Users.Count:N0}") members.</p>
+    <ul class="wiki-group-list">
+        @foreach (var user in Model.Users)
+        {
+            <li>
+                <a class="wiki-username wiki-username-link @(user.PageExists ? string.Empty : "wiki-link-missing")"
+                   asp-route-isCompact="@Model.Data.IsCompact"
+                   asp-route-title="@user.Id"
+                   asp-route-wikiNamespace="@WikiWebConfig.UserNamespace"
+                   asp-action="Read"
+                   title="Visit the user page for @(user.UserName)">@user.UserName</a>
+            </li>
+        }
+    </ul>
+}

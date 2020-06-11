@@ -129,7 +129,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 }
             }
 
-            var query = DataStore.Query<T>();
+            var query = WikiConfig.DataStore.Query<T>();
             if (!(pageCondition is null))
             {
                 query = query.Where(pageCondition);
@@ -154,7 +154,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             bool descending = false,
             string? filter = null)
         {
-            var query = DataStore.Query<MissingPage>();
+            var query = WikiConfig.DataStore.Query<MissingPage>()
+                .Where(x => x.WikiNamespace != WikiWebConfig.UserNamespace && x.WikiNamespace != WikiWebConfig.GroupNamespace);
             if (!string.IsNullOrEmpty(filter))
             {
                 query = query.Where(x => x.Title.Contains(filter) || x.WikiNamespace.Contains(filter));
