@@ -1,10 +1,10 @@
 ﻿@model TalkViewModel
 
-<div id="wiki-talk-messages">
+<div class="wiki-talk-messages">
     <ul id="wiki-talk-message-list"></ul>
     @if ((Model.Messages?.Count ?? 0) == 0)
     {
-        <div id="wiki-talk-nomessages"><p>No messages yet</p></div>
+        <div class="wiki-talk-nomessages"><p>No messages yet</p></div>
     }
 </div>
 @if (Model.Data.CanEdit)
@@ -25,7 +25,7 @@
     </div>
     <div id="wiki-talk-tenor">
         <div id="wiki-talk-tenor-search">
-            <svg xmlns="http://www.w3.org/2000/svg" id="wiki-search-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" class="wiki-search-icon">
                 <g fill="none" stroke-width="2">
                     <path d="M11.29 11.71l-4-4" />
                     <circle cx="5" cy="5" r="4" />
@@ -40,7 +40,7 @@
 }
 else
 {
-    <div id="wiki-talk-signin-prompt">Sign in to post your own messages.</div>
+    <div class="wiki-talk-signin-prompt">Sign in to post your own messages.</div>
 }
 
 @section Scripts {
@@ -49,14 +49,11 @@ else
     <script>
         window.addEventListener("load", function () {
             window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiWebConfig.UserNamespace", "@WikiWebConfig.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
-                Newtonsoft.Json.JsonConvert.SerializeObject(
+                System.Text.Json.JsonSerializer.Serialize(
                     Model.Messages,
-                    new Newtonsoft.Json.JsonSerializerSettings
+                    new System.Text.Json.JsonSerializerOptions
                     {
-                        ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver
-                        {
-                            NamingStrategy = new Newtonsoft.Json.Serialization.CamelCaseNamingStrategy()
-                        },
+                        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
                     }))');
         });
     </script>

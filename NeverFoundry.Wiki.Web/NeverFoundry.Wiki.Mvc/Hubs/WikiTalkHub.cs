@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.SignalR;
-using NeverFoundry.DataStorage;
+﻿using Microsoft.AspNetCore.SignalR;
 using NeverFoundry.Wiki.Mvc.Services;
 using NeverFoundry.Wiki.Web;
 using NeverFoundry.Wiki.Web.SignalR;
@@ -15,6 +13,9 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
     /// </summary>
     public class WikiTalkHub : Hub<IWikiTalkClient>, IWikiTalkHub
     {
+        internal const string PreviewNamespaceTemplate = "<span class=\"wiki-main-heading-namespace\">{0}</span><span class=\"wiki-main-heading-namespace-separator\">:</span>";
+        internal const string PreviewTemplate = "<div class=\"wiki compact preview\"><div><main class=\"wiki-content\" role=\"main\"><div class=\"wiki-heading\" role=\"heading\"><h1 class=\"wiki-main-heading\">{0}<span class=\"wiki-main-heading-title\">{1}</span></h1></div><div class=\"wiki-body\"><div class=\"wiki-parser-output\">{2}</div></div></main></div></div>";
+
         private readonly IUserManager _userManager;
 
         /// <summary>
@@ -97,8 +98,32 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
 
             var message = await Message.ReplyAsync(reply.TopicId, user.Id, user.UserName, reply.Markdown, reply.MessageId).ConfigureAwait(false);
             var html = string.Empty;
-            var preview = string.Empty;
-            await Task.Run(() => html = message.GetHtml()).ConfigureAwait(false);
+            var preview = false;
+            if (message.WikiLinks.Count == 1)
+            {
+                var link = message.WikiLinks.First();
+                if (!link.IsCategory
+                    && !link.IsTalk
+                    && !link.Missing
+                    && !string.IsNullOrEmpty(link.WikiNamespace))
+                {
+                    var article = Article.GetArticle(link.Title, link.WikiNamespace);
+                    if (article is not null && !article.IsDeleted)
+                    {
+                        preview = true;
+                        var previewHtml = string.Empty;
+                        await Task.Run(() => previewHtml = article.GetPreview()).ConfigureAwait(false);
+                        var namespaceStr = article.WikiNamespace == WikiConfig.DefaultNamespace
+                            ? string.Empty
+                            : string.Format(PreviewNamespaceTemplate, article.WikiNamespace);
+                        html = string.Format(PreviewTemplate, namespaceStr, article.Title, previewHtml);
+                    }
+                }
+            }
+            if (!preview)
+            {
+                await Task.Run(() => html = message.GetHtml()).ConfigureAwait(false);
+            }
 
             if (!string.IsNullOrWhiteSpace(html))
             {

@@ -8,8 +8,8 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// Represents an intra-wiki link.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
+    [Newtonsoft.Json.JsonObject]
     public class WikiLink : ISerializable, IEquatable<WikiLink>
     {
         /// <summary>
@@ -96,9 +96,27 @@ namespace NeverFoundry.Wiki
             WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiLink"/>.
+        /// </summary>
+        /// <param name="isCategory">
+        /// Whether this is a link to a category.
+        /// </param>
+        /// <param name="isNamespaceEscaped">
+        /// Whether a leading ':' precedes the namespace.
+        /// </param>
+        /// <param name="isTalk">
+        /// Whether this is a link to a discussion page.
+        /// </param>
+        /// <param name="title">
+        /// The title for the linked article.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace for the linked article.
+        /// </param>
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        private WikiLink(
+        public WikiLink(
             bool isCategory,
             bool isNamespaceEscaped,
             bool isTalk,
@@ -174,6 +192,25 @@ namespace NeverFoundry.Wiki
         /// <see langword="false"/>.</returns>
         public bool IsLinkMatch(Article item) => string.CompareOrdinal(item.Title, Title) == 0
             && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0;
+
+        /// <summary>Returns a string that represents the current object.</summary>
+        /// <returns>A string that represents the current object.</returns>
+        public override string ToString()
+        {
+            if (IsTalk)
+            {
+                return string.IsNullOrEmpty(WikiNamespace)
+                    ? $"{WikiConfig.TalkNamespace}:{Title}"
+                    : $"{WikiConfig.TalkNamespace}:{WikiNamespace}:{Title}";
+            }
+            if (IsNamespaceEscaped)
+            {
+                return $":{WikiNamespace}:{Title}";
+            }
+            return string.IsNullOrEmpty(WikiNamespace)
+                ? Title
+                : $"{WikiNamespace}:{Title}";
+        }
 
         /// <summary>
         /// Determines equality.

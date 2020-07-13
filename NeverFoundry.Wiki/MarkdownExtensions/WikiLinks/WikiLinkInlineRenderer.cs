@@ -21,10 +21,9 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             {
                 return; // do not render unescaped category links
             }
-            if (!link.IsCommons && !link.IsWikipedia)
-            {
-                link.Title = Article.GetFullTitle(link.Title, link.WikiNamespace, link.IsTalk);
-            }
+            var fullTitle = !link.IsCommons && !link.IsWikipedia
+                ? Article.GetFullTitle(link.Title, link.WikiNamespace, link.IsTalk)
+                : link.Title;
 
             if (renderer.EnableHtmlForInline)
             {
@@ -41,14 +40,14 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     renderer.Write(link.IsImage ? "<img src=\"/" : "<a href=\"Wiki/");
                     link.GetAttributes().AddClass(link.Missing ? "wiki-link-missing" : "wiki-link-exists");
                 }
-                renderer.WriteEscapeUrl(link.Title);
+                renderer.WriteEscapeUrl(fullTitle);
                 renderer.Write("\"");
                 renderer.WriteAttributes(link);
 
                 if (!link.IsWikipedia && !link.IsCommons && !string.IsNullOrEmpty(WikiConfig.LinkTemplate))
                 {
                     renderer.Write(" ");
-                    renderer.Write(WikiConfig.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(link.Title)));
+                    renderer.Write(WikiConfig.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(fullTitle)));
                 }
             }
             if (link.IsImage)

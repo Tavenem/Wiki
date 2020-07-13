@@ -28,6 +28,7 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The IDs of pages which reference this missing page.
         /// </summary>
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyList<string> References { get; } = new List<string>().AsReadOnly();
 
         /// <summary>
@@ -40,21 +41,40 @@ namespace NeverFoundry.Wiki
         /// </summary>
         public string WikiNamespace { get; private protected set; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiRevision"/>.
+        /// </summary>
+        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="title">
+        /// The title of this missing page. Must be unique within its namespace, and non-empty.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace to which this page should belong.
+        /// </param>
+        /// <param name="references">
+        /// The IDs of pages which reference this missing page.
+        /// </param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers. The static <see
+        /// cref="NewAsync(string, string, string?, string)"/> method is expected to be used
+        /// otherwise, as it persists instances to the <see cref="WikiConfig.DataStore"/> and builds
+        /// the reference list dynamically.
+        /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        private MissingPage(
+        public MissingPage(
             string id,
             string title,
-            string? wikiNamespace,
-            List<string> references) : base(id)
+            string wikiNamespace,
+            IReadOnlyList<string> references) : base(id)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             Title = title;
-            WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
-            References = references.AsReadOnly();
+            WikiNamespace = wikiNamespace;
+            References = references;
         }
 
         /// <summary>
@@ -74,7 +94,7 @@ namespace NeverFoundry.Wiki
             string? wikiNamespace,
             string referenceId)
         {
-            var result = new MissingPage(id, title, wikiNamespace, new List<string> { referenceId });
+            var result = new MissingPage(id, title, wikiNamespace ?? WikiConfig.DefaultNamespace, new List<string> { referenceId }.AsReadOnly());
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
         }
@@ -83,7 +103,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
-            (List<string>?)info.GetValue(nameof(References), typeof(List<string>)) ?? new List<string>())
+            (IReadOnlyList<string>?)info.GetValue(nameof(References), typeof(IReadOnlyList<string>)) ?? new List<string>().AsReadOnly())
         { }
 
         /// <summary>Populates a <see cref="SerializationInfo"></see> with the data needed to

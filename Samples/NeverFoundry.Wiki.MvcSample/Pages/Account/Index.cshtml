@@ -4,11 +4,9 @@
     ViewData["Title"] = "Account";
 }
 
-<div class="jumbotron jumbotron-fluid">
-    <div class="container d-flex flex-column">
-        <h1 class="display-4">@ViewData["Title"]</h1>
-        <p class="lead">Manage your user profile and account settings.</p>
-    </div>
+<div class="placard">
+    <h1 class="display-4">@ViewData["Title"]</h1>
+    <p class="lead">Manage your user profile and account settings.</p>
 </div>
 <partial name="_ErrorMessage" model="Model.ErrorMessage" />
 <partial name="_StatusMessage" model="Model.StatusMessage" />
@@ -152,8 +150,12 @@
 <div class="row justify-content-center mb-3">
     <div class="col-sm-6">
         <p>Your account contains personal data that you have given us. You may download or delete that data.</p>
-        <p><strong class="text-danger">Deleting this data will permanently delete your account, and
-            cannot be undone.</strong></p>
+        <p>
+            <strong class="text-danger">
+                Deleting this data will permanently delete your account, and
+                cannot be undone.
+            </strong>
+        </p>
         <form id="download-data" asp-page="DownloadPersonalData" method="post" class="form-group">
             <button class="btn btn-primary" type="submit">Download</button>
         </form>

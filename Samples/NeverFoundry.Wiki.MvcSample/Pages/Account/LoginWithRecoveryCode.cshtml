@@ -4,13 +4,11 @@
     ViewData["Title"] = "Recovery code";
 }
 
-<div class="jumbotron jumbotron-fluid">
-    <div class="container d-flex flex-column">
-        <h1 class="display-4">@ViewData["Title"]</h1>
-        <p class="lead">Enter your recovery code to sign in temporarily.</p>
-        <p>After logging in you should disable two-factor authentication. Otherwise you will be asked for it again the next time you sign in. This may cause you to run out of recovery codes and become permanently unable to access your account.</p>
-        <p>You can enable two-factor authentication again after recovering your authenticator device (or obtaining a new one).</p>
-    </div>
+<div class="placard">
+    <h1 class="display-4">@ViewData["Title"]</h1>
+    <p class="lead">Enter your recovery code to sign in temporarily.</p>
+    <p>After logging in you should disable two-factor authentication. Otherwise you will be asked for it again the next time you sign in. This may cause you to run out of recovery codes and become permanently unable to access your account.</p>
+    <p>You can enable two-factor authentication again after recovering your authenticator device (or obtaining a new one).</p>
 </div>
 <div class="row justify-content-center mb-3">
     <div class="col-sm-6">

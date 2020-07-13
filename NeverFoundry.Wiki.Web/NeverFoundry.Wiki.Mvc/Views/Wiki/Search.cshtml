@@ -4,13 +4,13 @@
     ViewData["Title"] = "Search";
 }
 
-<div id="wiki-search-form">
+<div class="wiki-search-form">
     <form asp-controller="Wiki" asp-route-wikiNamespace="@(WikiWebConfig.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
         <input type="hidden" name="pageNumber" value="@Model.SearchResult.SearchHits.PageNumber" />
         <input type="hidden" name="pageSize" value="@Model.SearchResult.SearchHits.PageSize" />
-        <div id="wiki-search-basic">
-            <div id="wiki-search-term">
-                <svg xmlns="http://www.w3.org/2000/svg" id="wiki-search-icon">
+        <div class="wiki-search-basic">
+            <div class="wiki-search-term">
+                <svg xmlns="http://www.w3.org/2000/svg" class="wiki-search-icon">
                     <g fill="none" stroke-width="2">
                         <path d="M11.29 11.71l-4-4" />
                         <circle cx="5" cy="5" r="4" />
@@ -32,14 +32,14 @@
                     <strong>Search</strong>
                 </button>
             </div>
-            <div id="wiki-search-resultcount">
+            <div class="wiki-search-resultcount">
                 <span>Results</span>
                 <strong>@((Model.SearchResult.SearchHits.FirstIndexOnPage + 1).ToString("N0")) &mdash; @((Model.SearchResult.SearchHits.LastIndexOnPage + 1).ToString("N0"))</strong>
                 <span>of</span>
                 <strong>@Model.SearchResult.SearchHits.TotalCount.ToString("N0")</strong>
             </div>
         </div>
-        <div id="wiki-search-advanced">
+        <div class="wiki-search-advanced">
             <a id="wiki-search-advanced-toggler"
                href="javascript: void(0);"
                onclick="wikiToggleAdvancedSearch(event);"
@@ -73,10 +73,10 @@
         </div>
     </form>
 </div>
-<div id="wiki-search-results">
+<div class="wiki-search-results">
     @if (!(Model.ExactMatch is null))
     {
-        <p id="wiki-search-exact-match">There is an article with the exact name "<a href="@(Url.Action("Read", new { isCompact = false, title = Model.ExactMatch.Title, wikiNamespace = Model.ExactMatch.WikiNamespace }))" class="wiki-link wiki-link-exists">@Model.ExactMatch.Title</a>."</p>
+        <p class="wiki-search-exact-match">There is an article with the exact name "<a href="@(Url.Action("Read", new { isCompact = false, title = Model.ExactMatch.Title, wikiNamespace = Model.ExactMatch.WikiNamespace }))" class="wiki-link wiki-link-exists">@Model.ExactMatch.Title</a>."</p>
     }
     @if (Model.SearchResult.SearchHits.Count > 0)
     {
@@ -88,8 +88,8 @@
                     continue;
                 }
                 <li>
-                    <div id="wiki-search-result-title"><a href="@(Url.Action("Read", new { isCompact = false, title = result.Title, wikiNamespace = result.WikiNamespace }))" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
-                    <div id="wiki-search-result-excerpt">@Html.Raw(result.Excerpt)</div>
+                    <div class="wiki-search-result-title"><a href="@(Url.Action("Read", new { isCompact = false, title = result.Title, wikiNamespace = result.WikiNamespace }))" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
+                    <div class="wiki-search-result-excerpt">@Html.Raw(result.Excerpt)</div>
                 </li>
             }
         </ul>

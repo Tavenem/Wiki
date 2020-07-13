@@ -2,33 +2,31 @@
     ViewData["Title"] = "Not Authorized";
 }
 
-<div class="jumbotron jumbotron-fluid">
-    <div class="container d-flex flex-column">
-        <h2 class="text-danger">Not authorized</h2>
-        <p class="lead text-warning">You do not have permission to upload files to this wiki.</p>
+<div class="placard">
+    <h2 class="error-text">Not authorized</h2>
+    <p class="lead warning-text">You do not have permission to upload files to this wiki.</p>
+    <p>
+        You may need to sign in. If you are already logged in, you may need to request permission
+        from a wiki administrator to authorize you to upload files.
+    </p>
+    @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+    {
         <p>
-            You may need to sign in. If you are already logged in, you may need to request permission
-            from a wiki administrator to authorize you to upload files.
+            Please check the <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policy page</a>
+            to find information about who is permitted to upload files to this wiki, and how permission is obtained.
         </p>
-        @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
-        {
-            <p>
-                Please check the <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policy page</a>
-                to find information about who is permitted to upload files to this wiki, and how permission is obtained.
-            </p>
-        }
-        <p>
-            Note that it is not necessary to upload image files in order to embed them in articles.
-            It is possible to use an image link to display an image hosted externally. Please ensure
-            that the image has been properly licensed for display on this wiki, and that you have
-            permission to do so.
-        </p>
-        <p>
-            Images in the <a href="https://creativecommons.org">Creative Commons</a> can be easily
-            linked with a special syntax: ![[cc:filename.jpg]] will embed the image file
-            "filename.jpg" from the Creative Commons. The image will also be a link to the image's
-            page on the Creative Commons website, which should satisfy the attribution requirements
-            of most <a href="https://creativecommons.org/licenses/">CC-licensed</a> content.
-        </p>
-    </div>
+    }
+    <p>
+        Note that it is not necessary to upload image files in order to embed them in articles.
+        It is possible to use an image link to display an image hosted externally. Please ensure
+        that the image has been properly licensed for display on this wiki, and that you have
+        permission to do so.
+    </p>
+    <p>
+        Images in the <a href="https://creativecommons.org">Creative Commons</a> can be easily
+        linked with a special syntax: ![[cc:filename.jpg]] will embed the image file
+        "filename.jpg" from the Creative Commons. The image will also be a link to the image's
+        page on the Creative Commons website, which should satisfy the attribution requirements
+        of most <a href="https://creativecommons.org/licenses/">CC-licensed</a> content.
+    </p>
 </div>

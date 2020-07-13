@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
+using NeverFoundry.Wiki.Mvc.Hubs;
 using NeverFoundry.Wiki.Mvc.Models;
 using NeverFoundry.Wiki.Mvc.Services;
 using NeverFoundry.Wiki.Mvc.Services.Search;
@@ -498,7 +499,32 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var senderPages = new Dictionary<string, bool>();
                     foreach (var reply in replies)
                     {
-                        var html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(reply.GetHtml());
+                        var html = string.Empty;
+                        var preview = false;
+                        if (reply.WikiLinks.Count == 1)
+                        {
+                            var link = reply.WikiLinks.First();
+                            if (!link.IsCategory
+                                && !link.IsTalk
+                                && !link.Missing
+                                && !string.IsNullOrEmpty(link.WikiNamespace))
+                            {
+                                var article = Article.GetArticle(link.Title, link.WikiNamespace);
+                                if (article is not null && !article.IsDeleted)
+                                {
+                                    preview = true;
+                                    var previewHtml = article.GetPreview();
+                                    var namespaceStr = article.WikiNamespace == WikiConfig.DefaultNamespace
+                                        ? string.Empty
+                                        : string.Format(WikiTalkHub.PreviewNamespaceTemplate, article.WikiNamespace);
+                                    html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(string.Format(WikiTalkHub.PreviewTemplate, namespaceStr, article.Title, previewHtml));
+                                }
+                            }
+                        }
+                        if (!preview)
+                        {
+                            html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(reply.GetHtml());
+                        }
                         IWikiUser? replyUser = null;
                         if (!senders.TryGetValue(reply.SenderId, out var exists))
                         {

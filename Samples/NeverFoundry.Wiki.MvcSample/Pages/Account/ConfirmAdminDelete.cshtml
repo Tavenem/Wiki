@@ -4,14 +4,12 @@
     ViewData["Title"] = "Confirm user delete";
 }
 
-<div class="jumbotron jumbotron-fluid">
-    <div class="container d-flex flex-column">
-        <h1 class="display-4">@ViewData["Title"]</h1>
-        <div class="alert alert-warning" role="alert">
-            <h4 class="alert-heading">Are you sure?</h4>
-            <p>Deleting an account is <strong class="text-danger">permanent</strong>.</p>
-            <p>You may want to consider <strong>disabling</strong> the account instead, which can be undone later.</p>
-        </div>
+<div class="placard">
+    <h1 class="display-4">@ViewData["Title"]</h1>
+    <div class="alert alert-warning" role="alert">
+        <h4>Are you sure?</h4>
+        <p>Deleting an account is <strong class="text-danger">permanent</strong>.</p>
+        <p>You may want to consider <strong>disabling</strong> the account instead, which can be undone later.</p>
     </div>
 </div>
 <div class="row justify-content-center mb-3">

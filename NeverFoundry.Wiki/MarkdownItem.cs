@@ -47,10 +47,23 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(
-            TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None,
-            ItemTypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="MarkdownItem"/>.
+        /// </summary>
+        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        private protected MarkdownItem(string id, string? markdownContent, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
+        {
+            MarkdownContent = markdownContent ?? string.Empty;
+            WikiLinks = wikiLinks;
+        }
 
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
@@ -69,18 +82,10 @@ namespace NeverFoundry.Wiki
         /// <param name="markdown">The raw markdown.</param>
         protected MarkdownItem(string? markdown) : this(markdown, GetWikiLinks(markdown)) { }
 
-        [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
-        private protected MarkdownItem(string id, string? markdownContent, IList<WikiLink> wikiLinks) : base(id)
-        {
-            MarkdownContent = markdownContent ?? string.Empty;
-            WikiLinks = new ReadOnlyCollection<WikiLink>(wikiLinks);
-        }
-
         private MarkdownItem(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>)
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]))
         { }
 
         /// <summary>

@@ -8,12 +8,12 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A transclusion of one page within another page.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
+    [Newtonsoft.Json.JsonObject]
     public class Transclusion : ISerializable, IEquatable<Transclusion>
     {
         /// <summary>
-        /// Gets the full title of this missing page (including namespace if the namespace is not
+        /// Gets the full title of this transclusion (including namespace if the namespace is not
         /// <see cref="WikiConfig.DefaultNamespace"/>).
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
@@ -39,9 +39,7 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiNamespace">The namespace for the linked article.</param>
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        public Transclusion(
-            string title,
-            string? wikiNamespace)
+        public Transclusion(string title, string? wikiNamespace)
         {
             Title = title;
             WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
@@ -101,6 +99,12 @@ namespace NeverFoundry.Wiki
         /// otherwise <see langword="false"/>.</returns>
         public bool IsMatch(Article item) => string.CompareOrdinal(item.Title, Title) == 0
             && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0;
+
+        /// <summary>Returns a string that represents the current object.</summary>
+        /// <returns>A string that represents the current object.</returns>
+        public override string ToString() => string.IsNullOrEmpty(WikiNamespace)
+            ? Title
+            : $"{WikiNamespace}:{Title}";
 
         /// <summary>
         /// Determines equality.

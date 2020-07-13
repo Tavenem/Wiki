@@ -1,18 +1,15 @@
 ﻿@import "custom";
 
 /* Layout */
-html, body {
-    height: 100% !important;
-    margin: 0;
-    min-height: 100%;
-    padding: 0;
-}
-
-#top-header {
+.top-header {
     display: flex;
     justify-content: flex-end;
     padding: 0.33em 0.75em;
     z-index: 100;
+
+    .account-main > div > & {
+        height: auto;
+    }
 
     @media screen and (min-width: 982px) {
         padding-left: 1em;
@@ -47,123 +44,31 @@ main.container-fluid {
     padding-right: 0;
 }
 
-#account-header {
-    a {
-        vertical-align: text-bottom;
-    }
-
-    a:hover {
-        text-decoration: none;
-    }
-}
-
-#account-main {
-    background-color: $background-color;
-    background-image: linear-gradient(to bottom, $background-color-dark 0, transparent 2.5em);
-    color: $color;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    flex-shrink: 0;
-    font-family: sans-serif;
-    min-height: 100%;
-    width: 100%;
-
+.account-main {
     @media screen and (min-width: 982px) {
-        background-image: linear-gradient(to bottom, $background-color-dark 1.9em, transparent 4.4em);
-        flex-direction: row;
+        background-image: linear-gradient(to bottom, $background-color 1.9em, transparent 4.4em);
     }
 
-    * {
-        border-color: $border-color;
-    }
-
-    a {
-        color: $link-color;
-        text-decoration: none;
-
-        &:hover {
-            color: darken($link-color, 15%);
-        }
-
-        &:visited {
-            color: lighten($link-color, 15%);
-        }
-
-        &:hover:visited {
-            color: $link-color;
-        }
-    }
-
-    h1, h2, h3, h4, h5, h6 {
-        border-bottom: 1px solid $border-color;
-        font-family: $font-family-title;
-        font-weight: normal;
-        margin: 0;
-    }
-
-    form {
-        > * {
-            background-color: $background-color-dark;
-            color: $color;
-        }
-
-        input, select, option {
-            background-color: $background-color;
-            color: $color;
-        }
-    }
-
-    > nav { /* sidebar */
-        display: flex;
-        flex-direction: row;
-
-        @media screen and (min-width: 982px) {
-            flex-direction: column;
-            margin-right: 0.5em;
-            padding-left: 0.5em;
-            width: 10.5em;
-        }
-    }
-
-    > div {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-    }
-
-    .jumbotron {
+    .placard {
         padding: 0;
         text-align: center;
     }
 }
 
-#account-content {
-    background-color: $background-color-dark;
-    border-bottom: 1px solid $highlight-color;
-    border-left: 1px solid $highlight-color;
-    display: flex;
-    flex-direction: column;
-    flex-grow: 1;
-    padding: 1em;
+footer.wiki-bottom-footer {
+    padding-top: 0.75em;
 
     @media screen and (min-width: 982px) {
-        padding: 1.25em 1.5em 1.5em 1.5em;
+        padding-top: 1.25em;
     }
 }
 
 /* wiki */
-.wiki {
-    > nav {
-        margin-top: -1.9em;
-    }
-}
-
-#wiki-sidebar-logo-link {
+.wiki-sidebar-logo-link {
     background-image: url(images/neverfoundry_160.svg);
 }
 
-#wiki-heading-edit:after {
+.wiki-heading-edit:after {
     font-family: 'Material Icons';
     content: 'create';
 }

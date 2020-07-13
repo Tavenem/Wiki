@@ -17,6 +17,8 @@ namespace NeverFoundry.Wiki
     /// </summary>
     [Newtonsoft.Json.JsonObject]
     [Serializable]
+    [System.Text.Json.Serialization.JsonConverter(typeof(Converters.ArticleConverter))]
+    [Newtonsoft.Json.JsonConverter(typeof(Converters.NewtonsoftJson.ArticleConverter))]
     public class Article : MarkdownItem
     {
         /// <summary>
@@ -162,9 +164,7 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The transclusions within this article.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(
-            TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None,
-            ItemTypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
+        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyList<Transclusion>? Transclusions { get; private protected set; }
 
         /// <summary>
@@ -172,11 +172,133 @@ namespace NeverFoundry.Wiki
         /// </summary>
         public virtual string WikiNamespace { get; private protected set; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Article"/>.
+        /// </summary>
+        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="title">
+        /// The title of this article. Must be unique within its namespace, and non-empty.
+        /// </param>
+        /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+        /// <param name="timestampTicks">
+        /// The timestamp when this message was sent, in UTC Ticks.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace to which this article belongs.
+        /// </param>
+        /// <param name="isDeleted">
+        /// Indicates that this article has been marked as deleted.
+        /// </param>
+        /// <param name="owner">
+        /// <para>
+        /// The owner of this article.
+        /// </para>
+        /// <para>
+        /// May be a user, a group, or <see langword="null"/>.
+        /// </para>
+        /// </param>
+        /// <param name="allowedEditors">
+        /// <para>
+        /// The user(s) and/or group(s) allowed to edit this article.
+        /// </para>
+        /// <para>
+        /// If <see langword="null"/> the article can be edited by anyone.
+        /// </para>
+        /// <para>
+        /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+        /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+        /// langword="null"/>) list allows only the owner to make edits.
+        /// </para>
+        /// <para>
+        /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+        /// </para>
+        /// </param>
+        /// <param name="allowedViewers">
+        /// <para>
+        /// The user(s) and/or group(s) allowed to view this article.
+        /// </para>
+        /// <para>
+        /// If <see langword="null"/> the article can be viewed by anyone.
+        /// </para>
+        /// <para>
+        /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+        /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+        /// langword="null"/>) list allows only the owner to view the article.
+        /// </para>
+        /// <para>
+        /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+        /// </para>
+        /// </param>
+        /// <param name="redirectNamespace">
+        /// If this is a redirect, optionally contains the namespace.
+        /// </param>
+        /// <param name="redirectTitle">
+        /// If this is a redirect, contains the title of the destination.
+        /// </param>
+        /// <param name="isBrokenRedirect">
+        /// Indicates whether this is a redirect to a page which does not exist.
+        /// </param>
+        /// <param name="isDoubleRedirect">
+        /// Indicates whether this is a redirect to a page which is also a redirect.
+        /// </param>
+        /// <param name="categories">
+        /// The titles of the categories to which this article belongs.
+        /// </param>
+        /// <param name="transclusions">
+        /// The transclusions within this article.
+        /// </param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        [Newtonsoft.Json.JsonConstructor]
+        public Article(
+            string id,
+            string title,
+            string markdownContent,
+            IReadOnlyCollection<WikiLink> wikiLinks,
+            long timestampTicks,
+            string wikiNamespace,
+            bool isDeleted,
+            string? owner,
+            IReadOnlyCollection<string>? allowedEditors,
+            IReadOnlyCollection<string>? allowedViewers,
+            string? redirectNamespace,
+            string? redirectTitle,
+            bool isBrokenRedirect,
+            bool isDoubleRedirect,
+            IReadOnlyCollection<string> categories,
+            IReadOnlyList<Transclusion>? transclusions) : base(id, markdownContent, wikiLinks)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
+            }
+            wikiNamespace ??= WikiConfig.DefaultNamespace;
+
+            if (!string.IsNullOrEmpty(owner))
+            {
+                AllowedEditors = allowedEditors;
+                AllowedViewers = allowedViewers;
+            }
+            Categories = categories;
+            IsBrokenRedirect = isBrokenRedirect;
+            IsDeleted = isDeleted;
+            IsDoubleRedirect = isDoubleRedirect;
+            Owner = owner;
+            RedirectNamespace = redirectNamespace;
+            RedirectTitle = redirectTitle;
+            TimestampTicks = timestampTicks;
+            Title = title;
+            Transclusions = transclusions;
+            WikiNamespace = wikiNamespace;
+        }
+
         private protected Article(
             string id,
             string title,
             string? markdown,
-            IList<WikiLink> wikiLinks,
+            IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
             string? wikiNamespace = null,
             bool isDeleted = false,
@@ -216,67 +338,23 @@ namespace NeverFoundry.Wiki
             WikiNamespace = wikiNamespace;
         }
 
-        [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
-        private protected Article(
-            string id,
-            string title,
-            string markdownContent,
-            IList<WikiLink> wikiLinks,
-            long timestampTicks,
-            string? wikiNamespace,
-            bool isDeleted,
-            string? owner,
-            ReadOnlyCollection<string>? allowedEditors,
-            ReadOnlyCollection<string>? allowedViewers,
-            string? redirectNamespace,
-            string? redirectTitle,
-            bool isBrokenRedirect,
-            bool isDoubleRedirect,
-            ReadOnlyCollection<string> categories,
-            ReadOnlyCollection<Transclusion>? transclusions) : base(id, markdownContent, wikiLinks)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
-            }
-            wikiNamespace ??= WikiConfig.DefaultNamespace;
-
-            if (!string.IsNullOrEmpty(owner))
-            {
-                AllowedEditors = allowedEditors;
-                AllowedViewers = allowedViewers;
-            }
-            Categories = categories;
-            IsBrokenRedirect = isBrokenRedirect;
-            IsDeleted = isDeleted;
-            IsDoubleRedirect = isDoubleRedirect;
-            Owner = owner;
-            RedirectNamespace = redirectNamespace;
-            RedirectTitle = redirectTitle;
-            TimestampTicks = timestampTicks;
-            Title = title;
-            Transclusions = transclusions;
-            WikiNamespace = wikiNamespace;
-        }
-
         private Article(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(ReadOnlyCollection<string>)),
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(ReadOnlyCollection<string>)),
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(IReadOnlyCollection<string>)),
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(IReadOnlyCollection<string>)),
             (string?)info.GetValue(nameof(RedirectNamespace), typeof(string)),
             (string?)info.GetValue(nameof(RedirectTitle), typeof(string)),
             (bool?)info.GetValue(nameof(IsBrokenRedirect), typeof(bool)) ?? default,
             (bool?)info.GetValue(nameof(IsDoubleRedirect), typeof(bool)) ?? default,
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
-            (ReadOnlyCollection<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<Transclusion>)))
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(IReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (IReadOnlyList<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(IReadOnlyList<Transclusion>)))
         { }
 
         /// <summary>
@@ -659,7 +737,7 @@ namespace NeverFoundry.Wiki
                 wikiId,
                 title,
                 markdown,
-                wikiLinks,
+                new ReadOnlyCollection<WikiLink>(wikiLinks),
                 revision.TimestampTicks,
                 wikiNamespace,
                 isDeleted: false,

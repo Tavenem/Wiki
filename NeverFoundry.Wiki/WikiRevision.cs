@@ -181,15 +181,60 @@ namespace NeverFoundry.Wiki
             }
         }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiRevision"/>.
+        /// </summary>
+        /// <param name="id">
+        /// The unique ID of this revision.
+        /// </param>
+        /// <param name="wikiId">
+        /// A unique ID that identifies this wiki item across revisions.
+        /// </param>
+        /// <param name="editor">
+        /// The ID of the user who made this revision.
+        /// </param>
+        /// <param name="title">
+        /// The title of the item at the time of this revision. Must be non-empty, but may not be
+        /// unique.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace to which this item belonged at the time of this revision. Must be
+        /// non-empty.
+        /// </param>
+        /// <param name="revision">
+        /// <para>
+        /// The revision, as a delta-formatted string (except for milestones, which contain the full
+        /// text).
+        /// </para>
+        /// <para>
+        /// <see langword="null"/> when <paramref name="isDeleted"/> is <see langword="true"/>
+        /// </para>
+        /// </param>
+        /// <param name="isDeleted">
+        /// Whether the item was marked as deleted by this revision.
+        /// </param>
+        /// <param name="isMilestone">
+        /// Whether the item's contents were entirely replaced by this revision.
+        /// </param>
+        /// <param name="comment">
+        /// An optional comment supplied for this revision (e.g. to explain the changes).
+        /// </param>
+        /// <param name="timestampTicks">
+        /// The timestamp of this revision, in UTC Ticks.
+        /// </param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers. The other constructors are more
+        /// suited to creating a new instance, as they will automatically generate an appropriate ID.
+        /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        private WikiRevision(
+        public WikiRevision(
             string id,
             string wikiId,
             string editor,
             string title,
             string wikiNamespace,
-            string revision,
+            string? revision,
             bool isDeleted,
             bool isMilestone,
             string? comment,

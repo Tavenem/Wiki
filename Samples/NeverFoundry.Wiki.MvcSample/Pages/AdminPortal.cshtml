@@ -7,31 +7,29 @@
     ViewData["Title"] = "Admin";
 }
 
-<div class="jumbotron jumbotron-fluid">
-    <div class="container d-flex flex-column">
-        <h1 class="display-4">@ViewData["Title"]</h1>
-        <p class="lead">There are currently <strong class="text-primary">@Model.UserCountTotal.ToString("N0")</strong> total registered users.</p>
-        <div class="container-fluid ml-1">
-            <div class="row justify-content-center">
-                <div class="col-2">Active users:</div>
-                <div class="col-1"><strong class="text-success">@Model.UserCountActive.ToString("N0")</strong></div>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-2">Inactive users:</div>
-                <div class="col-1"><strong class="text-muted">@Model.UserCountInactive.ToString("N0")</strong></div>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-2">Disabled users:</div>
-                <div class="col-1"><strong class="text-warning">@Model.UserCountDisabled.ToString("N0")</strong></div>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-2">Deleted users:</div>
-                <div class="col-1"><strong class="text-danger">@Model.UserCountDeleted.ToString("N0")</strong></div>
-            </div>
-            <div class="row justify-content-center">
-                <div class="col-2">Groups:</div>
-                <div class="col-1"><strong class="text-info">@Model.GroupCount.ToString("N0")</strong></div>
-            </div>
+<div class="placard">
+    <h1 class="display-4">@ViewData["Title"]</h1>
+    <p class="lead">There are currently <strong class="text-primary">@Model.UserCountTotal.ToString("N0")</strong> total registered users.</p>
+    <div class="container-fluid ml-1">
+        <div class="row justify-content-center">
+            <div class="col-2">Active users:</div>
+            <div class="col-1"><strong class="text-success">@Model.UserCountActive.ToString("N0")</strong></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-2">Inactive users:</div>
+            <div class="col-1"><strong class="text-muted">@Model.UserCountInactive.ToString("N0")</strong></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-2">Disabled users:</div>
+            <div class="col-1"><strong class="text-warning">@Model.UserCountDisabled.ToString("N0")</strong></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-2">Deleted users:</div>
+            <div class="col-1"><strong class="text-danger">@Model.UserCountDeleted.ToString("N0")</strong></div>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-2">Groups:</div>
+            <div class="col-1"><strong class="text-info">@Model.GroupCount.ToString("N0")</strong></div>
         </div>
     </div>
 </div>

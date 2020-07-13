@@ -1,4 +1,5 @@
-﻿using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
+﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -48,6 +49,44 @@ namespace NeverFoundry.Wiki
         /// </summary>
         public string TopicId { get; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Message"/>.
+        /// </summary>
+        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+        /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
+        /// <param name="senderId">The ID of the sender of this message.</param>
+        /// <param name="senderName">The name of the sender of this message.</param>
+        /// <param name="timestampTicks">
+        /// The timestamp when this message was sent, in UTC Ticks.
+        /// </param>
+        /// <param name="replyMessageId">
+        /// The ID of the message to which this reply is addressed (<see langword="null"/> for
+        /// messages addressed directly to a topic).
+        /// </param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
+        public Message(
+            string id,
+            string markdownContent,
+            IReadOnlyCollection<WikiLink> wikiLinks,
+            string topicId,
+            string senderId,
+            string senderName,
+            long timestampTicks,
+            string? replyMessageId = null) : base(id, markdownContent, wikiLinks)
+        {
+            ReplyMessageId = replyMessageId;
+            SenderId = senderId;
+            SenderName = senderName;
+            TimestampTicks = timestampTicks;
+            TopicId = topicId;
+        }
+
         internal Message(
             string topicId,
             string senderId,
@@ -63,29 +102,10 @@ namespace NeverFoundry.Wiki
             TopicId = topicId;
         }
 
-        [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
-        private Message(
-            string id,
-            string markdownContent,
-            IList<WikiLink> wikiLinks,
-            string topicId,
-            string senderId,
-            string senderName,
-            long timestampTicks,
-            string? replyMessageId = null) : base(id, markdownContent, wikiLinks)
-        {
-            ReplyMessageId = replyMessageId;
-            SenderId = senderId;
-            SenderName = senderName;
-            TimestampTicks = timestampTicks;
-            TopicId = topicId;
-        }
-
         private Message(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderName), typeof(string)) ?? string.Empty,
@@ -150,6 +170,21 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(SenderName), SenderName);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(ReplyMessageId), ReplyMessageId);
+        }
+
+        private protected override string PostprocessMarkdown(string? markdown, bool isPreview = false)
+        {
+            if (string.IsNullOrEmpty(markdown))
+            {
+                return string.Empty;
+            }
+
+            return TransclusionParser.Transclude(
+                  null,
+                  null,
+                  markdown,
+                  out _,
+                  isPreview: isPreview);
         }
     }
 }

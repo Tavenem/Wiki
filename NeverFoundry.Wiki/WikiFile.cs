@@ -15,6 +15,7 @@ namespace NeverFoundry.Wiki
     /// </summary>
     [Newtonsoft.Json.JsonObject]
     [Serializable]
+    [Newtonsoft.Json.JsonConverter(typeof(Converters.NewtonsoftJson.NoConverter))]
     public sealed class WikiFile : Article
     {
         /// <summary>
@@ -49,6 +50,118 @@ namespace NeverFoundry.Wiki
         /// </summary>
         public override string WikiNamespace => WikiConfig.FileNamespace;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="Category"/>.
+        /// </summary>
+        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="title">
+        /// The title of this article. Must be unique within its namespace, and non-empty.
+        /// </param>
+        /// <param name="filePath">
+        /// The path to the physical file this entry represents.
+        /// </param>
+        /// <param name="fileSize">
+        /// The size of the file (in bytes).
+        /// </param>
+        /// <param name="fileType">
+        /// The MIME type of the file.
+        /// </param>
+        /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+        /// <param name="timestampTicks">
+        /// The timestamp when this message was sent, in UTC Ticks.
+        /// </param>
+        /// <param name="isDeleted">
+        /// Indicates that this article has been marked as deleted.
+        /// </param>
+        /// <param name="owner">
+        /// <para>
+        /// The owner of this article.
+        /// </para>
+        /// <para>
+        /// May be a user, a group, or <see langword="null"/>.
+        /// </para>
+        /// </param>
+        /// <param name="allowedEditors">
+        /// <para>
+        /// The user(s) and/or group(s) allowed to edit this article.
+        /// </para>
+        /// <para>
+        /// If <see langword="null"/> the article can be edited by anyone.
+        /// </para>
+        /// <para>
+        /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+        /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+        /// langword="null"/>) list allows only the owner to make edits.
+        /// </para>
+        /// <para>
+        /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+        /// </para>
+        /// </param>
+        /// <param name="allowedViewers">
+        /// <para>
+        /// The user(s) and/or group(s) allowed to view this article.
+        /// </para>
+        /// <para>
+        /// If <see langword="null"/> the article can be viewed by anyone.
+        /// </para>
+        /// <para>
+        /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+        /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+        /// langword="null"/>) list allows only the owner to view the article.
+        /// </para>
+        /// <para>
+        /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+        /// </para>
+        /// </param>
+        /// <param name="categories">
+        /// The titles of the categories to which this article belongs.
+        /// </param>
+        /// <param name="transclusions">
+        /// The transclusions within this article.
+        /// </param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        [System.Text.Json.Serialization.JsonConstructor]
+        [Newtonsoft.Json.JsonConstructor]
+        public WikiFile(
+            string id,
+            string title,
+            string filePath,
+            int fileSize,
+            string fileType,
+            string markdownContent,
+            IReadOnlyCollection<WikiLink> wikiLinks,
+            long timestampTicks,
+            bool isDeleted,
+            string? owner,
+            IReadOnlyCollection<string>? allowedEditors,
+            IReadOnlyCollection<string>? allowedViewers,
+            IReadOnlyCollection<string> categories,
+            IReadOnlyList<Transclusion>? transclusions) : base(
+                id,
+                title,
+                markdownContent,
+                wikiLinks,
+                timestampTicks,
+                WikiConfig.FileNamespace,
+                isDeleted,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                null,
+                null,
+                false,
+                false,
+                categories,
+                transclusions)
+        {
+            FilePath = filePath;
+            FileSize = fileSize;
+            FileType = fileType;
+        }
+
         private WikiFile(
             string id,
             string title,
@@ -56,7 +169,7 @@ namespace NeverFoundry.Wiki
             int fileSize,
             string fileType,
             string? markdown,
-            IList<WikiLink> wikiLinks,
+            IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
             bool isDeleted = false,
             string? owner = null,
@@ -82,45 +195,6 @@ namespace NeverFoundry.Wiki
             FileType = fileType;
         }
 
-        [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
-        private WikiFile(
-            string id,
-            string title,
-            string filePath,
-            int fileSize,
-            string fileType,
-            string markdownContent,
-            IList<WikiLink> wikiLinks,
-            long timestampTicks,
-            bool isDeleted,
-            string? owner,
-            ReadOnlyCollection<string>? allowedEditors,
-            ReadOnlyCollection<string>? allowedViewers,
-            ReadOnlyCollection<string> categories,
-            ReadOnlyCollection<Transclusion>? transclusions) : base(
-                id,
-                title,
-                markdownContent,
-                wikiLinks,
-                timestampTicks,
-                WikiConfig.FileNamespace,
-                isDeleted,
-                owner,
-                allowedEditors,
-                allowedViewers,
-                null,
-                null,
-                false,
-                false,
-                categories,
-                transclusions)
-        {
-            FilePath = filePath;
-            FileSize = fileSize;
-            FileType = fileType;
-        }
-
         private WikiFile(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
@@ -128,14 +202,14 @@ namespace NeverFoundry.Wiki
             (int?)info.GetValue(nameof(FileSize), typeof(int)) ?? default,
             (string?)info.GetValue(nameof(FileType), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
-            (ReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(ReadOnlyCollection<WikiLink>)) ?? new WikiLink[0] as IList<WikiLink>,
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(ReadOnlyCollection<string>)),
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(ReadOnlyCollection<string>)),
-            (ReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(ReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
-            (ReadOnlyCollection<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(ReadOnlyCollection<Transclusion>)))
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(IReadOnlyCollection<string>)),
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(IReadOnlyCollection<string>)),
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(IReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (IReadOnlyList<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(IReadOnlyList<Transclusion>)))
         { }
 
         /// <summary>
@@ -327,7 +401,7 @@ namespace NeverFoundry.Wiki
                 fileSize,
                 type,
                 markdown,
-                wikiLinks,
+                new ReadOnlyCollection<WikiLink>(wikiLinks),
                 revision.TimestampTicks,
                 isDeleted: false,
                 owner,

@@ -1,9 +1,9 @@
 ﻿@model GroupViewModel
 
-<div id="wiki-site-subtitle">From @WikiConfig.SiteName</div>
+<div class="wiki-site-subtitle">From @WikiConfig.SiteName</div>
 @if (Model.IsDiff)
 {
-    <div id="wiki-diff" class="wiki-parser-output">@Html.Raw(Model.Html)</div>
+    <div class="wiki-parser-output wiki-diff">@Html.Raw(Model.Html)</div>
 }
 else
 {

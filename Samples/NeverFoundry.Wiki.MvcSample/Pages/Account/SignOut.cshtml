@@ -4,12 +4,10 @@
     ViewData["Title"] = "Sign out";
 }
 
-<div class="jumbotron jumbotron-fluid">
-    <div class="container d-flex flex-column align-items-start">
-        <h1 class="display-4">@ViewData["Title"]</h1>
-        <p class="lead">Would you like to sign out of NeverFoundry?</p>
-        <form class="form-inline mt-3" asp-route-returnUrl="@Url.Page("/")" method="post">
-            <button type="submit" class="btn btn-lg btn-primary">Sign out</button>
-        </form>
-    </div>
+<div class="placard align-items-start">
+    <h1 class="display-4">@ViewData["Title"]</h1>
+    <p class="lead">Would you like to sign out of NeverFoundry?</p>
+    <form class="form-inline mt-3" asp-route-returnUrl="@Url.Page("/")" method="post">
+        <button type="submit" class="btn btn-lg btn-primary">Sign out</button>
+    </form>
 </div>

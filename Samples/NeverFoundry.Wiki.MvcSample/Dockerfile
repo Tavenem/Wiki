@@ -1,9 +1,9 @@
-FROM mcr.microsoft.com/dotnet/core/aspnet:5.0-buster-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:5.0-alpine AS base
 WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/core/sdk:5.0-buster AS build
+FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine AS build
 
 ARG PAT
 RUN wget -qO- https://raw.githubusercontent.com/Microsoft/artifacts-credprovider/master/helpers/installcredprovider.sh | bash
