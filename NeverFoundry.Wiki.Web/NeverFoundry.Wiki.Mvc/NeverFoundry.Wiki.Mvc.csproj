@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.20.1-preview</Version>
+    <Version>0.21.0-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>An implementation of NeverFoundry.Wiki for ASP.NET MVC.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -36,7 +36,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.0-preview.6.20312.15" />
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.0-preview.6.20312.15" />
-    <PackageReference Include="NeverFoundry.Wiki" Version="0.20.1" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.21.0" />
   </ItemGroup>
 
   <!-- npm -->
