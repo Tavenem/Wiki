@@ -1,9 +1,10 @@
 ﻿using Fido2NetLib.Objects;
-using Newtonsoft.Json;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-namespace NeverFoundry.Wiki.Sample.Data
+namespace NeverFoundry.Wiki.MvcSample.Data
 {
     public class FidoStoredCredential
     {
@@ -16,11 +17,11 @@ namespace NeverFoundry.Wiki.Sample.Data
         public DateTime RegDate { get; set; }
         public Guid AaGuid { get; set; }
 
-        [NotMapped]
+        [JsonIgnore, NotMapped]
         public PublicKeyCredentialDescriptor? Descriptor
         {
-            get => string.IsNullOrWhiteSpace(DescriptorJson) ? null : JsonConvert.DeserializeObject<PublicKeyCredentialDescriptor>(DescriptorJson);
-            set => DescriptorJson = JsonConvert.SerializeObject(value);
+            get => string.IsNullOrWhiteSpace(DescriptorJson) ? null : JsonSerializer.Deserialize<PublicKeyCredentialDescriptor>(DescriptorJson);
+            set => DescriptorJson = JsonSerializer.Serialize(value);
         }
         public string? DescriptorJson { get; set; }
     }

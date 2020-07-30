@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using System;
+using System.Collections.Generic;
 
 namespace NeverFoundry.Wiki.MvcSample.Data.Migrations
 {
@@ -42,9 +43,11 @@ namespace NeverFoundry.Wiki.MvcSample.Data.Migrations
                     LockoutEnabled = table.Column<bool>(type: "boolean", nullable: false),
                     AccessFailedCount = table.Column<int>(type: "integer", nullable: false),
                     DisabledStart = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    Groups = table.Column<List<string>>(type: "text", nullable: true),
                     HasUploadPermission = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     IsDisabled = table.Column<bool>(type: "boolean", nullable: false),
+                    IsWikiAdmin = table.Column<bool>(type: "boolean", nullable: false),
                     LastAccess = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>

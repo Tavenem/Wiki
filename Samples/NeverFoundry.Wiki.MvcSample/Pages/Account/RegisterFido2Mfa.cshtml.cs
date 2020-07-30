@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.ComponentModel.DataAnnotations;
 
-namespace NeverFoundry.Wiki.MVCSample.Pages.Account
+namespace NeverFoundry.Wiki.MvcSample.Pages.Account
 {
     public class RegisterFido2MfaModel : PageModel
     {

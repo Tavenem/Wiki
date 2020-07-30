@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
 
-namespace NeverFoundry.Wiki.Sample.Services
+namespace NeverFoundry.Wiki.MvcSample.Services
 {
     public static class EmailTemplates
     {

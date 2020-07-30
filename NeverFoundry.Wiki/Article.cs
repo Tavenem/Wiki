@@ -22,6 +22,15 @@ namespace NeverFoundry.Wiki
     public class Article : MarkdownItem
     {
         /// <summary>
+        /// The type discriminator for this type.
+        /// </summary>
+        public const string ArticleIdItemTypeName = ":Article:";
+        /// <summary>
+        /// A built-in, read-only type discriminator.
+        /// </summary>
+        public virtual string IdItemTypeName => ArticleIdItemTypeName;
+
+        /// <summary>
         /// <para>
         /// The user(s) and/or group(s) allowed to edit this article.
         /// </para>
@@ -64,11 +73,6 @@ namespace NeverFoundry.Wiki
         /// </remarks>
         [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<string>? AllowedViewers { get; private protected set; }
-
-        /// <summary>
-        /// The type of page represented by this item.
-        /// </summary>
-        public virtual ArticleType ArticleType => ArticleType.Article;
 
         /// <summary>
         /// <para>
@@ -176,6 +180,7 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="Article"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="idItemTypeName">The type discriminator.</param>
         /// <param name="title">
         /// The title of this article. Must be unique within its namespace, and non-empty.
         /// </param>
@@ -254,6 +259,9 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public Article(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
+            string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string markdownContent,
             IReadOnlyCollection<WikiLink> wikiLinks,
@@ -340,6 +348,7 @@ namespace NeverFoundry.Wiki
 
         private Article(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            ArticleIdItemTypeName,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
@@ -399,8 +408,8 @@ namespace NeverFoundry.Wiki
                 if (article is null)
                 {
                     var articles = WikiConfig.DataStore.Query<Article>()
-                        .Where(x => string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.OrdinalIgnoreCase)
-                            && string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
+                        .Where(x => x.WikiNamespace.ToLower() == wikiNamespace.ToLower()
+                            && x.Title.ToLower() == title.ToLower())
                         .OrderBy(x => x.TimestampTicks, descending: true)
                         .ToList();
                     if (articles.Count == 1)
@@ -458,8 +467,8 @@ namespace NeverFoundry.Wiki
             if (article is null)
             {
                 var articles = WikiConfig.DataStore.Query<Article>()
-                    .Where(x => string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
+                    .Where(x => x.WikiNamespace.ToLower() == wikiNamespace.ToLower()
+                        && x.Title.ToLower() == title.ToLower()
                         && x.TimestampTicks == ticks)
                     .ToList();
                 if (articles.Count == 1)
@@ -1127,7 +1136,6 @@ namespace NeverFoundry.Wiki
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);
-            info.AddValue(nameof(ArticleType), ArticleType);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
             info.AddValue(nameof(WikiLinks), WikiLinks);

@@ -25,13 +25,18 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
         {
             var jObj = JObject.Load(reader);
 
-            if (!jObj.TryGetValue(nameof(Article.ArticleType), out var articleTypeToken)
-                || articleTypeToken.Type != JTokenType.Integer)
+            if (!jObj.TryGetValue(nameof(IIdItem.IdItemTypeName), out var idItemTypeNameToken)
+                || idItemTypeNameToken.Type != JTokenType.String)
             {
                 throw new JsonException();
             }
-            var articleType = (ArticleType)articleTypeToken.Value<int>();
-            if (articleType == ArticleType.Category)
+            var idItemTypeName = idItemTypeNameToken.Value<string>();
+            if (string.IsNullOrEmpty(idItemTypeName))
+            {
+                throw new JsonException();
+            }
+
+            if (string.Equals(idItemTypeName, Category.CategoryIdItemTypeName))
             {
                 var category = serializer.Deserialize<Category>(jObj.CreateReader());
                 if (category is null)
@@ -41,7 +46,7 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
                 return category;
             }
 
-            if (articleType == ArticleType.File)
+            if (string.Equals(idItemTypeName, WikiFile.WikiFileIdItemTypeName))
             {
                 var file = serializer.Deserialize<WikiFile>(jObj.CreateReader());
                 if (file is null)
@@ -224,6 +229,7 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
 
             return new Article(
                 id,
+                idItemTypeName,
                 title,
                 markdownContent,
                 wikiLinks,
@@ -268,11 +274,11 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
 
             writer.WriteStartObject();
 
-            writer.WritePropertyName(nameof(Article.ArticleType));
-            writer.WriteValue((int)value.ArticleType);
-
             writer.WritePropertyName(nameof(IIdItem.Id));
             writer.WriteValue(value.Id);
+
+            writer.WritePropertyName(nameof(IIdItem.IdItemTypeName));
+            writer.WriteValue(value.IdItemTypeName);
 
             writer.WritePropertyName(nameof(Article.Title));
             writer.WriteValue(value.Title);

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 
-namespace NeverFoundry.Wiki.MVCSample
+namespace NeverFoundry.Wiki.MvcSample
 {
     public class SecurityHeadersAttribute : ActionFilterAttribute
     {

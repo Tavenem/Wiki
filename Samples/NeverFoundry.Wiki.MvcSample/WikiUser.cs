@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System;
+using System.Collections.Generic;
 
 namespace NeverFoundry.Wiki
 {
@@ -19,6 +20,11 @@ namespace NeverFoundry.Wiki
         public DateTimeOffset? DisabledStart { get; set; }
 
         /// <summary>
+        /// A list of the group IDs to which this user belongs (if any).
+        /// </summary>
+        public List<string>? Groups { get; set; }
+
+        /// <summary>
         /// Whether this user may upload files.
         /// </summary>
         public bool HasUploadPermission { get; set; }
@@ -32,6 +38,11 @@ namespace NeverFoundry.Wiki
         /// Whether this user's account has been disabled.
         /// </summary>
         public bool IsDisabled { get; set; }
+
+        /// <summary>
+        /// Whether this user is a wiki administrator.
+        /// </summary>
+        public bool IsWikiAdmin { get; set; }
 
         /// <summary>
         /// The date and time when this account was last used to sign in.

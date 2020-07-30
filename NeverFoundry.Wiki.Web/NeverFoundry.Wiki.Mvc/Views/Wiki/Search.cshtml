@@ -35,8 +35,11 @@
             <div class="wiki-search-resultcount">
                 <span>Results</span>
                 <strong>@((Model.SearchResult.SearchHits.FirstIndexOnPage + 1).ToString("N0")) &mdash; @((Model.SearchResult.SearchHits.LastIndexOnPage + 1).ToString("N0"))</strong>
-                <span>of</span>
-                <strong>@Model.SearchResult.SearchHits.TotalCount.ToString("N0")</strong>
+                @if (Model.SearchResult.SearchHits.TotalCount.HasValue)
+                {
+                    <span>of</span>
+                    <strong>@Model.SearchResult.SearchHits.TotalCount.Value.ToString("N0")</strong>
+                }
             </div>
         </div>
         <div class="wiki-search-advanced">
@@ -113,12 +116,18 @@
             @if (Model.SearchResult.SearchHits.HasNextPage)
             {
                 <span><a asp-route-pageNumber="@(Model.SearchResult.SearchHits.PageNumber + 1)">Next</a></span>
-                <span><a asp-route-pageNumber="@Model.SearchResult.SearchHits.TotalPages">Last</a></span>
+                @if (Model.SearchResult.SearchHits.TotalPages.HasValue)
+                {
+                    <span><a asp-route-pageNumber="@Model.SearchResult.SearchHits.TotalPages.Value">Last</a></span>
+                }
             }
             else
             {
                 <span>Next</span>
-                <span>Last</span>
+                @if (Model.SearchResult.SearchHits.TotalPages.HasValue)
+                {
+                    <span>Last</span>
+                }
             }
         </nav>
         <div>

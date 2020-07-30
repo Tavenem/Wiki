@@ -4,15 +4,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using NeverFoundry.Wiki.Sample.Data;
-using NeverFoundry.Wiki.Sample.Services;
+using NeverFoundry.Wiki.MvcSample.Data;
+using NeverFoundry.Wiki.MvcSample.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MVCSample.Controllers
+namespace NeverFoundry.Wiki.MvcSample.Controllers
 {
     [Route("api/[controller]")]
     public class Fido2Controller : Controller
@@ -128,7 +128,7 @@ namespace NeverFoundry.Wiki.MVCSample.Controllers
                 var identityUser = await _userManager.FindByNameAsync(creds.Username).ConfigureAwait(false);
                 if (identityUser is null)
                 {
-                    throw new InvalidOperationException($"Unable to load user.");
+                    throw new InvalidOperationException("Unable to load user.");
                 }
 
                 await _signInManager.SignInAsync(identityUser, isPersistent: false).ConfigureAwait(false);

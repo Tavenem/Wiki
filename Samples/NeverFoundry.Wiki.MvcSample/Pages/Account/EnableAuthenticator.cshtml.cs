@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MVCSample.Pages.Account
+namespace NeverFoundry.Wiki.MvcSample.Pages.Account
 {
     [Authorize]
     public class EnableAuthenticatorModel : PageModel
@@ -132,7 +132,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages.Account
         {
             return string.Format(
                 AuthenticatorUriFormat,
-                _urlEncoder.Encode("NeverFoundry.Wiki.MVCSample"),
+                _urlEncoder.Encode("NeverFoundry.Wiki.MvcSample"),
                 _urlEncoder.Encode(email),
                 unformattedKey);
         }

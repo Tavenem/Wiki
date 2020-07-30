@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MVCSample.Pages.Account
+namespace NeverFoundry.Wiki.MvcSample.Pages.Account
 {
     [Authorize]
     public class EnableFido2MfaModel : PageModel

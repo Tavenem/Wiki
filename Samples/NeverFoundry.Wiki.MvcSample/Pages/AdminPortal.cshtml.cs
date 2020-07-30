@@ -11,7 +11,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MVCSample.Pages
+namespace NeverFoundry.Wiki.MvcSample.Pages
 {
     [Authorize(Policy = WikiClaims.Claim_WikiAdmin)]
     public class AdminPortalModel : PageModel
@@ -23,9 +23,11 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
 
         [TempData] public string? ErrorMessage { get; set; }
 
-        public long GroupCount { get; set; }
+        public long? GroupCount { get; set; }
 
         public List<WikiGroup>? Groups { get; set; }
+
+        public bool HasNextPage { get; set; }
 
         [BindProperty] public InputModel Input { get; set; } = new InputModel();
 
@@ -33,7 +35,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
 
         public int ItemsPerPage { get; set; }
 
-        public long PageCount { get; set; }
+        public long? PageCount { get; set; }
 
         public bool ShowGroups { get; set; }
 
@@ -97,6 +99,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
                     .GetPageAsync(CurrentPage, ItemsPerPage)
                     .ConfigureAwait(false);
                 Groups = groupPage.ToList();
+                HasNextPage = groupPage.HasNextPage;
                 GroupCount = groupPage.TotalCount;
                 PageCount = groupPage.TotalPages;
             }
@@ -107,6 +110,7 @@ namespace NeverFoundry.Wiki.MVCSample.Pages
                 {
                     PageCount++;
                 }
+                HasNextPage = PageCount > CurrentPage;
 
                 Users = _userManager.Users
                     .OrderBy(x => x.UserName)

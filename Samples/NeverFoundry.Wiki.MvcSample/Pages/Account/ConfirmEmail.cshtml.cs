@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MVCSample.Pages.Account
+namespace NeverFoundry.Wiki.MvcSample.Pages.Account
 {
     [AllowAnonymous]
     public class ConfirmEmailModel : PageModel

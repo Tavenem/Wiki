@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Web;
 using System;
@@ -21,19 +20,19 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
     /// only to ensure that search functions when no client is provided.
     /// </para>
     /// </summary>
-    public class DefaultSearchClient<TUser> : ISearchClient where TUser : IdentityUser, IWikiUser
+    public class DefaultSearchClient : ISearchClient
     {
-        private readonly ILogger<DefaultSearchClient<TUser>> _logger;
-        private readonly Microsoft.AspNetCore.Identity.UserManager<TUser> _userManager;
+        private readonly ILogger<DefaultSearchClient> _logger;
+        private readonly IWikiUserManager _userManager;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="DefaultSearchClient{T}"/>.
+        /// Initializes a new instance of <see cref="DefaultSearchClient"/>.
         /// </summary>
         /// <param name="logger">An <see cref="ILogger"/> instance.</param>
-        /// <param name="userManager">A <see cref="UserManager{TUser}"/>.</param>
+        /// <param name="userManager">An <see cref="IWikiUserManager"/>.</param>
         public DefaultSearchClient(
-            ILogger<DefaultSearchClient<TUser>> logger,
-            Microsoft.AspNetCore.Identity.UserManager<TUser> userManager)
+            ILogger<DefaultSearchClient> logger,
+            IWikiUserManager userManager)
         {
             _logger = logger;
             _userManager = userManager;
@@ -62,17 +61,11 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
             }
 
             var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
-            var claims = user is null
-                ? new List<Claim>()
-                : await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            var groupIds = claims
-                .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                .Select(x => x.Value)
-                .ToList();
+            var groupIds = user?.Groups ?? new List<string>();
 
             IPagedList<Article> articles;
             System.Linq.Expressions.Expression<Func<Article, bool>> exp = x => x.Owner == null || x.AllowedViewers == null;
-            if (!(user is null))
+            if (user is not null)
             {
                 exp = exp.OrElse(x => x.AllowedViewers!.Contains(user.Id)
                     || user.Id.Equals(x.Owner, StringComparison.OrdinalIgnoreCase)

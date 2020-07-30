@@ -1,5 +1,5 @@
 ﻿using NeverFoundry.DataStorage;
-using NeverFoundry.Wiki.Mvc.Services;
+using NeverFoundry.Wiki.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -21,7 +21,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         }
 
         public static async Task<HistoryViewModel> NewAsync(
-            IUserManager userManager,
+            IWikiUserManager userManager,
             WikiRouteData data,
             int pageNumber = 1,
             int pageSize = 50,

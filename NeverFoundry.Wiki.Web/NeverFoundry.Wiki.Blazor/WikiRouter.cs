@@ -11,6 +11,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Blazor
@@ -25,6 +26,7 @@ namespace NeverFoundry.Wiki.Blazor
         private static readonly ReadOnlyDictionary<string, object?> _EmptyParametersDictionary
             = new ReadOnlyDictionary<string, object?>(new Dictionary<string, object?>());
 
+        private readonly HashSet<Assembly> _assemblies = new HashSet<Assembly>();
         private readonly RenderFragment<WikiRouteData> _renderWikiViewDelegate;
         private readonly RenderFragment _renderWikiViewCoreDelegate;
 
@@ -49,6 +51,11 @@ namespace NeverFoundry.Wiki.Blazor
         /// Gets or sets the content to display when a match is found for the requested route.
         /// </summary>
         [Parameter] public RenderFragment<RouteData>? Found { get; set; }
+
+        /// <summary>
+        /// Get or sets the content to display when asynchronous navigation is in progress.
+        /// </summary>
+        [Parameter] public RenderFragment? Navigating { get; set; }
 
         /// <summary>
         /// Gets or sets the content to display when no match is found for the requested route.
@@ -153,8 +160,6 @@ namespace NeverFoundry.Wiki.Blazor
                 throw new InvalidOperationException($"The {nameof(WikiRouter)} component requires a value for the parameter {nameof(NotFound)}.");
             }
 
-            var assemblies = AdditionalAssemblies == null ? new[] { AppAssembly } : new[] { AppAssembly }.Concat(AdditionalAssemblies);
-            Routes = RouteTableFactory.Create(assemblies);
             Refresh();
             return Task.CompletedTask;
         }
@@ -181,7 +186,13 @@ namespace NeverFoundry.Wiki.Blazor
 
         private void Refresh(bool isNavigationIntercepted = false)
         {
-            var locationPath = NavigationManager.ToBaseRelativePath(_locationAbsolute);
+            RefreshRouteTable();
+
+            var locationPath = string.IsNullOrEmpty(_locationAbsolute)
+                ? string.Empty
+                : NavigationManager.ToBaseRelativePath(_locationAbsolute);
+            var context = new RouteContext(locationPath);
+            Routes?.Route(context);
 
             var queryIndex = locationPath.IndexOf('?');
             var query = queryIndex < 0 ? null : locationPath[queryIndex..];
@@ -190,9 +201,6 @@ namespace NeverFoundry.Wiki.Blazor
             var anchorIndex = locationPath.IndexOf('#');
             var anchor = anchorIndex < 0 ? null : locationPath[anchorIndex..];
             locationPath = anchorIndex < 0 ? locationPath : locationPath[..anchorIndex];
-
-            var context = new RouteContext(locationPath);
-            Routes?.Route(context);
 
             if (context.Handler != null)
             {
@@ -205,7 +213,9 @@ namespace NeverFoundry.Wiki.Blazor
 
                 var routeData = new RouteData(
                     context.Handler,
+#pragma warning disable CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
                     context.Parameters ?? _EmptyParametersDictionary);
+#pragma warning restore CS8620 // Argument cannot be used for parameter due to differences in the nullability of reference types.
                 _renderHandle.Render(Found!(routeData));
             }
             else if (locationPath.StartsWith($"{WikiPath}/", StringComparison.OrdinalIgnoreCase))
@@ -225,13 +235,27 @@ namespace NeverFoundry.Wiki.Blazor
 
                 // We did not find a Component that matches the route.
                 // Only show the NotFound content if the application developer programatically got us here i.e we did not
-                // intercept the navigation. In all other cases, force a browser navigation since this could be non-Blazor content.
-                _renderHandle.Render(NotFound);
+                // intercept the navigation. In all other cases, force a browser navigation since
+                // this could be non-Blazor content.
+                _renderHandle.Render(NotFound!);
             }
-            else
+            else if (!string.IsNullOrEmpty(_locationAbsolute))
             {
                 Log.NavigatingToExternalUri(_logger, _locationAbsolute, locationPath, _baseUri);
                 NavigationManager.NavigateTo(_locationAbsolute, forceLoad: true);
+            }
+        }
+
+        private void RefreshRouteTable()
+        {
+            var assemblies = AdditionalAssemblies == null ? new[] { AppAssembly! } : new[] { AppAssembly! }.Concat(AdditionalAssemblies);
+            var assembliesSet = new HashSet<Assembly>(assemblies);
+
+            if (!_assemblies.SetEquals(assembliesSet))
+            {
+                Routes = RouteTableFactory.Create(assemblies);
+                _assemblies.Clear();
+                _assemblies.UnionWith(assembliesSet);
             }
         }
 

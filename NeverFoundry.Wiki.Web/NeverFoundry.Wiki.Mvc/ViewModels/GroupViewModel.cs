@@ -1,5 +1,4 @@
-﻿using NeverFoundry.Wiki.Mvc.Services;
-using NeverFoundry.Wiki.Web;
+﻿using NeverFoundry.Wiki.Web;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,12 +16,12 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             bool isDiff,
             IEnumerable<UserViewModel> users) : base(data, html, isDiff) => Users = users.ToList();
 
-        public static async Task<GroupViewModel> NewAsync(IUserManager userManager, WikiRouteData data, WikiItemViewModel vm)
+        public static async Task<GroupViewModel> NewAsync(IWikiUserManager userManager, WikiRouteData data, WikiItemViewModel vm)
         {
             var users = new List<IWikiUser>();
-            if (!(data.Group is null))
+            if (data.Group is not null)
             {
-                users.AddRange(await userManager.GetUsersForClaimAsync(new System.Security.Claims.Claim(WikiClaims.Claim_WikiGroup, data.Group.Id)).ConfigureAwait(false));
+                users.AddRange(await userManager.GetUsersInGroupAsync(data.Group).ConfigureAwait(false));
             }
 
             return new GroupViewModel(

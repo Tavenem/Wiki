@@ -13,7 +13,7 @@
 <header class="top-header">
     @if (SignInManager.IsSignedIn(User))
     {
-        if (User.HasBoolClaim(WikiMvcClaims.Claim_SiteAdmin))
+        if (User.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
         {
             <a id="admin-link" asp-page="/AdminPortal">Admin portal</a>
         }

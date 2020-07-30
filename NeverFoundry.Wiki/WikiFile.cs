@@ -19,9 +19,13 @@ namespace NeverFoundry.Wiki
     public sealed class WikiFile : Article
     {
         /// <summary>
-        /// The type of page represented by this item.
+        /// The type discriminator for this type.
         /// </summary>
-        public override ArticleType ArticleType => ArticleType.File;
+        public const string WikiFileIdItemTypeName = ":Article:WikiFile:";
+        /// <summary>
+        /// A built-in, read-only type discriminator.
+        /// </summary>
+        public override string IdItemTypeName => WikiFileIdItemTypeName;
 
         /// <summary>
         /// The size of the file (in bytes).
@@ -54,6 +58,7 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="Category"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="idItemTypeName">The type discriminator.</param>
         /// <param name="title">
         /// The title of this article. Must be unique within its namespace, and non-empty.
         /// </param>
@@ -127,6 +132,9 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public WikiFile(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
+            string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string filePath,
             int fileSize,
@@ -141,6 +149,7 @@ namespace NeverFoundry.Wiki
             IReadOnlyCollection<string> categories,
             IReadOnlyList<Transclusion>? transclusions) : base(
                 id,
+                idItemTypeName,
                 title,
                 markdownContent,
                 wikiLinks,
@@ -197,6 +206,7 @@ namespace NeverFoundry.Wiki
 
         private WikiFile(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            WikiFileIdItemTypeName,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(FilePath), typeof(string)) ?? string.Empty,
             (int?)info.GetValue(nameof(FileSize), typeof(int)) ?? default,
@@ -228,7 +238,7 @@ namespace NeverFoundry.Wiki
             if (file is null)
             {
                 var files = WikiConfig.DataStore.Query<WikiFile>()
-                    .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
+                    .Where(x => x.Title.ToLower() == title.ToLower())
                     .OrderBy(x => x.TimestampTicks, descending: true)
                     .ToList();
                 if (files.Count == 1)
@@ -254,7 +264,7 @@ namespace NeverFoundry.Wiki
             if (file is null)
             {
                 var files = WikiConfig.DataStore.Query<WikiFile>()
-                    .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
+                    .Where(x => x.Title.ToLower() == title.ToLower()
                         && x.TimestampTicks == ticks)
                     .ToList();
                 if (files.Count == 1)

@@ -29,24 +29,26 @@ namespace NeverFoundry.Wiki.Converters
 
             if (!reader.Read()
                 || reader.TokenType != JsonTokenType.PropertyName
-                || reader.GetString() != nameof(Article.ArticleType)
+                || reader.GetString() != nameof(IIdItem.IdItemTypeName)
                 || !reader.Read()
-                || reader.TokenType != JsonTokenType.Number
-                || !reader.TryGetInt32(out var typeInt)
-                || !Enum.IsDefined(typeof(ArticleType), typeInt))
+                || reader.TokenType != JsonTokenType.String)
             {
                 throw new JsonException();
             }
-            var articleType = (ArticleType)typeInt;
+            var idItemTypeName = reader.GetString();
+            if (string.IsNullOrEmpty(idItemTypeName))
+            {
+                throw new JsonException();
+            }
 
-            if (articleType == ArticleType.Category)
+            if (string.Equals(idItemTypeName, Category.CategoryIdItemTypeName))
             {
                 var category = JsonSerializer.Deserialize<Category>(ref initialReader, options);
                 reader = initialReader;
                 return category;
             }
 
-            if (articleType == ArticleType.File)
+            if (string.Equals(idItemTypeName, WikiFile.WikiFileIdItemTypeName))
             {
                 var file = JsonSerializer.Deserialize<WikiFile>(ref initialReader, options);
                 reader = initialReader;
@@ -55,7 +57,7 @@ namespace NeverFoundry.Wiki.Converters
 
             if (!reader.Read()
                 || reader.TokenType != JsonTokenType.PropertyName
-                || reader.GetString() != nameof(IIdItem.Id)
+                || reader.GetString() != "id"
                 || !reader.Read()
                 || reader.TokenType != JsonTokenType.String)
             {
@@ -281,14 +283,14 @@ namespace NeverFoundry.Wiki.Converters
                 }
             }
 
-            if (!reader.Read()
-                || reader.TokenType != JsonTokenType.EndObject)
+            while (reader.TokenType != JsonTokenType.EndObject)
             {
-                throw new JsonException();
+                reader.Read();
             }
 
             return new Article(
                 id,
+                idItemTypeName,
                 title,
                 markdownContent,
                 wikiLinks,
@@ -325,9 +327,8 @@ namespace NeverFoundry.Wiki.Converters
 
             writer.WriteStartObject();
 
-            writer.WriteNumber(nameof(Article.ArticleType), (int)value.ArticleType);
-
-            writer.WriteString(nameof(IIdItem.Id), value.Id);
+            writer.WriteString(nameof(IIdItem.IdItemTypeName), value.IdItemTypeName);
+            writer.WriteString("id", value.Id);
             writer.WriteString(nameof(Article.Title), value.Title);
             writer.WriteString(nameof(Article.MarkdownContent), value.MarkdownContent);
 

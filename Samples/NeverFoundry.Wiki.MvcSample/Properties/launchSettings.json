@@ -16,7 +16,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
-    "NeverFoundry.Wiki.MVCSample": {
+    "NeverFoundry.Wiki.MvcSample": {
       "commandName": "Project",
       "launchBrowser": true,
       "environmentVariables": {

@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Sample.Services
+namespace NeverFoundry.Wiki.MvcSample.Services
 {
     public interface IEmailService
     {

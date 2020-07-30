@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
 using NeverFoundry.Wiki.Mvc.Hubs;
 using NeverFoundry.Wiki.Mvc.Models;
-using NeverFoundry.Wiki.Mvc.Services;
 using NeverFoundry.Wiki.Mvc.Services.Search;
 using NeverFoundry.Wiki.Mvc.ViewModels;
 using NeverFoundry.Wiki.Web;
@@ -27,13 +26,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<WikiController> _logger;
         private readonly ISearchClient _searchClient;
-        private readonly IUserManager _userManager;
+        private readonly IWikiUserManager _userManager;
 
         public WikiController(
             IWebHostEnvironment environment,
             ILogger<WikiController> logger,
             ISearchClient searchClient,
-            IUserManager userManager)
+            IWikiUserManager userManager)
         {
             _environment = environment;
             _logger = logger;
@@ -64,7 +63,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             data.WikiItem = wikiItem;
-            data.CanEdit = await VerifyPermission(data, user, edit: true).ConfigureAwait(false);
+            data.CanEdit = VerifyPermission(data, user, edit: true);
             if (!data.CanEdit)
             {
                 return View("NotAuthorized", data);
@@ -75,18 +74,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     return View("NotAuthorized", data);
                 }
-                else if (WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                else if (!user.IsWikiAdmin
+                    && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
-                    {
-                        return View("NotAuthorized", data);
-                    }
+                    return View("NotAuthorized", data);
                 }
             }
 
             var markdown = string.Empty;
-            if (!(wikiItem is null))
+            if (wikiItem is not null)
             {
                 markdown = wikiItem.MarkdownContent;
                 var html = wikiItem.GetHtml();
@@ -126,7 +122,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             data.WikiItem = wikiItem;
-            data.CanEdit = await VerifyPermission(data, user, edit: true).ConfigureAwait(false);
+            data.CanEdit = VerifyPermission(data, user, edit: true);
             if (!data.CanEdit)
             {
                 return View("NotAuthorized", data);
@@ -137,17 +133,14 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     return View("NotAuthorized", data);
                 }
-                else if (WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                else if (!user.IsWikiAdmin
+                    && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
-                    {
-                        return View("NotAuthorized", data);
-                    }
+                    return View("NotAuthorized", data);
                 }
             }
 
-            if (!(wikiItem is null))
+            if (wikiItem is not null)
             {
                 var html = wikiItem.GetHtml();
                 data.Categories = wikiItem.Categories;
@@ -174,7 +167,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (!(editor is null))
+                    if (editor is not null)
                     {
                         allowedEditors.Add(editor.Id);
                     }
@@ -189,7 +182,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (!(viewer is null))
+                    if (viewer is not null)
                     {
                         allowedViewers.Add(viewer.Id);
                     }
@@ -379,19 +372,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
                 if (article.Owner != user.Id
                     && !article.AllowedViewers.Contains(user.Id)
-                    && article.AllowedEditors?.Contains(user.Id) != true)
+                    && article.AllowedEditors?.Contains(user.Id) != true
+                    && (user.Groups is null
+                    || (!user.Groups.Contains(article.Owner)
+                    && !article.AllowedViewers.Intersect(user.Groups).Any()
+                    && article.AllowedEditors?.Intersect(user.Groups).Any() != true)))
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    var groupIds = claims
-                        .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                        .Select(x => x.Value)
-                        .ToList();
-                    if (!groupIds.Contains(article.Owner)
-                        && !article.AllowedViewers.Intersect(groupIds).Any()
-                        && article.AllowedEditors?.Intersect(groupIds).Any() != true)
-                    {
-                        return Json(string.Empty);
-                    }
+                    return Json(string.Empty);
                 }
             }
 
@@ -413,25 +400,19 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             if (wikiItem is null)
             {
-                data.CanEdit = !(user is null)
-                    && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase));
-                if (data.CanEdit && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    var claims = await _userManager.GetClaimsAsync(user!).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
-                    {
-                        data.CanEdit = false;
-                    }
-                }
+                data.CanEdit = user is not null
+                    && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    && (user.IsWikiAdmin
+                    || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
                 return View("NoContent", data);
             }
 
             data.WikiItem = wikiItem;
-            if (!await VerifyPermission(data, user).ConfigureAwait(false))
+            if (!VerifyPermission(data, user))
             {
                 return View("NotAuthorized", data);
             }
-            data.CanEdit = await VerifyPermission(data, user, edit: true).ConfigureAwait(false);
+            data.CanEdit = VerifyPermission(data, user, edit: true);
 
             data.IsHistory = true;
 
@@ -456,7 +437,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (data.IsSystem)
             {
                 var special = await TryGettingSystemPage(data, user).ConfigureAwait(false);
-                if (!(special is null))
+                if (special is not null)
                 {
                     return special;
                 }
@@ -466,30 +447,24 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             if (wikiItem?.IsDeleted != false)
             {
-                data.CanEdit = !(user is null)
-                    && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase));
-                if (data.CanEdit && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
-                {
-                    var claims = await _userManager.GetClaimsAsync(user!).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
-                    {
-                        data.CanEdit = false;
-                    }
-                }
+                data.CanEdit = user is not null
+                    && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    && (!user.IsWikiAdmin
+                    || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
                 return View("NoContent", data);
             }
 
             data.WikiItem = wikiItem;
-            if (!await VerifyPermission(data, user).ConfigureAwait(false))
+            if (!VerifyPermission(data, user))
             {
                 return View("NotAuthorized", data);
             }
-            data.CanEdit = await VerifyPermission(data, user, edit: true).ConfigureAwait(false);
+            data.CanEdit = VerifyPermission(data, user, edit: true);
 
             if (data.IsTalk)
             {
                 var vm = new TalkViewModel(data, wikiItem?.Id);
-                if (!(wikiItem is null))
+                if (wikiItem is not null)
                 {
                     var replies = await WikiConfig.DataStore.Query<Message>().Where(x => x.TopicId == wikiItem.Id)
                         .ToListAsync()
@@ -606,7 +581,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var (wikiNamespace, title, isTalk, _) = Article.GetTitleParts(query);
             var wikiItem = GetWikiItem(title, wikiNamespace);
 
-            if (!original.StartsWith("\"") && !(wikiItem is null))
+            if (!original.StartsWith("\"") && wikiItem is not null)
             {
                 return RedirectToAction("Read", new { wikiNamespace = isTalk ? $"{WikiConfig.TalkNamespace}:{wikiNamespace}" : wikiNamespace, title });
             }
@@ -735,14 +710,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return View("NotAuthorizedToUpload");
@@ -787,14 +760,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return View("NotAuthorizedToUpload");
@@ -810,7 +781,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             var wikiItem = WikiFile.GetFile(title);
             data.WikiItem = wikiItem;
-            data.CanEdit = await VerifyPermission(data, user, edit: true).ConfigureAwait(false);
+            data.CanEdit = VerifyPermission(data, user, edit: true);
             if (!data.CanEdit)
             {
                 return View("NotAuthorized", data);
@@ -821,18 +792,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     return View("NotAuthorized", data);
                 }
-                else if (WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                else if (!user.IsWikiAdmin
+                    && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
-                    {
-                        return View("NotAuthorized", data);
-                    }
+                    return View("NotAuthorized", data);
                 }
             }
-            if (!(wikiItem is null))
+            if (wikiItem is not null)
             {
-                model.OverwritePermission = await VerifyPermissionAsync(wikiItem, user, userPage: false, groupPage: false, edit: true).ConfigureAwait(false);
+                model.OverwritePermission = VerifyPermission(wikiItem, user, userPage: false, groupPage: false, edit: true);
                 if (!model.OverwriteConfirm || !model.OverwritePermission)
                 {
                     return View("OverwriteFileConfirm", model);
@@ -897,7 +865,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 _logger.LogError(ex, "Exception during temp file delete for file at path {Path}", fileInfo.FullName);
             }
 
-            if (!(wikiItem is null))
+            if (wikiItem is not null)
             {
                 var oldPath = Path.Combine(_environment.WebRootPath, wikiItem.FilePath.Substring(1));
                 try
@@ -922,7 +890,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (!(editor is null))
+                    if (editor is not null)
                     {
                         allowedEditors.Add(editor.Id);
                     }
@@ -937,7 +905,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (!(viewer is null))
+                    if (viewer is not null)
                     {
                         allowedViewers.Add(viewer.Id);
                     }
@@ -1012,14 +980,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return Unauthorized();
@@ -1073,14 +1039,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return Unauthorized();
@@ -1122,14 +1086,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return Unauthorized();
@@ -1174,14 +1136,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return Unauthorized();
@@ -1236,14 +1196,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             if (!user.HasUploadPermission)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value);
-                var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                    .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                    .CountAsync()
-                    .ConfigureAwait(false);
+                var uploadGroupCount = user.Groups is null
+                    ? 0
+                    : await WikiConfig.DataStore.Query<IWikiGroup>()
+                        .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                        .CountAsync()
+                        .ConfigureAwait(false);
                 if (uploadGroupCount == 0)
                 {
                     return Unauthorized();
@@ -1313,24 +1271,18 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 data.WikiItem = wikiItem;
                 if (wikiItem is null)
                 {
-                    data.CanEdit = !(user is null)
-                        && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase));
-                    if (data.CanEdit && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
-                    {
-                        var claims = await _userManager.GetClaimsAsync(user!).ConfigureAwait(false);
-                        if (!claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
-                        {
-                            data.CanEdit = false;
-                        }
-                    }
+                    data.CanEdit = user is not null
+                        && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
+                        && (user.IsWikiAdmin
+                        || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
                 }
                 else
                 {
-                    if (!await VerifyPermission(data, user).ConfigureAwait(false))
+                    if (!VerifyPermission(data, user))
                     {
                         return View("NotAuthorized", data);
                     }
-                    data.CanEdit = await VerifyPermission(data, user, edit: true).ConfigureAwait(false);
+                    data.CanEdit = VerifyPermission(data, user, edit: true);
                 }
             }
             else
@@ -1366,7 +1318,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (data.IsUserPage)
             {
                 var user = await _userManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false);
-                if (!(user is null))
+                if (user is not null)
                 {
                     data.DisplayTitle = user.UserName;
                     ViewData["Title"] = Article.GetFullTitle(data.DisplayTitle, data.WikiNamespace, data.IsTalk);
@@ -1374,7 +1326,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     if (article is null && user.Id != data.Title)
                     {
                         article = GetWikiItem(user.Id, data.WikiNamespace, data.NoRedirect);
-                        if (!(article is null))
+                        if (article is not null)
                         {
                             data.Title = article.Title;
                         }
@@ -1384,7 +1336,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             else if (data.IsGroupPage)
             {
                 var group = await WikiConfig.DataStore.GetItemAsync<IWikiGroup>(article?.Title ?? data.Title).ConfigureAwait(false);
-                if (!(group is null))
+                if (group is not null)
                 {
                     data.Group = group;
                     data.DisplayTitle = group.GroupName;
@@ -1393,7 +1345,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     if (article is null && group.Id != data.Title)
                     {
                         article = GetWikiItem(group.Id, data.WikiNamespace, data.NoRedirect);
-                        if (!(article is null))
+                        if (article is not null)
                         {
                             data.Title = article.Title;
                         }
@@ -1464,14 +1416,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
                 if (!user.HasUploadPermission)
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    var groupIds = claims
-                        .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                        .Select(x => x.Value);
-                    var uploadGroupCount = await WikiConfig.DataStore.Query<IWikiGroup>()
-                        .Where(x => groupIds.Contains(x.Id) && x.HasUploadPermission)
-                        .CountAsync()
-                        .ConfigureAwait(false);
+                    var uploadGroupCount = user.Groups is null
+                        ? 0
+                        : await WikiConfig.DataStore.Query<IWikiGroup>()
+                            .Where(x => user.Groups.Contains(x.Id) && x.HasUploadPermission)
+                            .CountAsync()
+                            .ConfigureAwait(false);
                     if (uploadGroupCount == 0)
                     {
                         return View("NotAuthorizedToUpload");
@@ -1516,10 +1466,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return null;
         }
 
-        private ValueTask<bool> VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
-            => VerifyPermissionAsync(data.WikiItem, user, data.IsUserPage, data.IsGroupPage, edit);
+        private bool VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
+            => VerifyPermission(data.WikiItem, user, data.IsUserPage, data.IsGroupPage, edit);
 
-        private async ValueTask<bool> VerifyPermissionAsync(Article? item, IWikiUser? user, bool userPage = false, bool groupPage = false, bool edit = false)
+        private bool VerifyPermission(Article? item, IWikiUser? user, bool userPage = false, bool groupPage = false, bool edit = false)
         {
             if (user?.IsDeleted == true || user?.IsDisabled == true)
             {
@@ -1531,7 +1481,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return true;
             }
 
-            List<string>? groupIds = null;
             if (edit)
             {
                 if (user is null)
@@ -1546,18 +1495,17 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                 if (groupPage)
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    if (item.Title == WikiClaims.Claim_WikiAdmin)
+                    if (item.Title == WikiWebConfig.AdminGroupName)
                     {
-                        return claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin);
+                        return user.IsWikiAdmin;
+                    }
+                    else if (user.Groups is null)
+                    {
+                        return false;
                     }
                     else
                     {
-                        groupIds = claims
-                            .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                            .Select(x => x.Value)
-                            .ToList();
-                        return groupIds.Contains(item.Title);
+                        return user.Groups.Contains(item.Title);
                     }
                 }
             }
@@ -1582,18 +1530,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return true;
             }
 
-            if (groupIds is null)
+            if (user.Groups is null)
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value)
-                    .ToList();
+                return false;
             }
-            return groupIds.Contains(item.Owner)
+
+            return user.Groups.Contains(item.Owner)
                 || (edit
-                ? item.AllowedEditors?.Intersect(groupIds).Any() != false
-                : item.AllowedViewers?.Intersect(groupIds).Any() != false);
+                ? item.AllowedEditors?.Intersect(user.Groups).Any() != false
+                : item.AllowedViewers?.Intersect(user.Groups).Any() != false);
         }
     }
 #pragma warning restore CS1591

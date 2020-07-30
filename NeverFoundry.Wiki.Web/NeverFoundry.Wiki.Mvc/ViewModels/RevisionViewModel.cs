@@ -1,5 +1,4 @@
-﻿using NeverFoundry.Wiki.Mvc.Services;
-using NeverFoundry.Wiki.Web;
+﻿using NeverFoundry.Wiki.Web;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
@@ -23,10 +22,10 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             EditorPageExists = userPageExists;
         }
 
-        public static async Task<RevisionViewModel> NewAsync(IUserManager userManager, WikiRevision revision)
+        public static async Task<RevisionViewModel> NewAsync(IWikiUserManager userManager, WikiRevision revision)
         {
             var editor = await userManager.FindByIdAsync(revision.Editor).ConfigureAwait(false);
-            var userExists = !(editor is null);
+            var userExists = editor is not null;
             var userPageExists = userExists && !(Article.GetArticle(revision.Editor, WikiWebConfig.UserNamespace) is null);
             return new RevisionViewModel(revision, userExists, editor?.UserName ?? revision.Editor, userPageExists);
         }

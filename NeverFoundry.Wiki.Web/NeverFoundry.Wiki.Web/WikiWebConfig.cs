@@ -17,6 +17,32 @@ namespace NeverFoundry.Wiki.Web
         private const string DefaultLayoutPath = "/Views/Wiki/_DefaultWikiMainLayout.cshtml";
         private const string DefaultLoginPath = "/Pages/Account/Login.cshtml";
 
+        private const string AdminGroupNameDefault = "Wiki Admins";
+        private static string _AdminGroupName = AdminGroupNameDefault;
+        /// <summary>
+        /// <para>
+        /// The name of the admin user group.
+        /// </para>
+        /// <para>
+        /// Default is "Wiki Admins"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public static string? AdminGroupName
+        {
+            get => _AdminGroupName;
+            set
+            {
+                _AdminGroupName = string.IsNullOrWhiteSpace(value)
+                    ? AdminGroupNameDefault
+                    : value;
+            }
+        }
+
         private static List<string>? _AdminNamespaces;
         /// <summary>
         /// <para>

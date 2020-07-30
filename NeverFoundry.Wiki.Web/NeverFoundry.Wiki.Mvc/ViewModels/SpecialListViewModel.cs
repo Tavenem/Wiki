@@ -62,25 +62,86 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             var list = type switch
             {
                 SpecialListType.All_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
+
                 SpecialListType.All_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
-                SpecialListType.All_Pages => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.ArticleType == ArticleType.Article).ConfigureAwait(false),
+
+                SpecialListType.All_Pages => await GetListAsync<Article>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.IdItemTypeName == Article.ArticleIdItemTypeName)
+                .ConfigureAwait(false),
+
 #pragma warning disable RCS1113 // Use 'string.IsNullOrEmpty' method: not necessarily supported by data provider
-                SpecialListType.All_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.RedirectTitle != null && x.RedirectTitle != "").ConfigureAwait(false),
+                SpecialListType.All_Redirects => await GetListAsync<Article>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.RedirectTitle != null && x.RedirectTitle != string.Empty)
+                .ConfigureAwait(false),
 #pragma warning restore RCS1113 // Use 'string.IsNullOrEmpty' method.
+
                 SpecialListType.Broken_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsBrokenRedirect).ConfigureAwait(false),
+
                 SpecialListType.Double_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsDoubleRedirect).ConfigureAwait(false),
+
 #pragma warning disable RCS1077 // Optimize LINQ method call: Count() is translated to SQL by various data providers (Relinq), while the Count property is not necessarily serialized/recognized
-                SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.ArticleType == ArticleType.Article && (x.Categories == null || x.Categories.Count() == 0)).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count() == 0).ConfigureAwait(false),
-                SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter, x => x.Categories == null || x.Categories.Count() == 0).ConfigureAwait(false),
-                SpecialListType.Unused_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter, x => x.ChildIds.Count() == 0).ConfigureAwait(false),
+                SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.IdItemTypeName == Article.ArticleIdItemTypeName && (x.Categories == null || x.Categories.Count() == 0))
+                .ConfigureAwait(false),
+
+                SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.Categories == null || x.Categories.Count() == 0)
+                .ConfigureAwait(false),
+
+                SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.Categories == null || x.Categories.Count() == 0)
+                .ConfigureAwait(false),
+
+                SpecialListType.Unused_Categories => await GetListAsync<Category>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.ChildIds.Count() == 0)
+                .ConfigureAwait(false),
+
 #pragma warning restore RCS1077 // Optimize LINQ method call.
-                SpecialListType.What_Links_Here => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.WikiLinks.Any(y => y.Title == data.Title
-                    && y.WikiNamespace == data.WikiNamespace
-                    && y.IsTalk == data.IsTalk)
-                    || (!data.IsTalk && x.Transclusions != null
-                    && x.Transclusions.Any(y => y.Title == data.Title && y.WikiNamespace == data.WikiNamespace)))
-                    .ConfigureAwait(false),
+                SpecialListType.What_Links_Here => await GetListAsync<Article>(
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter,
+                    x => x.WikiLinks.Any(y => y.Title == data.Title
+                        && y.WikiNamespace == data.WikiNamespace
+                        && y.IsTalk == data.IsTalk)
+                        || (!data.IsTalk
+                        && x.Transclusions != null
+                        && x.Transclusions.Any(y => y.Title == data.Title
+                            && y.WikiNamespace == data.WikiNamespace)))
+                .ConfigureAwait(false),
+
                 _ => new PagedList<Article>(null, 1, pageSize, 0),
             };
             var missing = type == SpecialListType.Missing_Pages
@@ -130,7 +191,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             }
 
             var query = WikiConfig.DataStore.Query<T>();
-            if (!(pageCondition is null))
+            if (pageCondition is not null)
             {
                 query = query.Where(pageCondition);
             }

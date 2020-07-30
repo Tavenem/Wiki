@@ -26,6 +26,15 @@ namespace NeverFoundry.Wiki
             : $"{WikiNamespace}:{Title}";
 
         /// <summary>
+        /// The type discriminator for this type.
+        /// </summary>
+        public const string MissingPageIdItemTypeName = ":MissingPage:";
+        /// <summary>
+        /// A built-in, read-only type discriminator.
+        /// </summary>
+        public string IdItemTypeName => MissingPageIdItemTypeName;
+
+        /// <summary>
         /// The IDs of pages which reference this missing page.
         /// </summary>
         [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
@@ -45,6 +54,7 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="WikiRevision"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="idItemTypeName">The type discriminator.</param>
         /// <param name="title">
         /// The title of this missing page. Must be unique within its namespace, and non-empty.
         /// </param>
@@ -64,6 +74,9 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public MissingPage(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
+            string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string wikiNamespace,
             IReadOnlyList<string> references) : base(id)
@@ -94,13 +107,14 @@ namespace NeverFoundry.Wiki
             string? wikiNamespace,
             string referenceId)
         {
-            var result = new MissingPage(id, title, wikiNamespace ?? WikiConfig.DefaultNamespace, new List<string> { referenceId }.AsReadOnly());
+            var result = new MissingPage(id, MissingPageIdItemTypeName, title, wikiNamespace ?? WikiConfig.DefaultNamespace, new List<string> { referenceId }.AsReadOnly());
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
         }
 
         private MissingPage(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            MissingPageIdItemTypeName,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (IReadOnlyList<string>?)info.GetValue(nameof(References), typeof(IReadOnlyList<string>)) ?? new List<string>().AsReadOnly())

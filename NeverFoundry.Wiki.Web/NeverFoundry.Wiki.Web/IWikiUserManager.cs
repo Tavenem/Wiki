@@ -2,10 +2,12 @@
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Mvc.Services
+namespace NeverFoundry.Wiki.Web
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
-    public interface IUserManager
+    /// <summary>
+    /// A user manager interface for <see cref="IWikiUser"/>s.
+    /// </summary>
+    public interface IWikiUserManager
     {
         /// <summary>
         /// Gets the user, if any, associated with the normalized value of the specified
@@ -39,17 +41,6 @@ namespace NeverFoundry.Wiki.Mvc.Services
         Task<IWikiUser?> FindByNameAsync(string? userName);
 
         /// <summary>
-        /// Gets a list of <see cref="Claim"/>s to be belonging to the specified user as an
-        /// asynchronous operation.
-        /// </summary>
-        /// <param name="user">The user whose claims to retrieve.</param>
-        /// <returns>
-        /// A <see cref="System.Threading.Tasks.Task{T}"/> that represents the result of the
-        /// asynchronous query, a list of <see cref="Claim"/>s.
-        /// </returns>
-        Task<IList<Claim>> GetClaimsAsync(IWikiUser? user);
-
-        /// <summary>
         /// Returns the user corresponding to the IdentityOptions.ClaimsIdentity.UserIdClaimType
         /// claim in the <paramref name="principal"/> or <see langword="null"/>.
         /// </summary>
@@ -61,15 +52,32 @@ namespace NeverFoundry.Wiki.Mvc.Services
         Task<IWikiUser?> GetUserAsync(ClaimsPrincipal? principal);
 
         /// <summary>
-        /// Returns a list of users from the user store who have the specified <paramref
-        /// name="claim"/>.
+        /// Returns a list of all wiki users in the group with the given ID.
         /// </summary>
-        /// <param name="claim">The claim to look for.</param>
         /// <returns>
         /// A <see cref="Task{T}"/> that represents the result of the asynchronous query, a list of
-        /// <see cref="IWikiUser"/>s who have the specified <paramref name="claim"/>.
+        /// <see cref="IWikiUser"/>s whose <see cref="IWikiUser.Groups"/> list contains the given ID.
         /// </returns>
-        Task<IList<IWikiUser>> GetUsersForClaimAsync(Claim? claim);
+        Task<IList<IWikiUser>> GetUsersInGroupAsync(string? groupId);
+
+        /// <summary>
+        /// Returns a list of all wiki users in the given <paramref name="group"/>.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task{T}"/> that represents the result of the asynchronous query, a list of
+        /// <see cref="IWikiUser"/>s whose <see cref="IWikiUser.Groups"/> list contains the given
+        /// <paramref name="group"/>'s ID.
+        /// </returns>
+        Task<IList<IWikiUser>> GetUsersInGroupAsync(IWikiGroup? group);
+
+        /// <summary>
+        /// Returns a list of all wiki admin users.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="Task{T}"/> that represents the result of the asynchronous query, a list of
+        /// <see cref="IWikiUser"/>s who have <see cref="IWikiUser.IsWikiAdmin"/> set to <see
+        /// langword="true"/>.
+        /// </returns>
+        Task<IList<IWikiUser>> GetWikiAdminUsersAsync();
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

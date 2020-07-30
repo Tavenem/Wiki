@@ -15,7 +15,18 @@ namespace NeverFoundry.Wiki.Test
         [TestMethod]
         public void WikiRevisionTest()
         {
-            var value = new WikiRevision("TEST_ID", "TEST_WIKI_ID", "Test Editor", "Test Title", "Test Namespace", "Test Revision", false, true, "Test comment", 0);
+            var value = new WikiRevision(
+                "TEST_ID",
+                WikiRevision.WikiRevisionIdItemTypeName,
+                "TEST_WIKI_ID",
+                "Test Editor",
+                "Test Title",
+                "Test Namespace",
+                "Test Revision",
+                false,
+                true,
+                "Test comment",
+                0);
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine(json);
@@ -136,7 +147,7 @@ namespace NeverFoundry.Wiki.Test
         [TestMethod]
         public void MissingPageTest()
         {
-            var value = new MissingPage("TEST_ID", "Test Title", "Test Namespace", new List<string> { "Test_ID_2" }.AsReadOnly());
+            var value = new MissingPage("TEST_ID", MissingPage.MissingPageIdItemTypeName, "Test Title", "Test Namespace", new List<string> { "Test_ID_2" }.AsReadOnly());
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine(json);
@@ -157,6 +168,7 @@ namespace NeverFoundry.Wiki.Test
         {
             var value = new Message(
                 "TEST_ID",
+                Message.MessageIdItemTypeName,
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 "TEST_TOPIC_ID",
@@ -184,6 +196,7 @@ namespace NeverFoundry.Wiki.Test
         {
             var value = new Article(
                 "TEST_ID",
+                Article.ArticleIdItemTypeName,
                 "Test title",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
@@ -215,6 +228,7 @@ namespace NeverFoundry.Wiki.Test
 
             value = new Article(
                 "TEST_ID",
+                Article.ArticleIdItemTypeName,
                 "Test title",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
@@ -251,6 +265,7 @@ namespace NeverFoundry.Wiki.Test
         {
             var value = new Category(
                 "TEST_ID",
+                Category.CategoryIdItemTypeName,
                 "Test title",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
@@ -282,6 +297,7 @@ namespace NeverFoundry.Wiki.Test
         {
             var value = new WikiFile(
                 "TEST_ID",
+                WikiFile.WikiFileIdItemTypeName,
                 "Test title",
                 "Test/Path",
                 100,
@@ -317,6 +333,7 @@ namespace NeverFoundry.Wiki.Test
             {
                 new Article(
                     "TEST_ID",
+                    Article.ArticleIdItemTypeName,
                     "Test title",
                     "Test markdown",
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
@@ -334,6 +351,7 @@ namespace NeverFoundry.Wiki.Test
                     null),
                 new Category(
                     "TEST_ID",
+                    Category.CategoryIdItemTypeName,
                     "Test title",
                     "Test markdown",
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
@@ -347,6 +365,7 @@ namespace NeverFoundry.Wiki.Test
                     null),
                 new WikiFile(
                     "TEST_ID",
+                    WikiFile.WikiFileIdItemTypeName,
                     "Test title",
                     "Test/Path",
                     100,

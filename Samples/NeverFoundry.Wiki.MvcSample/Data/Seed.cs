@@ -4,12 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Web;
+using Remotion.Linq.Clauses.ResultOperators;
 using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Sample.Data
+namespace NeverFoundry.Wiki.MvcSample.Data
 {
     public static class Seed
     {
@@ -17,10 +18,15 @@ namespace NeverFoundry.Wiki.Sample.Data
 
         public static async Task InitializeDatabasesAsync(IApplicationBuilder app)
         {
-            using var serviceScope = app.ApplicationServices.GetService<IServiceScopeFactory>().CreateScope();
+            var factory = app.ApplicationServices.GetService<IServiceScopeFactory>();
+            if (factory is null)
+            {
+                throw new Exception();
+            }
+            using var serviceScope = factory.CreateScope();
             serviceScope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.Migrate();
 
-            SeedUsers(serviceScope);
+            await SeedUsersAsync(serviceScope).ConfigureAwait(false);
 
             await AddDefaultWikiPagesAsync(serviceScope).ConfigureAwait(false);
         }
@@ -547,14 +553,18 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
             adminId,
             new[] { adminId });
 
-        private static void SeedUsers(IServiceScope scope)
+        private static async Task SeedUsersAsync(IServiceScope scope)
         {
             var context = scope.ServiceProvider.GetService<IdentityDbContext>();
+            if (context is null)
+            {
+                throw new Exception();
+            }
             context.Database.Migrate();
 
             var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<WikiUser>>();
             const string AdminEmail = "admin@neverfoundry.com";
-            var admin = userMgr.FindByEmailAsync(AdminEmail).GetAwaiter().GetResult();
+            var admin = await userMgr.FindByEmailAsync(AdminEmail).ConfigureAwait(false);
             if (admin is null)
             {
                 admin = new WikiUser
@@ -564,23 +574,23 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
                     HasUploadPermission = true,
                     UserName = AdminUsername,
                 };
-                var result = userMgr.CreateAsync(admin, "Admin1!").GetAwaiter().GetResult();
+                var result = await userMgr.CreateAsync(admin, "Admin1!").ConfigureAwait(false);
                 if (!result.Succeeded)
                 {
                     throw new AggregateException(result.Errors.Select(x => new Exception(x.Description)));
                 }
-                result = userMgr.AddClaimsAsync(admin, new Claim[]
+                result = await userMgr.AddClaimsAsync(admin, new Claim[]
                 {
-                    new Claim(WikiMvcClaims.Claim_SiteAdmin, "true", ClaimValueTypes.Boolean),
+                    new Claim(WikiClaims.Claim_SiteAdmin, "true", ClaimValueTypes.Boolean),
                     new Claim(WikiClaims.Claim_WikiAdmin, "true", ClaimValueTypes.Boolean),
-                }).GetAwaiter().GetResult();
+                }).ConfigureAwait(false);
                 if (!result.Succeeded)
                 {
                     throw new AggregateException(result.Errors.Select(x => new Exception(x.Description)));
                 }
             }
 
-            var exampleUser = userMgr.FindByNameAsync("example").GetAwaiter().GetResult();
+            var exampleUser = await userMgr.FindByNameAsync("example").ConfigureAwait(false);
             if (exampleUser is null)
             {
                 exampleUser = new WikiUser
@@ -589,11 +599,21 @@ The `WikiWebConfig` static class in the `NeverFoundry.Wiki.Web` namespace contai
                     EmailConfirmed = true,
                     UserName = "example",
                 };
-                var result = userMgr.CreateAsync(exampleUser, "E#amp1e").GetAwaiter().GetResult();
+                var result = await userMgr.CreateAsync(exampleUser, "E#amp1e").ConfigureAwait(false);
                 if (!result.Succeeded)
                 {
                     throw new AggregateException(result.Errors.Select(x => new Exception(x.Description)));
                 }
+            }
+
+            var adminGroup = await WikiConfig.DataStore
+                .Query<WikiGroup>()
+                .FirstOrDefaultAsync(x => x.GroupName == WikiWebConfig.AdminGroupName)
+                .ConfigureAwait(false);
+            if (adminGroup is null)
+            {
+                adminGroup = new WikiGroup(WikiWebConfig.AdminGroupName, admin.Id, true);
+                await WikiConfig.DataStore.StoreItemAsync(adminGroup).ConfigureAwait(false);
             }
         }
 

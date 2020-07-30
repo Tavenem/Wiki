@@ -7,7 +7,7 @@ using Serilog;
 using System;
 using System.Diagnostics;
 
-namespace NeverFoundry.Wiki.MVCSample
+namespace NeverFoundry.Wiki.MvcSample
 {
     public static class Program
     {
@@ -43,13 +43,13 @@ namespace NeverFoundry.Wiki.MVCSample
 
             try
             {
-                Log.Information("Starting NeverFoundry.Wiki.MVCSample host");
+                Log.Information("Starting NeverFoundry.Wiki.MvcSample host");
                 CreateHostBuilder(args).Build().Run();
                 return 0;
             }
             catch (Exception ex)
             {
-                Log.Fatal(ex, "NeverFoundry.Wiki.MVCSample host terminated unexpectedly");
+                Log.Fatal(ex, "NeverFoundry.Wiki.MvcSample host terminated unexpectedly");
                 return 1;
             }
         }

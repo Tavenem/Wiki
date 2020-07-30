@@ -13,15 +13,15 @@ using Nest;
 using NeverFoundry.DataStorage;
 using NeverFoundry.DataStorage.Marten;
 using NeverFoundry.Wiki.Mvc;
-using NeverFoundry.Wiki.Sample.Data;
-using NeverFoundry.Wiki.Sample.Logging;
-using NeverFoundry.Wiki.Sample.Providers;
-using NeverFoundry.Wiki.Sample.Services;
+using NeverFoundry.Wiki.MvcSample.Data;
+using NeverFoundry.Wiki.MvcSample.Logging;
+using NeverFoundry.Wiki.MvcSample.Providers;
+using NeverFoundry.Wiki.MvcSample.Services;
 using NeverFoundry.Wiki.Web;
 using System.Reflection;
 using System.Security.Claims;
 
-namespace NeverFoundry.Wiki.MVCSample
+namespace NeverFoundry.Wiki.MvcSample
 {
     public class Startup
     {
@@ -57,7 +57,7 @@ namespace NeverFoundry.Wiki.MVCSample
 
             services.AddAuthorization(options =>
             {
-                options.AddPolicy(WikiMvcClaims.Claim_SiteAdmin, WikiPolicies.IsSiteAdminPolicy());
+                options.AddPolicy(WikiClaims.Claim_SiteAdmin, WikiPolicies.IsSiteAdminPolicy());
                 options.AddPolicy(WikiClaims.Claim_WikiAdmin, WikiPolicies.IsWikiAdminPolicy());
             });
 
@@ -69,7 +69,7 @@ namespace NeverFoundry.Wiki.MVCSample
             services.AddSingleton<MartenLogger>();
             services.AddSingleton<IDataStore>(provider => new MartenDataStore(DocumentStore.For(config =>
             {
-                config.UseDefaultSerialization(collectionStorage: CollectionStorage.AsArray);
+                config.UseDefaultSerialization(collectionStorage: CollectionStorage.AsArray, nonPublicMembersStorage: NonPublicMembersStorage.NonPublicSetters);
                 config.AutoCreateSchemaObjects = AutoCreate.CreateOrUpdate;
                 config.Connection(Configuration.GetConnectionString("Wiki"));
                 config.Logger(provider.GetRequiredService<MartenLogger>());
@@ -84,8 +84,7 @@ namespace NeverFoundry.Wiki.MVCSample
 
             services.AddElasticsearch(Configuration);
 
-            services.AddControllersWithViews()
-                .AddNewtonsoftJson();
+            services.AddControllersWithViews();
             services.AddRazorPages();
 
             services.AddSignalR(options => options.EnableDetailedErrors = true);
@@ -95,6 +94,11 @@ namespace NeverFoundry.Wiki.MVCSample
 
             WikiConfig.ServerUrl = "https://localhost:5001/";
             WikiWebConfig.MaxFileSize = 100000000; // 100 MB
+            services.AddScoped<IWikiUserManager>(services =>
+            {
+                var um = services.GetRequiredService<UserManager<WikiUser>>();
+                return new WikiUserManager<WikiUser>(um);
+            });
             services.AddWiki<WikiUser>(provider =>
             {
                 var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
@@ -102,8 +106,8 @@ namespace NeverFoundry.Wiki.MVCSample
                 {
                     DataStore = provider.GetRequiredService<IDataStore>(),
                     CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
-                    MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
                     LoginPath = "/Account/Login",
+                    MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
                     SearchClient = new ElasticSearchClient(
                         provider.GetRequiredService<IElasticClient>(),
                         loggerFactory.CreateLogger<ElasticSearchClient>(),

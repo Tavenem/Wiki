@@ -245,3 +245,6 @@ dotnet_naming_style.underscore_pascal.required_prefix = _
 dotnet_naming_style.underscore_pascal.required_suffix = 
 dotnet_naming_style.underscore_pascal.word_separator = 
 dotnet_naming_style.underscore_pascal.capitalization = pascal_case
+
+# RCS1155: Use StringComparison when comparing strings: Not all data sources implement all string functions.
+dotnet_diagnostic.RCS1155.severity = none

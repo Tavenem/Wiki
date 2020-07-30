@@ -19,9 +19,13 @@ namespace NeverFoundry.Wiki
     public sealed class Category : Article
     {
         /// <summary>
-        /// The type of page represented by this item.
+        /// The type discriminator for this type.
         /// </summary>
-        public override ArticleType ArticleType => ArticleType.Category;
+        public const string CategoryIdItemTypeName = ":Article:Category:";
+        /// <summary>
+        /// A built-in, read-only type discriminator.
+        /// </summary>
+        public override string IdItemTypeName => CategoryIdItemTypeName;
 
         /// <summary>
         /// The list of IDs of the items (including child <see cref="Category"/> items) which belong
@@ -49,6 +53,7 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="Category"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="idItemTypeName">The type discriminator.</param>
         /// <param name="title">
         /// The title of this article. Must be unique within its namespace, and non-empty.
         /// </param>
@@ -117,6 +122,9 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public Category(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
+            string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string markdownContent,
             IReadOnlyCollection<WikiLink> wikiLinks,
@@ -129,6 +137,7 @@ namespace NeverFoundry.Wiki
             IReadOnlyCollection<string> categories,
             IReadOnlyList<Transclusion>? transclusions) : base(
                 id,
+                idItemTypeName,
                 title,
                 markdownContent,
                 wikiLinks,
@@ -173,6 +182,7 @@ namespace NeverFoundry.Wiki
 
         private Category(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            CategoryIdItemTypeName,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
@@ -207,7 +217,7 @@ namespace NeverFoundry.Wiki
             if (category is null)
             {
                 var categories = WikiConfig.DataStore.Query<Category>()
-                    .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase))
+                    .Where(x => x.Title.ToLower() == title.ToLower())
                     .OrderBy(x => x.TimestampTicks, descending: true)
                     .ToList();
                 if (categories.Count == 1)
@@ -239,7 +249,7 @@ namespace NeverFoundry.Wiki
             if (category is null)
             {
                 var categories = WikiConfig.DataStore.Query<Category>()
-                    .Where(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase)
+                    .Where(x => x.Title.ToLower() == title.ToLower()
                         && x.TimestampTicks == ticks)
                     .ToList();
                 if (categories.Count == 1)

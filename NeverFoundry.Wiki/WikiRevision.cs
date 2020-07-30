@@ -35,6 +35,15 @@ namespace NeverFoundry.Wiki
             : $"{WikiNamespace}:{Title}";
 
         /// <summary>
+        /// The type discriminator for this type.
+        /// </summary>
+        public const string WikiRevisionIdItemTypeName = ":WikiRevision:";
+        /// <summary>
+        /// A built-in, read-only type discriminator.
+        /// </summary>
+        public string IdItemTypeName => WikiRevisionIdItemTypeName;
+
+        /// <summary>
         /// Whether the item was marked as deleted by this revision.
         /// </summary>
         public bool IsDeleted { get; }
@@ -187,6 +196,9 @@ namespace NeverFoundry.Wiki
         /// <param name="id">
         /// The unique ID of this revision.
         /// </param>
+        /// <param name="idItemTypeName">
+        /// The type discriminator.
+        /// </param>
         /// <param name="wikiId">
         /// A unique ID that identifies this wiki item across revisions.
         /// </param>
@@ -230,6 +242,9 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public WikiRevision(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
+            string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string wikiId,
             string editor,
             string title,
@@ -258,6 +273,7 @@ namespace NeverFoundry.Wiki
 
         private WikiRevision(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            WikiRevisionIdItemTypeName,
             (string?)info.GetValue(nameof(WikiId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Editor), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,

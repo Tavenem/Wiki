@@ -14,8 +14,17 @@ namespace NeverFoundry.Wiki
     /// </summary>
     [Newtonsoft.Json.JsonObject]
     [Serializable]
-    public sealed class Message : MarkdownItem
+    public class Message : MarkdownItem
     {
+        /// <summary>
+        /// The type discriminator for this type.
+        /// </summary>
+        public const string MessageIdItemTypeName = ":Message:";
+        /// <summary>
+        /// A built-in, read-only type discriminator.
+        /// </summary>
+        public virtual string IdItemTypeName => MessageIdItemTypeName;
+
         /// <summary>
         /// The ID of the message to which this reply is addressed (<see langword="null"/> for
         /// messages addressed directly to a topic).
@@ -53,6 +62,7 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="Message"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="idItemTypeName">The type discriminator.</param>
         /// <param name="markdownContent">The raw markdown.</param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
@@ -72,6 +82,9 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public Message(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
+            string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string markdownContent,
             IReadOnlyCollection<WikiLink> wikiLinks,
             string topicId,
@@ -104,6 +117,7 @@ namespace NeverFoundry.Wiki
 
         private Message(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            MessageIdItemTypeName,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,

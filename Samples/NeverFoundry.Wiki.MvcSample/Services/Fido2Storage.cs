@@ -1,13 +1,13 @@
 ﻿using Fido2NetLib;
 using Microsoft.EntityFrameworkCore;
-using NeverFoundry.Wiki.Sample.Data;
+using NeverFoundry.Wiki.MvcSample.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Sample.Services
+namespace NeverFoundry.Wiki.MvcSample.Services
 {
     public class Fido2Storage
     {

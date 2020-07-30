@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using NeverFoundry.Wiki.Mvc.Services;
 using NeverFoundry.Wiki.Web;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
@@ -16,7 +15,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         internal const string PreviewNamespaceTemplate = "<span class=\"wiki-main-heading-namespace\">{0}</span><span class=\"wiki-main-heading-namespace-separator\">:</span>";
         internal const string PreviewTemplate = "<div class=\"wiki compact preview\"><div><main class=\"wiki-content\" role=\"main\"><div class=\"wiki-heading\" role=\"heading\"><h1 class=\"wiki-main-heading\">{0}<span class=\"wiki-main-heading-title\">{1}</span></h1></div><div class=\"wiki-body\"><div class=\"wiki-parser-output\">{2}</div></div></main></div></div>";
 
-        private readonly IUserManager _userManager;
+        private readonly IWikiUserManager _userManager;
 
         /// <summary>
         /// <para>
@@ -29,13 +28,13 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         /// </summary>
         /// <param name="userManager">
         /// <para>
-        /// An <see cref="IUserManager"/> instance.
+        /// An <see cref="IWikiUserManager"/> instance.
         /// </para>
         /// <para>
         /// Note: this is expected to be provided by dependency injection.
         /// </para>
         /// </param>
-        public WikiTalkHub(IUserManager userManager) => _userManager = userManager;
+        public WikiTalkHub(IWikiUserManager userManager) => _userManager = userManager;
 
         /// <summary>
         /// Begin listening for messages sent to the given topic.
@@ -129,7 +128,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             {
                 var senderPage = Article.GetArticle(user.Id, WikiWebConfig.UserNamespace);
 
-                await Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true, !(senderPage is null))).ConfigureAwait(false);
+                await Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true, senderPage is not null)).ConfigureAwait(false);
             }
         }
 
@@ -166,15 +165,14 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 {
                     return true;
                 }
+                else if (user.Groups is null)
+                {
+                    return false;
+                }
                 else
                 {
-                    var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                    var groupIds = claims
-                        .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                        .Select(x => x.Value)
-                        .ToList();
-                    return groupIds.Contains(article.Owner)
-                        || article.AllowedEditors?.Intersect(groupIds).Any() != false;
+                    return user.Groups.Contains(article.Owner)
+                        || article.AllowedEditors?.Intersect(user.Groups).Any() != false;
                 }
             }
             else if (article.AllowedViewers is null)
@@ -189,15 +187,14 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             {
                 return true;
             }
+            else if (user.Groups is null)
+            {
+                return false;
+            }
             else
             {
-                var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-                var groupIds = claims
-                    .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                    .Select(x => x.Value)
-                    .ToList();
-                return groupIds.Contains(article.Owner)
-                    || article.AllowedViewers?.Intersect(groupIds).Any() != false;
+                return user.Groups.Contains(article.Owner)
+                    || article.AllowedViewers?.Intersect(user.Groups).Any() != false;
             }
         }
 
