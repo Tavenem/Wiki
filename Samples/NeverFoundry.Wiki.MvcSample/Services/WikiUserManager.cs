@@ -33,7 +33,7 @@ namespace NeverFoundry.Wiki.MvcSample.Services
         /// The task object containing the results of the asynchronous lookup operation,
         /// the user, if any, associated with a normalized value of the specified email address.
         /// </returns>
-        public async Task<IWikiUser?> FindByEmailAsync(string? email)
+        public async ValueTask<IWikiUser?> FindByEmailAsync(string? email)
         {
             if (string.IsNullOrEmpty(email))
             {
@@ -51,7 +51,7 @@ namespace NeverFoundry.Wiki.MvcSample.Services
         /// The <see cref="Task"/> that represents the asynchronous operation, containing the user
         /// matching the specified <paramref name="userId"/> if it exists.
         /// </returns>
-        public async Task<IWikiUser?> FindByIdAsync(string? userId)
+        public async ValueTask<IWikiUser?> FindByIdAsync(string? userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
@@ -69,7 +69,7 @@ namespace NeverFoundry.Wiki.MvcSample.Services
         /// The <see cref="Task"/> that represents the asynchronous operation, containing the user
         /// matching the specified <paramref name="userName"/> if it exists.
         /// </returns>
-        public async Task<IWikiUser?> FindByNameAsync(string? userName)
+        public async ValueTask<IWikiUser?> FindByNameAsync(string? userName)
         {
             if (string.IsNullOrEmpty(userName))
             {
@@ -88,7 +88,7 @@ namespace NeverFoundry.Wiki.MvcSample.Services
         /// The user corresponding to the IdentityOptions.ClaimsIdentity.UserIdClaimType claim in
         /// the <paramref name="principal"/> or <see langword="null"/>
         /// </returns>
-        public async Task<IWikiUser?> GetUserAsync(ClaimsPrincipal? principal)
+        public async ValueTask<IWikiUser?> GetUserAsync(ClaimsPrincipal? principal)
         {
             if (principal is null)
             {
@@ -99,42 +99,6 @@ namespace NeverFoundry.Wiki.MvcSample.Services
         }
 
         /// <summary>
-        /// Returns a list of all wiki users in the group with the given ID.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="Task{TResult}" /> that represents the result of the asynchronous query, a
-        /// list of <see cref="IWikiUser" />s whose <see cref="IWikiUser.Groups" /> list contains
-        /// the given ID.
-        /// </returns>
-        public async Task<IList<IWikiUser>> GetUsersInGroupAsync(string? groupId)
-        {
-            if (string.IsNullOrEmpty(groupId))
-            {
-                return new List<IWikiUser>();
-            }
-            var users = await _userManager.GetUsersForClaimAsync(new Claim(WikiClaims.Claim_WikiGroup, groupId)).ConfigureAwait(false);
-            for (var i = 0; i < users.Count; i++)
-            {
-                var user = await AddClaimsAsync(users[i]).ConfigureAwait(false);
-                if (user is not null)
-                {
-                    users[i] = user;
-                }
-            }
-            return (IList<IWikiUser>)users;
-        }
-
-        /// <summary>
-        /// Returns a list of all wiki users in the given <paramref name="group" />.
-        /// </summary>
-        /// <returns>
-        /// A <see cref="Task{TResult}" /> that represents the result of the asynchronous query, a
-        /// list of <see cref="IWikiUser" />s whose <see cref="IWikiUser.Groups" /> list contains
-        /// the given <paramref name="group" />'s ID.
-        /// </returns>
-        public Task<IList<IWikiUser>> GetUsersInGroupAsync(IWikiGroup? group) => GetUsersInGroupAsync(group?.Id);
-
-        /// <summary>
         /// Returns a list of all wiki admin users.
         /// </summary>
         /// <returns>
@@ -142,7 +106,7 @@ namespace NeverFoundry.Wiki.MvcSample.Services
         /// list of <see cref="IWikiUser" />s who have <see cref="IWikiUser.IsWikiAdmin" /> set to
         /// <see langword="true" />.
         /// </returns>
-        public async Task<IList<IWikiUser>> GetWikiAdminUsersAsync()
+        public async ValueTask<IList<IWikiUser>> GetWikiAdminUsersAsync()
         {
             var users = await _userManager.GetUsersForClaimAsync(new Claim(WikiClaims.Claim_WikiAdmin, true.ToString(), ClaimValueTypes.Boolean)).ConfigureAwait(false);
             for (var i = 0; i < users.Count; i++)
@@ -156,7 +120,7 @@ namespace NeverFoundry.Wiki.MvcSample.Services
             return (IList<IWikiUser>)users;
         }
 
-        private async Task<TUser?> AddClaimsAsync(TUser? user)
+        private async ValueTask<TUser?> AddClaimsAsync(TUser? user)
         {
             if (user is null)
             {

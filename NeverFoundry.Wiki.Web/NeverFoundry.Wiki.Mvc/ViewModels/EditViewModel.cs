@@ -68,6 +68,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
         public static async Task<EditViewModel> NewAsync(
             IWikiUserManager userManager,
+            IWikiGroupManager groupManager,
             WikiRouteData data,
             IWikiUser user,
             string? markdown = null,
@@ -105,7 +106,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     var editor = await userManager.FindByIdAsync(editorId).ConfigureAwait(false);
                     if (editor is null)
                     {
-                        var group = await WikiConfig.DataStore.GetItemAsync<IWikiGroup>(editorId).ConfigureAwait(false);
+                        var group = await groupManager.FindByIdAsync(editorId).ConfigureAwait(false);
                         if (group is null)
                         {
                             editors.Add(editorId);
@@ -132,7 +133,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     var viewer = await userManager.FindByIdAsync(viewerId).ConfigureAwait(false);
                     if (viewer is null)
                     {
-                        var group = await WikiConfig.DataStore.GetItemAsync<IWikiGroup>(viewerId).ConfigureAwait(false);
+                        var group = await groupManager.FindByIdAsync(viewerId).ConfigureAwait(false);
                         if (group is null)
                         {
                             viewers.Add(viewerId);

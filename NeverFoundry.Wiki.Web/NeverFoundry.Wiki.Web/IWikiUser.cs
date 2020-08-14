@@ -10,7 +10,7 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The unique ID of this user.
         /// </summary>
-        string Id { get; set; }
+        string Id { get; }
 
         /// <summary>
         /// A list of the group IDs to which this user belongs (if any).

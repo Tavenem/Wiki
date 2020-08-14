@@ -1,6 +1,4 @@
-﻿using NeverFoundry.DataStorage;
-
-namespace NeverFoundry.Wiki
+﻿namespace NeverFoundry.Wiki
 {
     /// <summary>
     /// <para>
@@ -11,8 +9,13 @@ namespace NeverFoundry.Wiki
     /// individual users may.
     /// </para>
     /// </summary>
-    public interface IWikiGroup : IIdItem
+    public interface IWikiGroup
     {
+        /// <summary>
+        /// The display name for this group.
+        /// </summary>
+        string GroupName { get; set; }
+
         /// <summary>
         /// <para>
         /// Whether members of this group may upload files.
@@ -24,11 +27,11 @@ namespace NeverFoundry.Wiki
         /// either individually, or to entire groups.
         /// </para>
         /// </summary>
-        bool HasUploadPermission { get; }
+        bool HasUploadPermission { get; set; }
 
         /// <summary>
-        /// The display name for this group.
+        /// The unique ID of this group.
         /// </summary>
-        string GroupName { get; }
+        string Id { get; }
     }
 }

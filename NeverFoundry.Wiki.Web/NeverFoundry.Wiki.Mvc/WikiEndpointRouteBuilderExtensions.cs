@@ -19,23 +19,74 @@ namespace NeverFoundry.Wiki.Mvc
         private const string WikiController = "Wiki";
 
         /// <summary>
-        /// <para>
         /// Adds support for the NeverFoundry.Wiki library.
-        /// </para>
-        /// <para>
-        /// Note: an implementation of <see cref="IWikiUserManager"/> must be added to the <see
-        /// cref="IServiceCollection"/> prior to calling this method.
-        /// </para>
         /// </summary>
         /// <typeparam name="TUser">
         /// The type of <see cref="IWikiUser"/> implemented by your application.
         /// </typeparam>
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
+        /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+        /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
         /// <param name="options">
         /// The options used to configure the wiki system.
         /// </param>
-        public static void AddWiki<TUser>(this IServiceCollection services, IWikiOptions? options = null) where TUser : IWikiUser
+        public static void AddWiki<TUser>(
+            this IServiceCollection services,
+            IWikiUserManager userManager,
+            IWikiGroupManager groupManager,
+            IWikiOptions? options = null) where TUser : IWikiUser
         {
+            services.AddScoped(_ => userManager);
+            services.AddScoped(_ => groupManager);
+
+            WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+
+            WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
+            WikiWebConfig.LoginPath = options?.LoginPath;
+            WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
+            WikiWebConfig.TenorAPIKey = options?.TenorAPIKey;
+
+            if (options?.SearchClient is null)
+            {
+                services.AddScoped<ISearchClient>(provider =>
+                {
+                    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>(), userManager);
+                });
+            }
+            else
+            {
+                services.AddScoped(_ => options.SearchClient);
+            }
+
+            WikiConfig.LinkTemplate = LinkTemplate;
+        }
+
+        /// <summary>
+        /// Adds support for the NeverFoundry.Wiki library.
+        /// </summary>
+        /// <typeparam name="TUser">
+        /// The type of <see cref="IWikiUser"/> implemented by your application.
+        /// </typeparam>
+        /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
+        /// <param name="userManagerBuilder">
+        /// A function which provides an <see cref="IWikiUserManager"/> instance.
+        /// </param>
+        /// <param name="groupManagerBuilder">
+        /// A function which provides an <see cref="IWikiGroupManager"/> instance.
+        /// </param>
+        /// <param name="options">
+        /// The options used to configure the wiki system.
+        /// </param>
+        public static void AddWiki<TUser>(
+            this IServiceCollection services,
+            Func<IServiceProvider, IWikiUserManager> userManagerBuilder,
+            Func<IServiceProvider, IWikiGroupManager> groupManagerBuilder,
+            IWikiOptions? options = null) where TUser : IWikiUser
+        {
+            services.AddScoped(userManagerBuilder);
+            services.AddScoped(groupManagerBuilder);
+
             WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
 
             WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
@@ -61,26 +112,79 @@ namespace NeverFoundry.Wiki.Mvc
         }
 
         /// <summary>
-        /// <para>
         /// Adds support for the NeverFoundry.Wiki library.
-        /// </para>
-        /// <para>
-        /// Note: an implementation of <see cref="IWikiUserManager"/> must be added to the <see
-        /// cref="IServiceCollection"/> prior to calling this method.
-        /// </para>
         /// </summary>
         /// <typeparam name="TUser">
         /// The type of <see cref="IWikiUser"/> implemented by your application.
         /// </typeparam>
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
-        /// <param name="builder">
+        /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+        /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+        /// <param name="optionsBuilder">
         /// A function which provides the options used to configure the wiki system.
         /// </param>
-        public static void AddWiki<TUser>(this IServiceCollection services, Func<IServiceProvider, IWikiOptions> builder) where TUser : IWikiUser
+        public static void AddWiki<TUser>(
+            this IServiceCollection services,
+            IWikiUserManager userManager,
+            IWikiGroupManager groupManager,
+            Func<IServiceProvider, IWikiOptions> optionsBuilder) where TUser : IWikiUser
         {
+            services.AddScoped(_ => userManager);
+            services.AddScoped(_ => groupManager);
+
             services.AddScoped(provider =>
             {
-                var options = builder.Invoke(provider);
+                var options = optionsBuilder.Invoke(provider);
+
+                WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+
+                WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
+                WikiWebConfig.LoginPath = options?.LoginPath;
+                WikiWebConfig.MainLayoutPath = options?.MainLayoutPath;
+                WikiWebConfig.TenorAPIKey = options?.TenorAPIKey;
+
+                if (options?.SearchClient is null)
+                {
+                    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>(), userManager);
+                }
+                else
+                {
+                    return options.SearchClient;
+                }
+            });
+
+            WikiConfig.LinkTemplate = LinkTemplate;
+        }
+
+        /// <summary>
+        /// Adds support for the NeverFoundry.Wiki library.
+        /// </summary>
+        /// <typeparam name="TUser">
+        /// The type of <see cref="IWikiUser"/> implemented by your application.
+        /// </typeparam>
+        /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
+        /// <param name="userManagerBuilder">
+        /// A function which provides an <see cref="IWikiUserManager"/> instance.
+        /// </param>
+        /// <param name="groupManagerBuilder">
+        /// A function which provides an <see cref="IWikiGroupManager"/> instance.
+        /// </param>
+        /// <param name="optionsBuilder">
+        /// A function which provides the options used to configure the wiki system.
+        /// </param>
+        public static void AddWiki<TUser>(
+            this IServiceCollection services,
+            Func<IServiceProvider, IWikiUserManager> userManagerBuilder,
+            Func<IServiceProvider, IWikiGroupManager> groupManagerBuilder,
+            Func<IServiceProvider, IWikiOptions> optionsBuilder) where TUser : IWikiUser
+        {
+            services.AddScoped(userManagerBuilder);
+            services.AddScoped(groupManagerBuilder);
+
+            services.AddScoped(provider =>
+            {
+                var options = optionsBuilder.Invoke(provider);
 
                 WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
 

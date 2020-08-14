@@ -16,12 +16,12 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             bool isDiff,
             IEnumerable<UserViewModel> users) : base(data, html, isDiff) => Users = users.ToList();
 
-        public static async Task<GroupViewModel> NewAsync(IWikiUserManager userManager, WikiRouteData data, WikiItemViewModel vm)
+        public static async Task<GroupViewModel> NewAsync(IWikiGroupManager groupManager, WikiRouteData data, WikiItemViewModel vm)
         {
             var users = new List<IWikiUser>();
             if (data.Group is not null)
             {
-                users.AddRange(await userManager.GetUsersInGroupAsync(data.Group).ConfigureAwait(false));
+                users.AddRange(await groupManager.GetUsersInGroupAsync(data.Group).ConfigureAwait(false));
             }
 
             return new GroupViewModel(
