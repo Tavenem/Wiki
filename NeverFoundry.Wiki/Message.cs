@@ -37,6 +37,11 @@ namespace NeverFoundry.Wiki
         public string SenderId { get; }
 
         /// <summary>
+        /// Whether the sender of this message is an admin.
+        /// </summary>
+        public bool SenderIsAdmin { get; }
+
+        /// <summary>
         /// The name of the sender of this message.
         /// </summary>
         public string SenderName { get; }
@@ -67,6 +72,7 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
         /// <param name="senderId">The ID of the sender of this message.</param>
+        /// <param name="senderIsAdmin">Whether the sender of this message is an admin.</param>
         /// <param name="senderName">The name of the sender of this message.</param>
         /// <param name="timestampTicks">
         /// The timestamp when this message was sent, in UTC Ticks.
@@ -89,12 +95,14 @@ namespace NeverFoundry.Wiki
             IReadOnlyCollection<WikiLink> wikiLinks,
             string topicId,
             string senderId,
+            bool senderIsAdmin,
             string senderName,
             long timestampTicks,
             string? replyMessageId = null) : base(id, markdownContent, wikiLinks)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
+            SenderIsAdmin = senderIsAdmin;
             SenderName = senderName;
             TimestampTicks = timestampTicks;
             TopicId = topicId;
@@ -103,6 +111,7 @@ namespace NeverFoundry.Wiki
         internal Message(
             string topicId,
             string senderId,
+            bool senderIsAdmin,
             string senderName,
             string? markdown,
             long timestampTicks,
@@ -110,6 +119,7 @@ namespace NeverFoundry.Wiki
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
+            SenderIsAdmin = senderIsAdmin;
             SenderName = senderName;
             TimestampTicks = timestampTicks;
             TopicId = topicId;
@@ -122,6 +132,7 @@ namespace NeverFoundry.Wiki
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
+            (bool?)info.GetValue(nameof(SenderIsAdmin), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(SenderName), typeof(string)) ?? string.Empty,
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(ReplyMessageId), typeof(string)))
@@ -132,6 +143,7 @@ namespace NeverFoundry.Wiki
         /// </summary>
         /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
         /// <param name="senderId">The ID of the sender of this message.</param>
+        /// <param name="senderIsAdmin">Whether the sender of this message is an admin.</param>
         /// <param name="senderName">The name of the sender of this message.</param>
         /// <param name="markdown">The raw markdown content.</param>
         /// <param name="replyMessageId">
@@ -141,6 +153,7 @@ namespace NeverFoundry.Wiki
         public static async Task<Message> ReplyAsync(
             string topicId,
             string senderId,
+            bool senderIsAdmin,
             string senderName,
             string markdown,
             string? replyMessageId = null)
@@ -157,6 +170,7 @@ namespace NeverFoundry.Wiki
             var message = new Message(
                 topicId,
                 senderId,
+                senderIsAdmin,
                 senderName,
                 markdown,
                 DateTimeOffset.UtcNow.Ticks,
@@ -181,6 +195,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TopicId), TopicId);
             info.AddValue(nameof(SenderId), SenderId);
+            info.AddValue(nameof(SenderIsAdmin), SenderIsAdmin);
             info.AddValue(nameof(SenderName), SenderName);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(ReplyMessageId), ReplyMessageId);

@@ -32,6 +32,11 @@
         public string SenderId { get; set; }
 
         /// <summary>
+        /// Whether the sender of this message is an admin.
+        /// </summary>
+        public bool SenderIsAdmin { get; set; }
+
+        /// <summary>
         /// The name of the sender of this message.
         /// </summary>
         public string SenderName { get; set; }
@@ -71,6 +76,7 @@
             ReplyMessageId = message.ReplyMessageId;
             SenderExists = senderExists;
             SenderId = message.SenderId;
+            SenderIsAdmin = message.SenderIsAdmin;
             SenderName = message.SenderName;
             SenderPageExists = senderPageExists;
             TimestampTicks = message.TimestampTicks;

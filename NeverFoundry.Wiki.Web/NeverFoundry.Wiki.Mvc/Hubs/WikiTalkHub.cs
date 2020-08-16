@@ -95,7 +95,9 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 throw new HubException("You do not have permission to reply to this topic.");
             }
 
-            var message = await Message.ReplyAsync(reply.TopicId, user.Id, user.UserName, reply.Markdown, reply.MessageId).ConfigureAwait(false);
+            var message = await Message
+                .ReplyAsync(reply.TopicId, user.Id, user.IsWikiAdmin, user.UserName, reply.Markdown, reply.MessageId)
+                .ConfigureAwait(false);
             var html = string.Empty;
             var preview = false;
             if (message.WikiLinks.Count == 1)

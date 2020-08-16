@@ -362,7 +362,10 @@ window.wikimvcchat = {
         if (message.senderExists) {
             let userLink = document.createElement("a");
             sender.appendChild(userLink);
-            userLink.classList.add("wiki-username", "wiki-username-link");
+            userLink.classList.add("wiki-username", "wiki-username-link", `wiki-username-${message.senderId}`);
+            if (message.senderIsAdmin) {
+                userLink.classList.add("wiki-username-admin");
+            }
             if (!message.senderPageExists) {
                 userLink.classList.add("wiki-link-missing");
             }
