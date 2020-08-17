@@ -40,6 +40,9 @@ Fourth section text";
         public void ExecTest() => TestTemplate("{{exec|Math.Pow(x, 3)|x=2}}", "8");
 
         [TestMethod]
+        public void AnchorLinkTest() => TestTemplate("[[Title#Anchor|]]", "<a href=\"http://localhost:5000/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title</a>");
+
+        [TestMethod]
         public void FormatTest()
         {
             TestTemplate("{{format|52}}", "52");
@@ -109,6 +112,9 @@ Fourth section text";
             _ = GetNestedArticle("{{iftemplate|success}}");
             TestTemplate("{{Nested}}", "success");
         }
+
+        [TestMethod]
+        public void LinkTest() => TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"http://localhost:5000/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
 
         [TestMethod]
         public void NoTableOfContentsTest()

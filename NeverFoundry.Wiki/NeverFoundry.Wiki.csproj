@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>Latest</LangVersion>
+    <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.32.0</Version>
+    <Version>0.33.1</Version>
     <Authors>Wil Stead</Authors>
     <Description>A .NET wiki library.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="HtmlSanitizer" Version="5.0.343" />
-    <PackageReference Include="Markdig" Version="0.20.0" />
+    <PackageReference Include="Markdig" Version="0.21.1" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="3.7.0" />
     <PackageReference Include="NeverFoundry.DiffPatchMerge" Version="1.0.1" />
     <PackageReference Include="NeverFoundry.MathAndScience" Version="0.22.0" />

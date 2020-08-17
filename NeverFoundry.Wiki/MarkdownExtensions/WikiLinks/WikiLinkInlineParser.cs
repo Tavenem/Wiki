@@ -278,9 +278,18 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         var startIndex = title.LastIndexOf(':') + 1;
                         var endIndex = title.Length;
 
+                        // Remove anchor.
+                        var anchor = title.IndexOf('#');
+                        if (anchor != -1)
+                        {
+                            endIndex = anchor;
+                        }
+
                         // Remove anything in parenthesis at the end.
                         var openParen = title.IndexOf('(');
-                        if (openParen != -1 && title.TrimEnd()[^1] == ')')
+                        if (openParen != -1
+                            && openParen < endIndex
+                            && title.TrimEnd()[^1] == ')')
                         {
                             endIndex = openParen;
                         }
@@ -346,26 +355,27 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 var isTalk = false;
                 string? wikiNamespace = null;
 
+                var mainTitle = title;
                 if (isWikipedia)
                 {
-                    title = openParent.Title.Substring(2);
+                    title = openParent.Title[2..];
                     if (!openParent.HasDisplay)
                     {
-                        display = display?.Substring(2);
+                        display = display?[2..];
                         openParent.HasDisplay = true;
                     }
                 }
                 else if (isCommons)
                 {
-                    title = openParent.Title.Substring(3);
+                    title = openParent.Title[3..];
 
-                    if (!openParent.HasDisplay)
+                    if (!openParent.HasDisplay && display is not null)
                     {
-                        var extIndex = display?.IndexOf('.') ?? -1;
+                        var extIndex = display.IndexOf('.');
                         {
                             if (extIndex != -1)
                             {
-                                display = display![3..extIndex];
+                                display = display[3..extIndex];
                                 openParent.HasDisplay = true;
                             }
                         }
@@ -373,7 +383,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
                 else
                 {
-                    var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(title);
+                    var anchorIndex = title.IndexOf('#');
+                    if (anchorIndex != -1)
+                    {
+                        mainTitle = title[..anchorIndex];
+                    }
+                    var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(mainTitle);
                     isTalk = wIsTalk;
                     wikiNamespace = wWikiNamespace;
                     isCategory = string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
@@ -382,7 +397,10 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         isNamespaceEscaped = title.StartsWith(':');
                         wikiNamespace = WikiConfig.CategoryNamespace; // normalize casing
                     }
-                    title = wTitle;
+                    mainTitle = wTitle;
+                    title = anchorIndex == -1 || anchorIndex >= title.Length - 1
+                        ? wTitle
+                        : wTitle + title[anchorIndex..];
                 }
 
                 var articleMissing = false;
@@ -391,11 +409,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     var articleExists = false;
                     if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.CurrentCultureIgnoreCase))
                     {
-                        articleExists = WikiFile.GetFile(title)?.IsDeleted == false;
+                        articleExists = WikiFile.GetFile(mainTitle)?.IsDeleted == false;
                     }
                     else
                     {
-                        articleExists = Article.GetArticle(title, wikiNamespace)?.IsDeleted == false;
+                        articleExists = Article.GetArticle(mainTitle, wikiNamespace)?.IsDeleted == false;
                     }
                     articleMissing = !articleExists;
                 }

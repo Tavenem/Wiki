@@ -173,6 +173,7 @@ namespace NeverFoundry.Wiki.Test
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 "TEST_TOPIC_ID",
                 "TEST_SENDER_ID",
+                false,
                 "Test Sender Name",
                 0,
                 null);

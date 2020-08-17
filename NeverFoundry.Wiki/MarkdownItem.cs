@@ -555,7 +555,7 @@ namespace NeverFoundry.Wiki
             var i = 0;
             while (i < span.Length && charactersAvailable > 0)
             {
-                var nextLine = span.Slice(i).IndexOf('\n');
+                var nextLine = span[i..].IndexOf('\n');
                 var lineLength = nextLine == -1 ? span.Length - i : nextLine - i;
 
                 if (lineLength <= charactersAvailable)
