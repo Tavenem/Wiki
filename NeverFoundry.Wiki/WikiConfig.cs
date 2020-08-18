@@ -246,15 +246,14 @@ namespace NeverFoundry.Wiki
         public static IEnumerable<string> ReservedNamespaces => (_ReservedNamespaces ?? Enumerable.Empty<string>())
             .Concat(new[] { CategoryNamespace, FileNamespace, TalkNamespace });
 
-        private const string SiteNameDefault = "A NeverFoundry Wiki Sample";
+        private const string SiteNameDefault = "a NeverFoundry wiki";
         private static string _SiteName = SiteNameDefault;
         /// <summary>
         /// <para>
-        /// The name of this wiki.
+        /// The name of the wiki. Displayed as a subheading below each article title.
         /// </para>
         /// <para>
-        /// Default is "A NeverFoundry Wiki Sample"; unlike most defaults this is clearly not
-        /// suitable for production, and should always be replaced.
+        /// Default is "a NeverFoundry wiki"
         /// </para>
         /// <para>
         /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
@@ -269,33 +268,6 @@ namespace NeverFoundry.Wiki
             {
                 _SiteName = string.IsNullOrWhiteSpace(value)
                     ? SiteNameDefault
-                    : value;
-            }
-        }
-
-        private const string ServerUrlDefault = "http://localhost:5000/";
-        private static string _ServerUrl = ServerUrlDefault;
-        /// <summary>
-        /// <para>
-        /// The primary URL of this wiki.
-        /// </para>
-        /// <para>
-        /// Default is "http://localhost:5000/"; unlike most defaults this is clearly not
-        /// suitable for production, and should always be replaced.
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
-        /// </para>
-        /// </summary>
-        [NotNull]
-        public static string? ServerUrl
-        {
-            get => _ServerUrl;
-            set
-            {
-                _ServerUrl = string.IsNullOrWhiteSpace(value)
-                    ? ServerUrlDefault
                     : value;
             }
         }
@@ -339,6 +311,33 @@ namespace NeverFoundry.Wiki
         /// </summary>
         public static string? TransclusionNamespace { get; set; } = "Transclusion";
 
+        private const string WikiLinkPrefixDefault = "Wiki";
+        private static string _WikiLinkPrefix = WikiLinkPrefixDefault;
+        /// <summary>
+        /// <para>
+        /// The prefix added before wiki links (to distinguish them from other pages on the same
+        /// server).
+        /// </para>
+        /// <para>
+        /// Default is "Wiki"
+        /// </para>
+        /// <para>
+        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
+        /// all whitespace value resets it to the default.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public static string? WikiLinkPrefix
+        {
+            get => _WikiLinkPrefix;
+            set
+            {
+                _WikiLinkPrefix = string.IsNullOrWhiteSpace(value)
+                    ? WikiLinkPrefixDefault
+                    : value;
+            }
+        }
+
         private static IHtmlSanitizer? _HtmlSanitizer;
         internal static IHtmlSanitizer HtmlSanitizer
         {
@@ -349,6 +348,7 @@ namespace NeverFoundry.Wiki
                     _HtmlSanitizer = new HtmlSanitizer();
                     _HtmlSanitizer.AllowedAttributes.Add("class");
                     _HtmlSanitizer.AllowedAttributes.Add("role");
+                    _HtmlSanitizer.AllowedAttributes.Add("id");
 
                     _HtmlSanitizer.RemovingAttribute += (_, e) =>
                     {
@@ -375,6 +375,7 @@ namespace NeverFoundry.Wiki
             _MarkdownPipeline ??= new MarkdownPipelineBuilder()
             .UseWikiLinks()
             .UseAbbreviations()
+            .UseAutoIdentifiers()
             .UseTableOfContents(new MarkdownExtensions.TableOfContents.TableOfContentsOptions
             {
                 DefaultDepth = DefaultTableOfContentsDepth,
@@ -405,6 +406,7 @@ namespace NeverFoundry.Wiki
             _MarkdownPipelinePlainText ??= new MarkdownPipelineBuilder()
             .UseWikiLinks()
             .UseAbbreviations()
+            .UseAutoIdentifiers()
             .UseCitations()
             .UseCustomContainers()
             .UseDefinitionLists()

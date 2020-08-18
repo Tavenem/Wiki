@@ -31,8 +31,6 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 ["padright"] = PadRight,
                 ["pagename"] = (_, title, __, ___, ____) => title ?? string.Empty,
                 ["preview"] = Preview,
-                ["sitename"] = (_, __, ___, ____, _____) => WikiConfig.SiteName,
-                ["serverurl"] = (_, __, ___, ____, _____) => WikiConfig.ServerUrl,
                 ["toc"] = TableOfContents,
                 ["tolower"] = (parameters, _, __, ___, ____) => parameters.TryGetValue("1", out var value) ? value.ToLower() : string.Empty,
                 ["totitlecase"] = TitleCase,

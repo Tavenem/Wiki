@@ -37,7 +37,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
                 else
                 {
-                    renderer.Write(link.IsImage ? "<img src=\"/" : "<a href=\"Wiki/");
+                    renderer.Write(link.IsImage ? "<img src=\"/" : $"<a href=\"/{WikiConfig.WikiLinkPrefix}/");
                     link.GetAttributes().AddClass(link.Missing ? "wiki-link-missing" : "wiki-link-exists");
                 }
                 renderer.WriteEscapeUrl(fullTitle);

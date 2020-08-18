@@ -261,14 +261,6 @@ Functions take precedence over transclusions. That means that if there is an art
    Redirection sequences abort if a cycle is detected (including a redirection which points to itself). In this situation the final redirecting article in the chain is displayed as-is (i.e. the wiki markup showing the redirect will be visible to the requesting client).
 
    A redirection chain also aborts if there are more than 100 links before reaching a non-redirect target.
-- **sitename** - Displays the value of `WikiConfig.SiteName` (see below).
-
-   For example: `{{sitename}}` is rendered as ""{{sitename}}"" on this wiki.
-- **serverurl** - Displays the value of `WikiConfig.ServerUrl` (see below).
-
-   For example: `{{serverurl}}` is rendered as ""{{serverurl}}"" on this site.
-
-   The address is not prerendered as a link, in order to be suitable for combination with additional path values to form a complete URL. In order to format the value as a link by itself, use the standard CommonMark link format: e.g. `[{{serverurl}}]({{serverurl}})` renders as [{{serverurl}}]({{serverurl}}).
 - **toc** - Displays a table of contents at the position of the function. In order to determine which headings to include, the table of contents looks for the closest heading which precedes itself (contents in between the heading and the table of contents are allowed). If none are found, all headings are included. If there is a preceding heading, all headings which follow the table of contents marker are included, up until the first heading of a lower level in the hierarchy than the preceding heading. For example: if you place a table of contents after a level 3 heading, it will include all following headings until it reaches a level 2 or 1 heading (which will not be included). This allows you to place tables of contents for subsections of an article.
 
    A depth (number of levels of hierarchy to display) can be specified with the first parameter, which overrides the default depth for the table of contents. Depth does not refer to the absolute level of a heading; it is relative to the starting level (see below). For example, if a table of contents has a starting level of 3, a depth of 2 would indicate that levels 3 and 4 should be displayed. A single '*' chartacter can be used in place of this parameter, which indicates that the default value should be used.

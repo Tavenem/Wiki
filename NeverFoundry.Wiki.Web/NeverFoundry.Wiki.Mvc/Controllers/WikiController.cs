@@ -1294,16 +1294,14 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var data = new WikiRouteData(ControllerContext.RouteData, HttpContext.Request.Query);
             if (data.IsCompact)
             {
-                if (!WikiConfig.ServerUrl.EndsWith("Compact/"))
+                if (!WikiConfig.WikiLinkPrefix.EndsWith("/Compact"))
                 {
-                    WikiConfig.ServerUrl += WikiConfig.ServerUrl.EndsWith("/")
-                        ? "Compact/"
-                        : "/Compact/";
+                    WikiConfig.WikiLinkPrefix += "/Compact";
                 }
             }
-            else if (WikiConfig.ServerUrl.EndsWith("Compact/"))
+            else if (WikiConfig.WikiLinkPrefix.EndsWith("/Compact"))
             {
-                WikiConfig.ServerUrl = WikiConfig.ServerUrl[..^8];
+                WikiConfig.WikiLinkPrefix = WikiConfig.WikiLinkPrefix[..^8];
             }
             ViewData[nameof(WikiRouteData)] = data;
             ViewData["Title"] = Article.GetFullTitle(data.Title, data.WikiNamespace, data.IsTalk);

@@ -177,7 +177,7 @@ namespace NeverFoundry.Wiki
                 }
             }
 
-            return WikiConfig.HtmlSanitizer.Sanitize(html, WikiConfig.ServerUrl);
+            return WikiConfig.HtmlSanitizer.Sanitize(html);
         }
 
         /// <summary>Populates a <see cref="SerializationInfo"></see> with the data needed to
@@ -320,7 +320,7 @@ namespace NeverFoundry.Wiki
                 }
             }
 
-            return WikiConfig.HtmlSanitizer.Sanitize(html, WikiConfig.ServerUrl) ?? string.Empty;
+            return WikiConfig.HtmlSanitizer.Sanitize(html) ?? string.Empty;
         }
 
         private static bool AnyPreviews(MarkdownObject obj)
