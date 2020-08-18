@@ -356,6 +356,7 @@ namespace NeverFoundry.Wiki
                         {
                             e.Cancel = true;
                         }
+                        e.Cancel |= e.Attribute.Name.StartsWith("data-");
                     };
                 }
                 return _HtmlSanitizer;

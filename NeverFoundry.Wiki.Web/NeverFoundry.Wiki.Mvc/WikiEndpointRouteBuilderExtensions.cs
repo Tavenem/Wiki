@@ -21,20 +21,17 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Adds support for the NeverFoundry.Wiki library.
         /// </summary>
-        /// <typeparam name="TUser">
-        /// The type of <see cref="IWikiUser"/> implemented by your application.
-        /// </typeparam>
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
         /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
         /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
         /// <param name="options">
         /// The options used to configure the wiki system.
         /// </param>
-        public static void AddWiki<TUser>(
+        public static void AddWiki(
             this IServiceCollection services,
             IWikiUserManager userManager,
             IWikiGroupManager groupManager,
-            IWikiOptions? options = null) where TUser : IWikiUser
+            IWikiOptions? options = null)
         {
             services.AddScoped(_ => userManager);
             services.AddScoped(_ => groupManager);
@@ -65,9 +62,6 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Adds support for the NeverFoundry.Wiki library.
         /// </summary>
-        /// <typeparam name="TUser">
-        /// The type of <see cref="IWikiUser"/> implemented by your application.
-        /// </typeparam>
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
         /// <param name="userManagerBuilder">
         /// A function which provides an <see cref="IWikiUserManager"/> instance.
@@ -78,11 +72,11 @@ namespace NeverFoundry.Wiki.Mvc
         /// <param name="options">
         /// The options used to configure the wiki system.
         /// </param>
-        public static void AddWiki<TUser>(
+        public static void AddWiki(
             this IServiceCollection services,
             Func<IServiceProvider, IWikiUserManager> userManagerBuilder,
             Func<IServiceProvider, IWikiGroupManager> groupManagerBuilder,
-            IWikiOptions? options = null) where TUser : IWikiUser
+            IWikiOptions? options = null)
         {
             services.AddScoped(userManagerBuilder);
             services.AddScoped(groupManagerBuilder);
@@ -114,20 +108,17 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Adds support for the NeverFoundry.Wiki library.
         /// </summary>
-        /// <typeparam name="TUser">
-        /// The type of <see cref="IWikiUser"/> implemented by your application.
-        /// </typeparam>
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
         /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
         /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
         /// <param name="optionsBuilder">
         /// A function which provides the options used to configure the wiki system.
         /// </param>
-        public static void AddWiki<TUser>(
+        public static void AddWiki(
             this IServiceCollection services,
             IWikiUserManager userManager,
             IWikiGroupManager groupManager,
-            Func<IServiceProvider, IWikiOptions> optionsBuilder) where TUser : IWikiUser
+            Func<IServiceProvider, IWikiOptions> optionsBuilder)
         {
             services.AddScoped(_ => userManager);
             services.AddScoped(_ => groupManager);
@@ -160,9 +151,6 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Adds support for the NeverFoundry.Wiki library.
         /// </summary>
-        /// <typeparam name="TUser">
-        /// The type of <see cref="IWikiUser"/> implemented by your application.
-        /// </typeparam>
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
         /// <param name="userManagerBuilder">
         /// A function which provides an <see cref="IWikiUserManager"/> instance.
@@ -173,11 +161,11 @@ namespace NeverFoundry.Wiki.Mvc
         /// <param name="optionsBuilder">
         /// A function which provides the options used to configure the wiki system.
         /// </param>
-        public static void AddWiki<TUser>(
+        public static void AddWiki(
             this IServiceCollection services,
             Func<IServiceProvider, IWikiUserManager> userManagerBuilder,
             Func<IServiceProvider, IWikiGroupManager> groupManagerBuilder,
-            Func<IServiceProvider, IWikiOptions> optionsBuilder) where TUser : IWikiUser
+            Func<IServiceProvider, IWikiOptions> optionsBuilder)
         {
             services.AddScoped(userManagerBuilder);
             services.AddScoped(groupManagerBuilder);

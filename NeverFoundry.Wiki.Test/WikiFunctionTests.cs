@@ -114,7 +114,11 @@ Fourth section text";
         }
 
         [TestMethod]
-        public void LinkTest() => TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"http://localhost:5000/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
+        public void LinkTest()
+        {
+            TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"http://localhost:5000/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
+            TestTemplate("[[title]]", "<a href=\"http://localhost:5000/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
+        }
 
         [TestMethod]
         public void NoTableOfContentsTest()
