@@ -13,8 +13,9 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
     /// </summary>
     public class WikiLinkInlineParser : InlineParser
     {
-        private const char LinkCloseChar = ']';
-        private const char LinkOpenChar = '[';
+        internal const char LinkCloseChar = ']';
+        internal const char LinkOpenChar = '[';
+
         private const char SeparatorChar = '|';
 
         /// <summary>
@@ -279,7 +280,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         var endIndex = title.Length;
 
                         // Remove anchor.
-                        var anchor = title.IndexOf('#');
+                        var anchor = title.LastIndexOf('#');
                         if (anchor != -1)
                         {
                             endIndex = anchor;
@@ -295,6 +296,13 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         }
 
                         display = title[startIndex..endIndex].Trim();
+
+                        if (anchor != -1)
+                        {
+                            display = openParen == -1 || openParen < anchor
+                                ? $"{display} § {title[(anchor + 1)..]}"
+                                : $"{display} § {title[(anchor + 1)..openParen]}";
+                        }
 
                         if (hasDoubleSeparator)
                         {

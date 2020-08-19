@@ -163,7 +163,7 @@ In order to display an alternative title for a link, use a pipe character, follo
 
 If any characters appear after a link's closing braces, but before the next punctuation or whitespace character, they will automatically be added to the title to create a display value: `[[Title]]s` would appear as ""[[Title]]s"" and link to the article ""Title."" This doesn't work if the link already includes a display value: `[[Title|display]]s` would appear as ""[[Title|display]]s"" (note: the trailing ""s"" is not included in the link text).
 
-Anchors (section links) are also supported, and are stripped out of automatically-generated display values. For example: `[[Title#Section]]` appears as ""[[Title#Section]]"". Note that headings are automatically assigned anchor links with their text as the URL fragment. If a heading appears more than once in an article, the second instance will have a number appended to the end of its URL fragment, like so: ""Section-1"". Note that the first instance of a heading title will not have a number, and the second instance will have the number ""-1"" added.
+Anchors (section links) are also supported. If an automatically-generated display value is indicated, the '#' character is replaced with a section indicator ('§') surrounded on either side by a single space. For example: `[[Title#Section|]]` appears as ""[[Title#Section|]]"", and `[[Title#Section||]]` appears as ""[[Title#Section||]]"". Note that headings are automatically assigned anchor links with their text as the URL fragment. If a heading appears more than once in an article, the second instance will have a number appended to the end of its URL fragment, like so: ""Section-1"". Note that the first instance of a heading title will not have a number, and the second instance will have the number ""-1"" added.
 
 Files uploaded to the wiki can be linked in the same way. Uploaded images can be prefixed with an exclamation point in order to display the image directly, similar to standard CommonMark image links. For example: `![[File: MyImage]]`. The image will also be a link to the file's wiki page.
 
@@ -187,7 +187,7 @@ Values can be passed to transcluded articles by adding a pipe character after th
 
 The name of a parameter can be omitted in a transclusion link: `{{Title|hello}}`. All unnamed parameters are assigned a default name which starts with ""1"" and increases for each unnamed parameter.For example: `{{Title|hello|x=there|friend}}` Includes parameters ""1"" with the value ""hello,"" ""x"" with the value ""there,"" and ""2"" with the value ""friend.""
 
-The value of a parameter can be a transclusion, or another parameter.For example: `{{Title|x={{Other}}}}` transcludes the article named ""Title"" and passes it a parameter equal to the full content of the article named ""Other.""
+The value of a parameter can be a transclusion, or another parameter. For example: `{{Title|x={{Other}}}}` transcludes the article named ""Title"" and passes it a parameter equal to the full content of the article named ""Other.""
 
 # Functions
 There are a number of built-in functions. Functions use the same syntax as transclusions (double curly braces) but instead of an article title the function name is used.
@@ -215,18 +215,27 @@ Functions take precedence over transclusions. That means that if there is an art
    The name of the article is displayed in title case.
 
    For example: `{{fullpagename}}` is rendered as ""{{fullpagename}}"" on this page.
-- **if** - Attempts to parse the first parameter as either a boolean value or a number. If the value is either true or greater than zero, the second parameter is displayed. If not, the third parameter is displayed (or nothing, if there is no third parameter).
+- **if** - Attempts to parse the first parameter as either a boolean value or a number. If the value is either true or greater than zero, the second parameter is displayed. If the first parameter was empty, failed to parse, or evaluated to false or a number less than or equal to zero, the third parameter is displayed (or nothing, if there is no third parameter).
 
    For example: `{{if|true|success}}` is rendered as ""{{if|true|success}}"".
+- **ifcategory** - Displays the first parameter if the current page is a category page. Displays the second (optional) parameter if not.
+
+   For example: `{{ifcategory|fail|success}}` is rendered as ""{{ifcategory|fail|success}}"" on this page, and `{{ifcategory|not shown}}` is rendered as ""{{ifcategory|not shown}}"" (i.e., nothing).
 - **ifeq** - If the first and second parameters are equal, displays the third parameter. Otherwise, displays the fourth parameter (or nothing, if there is no fourth parameter).
 
    For example: `{{ifeq|1|1|success}}` is rendered as ""{{ifeq|1|1|success}}"".
 - **ifnottemplate** - Displays the first parameter only if the current article is not being transcluded. In other words, the parameter is rendered when the article is viewed directly.
 
    For example: `{{ifnottemplate|success}}` is rendered as ""{{ifnottemplate|success}}"" on this page.
+- **iftalk** - Displays the first parameter if the current page is a discussion page. Displays the second (optional) parameter if not.
+
+   For example: `{{iftalk|fail|success}}` is rendered as ""{{iftalk|fail|success}}"" on this page, and `{{iftalk|not shown}}` is rendered as ""{{iftalk|not shown}}"" (i.e., nothing).
 - **iftemplate** - Displays the first parameter only if the current article is being transcluded.
 
    For example: `{{iftemplate|not shown}}` is rendered as ""{{iftemplate|not shown}}"" on this page (i.e., nothing).
+- **namespace** - Displays the namespace of the current page (even if it's the default). Even when this function is used in a transcluded article, the namespace displayed will be that of the main article currently being viewed.
+
+   For example: `{{namespace}}` is rendered as ""{{namespace}}"" on this page.
 - **notoc** - Suppresses the generation of the default table of contents.
 
    The default table of contents is placed above the first heading in an article, or below the first paragraph (whichever comes first). It is omitted if any explicit table of contents are placed (with the **toc** function or the equivalent HTML comment).

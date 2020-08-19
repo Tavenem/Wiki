@@ -506,8 +506,10 @@ namespace NeverFoundry.Wiki
         /// Breaks the given title string into parts.
         /// </summary>
         /// <param name="text">The full title string.</param>
-        /// <returns>The namespace and title, and <see cref="bool"/> flags indicating whether the
-        /// title indicates a dioscussion page, as well as whether the namespace was omitted.</returns>
+        /// <returns>
+        /// The namespace and title, and <see cref="bool"/> flags indicating whether the title
+        /// indicates a discussion page, as well as whether the namespace was omitted.
+        /// </returns>
         public static (string wikiNamespace, string title, bool isTalk, bool defaultNamespace) GetTitleParts(string? text)
         {
             string wikiNamespace, title;

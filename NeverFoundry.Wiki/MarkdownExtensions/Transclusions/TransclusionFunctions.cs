@@ -23,9 +23,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 ["format"] = Format,
                 ["fullpagename"] = (_, __, fullTitle, ___, ____) => fullTitle ?? string.Empty,
                 ["if"] = If,
+                ["ifcategory"] = IfCategory,
                 ["ifeq"] = IfEq,
                 ["ifnottemplate"] = IfNotTemplate,
+                ["iftalk"] = IfTalk,
                 ["iftemplate"] = IfTemplate,
+                ["namespace"] = (_, __, fullTitle, ___, ____) => Article.GetTitleParts(fullTitle).wikiNamespace,
                 ["notoc"] = (_, __, ___, ____, _____) => "<!-- NOTOC -->",
                 ["padleft"] = PadLeft,
                 ["padright"] = PadRight,
@@ -195,11 +198,6 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
 
         private static string If(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
-            if (!parameters.TryGetValue("1", out var first)
-                || string.IsNullOrWhiteSpace(first))
-            {
-                return string.Empty;
-            }
             if (!parameters.TryGetValue("2", out var second))
             {
                 return string.Empty;
@@ -207,6 +205,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             if (!parameters.TryGetValue("3", out var elseValue))
             {
                 elseValue = string.Empty;
+            }
+            if (!parameters.TryGetValue("1", out var first)
+                || string.IsNullOrWhiteSpace(first))
+            {
+                return elseValue;
             }
             if (bool.TryParse(first, out var value))
             {
@@ -224,6 +227,15 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             {
                 return elseValue;
             }
+        }
+
+        private static string IfCategory(Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
+        {
+            if (Article.GetTitleParts(fullTitle).wikiNamespace != WikiConfig.CategoryNamespace)
+            {
+                return parameters.TryGetValue("2", out var second) ? second : string.Empty;
+            }
+            return parameters.TryGetValue("1", out var first) ? first : string.Empty;
         }
 
         private static string IfEq(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
@@ -278,6 +290,15 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 return string.Empty;
             }
             return parameters.TryGetValue("1", out var first) ? first : string.Empty;
+        }
+
+        private static string IfTalk(Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
+        {
+            if (Article.GetTitleParts(fullTitle).isTalk)
+            {
+                return parameters.TryGetValue("1", out var first) ? first : string.Empty;
+            }
+            return parameters.TryGetValue("2", out var second) ? second : string.Empty;
         }
 
         private static string IfTemplate(Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)

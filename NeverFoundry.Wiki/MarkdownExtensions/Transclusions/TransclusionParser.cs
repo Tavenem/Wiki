@@ -13,8 +13,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
     public static class TransclusionParser
     {
         private const char CodeBlockChar = '`';
-        private const char ParameterCloseChar = '(';
-        private const char ParameterOpenChar = ')';
+        private const char ParameterCloseChar = ')';
+        private const char ParameterOpenChar = '(';
         private const char SeparatorChar = '|';
         private const char TransclusionCloseChar = '}';
         private const int TransclusionMaxDepth = 100;
@@ -85,7 +85,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 {
                     foreach (var parameter in lineParameters)
                     {
-                        var name = lineText.Text[parameter.Start..parameter.End].ToLower(CultureInfo.CurrentCulture);
+                        var name = lineText.Text[(parameter.Start + 2)..(parameter.End - 2)].ToLower(CultureInfo.CurrentCulture);
                         parameter.Content = parameterValues.TryGetValue(name, out var value)
                             ? value
                             : string.Empty;
@@ -156,7 +156,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             while (j < parameterInclusions.Count
                 && parameterInclusions[j].Start < end)
             {
-                includedParameters.Add(includedParameters[j]);
+                includedParameters.Add(parameterInclusions[j]);
                 j++;
             }
             for (var i = 0; i < includedTransclusions.Count; i++)
@@ -215,7 +215,17 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             Dictionary<string, string> parameterValues;
             if (TransclusionFunctions._Functions.TryGetValue(reference.ToLowerInvariant(), out var func))
             {
+                // If the function uses any parameters, return it as-is so that it can be invoked
+                // with those parameters at a higher level.
                 parameterValues = ParseParameters(parameters);
+                if (parameterValues.Any(x => x.Value.Length > 4
+                    && x.Value[0] == ParameterOpenChar
+                    && x.Value[1] == ParameterOpenChar
+                    && x.Value[^1] == ParameterCloseChar
+                    && x.Value[^2] == ParameterCloseChar))
+                {
+                    return template;
+                }
                 return func.Invoke(parameterValues, title, fullTitle, isTemplate, isPreview);
             }
 
@@ -392,9 +402,28 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             {
                 if (separatorIndex != -1 && separatorIndex < span.Length - 1)
                 {
-                    span = span.Slice(separatorIndex + 1);
+                    span = span[(separatorIndex + 1)..];
                 }
                 separatorIndex = span.IndexOfUnescaped(SeparatorChar);
+                if (separatorIndex != -1) // skip separators inside links
+                {
+                    var linkIndex = span.IndexOfUnescaped(WikiLinks.WikiLinkInlineParser.LinkOpenChar);
+                    if (linkIndex != -1
+                        && linkIndex < separatorIndex
+                        && linkIndex < span.Length - 4
+                        && span[linkIndex + 1] == WikiLinks.WikiLinkInlineParser.LinkOpenChar)
+                    {
+                        var linkCloseIndex = linkIndex + 2 + span[(linkIndex + 2)..].IndexOfUnescaped(WikiLinks.WikiLinkInlineParser.LinkCloseChar);
+                        if (linkCloseIndex != -1
+                            && linkCloseIndex < span.Length - 1
+                            && span[linkCloseIndex + 1] == WikiLinks.WikiLinkInlineParser.LinkCloseChar)
+                        {
+                            separatorIndex = linkCloseIndex == span.Length - 2
+                                ? -1
+                                : linkCloseIndex + 2 + span[(linkCloseIndex + 2)..].IndexOfUnescaped(SeparatorChar);
+                        }
+                    }
+                }
                 var parameter = separatorIndex == -1
                     ? span
                     : span[..separatorIndex];
@@ -422,7 +451,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 else
                 {
                     name = parameter[..equalIndex].ToString();
-                    value = parameter.Slice(equalIndex + 1);
+                    value = parameter[(equalIndex + 1)..];
                 }
                 parameters[name.Trim().ToLower()] = value.Trim().ToString();
             }
@@ -451,7 +480,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 }
 
                 var isTransclusion = parameterIndex >= parameterInclusions.Count
-                    || transclusions[transclusionIndex].Start < parameterInclusions[parameterIndex].Start;
+                    || (transclusions.Count > transclusionIndex
+                    && transclusions[transclusionIndex].Start < parameterInclusions[parameterIndex].Start);
                 var transclusion = isTransclusion
                     ? transclusions[transclusionIndex]
                     : parameterInclusions[parameterIndex];
@@ -471,7 +501,14 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                     sb.Append(markdown[endIndex..(transclusion.Start - offset)]);
                 }
 
-                sb.Append(transclusion.Content);
+                if (transclusion.Content is null)
+                {
+                    sb.Append(markdown[(transclusion.Start - offset)..(transclusion.End - offset)]);
+                }
+                else
+                {
+                    sb.Append(transclusion.Content);
+                }
 
                 endIndex = transclusion.End - offset;
                 if (isTransclusion)
@@ -479,6 +516,16 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                     transclusionIndex++;
                 }
                 else
+                {
+                    parameterIndex++;
+                }
+                while (transclusionIndex < transclusions.Count
+                    && (transclusions[transclusionIndex].Start - offset) < endIndex)
+                {
+                    transclusionIndex++;
+                }
+                while (parameterIndex < parameterInclusions.Count
+                    && (parameterInclusions[parameterIndex].Start - offset) < endIndex)
                 {
                     parameterIndex++;
                 }

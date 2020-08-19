@@ -1,5 +1,6 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Test
@@ -40,7 +41,11 @@ Fourth section text";
         public void ExecTest() => TestTemplate("{{exec|Math.Pow(x, 3)|x=2}}", "8");
 
         [TestMethod]
-        public void AnchorLinkTest() => TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title</a>");
+        public void AnchorLinkTest()
+        {
+            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
+            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">title § anchor</a>");
+        }
 
         [TestMethod]
         public void FormatTest()
@@ -85,6 +90,21 @@ Fourth section text";
         }
 
         [TestMethod]
+        public void IfCategoryTest()
+        {
+            const string Markdown = "{{ifcategory|yes|no}}";
+            TestTemplate(Markdown, "no");
+
+            var category = Category.NewAsync(
+                Title,
+                Editor,
+                Markdown)
+                .GetAwaiter()
+                .GetResult();
+            Assert.AreEqual("<p>yes</p>\n", category.GetHtml());
+        }
+
+        [TestMethod]
         public void IfEqTest()
         {
             TestTemplate("{{ifeq|one|one|success}}", "success");
@@ -107,6 +127,9 @@ Fourth section text";
         public void IfNotTemplateTest() => TestTemplate("{{ifnottemplate|success}}", "success");
 
         [TestMethod]
+        public void IfTalkTest() => TestTemplate("{{iftalk|fail|success}}", "success");
+
+        [TestMethod]
         public void IfTemplateTest()
         {
             _ = GetNestedArticle("{{iftemplate|success}}");
@@ -119,6 +142,9 @@ Fourth section text";
             TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
             TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
         }
+
+        [TestMethod]
+        public void NamespaceTest() => TestTemplate("{{namespace}}", WikiConfig.DefaultNamespace);
 
         [TestMethod]
         public void NoTableOfContentsTest()
@@ -268,6 +294,25 @@ Fourth section text";
 
         [TestMethod]
         public void ToUpperTest() => TestTemplate("{{toupper|miXed}}", "MIXED");
+
+        [TestMethod]
+        public void ComplexTest()
+        {
+            const string Template =
+@":::wiki-main-article-ref
+{{ifcategory|The main article for this category is|Main article:}} {{if|((2))|[[((1))|((2))]]|[[((1))|]]}}
+:::";
+            _ = GetNestedArticle(Template);
+
+            TestTemplate(
+                $"{{{{{NestedTitle}|Title}}}}",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Title</a></p>\n</div>\n",
+                false);
+            TestTemplate(
+                $"{{{{{NestedTitle}|Title#Anchor}}}}",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a></p>\n</div>\n",
+                false);
+        }
 
         private Article GetArticle(string markdown)
         {
