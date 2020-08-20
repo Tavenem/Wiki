@@ -81,7 +81,4 @@ services:
 
 volumes:
   postgresdata:
-    external: true
   elasticsearchdata:
-    external: true
-
