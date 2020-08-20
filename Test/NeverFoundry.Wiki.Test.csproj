@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\NeverFoundry.Wiki\NeverFoundry.Wiki.csproj" />
+    <ProjectReference Include="..\Wiki\NeverFoundry.Wiki.csproj" />
   </ItemGroup>
 
 </Project>

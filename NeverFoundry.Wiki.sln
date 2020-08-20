@@ -22,7 +22,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Samples.C
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Mvc", "Web\Mvc\NeverFoundry.Wiki.Mvc.csproj", "{E461C678-4D7C-42E5-BE44-510A18A17626}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeverFoundry.Wiki.Web", "Web\Web\NeverFoundry.Wiki.Web.csproj", "{768A8957-2DF9-41A2-9E3A-0BC9F49D7ECD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Web", "Web\Web\NeverFoundry.Wiki.Web.csproj", "{768A8957-2DF9-41A2-9E3A-0BC9F49D7ECD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

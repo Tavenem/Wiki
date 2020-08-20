@@ -5,12 +5,12 @@ networks:
     driver: bridge
 
 services:
-  neverfoundry.wiki.sample.mvc:
-    image: ${DOCKER_REGISTRY-}neverfoundrywikisamplemvc
+  neverfoundry.wiki.samples.complete:
+    image: ${DOCKER_REGISTRY-}neverfoundrywikisamplescomplete
     depends_on:
       - elasticsearch
     build:
-      context: ../../Samples/NeverFoundry.Wiki.MvcSample
+      context: ../../Samples/Complete
       dockerfile: Dockerfile
       args:
         PAT: 62kzc7ih47vjkvreblbrh3bjdsdwymk2k74jdu4mqbrqktpf4aea

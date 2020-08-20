@@ -36,7 +36,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\NeverFoundry.Wiki.Web\NeverFoundry.Wiki.Mvc\NeverFoundry.Wiki.Mvc.csproj" />
+    <ProjectReference Include="..\..\Web\Mvc\NeverFoundry.Wiki.Mvc.csproj" />
   </ItemGroup>
 
   <!-- npm -->
