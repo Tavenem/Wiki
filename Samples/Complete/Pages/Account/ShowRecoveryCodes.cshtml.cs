@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Pages.Account
 {
     [Authorize]
     public class ShowRecoveryCodesModel : PageModel

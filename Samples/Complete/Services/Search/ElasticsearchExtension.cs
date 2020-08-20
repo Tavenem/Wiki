@@ -5,7 +5,7 @@ using Nest;
 using Nest.JsonNetSerializer;
 using System;
 
-namespace NeverFoundry.Wiki.MvcSample.Services
+namespace NeverFoundry.Wiki.Samples.Complete.Services
 {
     public static class ElasticsearchExtension
     {

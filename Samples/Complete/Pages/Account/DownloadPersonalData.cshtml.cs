@@ -10,7 +10,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Pages.Account
 {
     [Authorize]
     public class DownloadPersonalDataModel : PageModel

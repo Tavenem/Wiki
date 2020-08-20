@@ -1,4 +1,4 @@
-﻿namespace NeverFoundry.Wiki.MvcSample
+﻿namespace NeverFoundry.Wiki.Samples.Complete
 {
     /// <summary>
     /// Claims related to a web implementation of NeverFoundry.Wiki.

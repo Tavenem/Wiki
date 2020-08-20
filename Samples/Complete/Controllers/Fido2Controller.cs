@@ -4,15 +4,15 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using NeverFoundry.Wiki.MvcSample.Data;
-using NeverFoundry.Wiki.MvcSample.Services;
+using NeverFoundry.Wiki.Samples.Complete.Data;
+using NeverFoundry.Wiki.Samples.Complete.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Controllers
+namespace NeverFoundry.Wiki.Samples.Complete.Controllers
 {
     [Route("api/[controller]")]
     public class Fido2Controller : Controller

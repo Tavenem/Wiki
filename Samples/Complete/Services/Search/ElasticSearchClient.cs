@@ -10,7 +10,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Services
+namespace NeverFoundry.Wiki.Samples.Complete.Services
 {
     /// <summary>
     /// An instance of <see cref="ISearchClient"/> which uses ElasticSearch.

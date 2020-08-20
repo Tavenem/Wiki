@@ -7,7 +7,7 @@ using Serilog;
 using System;
 using System.Diagnostics;
 
-namespace NeverFoundry.Wiki.MvcSample
+namespace NeverFoundry.Wiki.Samples.Complete
 {
     public static class Program
     {
@@ -35,11 +35,6 @@ namespace NeverFoundry.Wiki.MvcSample
                     AutoRegisterTemplateVersion = Serilog.Sinks.Elasticsearch.AutoRegisterTemplateVersion.ESv7,
                 })
                 .CreateLogger();
-
-            WikiWebConfig.ContactPageTitle = null;
-            WikiWebConfig.ContentsPageTitle = null;
-            WikiWebConfig.CopyrightPageTitle = null;
-            WikiWebConfig.PolicyPageTitle = null;
 
             try
             {

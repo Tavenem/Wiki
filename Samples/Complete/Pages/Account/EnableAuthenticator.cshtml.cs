@@ -8,7 +8,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Pages.Account
 {
     [Authorize]
     public class EnableAuthenticatorModel : PageModel

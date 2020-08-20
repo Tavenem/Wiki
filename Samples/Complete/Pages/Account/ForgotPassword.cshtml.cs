@@ -2,12 +2,12 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.WebUtilities;
-using NeverFoundry.Wiki.MvcSample.Services;
+using NeverFoundry.Wiki.Samples.Services;
 using System.ComponentModel.DataAnnotations;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Pages.Account
 {
     public class ForgotPasswordModel : PageModel
     {

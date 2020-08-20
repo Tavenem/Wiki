@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
-namespace NeverFoundry.Wiki.MvcSample.Data
+namespace NeverFoundry.Wiki.Samples.Complete.Data
 {
     public class IdentityDbContext : Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityDbContext<WikiUser>
     {

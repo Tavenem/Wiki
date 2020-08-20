@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 
-namespace NeverFoundry.Wiki.MvcSample
+namespace NeverFoundry.Wiki.Samples.Complete
 {
     /// <summary>
     /// Authorization policies for a web implementation of NeverFoundry.Wiki.

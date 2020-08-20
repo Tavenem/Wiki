@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace NeverFoundry.Wiki.MvcSample.Data
+namespace NeverFoundry.Wiki.Samples.Complete.Data
 {
     public class FidoStoredCredential
     {

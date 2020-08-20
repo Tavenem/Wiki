@@ -6,7 +6,7 @@ using System;
 using System.Linq;
 using System.Text;
 
-namespace NeverFoundry.Wiki.MvcSample.Logging
+namespace NeverFoundry.Wiki.Samples.Complete.Logging
 {
     public class MartenLogger : IMartenLogger, IMartenSessionLogger
     {

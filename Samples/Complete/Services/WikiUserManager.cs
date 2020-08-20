@@ -5,7 +5,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Services
+namespace NeverFoundry.Wiki.Samples.Complete.Services
 {
     /// <summary>
     /// An implementation of <see cref="IWikiUserManager"/> with a <see cref="UserManager{TUser}"/>

@@ -3,7 +3,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using System;
 using System.Collections.Generic;
 
-namespace NeverFoundry.Wiki.MvcSample.Data.Migrations
+namespace NeverFoundry.Wiki.Samples.Complete.Data.Migrations
 {
     public partial class InitialMigration : Migration
     {

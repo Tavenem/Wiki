@@ -13,15 +13,15 @@ using Nest;
 using NeverFoundry.DataStorage;
 using NeverFoundry.DataStorage.Marten;
 using NeverFoundry.Wiki.Mvc;
-using NeverFoundry.Wiki.MvcSample.Data;
-using NeverFoundry.Wiki.MvcSample.Logging;
-using NeverFoundry.Wiki.MvcSample.Providers;
-using NeverFoundry.Wiki.MvcSample.Services;
+using NeverFoundry.Wiki.Samples.Complete.Data;
+using NeverFoundry.Wiki.Samples.Complete.Logging;
+using NeverFoundry.Wiki.Samples.Complete.Providers;
+using NeverFoundry.Wiki.Samples.Complete.Services;
 using NeverFoundry.Wiki.Web;
 using System.Reflection;
 using System.Security.Claims;
 
-namespace NeverFoundry.Wiki.MvcSample
+namespace NeverFoundry.Wiki.Samples.Complete
 {
     public class Startup
     {
@@ -92,6 +92,10 @@ namespace NeverFoundry.Wiki.MvcSample
             services.AddSingleton<IEmailConfiguration>(Configuration.GetSection("EmailConfiguration")?.Get<EmailConfiguration>() ?? new EmailConfiguration());
             services.AddTransient<IEmailService, EmailService>();
 
+            WikiWebConfig.ContactPageTitle = null;
+            WikiWebConfig.ContentsPageTitle = null;
+            WikiWebConfig.CopyrightPageTitle = null;
+            WikiWebConfig.PolicyPageTitle = null;
             WikiWebConfig.MaxFileSize = 100000000; // 100 MB
             services.AddWiki(
                 provider =>

@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace NeverFoundry.Wiki.MvcSample.Services
+namespace NeverFoundry.Wiki.Samples.Complete.Services
 {
     public class EmailMessage
     {

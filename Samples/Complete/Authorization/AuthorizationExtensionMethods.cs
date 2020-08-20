@@ -2,7 +2,7 @@
 using System.Linq;
 using System.Security.Claims;
 
-namespace NeverFoundry.Wiki.MvcSample
+namespace NeverFoundry.Wiki.Samples.Complete
 {
     /// <summary>
     /// A collection of extension methods related to a web implementation of NeverFoundry.Wiki.

@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.MvcSample.Providers
+namespace NeverFoundry.Wiki.Samples.Complete.Providers
 {
     public class Fido2TokenProvider : IUserTwoFactorTokenProvider<WikiUser>
     {

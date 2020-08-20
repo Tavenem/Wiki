@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using NeverFoundry.Wiki.MvcSample.Data;
+using NeverFoundry.Wiki.Samples.Complete.Data;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
-namespace NeverFoundry.Wiki.MvcSample.Data.Migrations
+namespace NeverFoundry.Wiki.Samples.Complete.Data.Migrations
 {
     [DbContext(typeof(IdentityDbContext))]
     [Migration("20200505125344_InitialMigration")]

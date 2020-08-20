@@ -36,39 +36,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <ProjectReference Include="..\..\Web\Mvc\NeverFoundry.Wiki.Mvc.csproj" />
+    <ProjectReference Include="..\Shared\NeverFoundry.Wiki.Samples.Shared.csproj" />
   </ItemGroup>
-
-  <!-- npm -->
-  <PropertyGroup>
-    <NpmStamp>node_modules/.install-stamp</NpmStamp>
-  </PropertyGroup>
-  <Target Name="NpmInstall" BeforeTargets="Build" Inputs="package.json;package-lock.json" Outputs="$(NpmStamp)">
-    <!-- Ensure Node.js is installed -->
-    <Exec Command="node --version" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-    </Exec>
-    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-
-    <!-- npm -->
-    <Exec Command="npm install" />
-
-    <!-- Create timestamp to prevent unnecessary repeats -->
-    <Touch Files="$(NpmStamp)" AlwaysCreate="true" />
-  </Target>
-
-  <!-- npm build -->
-  <Target Name="NpmBuild" BeforeTargets="Build" Inputs="package.json;package-lock.json;postcss.config.js;content\styles\_custom.scss;content\styles\site.scss" Outputs="wwwroot\site.css">
-    <!-- Ensure Node.js is installed -->
-    <Exec Command="node --version" ContinueOnError="true">
-      <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-    </Exec>
-    <Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-
-    <!-- npm -->
-    <Exec Command="npm run build" ConsoleToMSBuild="True">
-      <Output TaskParameter="ConsoleOutput" PropertyName="OutputOfExec" />
-    </Exec>
-  </Target>
 
 </Project>
