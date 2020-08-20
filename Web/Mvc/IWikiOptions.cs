@@ -23,7 +23,7 @@ namespace NeverFoundry.Wiki.Mvc
         /// The <see cref="IDataStore"/> to be used by the wiki.
         /// </para>
         /// <para>
-        /// If omitted, the static <see cref="DataStorage.DataStore.Instance"/> will be used.
+        /// If omitted, the value already set in <see cref="WikiConfig.DataStore"/> will not be changed.
         /// </para>
         /// </summary>
         IDataStore? DataStore { get; set; }

@@ -370,7 +370,17 @@ namespace NeverFoundry.Wiki
             ? new List<WikiLink>()
             : Markdown.Parse(markdown, WikiConfig.MarkdownPipeline)
             .Descendants<WikiLinkInline>()
-            .Where(x => !x.IsWikipedia && !x.IsCommons)
+            .Where(x => !x.IsWikipedia
+                && !x.IsCommons
+                && (x.Title.Length < 5
+                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
+                || x.Title[1] != TransclusionParser.TransclusionOpenChar
+                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
+                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
+                && (x.Title[0] != TransclusionParser.ParameterOpenChar
+                || x.Title[1] != TransclusionParser.ParameterOpenChar
+                || x.Title[^1] != TransclusionParser.ParameterCloseChar
+                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
             .Select(x => new WikiLink(x.Missing, x.IsCategory, x.IsNamespaceEscaped, x.IsTalk, x.Title, x.WikiNamespace))
             .ToList();
 

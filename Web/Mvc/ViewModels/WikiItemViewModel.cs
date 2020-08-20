@@ -3,15 +3,29 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The wiki item DTO.
+    /// </summary>
     public class WikiItemViewModel
     {
+        /// <summary>
+        /// The associated <see cref="WikiRouteData"/>.
+        /// </summary>
         public WikiRouteData Data { get; }
 
+        /// <summary>
+        /// The rendered HTML.
+        /// </summary>
         public string Html { get; }
 
+        /// <summary>
+        /// Whether this is a diff.
+        /// </summary>
         public bool IsDiff { get; }
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="WikiItemViewModel"/>.
+        /// </summary>
         public WikiItemViewModel(WikiRouteData data, string html, bool isDiff)
         {
             Data = data;
@@ -19,6 +33,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             IsDiff = isDiff;
         }
 
+        /// <summary>
+        /// Get a new instance of <see cref="WikiItemViewModel"/>.
+        /// </summary>
         public static async Task<WikiItemViewModel> NewAsync(WikiRouteData data)
         {
             string html;
@@ -62,5 +79,4 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             return new WikiItemViewModel(data, html, isDiff);
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

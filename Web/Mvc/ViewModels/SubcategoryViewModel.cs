@@ -1,17 +1,27 @@
 ﻿namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The subcategory DTO.
+    /// </summary>
     public class SubcategoryViewModel
     {
+        /// <summary>
+        /// The count of included items.
+        /// </summary>
         public long Count { get; }
 
+        /// <summary>
+        /// The title.
+        /// </summary>
         public string Title { get; }
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="SubcategoryViewModel"/>.
+        /// </summary>
         public SubcategoryViewModel(string title, long count)
         {
             Title = title;
             Count = count;
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

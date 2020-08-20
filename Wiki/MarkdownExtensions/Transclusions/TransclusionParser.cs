@@ -12,13 +12,14 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
     /// </summary>
     public static class TransclusionParser
     {
+        internal const char ParameterCloseChar = ')';
+        internal const char ParameterOpenChar = '(';
+        internal const char TransclusionCloseChar = '}';
+        internal const char TransclusionOpenChar = '{';
+
         private const char CodeBlockChar = '`';
-        private const char ParameterCloseChar = ')';
-        private const char ParameterOpenChar = '(';
         private const char SeparatorChar = '|';
-        private const char TransclusionCloseChar = '}';
         private const int TransclusionMaxDepth = 100;
-        private const char TransclusionOpenChar = '{';
 
         /// <summary>
         /// Replaces all the transclusions in the given <paramref name="markdown"/> with their

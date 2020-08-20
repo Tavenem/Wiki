@@ -2,15 +2,30 @@
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The user DTO.
+    /// </summary>
     public class UserViewModel
     {
+        /// <summary>
+        /// The user's ID.
+        /// </summary>
         public string Id { get; set; }
 
+        /// <summary>
+        /// Whether there is a wiki user page for the user.
+        /// </summary>
         public bool PageExists { get; set; }
 
+        /// <summary>
+        /// The user's user name.
+        /// </summary>
         public string UserName { get; set; }
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="UserViewModel"/>.
+        /// </summary>
+        /// <param name="user"></param>
         public UserViewModel(IWikiUser user)
         {
             Id = user.Id;
@@ -18,5 +33,4 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             UserName = user.UserName;
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

@@ -11,8 +11,8 @@
     "sass": "^1.26.10"
   },
   "scripts": {
-    "scss": "sass --load-path=node_modules/bootstrap/scss --load-path=../../Web/Mvc/wwwroot --style=compressed ./styles/site.scss ../Complete/wwwroot/site.css && ncp ../Complete/wwwroot/site.css ../Simple/wwwroot/site.css && ncp ../Complete/wwwroot/site.css.map ../Simple/wwwroot/site.css.map",
-    "postcss": "postcss ../Complete/wwwroot/site.css ../Simple/wwwroot/site.css -m -r --config .",
+    "scss": "sass --load-path=node_modules/bootstrap/scss --load-path=../../Web/Mvc/wwwroot --style=compressed ./styles/site.scss ../Complete/wwwroot/site.css && ncp ../Complete/wwwroot/site.css ../Simple/wwwroot/site.css && ncp ../Complete/wwwroot/site.css ../Cosmos/wwwroot/site.css && ncp ../Complete/wwwroot/site.css.map ../Simple/wwwroot/site.css.map && ncp ../Complete/wwwroot/site.css.map ../Cosmos/wwwroot/site.css.map",
+    "postcss": "postcss ../Complete/wwwroot/site.css ../Simple/wwwroot/site.css ../Cosmos/wwwroot/site.css -m -r --config .",
     "build": "npm run scss && npm run postcss"
   }
 }

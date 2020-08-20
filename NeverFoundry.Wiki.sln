@@ -25,12 +25,20 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Web", "Web\Web\NeverFoundry.Wiki.Web.csproj", "{768A8957-2DF9-41A2-9E3A-0BC9F49D7ECD}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Samples", "Samples", "{8F5E0670-CD68-446A-B095-1E6703A6ECEB}"
+	ProjectSection(SolutionItems) = preProject
+		Samples\README.md = Samples\README.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Web", "Web", "{1A520722-C452-4822-8EF7-0E417BA314A2}"
+	ProjectSection(SolutionItems) = preProject
+		Web\README.md = Web\README.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Samples.Simple", "Samples\Simple\NeverFoundry.Wiki.Samples.Simple.csproj", "{DF293283-1657-4F0F-B89E-C6C8CDB2F285}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NeverFoundry.Wiki.Samples.Shared", "Samples\Shared\NeverFoundry.Wiki.Samples.Shared.csproj", "{82DBAFF6-682C-4AA0-A423-C72BAF6C7BCC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Samples.Shared", "Samples\Shared\NeverFoundry.Wiki.Samples.Shared.csproj", "{82DBAFF6-682C-4AA0-A423-C72BAF6C7BCC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NeverFoundry.Wiki.Samples.Cosmos", "Samples\Cosmos\NeverFoundry.Wiki.Samples.Cosmos.csproj", "{DCD1A4F8-0B6C-491A-B19F-18F067FB4F10}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -74,6 +82,10 @@ Global
 		{82DBAFF6-682C-4AA0-A423-C72BAF6C7BCC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{82DBAFF6-682C-4AA0-A423-C72BAF6C7BCC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{82DBAFF6-682C-4AA0-A423-C72BAF6C7BCC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DCD1A4F8-0B6C-491A-B19F-18F067FB4F10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DCD1A4F8-0B6C-491A-B19F-18F067FB4F10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DCD1A4F8-0B6C-491A-B19F-18F067FB4F10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DCD1A4F8-0B6C-491A-B19F-18F067FB4F10}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -85,6 +97,7 @@ Global
 		{768A8957-2DF9-41A2-9E3A-0BC9F49D7ECD} = {1A520722-C452-4822-8EF7-0E417BA314A2}
 		{DF293283-1657-4F0F-B89E-C6C8CDB2F285} = {8F5E0670-CD68-446A-B095-1E6703A6ECEB}
 		{82DBAFF6-682C-4AA0-A423-C72BAF6C7BCC} = {8F5E0670-CD68-446A-B095-1E6703A6ECEB}
+		{DCD1A4F8-0B6C-491A-B19F-18F067FB4F10} = {8F5E0670-CD68-446A-B095-1E6703A6ECEB}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E70C1D8D-BE0A-49CB-88E0-12D706F489FA}

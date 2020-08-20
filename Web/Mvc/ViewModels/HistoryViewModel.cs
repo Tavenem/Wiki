@@ -7,19 +7,33 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The history DTO.
+    /// </summary>
     public class HistoryViewModel
     {
+        /// <summary>
+        /// The associated <see cref="WikiRouteData"/>.
+        /// </summary>
         public WikiRouteData Data { get; }
 
+        /// <summary>
+        /// The list of revisions.
+        /// </summary>
         public IPagedList<RevisionViewModel> Revisions { get; }
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="HistoryViewModel"/>.
+        /// </summary>
         public HistoryViewModel(WikiRouteData data, IPagedList<RevisionViewModel> revisions)
         {
             Data = data;
             Revisions = revisions;
         }
 
+        /// <summary>
+        /// Get a new <see cref="HistoryViewModel"/>.
+        /// </summary>
         public static async Task<HistoryViewModel> NewAsync(
             IWikiUserManager userManager,
             WikiRouteData data,
@@ -55,5 +69,4 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 new PagedList<RevisionViewModel>(list, history.PageNumber, history.PageSize, history.TotalCount));
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

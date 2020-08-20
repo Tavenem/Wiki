@@ -5,17 +5,28 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The group DTO.
+    /// </summary>
     public class GroupViewModel : WikiItemViewModel
     {
+        /// <summary>
+        /// The included users.
+        /// </summary>
         public IList<UserViewModel> Users { get; set; }
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="GroupViewModel"/>.
+        /// </summary>
         public GroupViewModel(
             WikiRouteData data,
             string html,
             bool isDiff,
             IEnumerable<UserViewModel> users) : base(data, html, isDiff) => Users = users.ToList();
 
+        /// <summary>
+        /// Get a new <see cref="GroupViewModel"/>.
+        /// </summary>
         public static async Task<GroupViewModel> NewAsync(IWikiGroupManager groupManager, WikiRouteData data, WikiItemViewModel vm)
         {
             var users = new List<IWikiUser>();
@@ -31,5 +42,4 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 users.Select(x => new UserViewModel(x)));
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

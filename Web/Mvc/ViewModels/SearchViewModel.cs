@@ -2,18 +2,28 @@
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The search DTO.
+    /// </summary>
     public class SearchViewModel
     {
+        /// <summary>
+        /// The page which exactly matches the search term, if any.
+        /// </summary>
         public Article? ExactMatch { get; set; }
 
+        /// <summary>
+        /// The search result.
+        /// </summary>
         public ISearchResult SearchResult { get; set; }
 
+        /// <summary>
+        /// Initialize a new <see cref="SearchViewModel"/>.
+        /// </summary>
         public SearchViewModel(ISearchResult searchResult, Article? exactMatch = null)
         {
             SearchResult = searchResult;
             ExactMatch = exactMatch;
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

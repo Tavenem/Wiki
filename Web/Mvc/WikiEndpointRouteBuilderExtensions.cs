@@ -36,7 +36,10 @@ namespace NeverFoundry.Wiki.Mvc
             services.AddScoped(_ => userManager);
             services.AddScoped(_ => groupManager);
 
-            WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+            if (options?.DataStore is not null)
+            {
+                WikiConfig.DataStore = options.DataStore;
+            }
 
             WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
             WikiWebConfig.LoginPath = options?.LoginPath;
@@ -81,7 +84,10 @@ namespace NeverFoundry.Wiki.Mvc
             services.AddScoped(userManagerBuilder);
             services.AddScoped(groupManagerBuilder);
 
-            WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+            if (options?.DataStore is not null)
+            {
+                WikiConfig.DataStore = options.DataStore;
+            }
 
             WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
             WikiWebConfig.LoginPath = options?.LoginPath;
@@ -127,7 +133,10 @@ namespace NeverFoundry.Wiki.Mvc
             {
                 var options = optionsBuilder.Invoke(provider);
 
-                WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+                if (options?.DataStore is not null)
+                {
+                    WikiConfig.DataStore = options.DataStore;
+                }
 
                 WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
                 WikiWebConfig.LoginPath = options?.LoginPath;
@@ -174,7 +183,10 @@ namespace NeverFoundry.Wiki.Mvc
             {
                 var options = optionsBuilder.Invoke(provider);
 
-                WikiConfig.DataStore = options?.DataStore ?? DataStorage.DataStore.Instance;
+                if (options?.DataStore is not null)
+                {
+                    WikiConfig.DataStore = options.DataStore;
+                }
 
                 WikiWebConfig.CompactLayoutPath = options?.CompactLayoutPath;
                 WikiWebConfig.LoginPath = options?.LoginPath;

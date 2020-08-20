@@ -9,27 +9,59 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The wiki page list DTO.
+    /// </summary>
     public class SpecialListViewModel
     {
+        /// <summary>
+        /// The associated <see cref="WikiRouteData"/>.
+        /// </summary>
         public WikiRouteData Data { get; }
 
+        /// <summary>
+        /// Whether the results are sorted in descending order.
+        /// </summary>
         public bool Descending { get; }
 
+        /// <summary>
+        /// The description of the list.
+        /// </summary>
         public string Description { get; }
 
+        /// <summary>
+        /// An optional filter to apply to results.
+        /// </summary>
         public string? Filter { get; }
 
+        /// <summary>
+        /// The results for this page.
+        /// </summary>
         public IPagedList<Article> Items { get; }
 
+        /// <summary>
+        /// Missing item results for this page.
+        /// </summary>
         public IPagedList<MissingPage>? MissingItems { get; }
 
+        /// <summary>
+        /// An optional secondary description for the list.
+        /// </summary>
         public string? SecondaryDescription { get; }
 
+        /// <summary>
+        /// The type of sort.
+        /// </summary>
         public string? Sort { get; }
 
+        /// <summary>
+        /// The type of page listing.
+        /// </summary>
         public SpecialListType Type { get; }
 
+        /// <summary>
+        /// Initialize a new <see cref="SpecialListViewModel"/>.
+        /// </summary>
         public SpecialListViewModel(
             WikiRouteData data,
             SpecialListType type,
@@ -50,6 +82,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             Type = type;
         }
 
+        /// <summary>
+        /// Get a <see cref="SpecialListViewModel"/>.
+        /// </summary>
         public static async Task<SpecialListViewModel> NewAsync(
             WikiRouteData data,
             SpecialListType type,
@@ -265,5 +300,4 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             return null;
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }

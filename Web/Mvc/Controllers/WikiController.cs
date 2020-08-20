@@ -20,7 +20,9 @@ using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.Controllers
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The <see cref="Controller"/> for wiki operations.
+    /// </summary>
     public class WikiController : Controller
     {
         private readonly IWebHostEnvironment _environment;
@@ -29,6 +31,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         private readonly ISearchClient _searchClient;
         private readonly IWikiUserManager _userManager;
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiController"/>.
+        /// </summary>
         public WikiController(
             IWebHostEnvironment environment,
             IWikiGroupManager groupManager,
@@ -43,6 +48,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             _userManager = userManager;
         }
 
+        /// <summary>
+        /// The edit view.
+        /// </summary>
         public async Task<IActionResult> EditAsync()
         {
             var data = GetWikiRouteData();
@@ -96,6 +104,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View("Edit", vm);
         }
 
+        /// <summary>
+        /// The edit endpoint.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditAsync(EditModel model)
@@ -328,6 +339,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
         }
 
+        /// <summary>
+        /// The preview endpoint.
+        /// </summary>
         [HttpPost("wiki/api/preview")]
         public async Task<JsonResult> GetPreviewAsync([FromForm] string? link = null)
         {
@@ -389,6 +403,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return Json(content);
         }
 
+        /// <summary>
+        /// The history view.
+        /// </summary>
         public async Task<IActionResult> HistoryAsync(
             int pageNumber = 1,
             int pageSize = 50,
@@ -431,6 +448,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View("History", vm);
         }
 
+        /// <summary>
+        /// The read view.
+        /// </summary>
         public async Task<IActionResult> ReadAsync()
         {
             var data = GetWikiRouteData();
@@ -559,6 +579,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View("Article", model);
         }
 
+        /// <summary>
+        /// The search view.
+        /// </summary>
         public async Task<IActionResult> SearchAsync(
             string? query = null,
             int pageNumber = 1,
@@ -618,6 +641,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View(new SearchViewModel(result, wikiItem));
         }
 
+        /// <summary>
+        /// The search suggestion endpoint.
+        /// </summary>
         [HttpPost("wiki/api/suggest")]
         public async Task<JsonResult> GetSearchSuggestionsAsync(string? search = null)
         {
@@ -672,6 +698,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return Json(items);
         }
 
+        /// <summary>
+        /// The page list endpoint.
+        /// </summary>
         public async Task<IActionResult> GetSpecialListAsync(
             string? type = null,
             int pageNumber = 1,
@@ -689,6 +718,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return await GetSpecialListAsync(t, pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// The upload view.
+        /// </summary>
         public async Task<IActionResult> ShowUploadAsync(UploadViewModel model)
         {
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
@@ -718,6 +750,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View("Upload", model);
         }
 
+        /// <summary>
+        /// The upload endpoint.
+        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> UploadAsync(UploadViewModel model)
@@ -952,6 +987,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
         }
 
+        /// <summary>
+        /// The file upload api endpoint.
+        /// </summary>
         [HttpPost("wiki/api/fileupload")]
         public async Task<IActionResult> UploadFileAsync(IFormFile file)
         {
@@ -996,6 +1034,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return Ok(id);
         }
 
+        /// <summary>
+        /// The delete temp upload file api endpoint.
+        /// </summary>
         [HttpDelete("wiki/api/fileupload")]
         public async Task<IActionResult> UploadFileDeleteTempAsync(string id)
         {
@@ -1032,6 +1073,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return Ok();
         }
 
+        /// <summary>
+        /// The fetch remopte upload file api endpoint.
+        /// </summary>
         [HttpGet("wiki/api/fileupload/fetch/{url}")]
         public async Task<IActionResult> UploadFileFetchRemoteAsync(string url)
         {
@@ -1073,6 +1117,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return File(bytes, new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream");
         }
 
+        /// <summary>
+        /// The restore upload file api endpoint.
+        /// </summary>
         [HttpGet("wiki/api/fileupload/{id}")]
         public async Task<IActionResult> UploadFileRestoreAsync(string id)
         {
@@ -1123,6 +1170,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return File(bytes, new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream");
         }
 
+        /// <summary>
+        /// The restore temp upload file api endpoint.
+        /// </summary>
         [HttpGet("wiki/api/fileupload/temp/{id}")]
         public async Task<IActionResult> UploadFileRestoreTempAsync(string id)
         {
@@ -1169,6 +1219,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return File(bytes, new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream");
         }
 
+        /// <summary>
+        /// The "what links here" list view.
+        /// </summary>
         public Task<IActionResult> WhatLinksHereAsync(
             int pageNumber = 1,
             int pageSize = 50,
@@ -1462,5 +1515,4 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 : item.AllowedViewers?.Intersect(user.Groups).Any() != false);
         }
     }
-#pragma warning restore CS1591
 }

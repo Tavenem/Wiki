@@ -24,7 +24,9 @@ namespace NeverFoundry.Wiki.Samples.Simple
 
             services.AddSignalR(options => options.EnableDetailedErrors = true);
 
-            services.AddSingleton<IDataStore>(_ => new InMemoryDataStore());
+            var dataStore = new InMemoryDataStore();
+            services.AddSingleton<IDataStore>(dataStore);
+            WikiConfig.DataStore = dataStore;
 
             WikiWebConfig.ContactPageTitle = null;
             WikiWebConfig.ContentsPageTitle = null;
@@ -36,7 +38,6 @@ namespace NeverFoundry.Wiki.Samples.Simple
                 provider => new WikiGroupManager(),
                 provider => new WikiOptions
                 {
-                    DataStore = provider.GetRequiredService<IDataStore>(),
                     CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
                     LoginPath = "/",
                     MainLayoutPath = "/Pages/Shared/_Layout.cshtml",
@@ -46,7 +47,6 @@ namespace NeverFoundry.Wiki.Samples.Simple
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            WikiConfig.DataStore = app.ApplicationServices.GetRequiredService<IDataStore>();
             Seed.AddDefaultWikiPagesAsync(WikiUserManager.UserId).GetAwaiter().GetResult();
 
             app.UseStatusCodePagesWithReExecute("/Error/{0}");

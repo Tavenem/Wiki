@@ -1,18 +1,33 @@
-﻿using NeverFoundry.DataStorage;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
-#pragma warning disable CS1591 // No documentation for "internal" code
+    /// <summary>
+    /// The category DTO.
+    /// </summary>
     public class CategoryViewModel : WikiItemViewModel
     {
+        /// <summary>
+        /// The included articles.
+        /// </summary>
         public IList<IGrouping<string, CategoryPageViewModel>>? Articles { get; set; }
+
+        /// <summary>
+        /// The included files.
+        /// </summary>
         public IList<IGrouping<string, CategoryFileViewModel>>? Files { get; set; }
+
+        /// <summary>
+        /// The included categories.
+        /// </summary>
         public IList<IGrouping<string, SubcategoryViewModel>>? Subcategories { get; set; }
 
+        /// <summary>
+        /// Initialize a new instance of <see cref="CategoryViewModel"/>.
+        /// </summary>
         public CategoryViewModel(
             WikiRouteData data,
             string html,
@@ -26,6 +41,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             Subcategories = subcategories;
         }
 
+        /// <summary>
+        /// Get a new <see cref="CategoryViewModel"/>.
+        /// </summary>
         public static async Task<CategoryViewModel> NewAsync(WikiRouteData data, WikiItemViewModel vm)
         {
             var articles = new List<Article>();
@@ -73,5 +91,4 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     .ToList());
         }
     }
-#pragma warning restore CS1591 // No documentation for "internal" code
 }
