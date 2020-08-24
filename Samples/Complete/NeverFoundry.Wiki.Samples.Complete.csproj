@@ -14,7 +14,7 @@
     <PackageReference Include="Fido2" Version="1.1.0" />
     <PackageReference Include="HaemmerElectronics.SeppPenner.SerilogSinkForPostgreSQL" Version="2.2.0" />
     <PackageReference Include="MailKit" Version="2.8.0" />
-    <PackageReference Include="Marten" Version="3.12.3" />
+    <PackageReference Include="Marten" Version="3.13.0" />
     <PackageReference Include="Marten.AspNetCore.Mvc" Version="1.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="5.0.0-preview.7.20365.19" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.0-preview.7.20365.19" />
@@ -24,8 +24,8 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="5.0.0-preview.7.20364.11" />
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.10.9" />
-    <PackageReference Include="NEST" Version="7.8.2" />
-    <PackageReference Include="NEST.JsonNetSerializer" Version="7.8.2" />
+    <PackageReference Include="NEST" Version="7.9.0" />
+    <PackageReference Include="NEST.JsonNetSerializer" Version="7.9.0" />
     <PackageReference Include="NeverFoundry.DataStore.Marten" Version="0.25.0" />
     <PackageReference Include="Npgsql" Version="4.1.4" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="5.0.0-preview7" />

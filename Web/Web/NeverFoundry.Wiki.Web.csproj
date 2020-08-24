@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.39.0-preview</Version>
+    <Version>0.40.0-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>An auxilliary library for NeverFoundry.Wiki with interfaces and classes for web implementations.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="5.0.0-preview.7.20365.19" />
-    <PackageReference Include="NeverFoundry.Wiki" Version="0.39.0" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.40.0" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

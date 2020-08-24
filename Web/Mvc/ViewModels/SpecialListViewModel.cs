@@ -322,7 +322,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 .Where(x => x.WikiNamespace != WikiWebConfig.UserNamespace && x.WikiNamespace != WikiWebConfig.GroupNamespace);
             if (!string.IsNullOrEmpty(filter))
             {
-                query = query.Where(x => x.Title.Contains(filter) || x.WikiNamespace.Contains(filter));
+#pragma warning disable IDE0057 // Use range operator; Not necessarily implemented by data providers.
+                query = query.Where(x => x.Id.Substring(0, x.Id.Length - 8).Contains(filter));
+#pragma warning restore IDE0057 // Use range operator
             }
 
             return await query

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
@@ -23,9 +24,7 @@ namespace NeverFoundry.Wiki
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
         [Newtonsoft.Json.JsonIgnore]
-        public virtual string FullTitle => string.CompareOrdinal(WikiNamespace, WikiConfig.DefaultNamespace) == 0
-            ? Title
-            : Id[..Id.LastIndexOf(':')];
+        public virtual string FullTitle => Article.GetFullTitle(Title, WikiNamespace);
 
         /// <summary>
         /// The type discriminator for this type.
@@ -45,22 +44,24 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The title of this missing page. Must be unique within its namespace, and non-empty.
         /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public string Title => Id[(Id.IndexOf(':') + 1)..Id.LastIndexOf(':')];
+        public string Title { get; }
 
         /// <summary>
         /// The namespace to which this page should belong.
         /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public string WikiNamespace => Id[..Id.IndexOf(':')];
+        public string WikiNamespace { get; }
 
         /// <summary>
         /// Initializes a new instance of <see cref="Revision"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
         /// <param name="idItemTypeName">The type discriminator.</param>
+        /// <param name="title">
+        /// The title of this missing page. Must be unique within its namespace, and non-empty.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace to which this page should belong.
+        /// </param>
         /// <param name="references">
         /// The IDs of pages which reference this missing page.
         /// </param>
@@ -76,9 +77,15 @@ namespace NeverFoundry.Wiki
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
             string idItemTypeName,
+            string title,
+            string wikiNamespace,
 #pragma warning restore IDE0060 // Remove unused parameter
             IReadOnlyList<string> references) : base(id)
-            => References = references;
+        {
+            Title = title;
+            WikiNamespace = wikiNamespace;
+            References = references;
+        }
 
         /// <summary>
         /// Get a new instance of <see cref="MissingPage"/>.
@@ -102,6 +109,8 @@ namespace NeverFoundry.Wiki
             var result = new MissingPage(
                 $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:missing",
                 MissingPageIdItemTypeName,
+                title,
+                wikiNamespace ?? WikiConfig.DefaultNamespace,
                 referenceIds);
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
@@ -126,6 +135,8 @@ namespace NeverFoundry.Wiki
         private MissingPage(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             MissingPageIdItemTypeName,
+            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (IReadOnlyList<string>?)info.GetValue(nameof(References), typeof(IReadOnlyList<string>)) ?? new List<string>().AsReadOnly())
         { }
 
@@ -145,6 +156,8 @@ namespace NeverFoundry.Wiki
             var result = new MissingPage(
                 Id,
                 MissingPageIdItemTypeName,
+                Title,
+                WikiNamespace,
                 References.ToImmutableList().Add(id));
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
         }
@@ -162,6 +175,8 @@ namespace NeverFoundry.Wiki
         {
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(References), References);
+            info.AddValue(nameof(Title), Title);
+            info.AddValue(nameof(WikiNamespace), WikiNamespace);
         }
 
         /// <summary>
@@ -187,6 +202,8 @@ namespace NeverFoundry.Wiki
                 var result = new MissingPage(
                     Id,
                     MissingPageIdItemTypeName,
+                    Title,
+                    WikiNamespace,
                     References.ToImmutableList().Remove(id));
                 await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
             }
