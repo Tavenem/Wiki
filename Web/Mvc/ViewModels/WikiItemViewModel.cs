@@ -51,7 +51,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     isDiff = data.RequestedTimestamp.HasValue;
                     html = data.RequestedTimestamp.HasValue
                         ? await data.WikiItem.GetDiffWithCurrentHtmlAsync(data.RequestedTimestamp.Value).ConfigureAwait(false)
-                        : data.WikiItem.GetHtml();
+                        : data.WikiItem.Html;
                 }
                 else if (data.RequestedDiffPrevious)
                 {
@@ -71,7 +71,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 {
                     html = data.RequestedTimestamp.HasValue
                         ? await data.WikiItem.GetHtmlAsync(data.RequestedTimestamp.Value).ConfigureAwait(false)
-                        : data.WikiItem.GetHtml();
+                        : data.WikiItem.Html;
                 }
                 data.Categories = data.WikiItem.Categories;
             }

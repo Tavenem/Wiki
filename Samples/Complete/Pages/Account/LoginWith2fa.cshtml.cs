@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Samples.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
 {
     public class LoginWith2faModel : PageModel
     {

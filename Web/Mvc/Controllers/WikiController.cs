@@ -96,7 +96,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (wikiItem is not null)
             {
                 markdown = wikiItem.MarkdownContent;
-                var html = wikiItem.GetHtml();
                 data.Categories = wikiItem.Categories;
             }
 
@@ -156,7 +155,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (wikiItem is not null)
             {
-                var html = wikiItem.GetHtml();
                 data.Categories = wikiItem.Categories;
             }
 
@@ -399,8 +397,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
             }
 
-            var content = article.GetPreview();
-            return Json(content);
+            return Json(article.Preview);
         }
 
         /// <summary>
@@ -511,17 +508,16 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                                 if (article is not null && !article.IsDeleted)
                                 {
                                     preview = true;
-                                    var previewHtml = article.GetPreview();
                                     var namespaceStr = article.WikiNamespace == WikiConfig.DefaultNamespace
                                         ? string.Empty
                                         : string.Format(WikiTalkHub.PreviewNamespaceTemplate, article.WikiNamespace);
-                                    html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(string.Format(WikiTalkHub.PreviewTemplate, namespaceStr, article.Title, previewHtml));
+                                    html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(string.Format(WikiTalkHub.PreviewTemplate, namespaceStr, article.Title, article.Preview));
                                 }
                             }
                         }
                         if (!preview)
                         {
-                            html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(reply.GetHtml());
+                            html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(reply.Html);
                         }
                         IWikiUser? replyUser = null;
                         if (!senders.TryGetValue(reply.SenderId, out var exists))

@@ -184,7 +184,9 @@ namespace NeverFoundry.Wiki
         /// <param name="title">
         /// The title of this article. Must be unique within its namespace, and non-empty.
         /// </param>
+        /// <param name="html">The rendered HTML content.</param>
         /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="preview">A preview of this item's rendered HTML.</param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="timestampTicks">
         /// The timestamp when this message was sent, in UTC Ticks.
@@ -263,7 +265,9 @@ namespace NeverFoundry.Wiki
             string idItemTypeName,
 #pragma warning restore IDE0060 // Remove unused parameter
             string title,
+            string html,
             string markdownContent,
+            string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
             string wikiNamespace,
@@ -276,7 +280,7 @@ namespace NeverFoundry.Wiki
             bool isBrokenRedirect,
             bool isDoubleRedirect,
             IReadOnlyCollection<string> categories,
-            IReadOnlyList<Transclusion>? transclusions) : base(id, markdownContent, wikiLinks)
+            IReadOnlyList<Transclusion>? transclusions) : base(id, html, markdownContent, preview, wikiLinks)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -344,13 +348,16 @@ namespace NeverFoundry.Wiki
                 ? null
                 : new ReadOnlyCollection<Transclusion>(transclusions);
             WikiNamespace = wikiNamespace;
+            Update();
         }
 
         private Article(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             ArticleIdItemTypeName,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
@@ -394,29 +401,30 @@ namespace NeverFoundry.Wiki
 
             wikiNamespace ??= WikiConfig.DefaultNamespace;
             Article? article = null;
-            var redirect = false;
             var count = 0;
             var ids = new HashSet<string>();
+            bool redirect;
             do
             {
                 redirect = false;
-                article = WikiConfig.DataStore.Query<Article>()
-                    .Where(x => x.WikiNamespace == wikiNamespace && x.Title == title)
-                    .OrderBy(x => x.TimestampTicks, descending: true)
-                    .FirstOrDefault();
+
+                var reference = WikiConfig.DataStore.GetItem<PageReference>($"{wikiNamespace}:{title}:reference");
+                if (reference is not null)
+                {
+                    article = WikiConfig.DataStore.GetItem<Article>(reference.Reference);
+                }
                 // If no exact match exists, ignore case if only one such match exists.
                 if (article is null)
                 {
-                    var articles = WikiConfig.DataStore.Query<Article>()
-                        .Where(x => x.WikiNamespace.ToLower() == wikiNamespace.ToLower()
-                            && x.Title.ToLower() == title.ToLower())
-                        .OrderBy(x => x.TimestampTicks, descending: true)
-                        .ToList();
-                    if (articles.Count == 1)
+                    var normalizedReference = WikiConfig.DataStore
+                        .GetItem<NormalizedPageReference>($"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference");
+                    if (normalizedReference is not null
+                        && normalizedReference.References.Count == 1)
                     {
-                        article = articles[0];
+                        article = WikiConfig.DataStore.GetItem<Article>(normalizedReference.References[0]);
                     }
                 }
+
                 if (!noRedirect && article?.IsBrokenRedirect != true && !string.IsNullOrEmpty(article?.RedirectTitle))
                 {
                     redirect = true;
@@ -428,54 +436,9 @@ namespace NeverFoundry.Wiki
                     title = article.RedirectTitle;
                     wikiNamespace = article.RedirectNamespace ?? WikiConfig.DefaultNamespace;
                 }
+
                 count++;
             } while (redirect && count < 100); // abort if redirection nests 100 levels
-            return article;
-        }
-
-        /// <summary>
-        /// Gets a particular revision for the article with the given title.
-        /// </summary>
-        /// <param name="title">The title of the article to retrieve.</param>
-        /// <param name="timestamp">The timestamp of the revision.</param>
-        /// <param name="wikiNamespace">
-        /// <para>
-        /// The namespace of the article to retrieve.
-        /// </para>
-        /// <para>
-        /// If left <see langword="null"/> the default namespace (<see
-        /// cref="WikiConfig.DefaultNamespace"/>) will be assumed.
-        /// </para>
-        /// </param>
-        /// <returns>The revision of the article with the given title and timestamp; or <see
-        /// langword="null"/> if no such article exists.</returns>
-        public static Article? GetArticle(string? title, DateTimeOffset timestamp, string? wikiNamespace = null)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                return null;
-            }
-
-            wikiNamespace ??= WikiConfig.DefaultNamespace;
-            var ticks = timestamp.ToUniversalTime().Ticks;
-            var article = WikiConfig.DataStore.Query<Article>()
-                .Where(x => x.WikiNamespace == wikiNamespace
-                    && x.Title == title
-                    && x.TimestampTicks == ticks)
-                .FirstOrDefault();
-            // If no exact match exists, ignore case if only one such match exists.
-            if (article is null)
-            {
-                var articles = WikiConfig.DataStore.Query<Article>()
-                    .Where(x => x.WikiNamespace.ToLower() == wikiNamespace.ToLower()
-                        && x.Title.ToLower() == title.ToLower()
-                        && x.TimestampTicks == ticks)
-                    .ToList();
-                if (articles.Count == 1)
-                {
-                    article = articles[0];
-                }
-            }
             return article;
         }
 
@@ -637,11 +600,11 @@ namespace NeverFoundry.Wiki
             {
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
+            wikiNamespace = wikiNamespace?.ToWikiTitleCase();
             if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase))
             {
                 return await Category.NewAsync(title, editor, markdown, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
             }
-
             if (WikiConfig.ReservedNamespaces.Any(x => string.Equals(wikiNamespace, x, StringComparison.CurrentCultureIgnoreCase)))
             {
                 throw new ArgumentException("Value for namespace was a reserved name", nameof(wikiNamespace));
@@ -652,14 +615,12 @@ namespace NeverFoundry.Wiki
             }
 
             title = title.ToWikiTitleCase();
-            if (WikiConfig.DataStore.Query<Article>().Any(x => x.WikiNamespace == wikiNamespace && x.Title == title))
-            {
-                throw new ArgumentException("The given title is already in use for this namespace", nameof(title));
-            }
 
             var wikiId = WikiConfig.DataStore.CreateNewIdFor<Article>();
 
-            var revision = new WikiRevision(
+            await CreatePageReferenceAsync(wikiId, title, wikiNamespace).ConfigureAwait(false);
+
+            var revision = new Revision(
                 wikiId,
                 editor,
                 title,
@@ -668,40 +629,16 @@ namespace NeverFoundry.Wiki
                 markdown);
             await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
-            string? redirectNamespace = null;
-            string? redirectTitle = null;
-            var isBrokenRedirect = false;
-            var isDoubleRedirect = false;
-            if (markdown?.StartsWith("{{redirect|", StringComparison.OrdinalIgnoreCase) == true
-                && markdown.IndexOf("}}") != -1)
-            {
-                var (newNamespace, newTitle, _, _) = GetTitleParts(markdown[11..markdown.IndexOf("}}")]);
-                redirectTitle = newTitle;
-                redirectNamespace = newNamespace;
-
-                // Redirect to a category or file from an article is not valid.
-                if (string.Equals(redirectNamespace, WikiConfig.CategoryNamespace, StringComparison.Ordinal)
-                    || string.Equals(redirectNamespace, WikiConfig.FileNamespace, StringComparison.Ordinal))
-                {
-                    isBrokenRedirect = true;
-                }
-                else
-                {
-                    var redirect = GetArticle(redirectTitle, redirectNamespace);
-                    if (redirect is null)
-                    {
-                        isBrokenRedirect = true;
-                    }
-                    else if (!string.IsNullOrEmpty(redirect.RedirectTitle))
-                    {
-                        isDoubleRedirect = true;
-                    }
-                }
-            }
+            var (
+                redirectNamespace,
+                redirectTitle,
+                isRedirect,
+                isBrokenRedirect,
+                isDoubleRedirect) = await IdentifyRedirectAsync(wikiId, markdown).ConfigureAwait(false);
 
             var md = markdown;
             List<Transclusion> transclusions;
-            if (string.IsNullOrEmpty(markdown))
+            if (isRedirect || string.IsNullOrEmpty(markdown))
             {
                 transclusions = new List<Transclusion>();
             }
@@ -714,35 +651,18 @@ namespace NeverFoundry.Wiki
                     out transclusions);
             }
 
-            var wikiLinks = GetWikiLinks(md);
-            foreach (var link in wikiLinks.Where(x => x.Missing))
-            {
-                var existing = await WikiConfig.DataStore.Query<MissingPage>()
-                    .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
-                    .ConfigureAwait(false);
-                if (existing is null)
-                {
-                    var missingPage = await MissingPage.NewAsync(
-                        WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
-                        link.Title,
-                        link.WikiNamespace,
-                        wikiId)
-                        .ConfigureAwait(false);
-                }
-            }
+            var wikiLinks = isRedirect
+                ? new List<WikiLink>()
+                : GetWikiLinks(md, title, wikiNamespace);
 
-            var categories = new List<string>();
-            var categoryTitles = wikiLinks
-                .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
-                .Select(x => x.Title)
-                .ToList();
-            foreach (var categoryTitle in categoryTitles)
-            {
-                var category = Category.GetCategory(categoryTitle)
-                    ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
-                await category.AddArticleAsync(wikiId).ConfigureAwait(false);
-                categories.Add(category.Title);
-            }
+            var categories = await UpdateCategoriesAsync(
+                wikiId,
+                editor,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                wikiLinks)
+                .ConfigureAwait(false);
 
             var article = new Article(
                 wikiId,
@@ -763,24 +683,488 @@ namespace NeverFoundry.Wiki
                 isDoubleRedirect);
             await WikiConfig.DataStore.StoreItemAsync(article).ConfigureAwait(false);
 
-            var missing = await WikiConfig.DataStore.Query<MissingPage>()
-                .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == wikiNamespace)
+            await AddPageTransclusionsAsync(wikiId, transclusions).ConfigureAwait(false);
+
+            await AddPageLinksAsync(wikiId, wikiLinks).ConfigureAwait(false);
+
+            await UpdateReferencesAsync(
+                title,
+                wikiNamespace,
+                false,
+                true,
+                null,
+                null,
+                true,
+                isRedirect)
                 .ConfigureAwait(false);
-            if (!(missing is null))
+
+            return article;
+        }
+
+        private protected static async Task AddPageLinksAsync(string id, IEnumerable<WikiLink> wikiLinks)
+        {
+            foreach (var link in wikiLinks.Where(x => !x.IsCategory))
+            {
+                var linkReference = await WikiConfig.DataStore
+                    .GetItemAsync<PageLinks>($"{link.WikiNamespace}:{link.Title}:links")
+                    .ConfigureAwait(false);
+                if (linkReference is null)
+                {
+                    await PageLinks.NewAsync(link.Title, link.WikiNamespace, id).ConfigureAwait(false);
+                }
+                else
+                {
+                    await linkReference.AddReferenceAsync(id).ConfigureAwait(false);
+                }
+
+                if (link.Missing)
+                {
+                    var existing = await WikiConfig.DataStore
+                        .GetItemAsync<MissingPage>($"{link.WikiNamespace}:{link.Title}:missing")
+                        .ConfigureAwait(false);
+                    if (existing is null)
+                    {
+                        var missingPage = await MissingPage.NewAsync(
+                            link.Title,
+                            link.WikiNamespace,
+                            id)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await existing.AddReferenceAsync(id).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
+        private protected static async Task AddPageTransclusionsAsync(string id, IEnumerable<Transclusion> transclusions)
+        {
+            foreach (var transclusion in transclusions)
+            {
+                var reference = await WikiConfig.DataStore
+                    .GetItemAsync<PageTransclusions>($"{transclusion.WikiNamespace}:{transclusion.Title}:transclusions")
+                    .ConfigureAwait(false);
+                if (reference is null)
+                {
+                    await PageTransclusions.NewAsync(transclusion.Title, transclusion.WikiNamespace, id).ConfigureAwait(false);
+                }
+                else
+                {
+                    await reference.AddReferenceAsync(id).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private protected static async Task CreatePageReferenceAsync(string id, string title, string wikiNamespace)
+        {
+            var existingPage = await WikiConfig.DataStore
+                .GetItemAsync<PageReference>($"{wikiNamespace}:{title}:reference")
+                .ConfigureAwait(false);
+            if (existingPage is null)
+            {
+                await PageReference.NewAsync(id, title, wikiNamespace).ConfigureAwait(false);
+            }
+            else if (existingPage.Reference != id)
+            {
+                throw new ArgumentException("The given title is already in use for this namespace", nameof(title));
+            }
+
+            var existingNormalizedReference = await WikiConfig.DataStore
+                .GetItemAsync<NormalizedPageReference>($"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference")
+                .ConfigureAwait(false);
+            if (existingNormalizedReference is null)
+            {
+                await NormalizedPageReference.NewAsync(id, title, wikiNamespace).ConfigureAwait(false);
+            }
+            else
+            {
+                await existingNormalizedReference.AddReferenceAsync(id).ConfigureAwait(false);
+            }
+
+            var missing = await WikiConfig.DataStore
+                .GetItemAsync<MissingPage>($"{wikiNamespace}:{title}:missing")
+                .ConfigureAwait(false);
+            if (missing is not null)
             {
                 await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
             }
+        }
 
-            var brokenRedirect = await WikiConfig.DataStore.Query<Article>()
-                .FirstOrDefaultAsync(x => x.IsBrokenRedirect && x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
-                .ConfigureAwait(false);
-            if (!(brokenRedirect is null))
+        private static async Task<(
+            HashSet<string> idsToUpdate,
+            HashSet<string> idsToUpdateRecursively,
+            HashSet<string> redirectsToUpdate)> GetIdsToUpdateAsync(
+            string title,
+            string wikiNamespace,
+            bool sameTitle,
+            string? previousTitle = null,
+            string? previousNamespace = null,
+            bool processRedirects = false)
+        {
+            var idsToUpdate = new HashSet<string>();
+            var idsToUpdateRecursively = new HashSet<string>();
+            var redirectsToUpdate = new HashSet<string>();
+
+            if (processRedirects)
             {
-                brokenRedirect.IsBrokenRedirect = false;
-                await WikiConfig.DataStore.StoreItemAsync(brokenRedirect).ConfigureAwait(false);
+                if (!sameTitle)
+                {
+                    var previousRedirectReference = await WikiConfig.DataStore
+                        .GetItemAsync<PageRedirects>($"{previousNamespace}:{previousTitle}:redirects")
+                        .ConfigureAwait(false);
+                    if (previousRedirectReference is not null)
+                    {
+                        foreach (var redirect in previousRedirectReference.References)
+                        {
+                            idsToUpdate.Add(redirect);
+                            idsToUpdateRecursively.Add(redirect);
+                            redirectsToUpdate.Add(redirect);
+                        }
+                    }
+                }
+
+                var redirectReference = await WikiConfig.DataStore
+                    .GetItemAsync<PageRedirects>($"{wikiNamespace}:{title}:redirects")
+                    .ConfigureAwait(false);
+                if (redirectReference is not null)
+                {
+                    foreach (var redirect in redirectReference.References)
+                    {
+                        idsToUpdate.Add(redirect);
+                        idsToUpdateRecursively.Add(redirect);
+                        redirectsToUpdate.Add(redirect);
+                    }
+                }
             }
 
-            return article;
+            if (!sameTitle)
+            {
+                var previousPageTransclusions = await WikiConfig.DataStore
+                    .GetItemAsync<PageTransclusions>($"{previousNamespace}:{previousTitle}:transclusions")
+                    .ConfigureAwait(false);
+                if (previousPageTransclusions is not null)
+                {
+                    foreach (var reference in previousPageTransclusions.References)
+                    {
+                        idsToUpdate.Add(reference);
+                        idsToUpdateRecursively.Add(reference);
+                    }
+                }
+
+                var previousReferences = await WikiConfig.DataStore
+                    .GetItemAsync<PageLinks>($"{previousNamespace}:{previousTitle}:links")
+                    .ConfigureAwait(false);
+                if (previousReferences is not null)
+                {
+                    foreach (var reference in previousReferences.References)
+                    {
+                        idsToUpdate.Add(reference);
+                    }
+                }
+            }
+
+            var pageTransclusions = await WikiConfig.DataStore
+                .GetItemAsync<PageTransclusions>($"{wikiNamespace}:{title}:transclusions")
+                .ConfigureAwait(false);
+            if (pageTransclusions is not null)
+            {
+                foreach (var reference in pageTransclusions.References)
+                {
+                    idsToUpdate.Add(reference);
+                    idsToUpdateRecursively.Add(reference);
+                }
+            }
+
+            var references = await WikiConfig.DataStore
+                .GetItemAsync<PageLinks>($"{wikiNamespace}:{title}:links")
+                .ConfigureAwait(false);
+            if (references is not null)
+            {
+                foreach (var reference in references.References)
+                {
+                    idsToUpdate.Add(reference);
+                }
+            }
+
+            return (
+                idsToUpdate,
+                idsToUpdateRecursively,
+                redirectsToUpdate);
+        }
+
+        private static async Task<(
+            string? redirectNamespace,
+            string? redirectTitle,
+            bool isRedirect,
+            bool isBrokenRedirect,
+            bool isDoubleRedirect)> IdentifyRedirectAsync(
+            string id,
+            string? markdown)
+        {
+            if ((markdown?.StartsWith("{{redirect|", StringComparison.OrdinalIgnoreCase)) != true
+                || markdown.IndexOf("}}") == -1)
+            {
+                return (
+                    null,
+                    null,
+                    false,
+                    false,
+                    false);
+            }
+
+            var (redirectNamespace, redirectTitle, _, defaultNamespace) = GetTitleParts(markdown[11..markdown.IndexOf("}}")]);
+
+            // Redirect to a category or file from an article is not valid.
+            if (!defaultNamespace
+                && (string.Equals(redirectNamespace, WikiConfig.CategoryNamespace, StringComparison.Ordinal)
+                || string.Equals(redirectNamespace, WikiConfig.FileNamespace, StringComparison.Ordinal)))
+            {
+                return (
+                    redirectNamespace,
+                    redirectTitle,
+                    true,
+                    true,
+                    false);
+            }
+
+            var isBrokenRedirect = false;
+            var isDoubleRedirect = false;
+
+            var redirect = await WikiConfig.DataStore
+                .GetItemAsync<PageReference>($"{redirectNamespace}:{redirectTitle}:reference")
+                .ConfigureAwait(false);
+            if (redirect is null)
+            {
+                isBrokenRedirect = true;
+            }
+            else
+            {
+                var redirectArticle = await WikiConfig.DataStore
+                    .GetItemAsync<Article>(redirect.Reference)
+                    .ConfigureAwait(false);
+                if (redirectArticle is null)
+                {
+                    isBrokenRedirect = true;
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(redirectArticle.RedirectTitle))
+                    {
+                        isDoubleRedirect = true;
+                    }
+
+                    var existingRedirect = await WikiConfig.DataStore
+                        .GetItemAsync<PageRedirects>($"{redirectNamespace}:{redirectTitle}:redirects")
+                        .ConfigureAwait(false);
+                    if (existingRedirect is null)
+                    {
+                        await PageRedirects.NewAsync(redirectTitle!, redirectNamespace!, id).ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await existingRedirect.AddReferenceAsync(id).ConfigureAwait(false);
+                    }
+                }
+            }
+
+            return (
+                redirectNamespace,
+                redirectTitle,
+                true,
+                isBrokenRedirect,
+                isDoubleRedirect);
+        }
+
+        private protected static async Task RemovePageLinksAsync(string id, IEnumerable<WikiLink> wikiLinks)
+        {
+            foreach (var link in wikiLinks.Where(x => !x.IsCategory))
+            {
+                var linkReference = await WikiConfig.DataStore
+                    .GetItemAsync<PageLinks>($"{link.WikiNamespace}:{link.Title}:links")
+                    .ConfigureAwait(false);
+                if (linkReference is not null)
+                {
+                    await linkReference.RemoveReferenceAsync(id).ConfigureAwait(false);
+                }
+
+                var missing = await WikiConfig.DataStore
+                    .GetItemAsync<MissingPage>($"{link.WikiNamespace}:{link.Title}:missing")
+                    .ConfigureAwait(false);
+                if (missing is not null)
+                {
+                    await missing.RemoveReferenceAsync(id).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private protected static async Task RemovePageReferenceAsync(string id, string title, string wikiNamespace)
+        {
+            var existingReference = await WikiConfig.DataStore
+                .GetItemAsync<PageReference>($"{wikiNamespace}:{title}:reference")
+                .ConfigureAwait(false);
+            if (existingReference is not null)
+            {
+                await WikiConfig.DataStore.RemoveItemAsync(existingReference).ConfigureAwait(false);
+            }
+
+            var existingNormalizedReference = await WikiConfig.DataStore
+                .GetItemAsync<NormalizedPageReference>($"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference")
+                .ConfigureAwait(false);
+            if (existingNormalizedReference is not null)
+            {
+                await existingNormalizedReference.RemoveReferenceAsync(id).ConfigureAwait(false);
+            }
+
+            var linkReference = await WikiConfig.DataStore
+                .GetItemAsync<PageLinks>($"{wikiNamespace}:{title}:links")
+                .ConfigureAwait(false);
+            if (linkReference is not null && linkReference.References.Count > 0)
+            {
+                var missing = await WikiConfig.DataStore
+                    .GetItemAsync<MissingPage>($"{wikiNamespace}:{title}:missing")
+                    .ConfigureAwait(false);
+                if (missing is not null)
+                {
+                    await MissingPage.NewAsync(title, wikiNamespace, linkReference.References).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private protected static async Task RemovePageTransclusionsAsync(string id, IEnumerable<Transclusion> transclusions)
+        {
+            foreach (var transclusion in transclusions)
+            {
+                var reference = await WikiConfig.DataStore
+                    .GetItemAsync<PageTransclusions>($"{transclusion.WikiNamespace}:{transclusion.Title}:transclusions")
+                    .ConfigureAwait(false);
+                if (reference is not null)
+                {
+                    await reference.RemoveReferenceAsync(id).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private protected static async Task<List<string>> UpdateCategoriesAsync(
+            string id,
+            string editor,
+            string? owner,
+            IEnumerable<string>? allowedEditors,
+            IEnumerable<string>? allowedViewers,
+            IEnumerable<WikiLink> wikiLinks,
+            IEnumerable<string>? previousCategories = null)
+        {
+            var categories = previousCategories?.ToList() ?? new List<string>();
+
+            var newCategories = new List<string>();
+            foreach (var categoryTitle in wikiLinks
+                .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
+                .Select(x => x.Title)
+                .Except(categories))
+            {
+                var category = Category.GetCategory(categoryTitle)
+                    ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
+                if (!category.ChildIds.Contains(id))
+                {
+                    await category.AddArticleAsync(id).ConfigureAwait(false);
+                    newCategories.Add(category.Title);
+                }
+            }
+
+            foreach (var removedCategory in categories.Except(newCategories))
+            {
+                var category = Category.GetCategory(removedCategory);
+                if (category is not null)
+                {
+                    await category.RemoveChildIdAsync(id).ConfigureAwait(false);
+                    categories.Remove(category.Title);
+                }
+            }
+
+            categories.AddRange(newCategories);
+
+            return categories;
+        }
+
+        private protected static async Task UpdateReferencesAsync(
+            string title,
+            string wikiNamespace,
+            bool deleted,
+            bool sameTitle,
+            string? previousTitle = null,
+            string? previousNamespace = null,
+            bool processRedirects = false,
+            bool isRedirect = false)
+        {
+            var idsUpdated = new HashSet<string>();
+            var idsUpdatedRecursively = new HashSet<string>();
+
+            var (idsToUpdate,
+                idsToUpdateRecursively,
+                redirectsToUpdate) = await GetIdsToUpdateAsync(
+                    title,
+                    wikiNamespace,
+                    sameTitle,
+                    previousTitle,
+                    previousNamespace,
+                    processRedirects)
+                .ConfigureAwait(false);
+
+            while (idsToUpdate.Count > 0)
+            {
+                var idToUpdate = idsToUpdate.First();
+                idsToUpdate.Remove(idToUpdate);
+
+                var referringArticle = await WikiConfig.DataStore.GetItemAsync<Article>(idToUpdate).ConfigureAwait(false);
+                if (referringArticle is null)
+                {
+                    idsUpdated.Add(idToUpdate);
+                    idsUpdatedRecursively.Add(idToUpdate);
+                    continue;
+                }
+
+                if (!idsUpdated.Contains(idToUpdate))
+                {
+                    if (redirectsToUpdate.Contains(idToUpdate))
+                    {
+                        referringArticle.IsBrokenRedirect = deleted;
+                        referringArticle.IsDoubleRedirect = isRedirect;
+                        redirectsToUpdate.Remove(idToUpdate);
+                    }
+
+                    referringArticle.Update();
+                    await WikiConfig.DataStore.StoreItemAsync(referringArticle).ConfigureAwait(false);
+
+                    idsUpdated.Add(idToUpdate);
+                }
+
+                if (idsToUpdateRecursively.Contains(idToUpdate))
+                {
+                    idsToUpdateRecursively.Remove(idToUpdate);
+                    idsUpdatedRecursively.Add(idToUpdate);
+
+                    var (childIdsToUpdate,
+                        childIdsToUpdateRecursively,
+                        _) = await GetIdsToUpdateAsync(
+                            referringArticle.Title,
+                            referringArticle.WikiNamespace,
+                            true,
+                            null,
+                            null,
+                            referringArticle.IdItemTypeName != Category.CategoryIdItemTypeName
+                                && referringArticle.IdItemTypeName != WikiFile.WikiFileIdItemTypeName)
+                        .ConfigureAwait(false);
+                    foreach (var id in childIdsToUpdate.Except(idsUpdated))
+                    {
+                        idsToUpdate.Add(id);
+                    }
+                    foreach (var id in childIdsToUpdateRecursively.Except(idsUpdatedRecursively))
+                    {
+                        idsToUpdate.Add(id);
+                        idsToUpdateRecursively.Add(id);
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -841,7 +1225,7 @@ namespace NeverFoundry.Wiki
             return RenderHtml(TransclusionParser.Transclude(
                 revisions[revisions.Count - 1].Title,
                 revisions[revisions.Count - 1].FullTitle,
-                WikiRevision.GetDiff(revisions, format),
+                Revision.GetDiff(revisions, format),
                 out _));
         }
 
@@ -874,7 +1258,7 @@ namespace NeverFoundry.Wiki
             return RenderHtml(TransclusionParser.Transclude(
                 revisions[revisions.Count - 1].Title,
                 revisions[revisions.Count - 1].FullTitle,
-                WikiRevision.GetDiff(revisions, "html"),
+                Revision.GetDiff(revisions, "html"),
                 out _));
         }
 
@@ -926,7 +1310,7 @@ namespace NeverFoundry.Wiki
         public async Task<string> GetDiffWithCurrentAsync(DateTimeOffset time, string format = "md")
         {
             var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
-            return Diff.GetWordDiff(WikiRevision.GetText(revisions), MarkdownContent).ToString(format);
+            return Diff.GetWordDiff(Revision.GetText(revisions), MarkdownContent).ToString(format);
         }
 
         /// <summary>
@@ -948,7 +1332,7 @@ namespace NeverFoundry.Wiki
         public async Task<string> GetDiffWithCurrentHtmlAsync(DateTimeOffset time)
         {
             var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
-            var diff = Diff.GetWordDiff(WikiRevision.GetText(revisions), MarkdownContent).ToString("html");
+            var diff = Diff.GetWordDiff(Revision.GetText(revisions), MarkdownContent).ToString("html");
             return RenderHtml(TransclusionParser.Transclude(
                 revisions[revisions.Count - 1].Title,
                 revisions[revisions.Count - 1].FullTitle,
@@ -1016,7 +1400,7 @@ namespace NeverFoundry.Wiki
             }
             var firstRevisions = await GetRevisionsUntilAsync(firstTime).ConfigureAwait(false);
             var secondRevisions = await GetRevisionsUntilAsync(secondTime).ConfigureAwait(false);
-            return Diff.GetWordDiff(WikiRevision.GetText(firstRevisions), WikiRevision.GetText(secondRevisions)).ToString(format);
+            return Diff.GetWordDiff(Revision.GetText(firstRevisions), Revision.GetText(secondRevisions)).ToString(format);
         }
 
         /// <summary>
@@ -1051,7 +1435,7 @@ namespace NeverFoundry.Wiki
             }
             var firstRevisions = await GetRevisionsUntilAsync(firstTime).ConfigureAwait(false);
             var secondRevisions = await GetRevisionsUntilAsync(secondTime).ConfigureAwait(false);
-            var diff = Diff.GetWordDiff(WikiRevision.GetText(firstRevisions), WikiRevision.GetText(secondRevisions)).ToString("html");
+            var diff = Diff.GetWordDiff(Revision.GetText(firstRevisions), Revision.GetText(secondRevisions)).ToString("html");
             return RenderHtml(TransclusionParser.Transclude(
                 secondRevisions[secondRevisions.Count - 1].Title,
                 secondRevisions[secondRevisions.Count - 1].FullTitle,
@@ -1073,7 +1457,7 @@ namespace NeverFoundry.Wiki
             return RenderHtml(TransclusionParser.Transclude(
                 revisions[revisions.Count - 1].Title,
                 revisions[revisions.Count - 1].FullTitle,
-                WikiRevision.GetText(revisions),
+                Revision.GetText(revisions),
                 out _));
         }
 
@@ -1088,14 +1472,14 @@ namespace NeverFoundry.Wiki
         /// <param name="condition">An optional condition which the items must satisfy.</param>
         /// <returns>An <see cref="IOrderedQueryable{T}"/> of <see cref="Article"/>
         /// instances.</returns>
-        public async Task<IPagedList<WikiRevision>> GetHistoryAsync(
+        public async Task<IPagedList<Revision>> GetHistoryAsync(
             int pageNumber,
             int pageSize,
             DateTimeOffset? start = null,
             DateTimeOffset? end = null,
-            Expression<Func<WikiRevision, bool>>? condition = null)
+            Expression<Func<Revision, bool>>? condition = null)
         {
-            Expression<Func<WikiRevision, bool>> exp = x => x.WikiId == Id;
+            Expression<Func<Revision, bool>> exp = x => x.WikiId == Id;
             if (start.HasValue)
             {
                 exp = exp.AndAlso(x => x.TimestampTicks >= start.Value.ToUniversalTime().Ticks);
@@ -1105,7 +1489,7 @@ namespace NeverFoundry.Wiki
                 exp = exp.AndAlso(x => x.TimestampTicks <= end.Value.ToUniversalTime().Ticks);
             }
             exp = condition is null ? exp : exp.AndAlso(condition);
-            return await WikiConfig.DataStore.Query<WikiRevision>()
+            return await WikiConfig.DataStore.Query<Revision>()
                 .Where(exp)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .GetPageAsync(pageNumber, pageSize)
@@ -1123,7 +1507,7 @@ namespace NeverFoundry.Wiki
             {
                 return string.Empty;
             }
-            return WikiRevision.GetText(revisions);
+            return Revision.GetText(revisions);
         }
 
         /// <summary>Populates a <see cref="SerializationInfo"></see> with the data needed to
@@ -1139,7 +1523,9 @@ namespace NeverFoundry.Wiki
         {
             info.AddValue(nameof(Id), Id);
             info.AddValue(nameof(Title), Title);
+            info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
+            info.AddValue(nameof(Preview), Preview);
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(WikiNamespace), WikiNamespace);
@@ -1235,235 +1621,123 @@ namespace NeverFoundry.Wiki
             IEnumerable<string>? allowedEditors = null,
             IEnumerable<string>? allowedViewers = null)
         {
-            title ??= Title;
+            title ??= title?.ToWikiTitleCase() ?? Title;
             if (string.IsNullOrWhiteSpace(wikiNamespace))
             {
-                wikiNamespace = null;
+                wikiNamespace = WikiNamespace;
             }
-            wikiNamespace ??= WikiNamespace;
-
-            if (WikiConfig.DataStore.Query<Article>()
-                .Any(x => x.Id != Id
-                    && x.WikiNamespace == wikiNamespace
-                    && x.Title == title))
-            {
-                throw new ArgumentException("The given title is already in use for this namespace", nameof(title));
-            }
+            wikiNamespace ??= wikiNamespace?.ToWikiTitleCase() ?? WikiNamespace;
 
             var previousTitle = Title;
             var previousNamespace = WikiNamespace;
             Title = title;
             WikiNamespace = wikiNamespace;
+            var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal)
+                && string.Equals(previousNamespace, wikiNamespace, StringComparison.Ordinal);
 
             var previousMarkdown = MarkdownContent;
-            if (isDeleted)
-            {
-                IsBrokenRedirect = false;
-                IsDeleted = true;
-                IsDoubleRedirect = false;
-                MarkdownContent = string.Empty;
-                WikiLinks = new List<WikiLink>().AsReadOnly();
-                Categories = new List<string>().AsReadOnly();
-                Transclusions = null;
-                RedirectTitle = null;
-                RedirectNamespace = null;
+            var wasDeleted = IsDeleted || string.IsNullOrWhiteSpace(previousMarkdown);
+            var isRedirect = !string.IsNullOrEmpty(RedirectTitle);
 
-                foreach (var link in WikiLinks)
-                {
-                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
-                        .FirstOrDefaultAsync(x => x.Title == link.Title
-                            && x.WikiNamespace == link.WikiNamespace
-                            && x.References.Count == 1
-                            && x.References.Contains(Id))
-                        .ConfigureAwait(false);
-                    if (!(missing is null))
-                    {
-                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
-                    }
-                }
-
-                await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
-                    .Where(x => x.RedirectTitle == previousTitle && x.RedirectNamespace == previousNamespace)
-                    .AsAsyncEnumerable())
-                {
-                    redirect.IsBrokenRedirect = true;
-                    redirect.IsDoubleRedirect = false;
-                    await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
-                }
-            }
-            else if (!(markdown is null))
+            if (isDeleted || string.IsNullOrWhiteSpace(markdown))
             {
-                if (string.IsNullOrWhiteSpace(markdown))
+                if (!wasDeleted)
                 {
+                    Html = string.Empty;
                     IsBrokenRedirect = false;
                     IsDeleted = true;
                     IsDoubleRedirect = false;
                     MarkdownContent = string.Empty;
-                    WikiLinks = new List<WikiLink>().AsReadOnly();
+                    Preview = string.Empty;
                     Categories = new List<string>().AsReadOnly();
-                    Transclusions = null;
                     RedirectTitle = null;
                     RedirectNamespace = null;
 
-                    foreach (var link in WikiLinks)
+                    if (Transclusions is not null)
                     {
-                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
-                            .FirstOrDefaultAsync(x => x.Title == link.Title
-                                && x.WikiNamespace == link.WikiNamespace
-                                && x.References.Count == 1
-                                && x.References.Contains(Id))
-                            .ConfigureAwait(false);
-                        if (!(missingLink is null))
-                        {
-                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
-                        }
+                        await RemovePageTransclusionsAsync(Id, Transclusions).ConfigureAwait(false);
                     }
+
+                    await RemovePageLinksAsync(Id, WikiLinks).ConfigureAwait(false);
+
+                    Transclusions = null;
+                    WikiLinks = new List<WikiLink>().AsReadOnly();
                 }
-                else
+            }
+            else
+            {
+                IsDeleted = false;
+            }
+
+            if (!sameTitle && !IsDeleted)
+            {
+                await CreatePageReferenceAsync(Id, title, wikiNamespace).ConfigureAwait(false);
+            }
+            if (!sameTitle)
+            {
+                await RemovePageReferenceAsync(Id, previousTitle, previousNamespace).ConfigureAwait(false);
+            }
+
+            var changed = wasDeleted != IsDeleted
+                || !string.Equals(previousMarkdown, markdown, StringComparison.Ordinal);
+
+            if (!IsDeleted && changed)
+            {
+                MarkdownContent = markdown!;
+
+                string? redirectNamespace;
+                string? redirectTitle;
+                (
+                    redirectNamespace,
+                    redirectTitle,
+                    isRedirect,
+                    _,
+                    _) = await IdentifyRedirectAsync(Id, markdown).ConfigureAwait(false);
+                if (isRedirect)
                 {
-                    MarkdownContent = markdown;
-
-                    var wasRedirect = !string.IsNullOrEmpty(RedirectTitle);
-                    if (MarkdownContent.StartsWith("{{redirect|", StringComparison.OrdinalIgnoreCase)
-                        && MarkdownContent.IndexOf("}}") != -1)
-                    {
-                        var (newNamespace, newTitle, _, _) = GetTitleParts(MarkdownContent[11..MarkdownContent.IndexOf("}}")]);
-                        RedirectTitle = newTitle;
-                        RedirectNamespace = newNamespace;
-
-                        if (string.Equals(title, previousTitle, StringComparison.Ordinal)
-                            && string.Equals(wikiNamespace, previousNamespace, StringComparison.Ordinal))
-                        {
-                            await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
-                                .Where(x => x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
-                                .AsAsyncEnumerable())
-                            {
-                                redirect.IsDoubleRedirect = true;
-                                await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
-                            }
-                        }
-                    }
-                    else if (wasRedirect
-                        && string.Equals(title, previousTitle, StringComparison.Ordinal)
-                        && string.Equals(wikiNamespace, previousNamespace, StringComparison.Ordinal))
-                    {
-                        await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
-                            .Where(x => x.IsDoubleRedirect && x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
-                            .AsAsyncEnumerable())
-                        {
-                            redirect.IsDoubleRedirect = false;
-                            await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
-                        }
-                    }
-
-                    var md = TransclusionParser.Transclude(
-                        title,
-                        GetFullTitle(title, wikiNamespace),
-                        markdown,
-                        out var transclusions);
-                    Transclusions = transclusions.Count == 0
-                        ? null
-                        : transclusions.AsReadOnly();
-
-                    var previousWikiLinks = WikiLinks.ToList();
-                    WikiLinks = GetWikiLinks(md).AsReadOnly();
-                    foreach (var link in previousWikiLinks.Except(WikiLinks))
-                    {
-                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
-                            .FirstOrDefaultAsync(x => x.Title == link.Title
-                                && x.WikiNamespace == link.WikiNamespace
-                                && x.References.Count == 1
-                                && x.References.Contains(Id))
-                            .ConfigureAwait(false);
-                        if (!(missingLink is null))
-                        {
-                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
-                        }
-                    }
-                    foreach (var link in WikiLinks.Except(previousWikiLinks).Where(x => x.Missing))
-                    {
-                        var existing = await WikiConfig.DataStore.Query<MissingPage>()
-                            .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
-                            .ConfigureAwait(false);
-                        if (existing is null)
-                        {
-                            var missingPage = await MissingPage.NewAsync(
-                                WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
-                                link.Title,
-                                link.WikiNamespace,
-                                Id)
-                                .ConfigureAwait(false);
-                        }
-                    }
-
-                    var categories = Categories.ToList();
-                    var categoryTitles = WikiLinks
-                        .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
-                        .Select(x => x.Title)
-                        .ToList();
-                    var newCategories = new List<string>();
-                    foreach (var categoryTitle in categoryTitles)
-                    {
-                        var category = Category.GetCategory(categoryTitle)
-                            ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
-                        if (!category.ChildIds.Contains(Id))
-                        {
-                            await category.AddArticleAsync(Id).ConfigureAwait(false);
-                            newCategories.Add(category.Title);
-                        }
-                    }
-                    foreach (var removedCategory in categories.Except(newCategories).ToList())
-                    {
-                        var category = Category.GetCategory(removedCategory);
-                        if (category is null)
-                        {
-                            continue;
-                        }
-                        await category.RemoveChildAsync(this).ConfigureAwait(false);
-                        categories.Remove(category.Title);
-                    }
-                    if (newCategories.Count > 0)
-                    {
-                        categories.AddRange(newCategories);
-                    }
-                    Categories = categories.AsReadOnly();
+                    RedirectTitle = redirectTitle;
+                    RedirectNamespace = redirectNamespace;
                 }
 
-                if (!string.Equals(title, previousTitle, StringComparison.Ordinal)
-                    || !string.Equals(wikiNamespace, previousNamespace, StringComparison.Ordinal))
-                {
-                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
-                        .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == wikiNamespace)
-                        .ConfigureAwait(false);
-                    if (!(missing is null))
-                    {
-                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
-                    }
+                var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
+                var md = TransclusionParser.Transclude(
+                    title,
+                    GetFullTitle(title, wikiNamespace),
+                    markdown!,
+                    out var transclusions);
+                Transclusions = transclusions.Count == 0
+                    ? null
+                    : transclusions.AsReadOnly();
+                await RemovePageTransclusionsAsync(Id, previousTransclusions.Except(transclusions)).ConfigureAwait(false);
+                await AddPageTransclusionsAsync(Id, transclusions.Except(previousTransclusions)).ConfigureAwait(false);
 
-                    await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
-                        .Where(x => x.RedirectTitle == previousTitle && x.RedirectNamespace == previousNamespace)
-                        .AsAsyncEnumerable())
-                    {
-                        redirect.IsBrokenRedirect = true;
-                        redirect.IsDoubleRedirect = false;
-                        await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
-                    }
+                var previousWikiLinks = WikiLinks.ToList();
+                WikiLinks = GetWikiLinks(md, title, wikiNamespace).AsReadOnly();
+                await RemovePageLinksAsync(Id, previousWikiLinks.Except(WikiLinks)).ConfigureAwait(false);
+                await AddPageLinksAsync(Id, WikiLinks.Except(previousWikiLinks)).ConfigureAwait(false);
+            }
 
-                    await foreach (var redirect in WikiConfig.DataStore.Query<Article>()
-                        .Where(x => x.RedirectTitle == title && x.RedirectNamespace == wikiNamespace)
-                        .AsAsyncEnumerable())
-                    {
-                        redirect.IsBrokenRedirect = false;
-                        await WikiConfig.DataStore.StoreItemAsync(redirect).ConfigureAwait(false);
-                    }
-                }
+            if (changed)
+            {
+                Categories = (await UpdateCategoriesAsync(
+                    Id,
+                    editor,
+                    owner,
+                    allowedEditors,
+                    allowedViewers,
+                    WikiLinks,
+                    Categories)
+                    .ConfigureAwait(false))
+                    .AsReadOnly();
+
+                Update();
             }
 
             Owner = owner;
             AllowedEditors = allowedEditors?.ToList().AsReadOnly();
             AllowedViewers = allowedViewers?.ToList().AsReadOnly();
 
-            var revision = new WikiRevision(
+            var revision = new Revision(
                 Id,
                 editor,
                 title,
@@ -1476,21 +1750,32 @@ namespace NeverFoundry.Wiki
             TimestampTicks = revision.TimestampTicks;
 
             await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
+
+            await UpdateReferencesAsync(
+                title,
+                wikiNamespace,
+                IsDeleted,
+                sameTitle,
+                previousTitle,
+                previousNamespace,
+                true,
+                isRedirect)
+                .ConfigureAwait(false);
         }
 
-        private async Task<IReadOnlyList<WikiRevision>> GetRevisionsUntilAsync(DateTimeOffset time)
+        private async Task<IReadOnlyList<Revision>> GetRevisionsUntilAsync(DateTimeOffset time)
         {
             var ticks = time.ToUniversalTime().Ticks;
-            var lastMilestone = await WikiConfig.DataStore.Query<WikiRevision>()
+            var lastMilestone = await WikiConfig.DataStore.Query<Revision>()
                 .Where(x => x.WikiId == Id && x.TimestampTicks <= ticks && x.IsMilestone)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .FirstOrDefaultAsync()
                 .ConfigureAwait(false);
             if (lastMilestone is null)
             {
-                return new List<WikiRevision>();
+                return new List<Revision>();
             }
-            return await WikiConfig.DataStore.Query<WikiRevision>()
+            return await WikiConfig.DataStore.Query<Revision>()
                 .Where(x => x.WikiId == Id && x.TimestampTicks >= lastMilestone.TimestampTicks && x.TimestampTicks <= ticks)
                 .OrderBy(x => x.TimestampTicks)
                 .ToListAsync()
@@ -1504,56 +1789,12 @@ namespace NeverFoundry.Wiki
                 return string.Empty;
             }
 
-            var md = TransclusionParser.Transclude(
+            return TransclusionParser.Transclude(
                   Title,
                   FullTitle,
                   markdown,
                   out _,
                   isPreview: isPreview);
-
-            // Update wikilinks in case any embedded in transclusions have changed.
-            var wikiLinks = GetWikiLinks(md);
-            if (!WikiLinks.SequenceEqual(wikiLinks))
-            {
-                WikiLinks = wikiLinks.AsReadOnly();
-
-                // Update categories in case any specified in transclusions have changed.
-                var categories = Categories.ToList();
-                var categoryTitles = WikiLinks
-                    .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
-                    .Select(x => x.Title)
-                    .ToList();
-                var newCategories = new List<string>();
-                foreach (var categoryTitle in categoryTitles)
-                {
-                    var category = Category.GetCategory(categoryTitle)
-                        ?? Category.NewAsync(categoryTitle, "System", null).GetAwaiter().GetResult();
-                    if (!category.ChildIds.Contains(Id))
-                    {
-                        category.AddArticleAsync(Id).GetAwaiter().GetResult();
-                        newCategories.Add(category.Title);
-                    }
-                }
-                foreach (var removedCategory in categories.Except(newCategories).ToList())
-                {
-                    var category = Category.GetCategory(removedCategory);
-                    if (category is null)
-                    {
-                        continue;
-                    }
-                    category.RemoveChildAsync(this).GetAwaiter().GetResult();
-                    categories.Remove(category.Title);
-                }
-                if (newCategories.Count > 0)
-                {
-                    categories.AddRange(newCategories);
-                }
-                Categories = categories.AsReadOnly();
-
-                WikiConfig.DataStore.StoreItemAsync(this).GetAwaiter().GetResult();
-            }
-
-            return md;
         }
     }
 }

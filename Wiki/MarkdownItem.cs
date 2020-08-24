@@ -13,6 +13,7 @@ using NeverFoundry.Wiki.MarkdownExtensions.WikiLinks;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -40,15 +41,44 @@ namespace NeverFoundry.Wiki
         private const int NewLineWeight = 4;
 
         /// <summary>
+        /// The rendered HTML content.
+        /// </summary>
+        public string Html { get; private protected set; } = null!; // Always initialized during ctor, but in one instance by the subclass.
+
+        /// <summary>
         /// The markdown content.
         /// </summary>
         public string MarkdownContent { get; private protected set; }
+
+        /// <summary>
+        /// A preview of this item's rendered HTML.
+        /// </summary>
+        public string Preview { get; private protected set; } = null!; // Always initialized during ctor, but in one instance by the subclass.
 
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
         [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="MarkdownItem"/>.
+        /// </summary>
+        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+        /// <param name="html">The rendered HTML content.</param>
+        /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="preview">A preview of this item's rendered HTML.</param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        private protected MarkdownItem(string id, string html, string? markdownContent, string preview, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
+        {
+            Html = html;
+            MarkdownContent = markdownContent ?? string.Empty;
+            Preview = preview;
+            WikiLinks = wikiLinks;
+        }
 
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
@@ -69,22 +99,18 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
         /// </summary>
         /// <param name="markdown">The raw markdown.</param>
-        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-        protected MarkdownItem(string? markdown, List<WikiLink> wikiLinks)
+        private protected MarkdownItem(string? markdown)
         {
             MarkdownContent = markdown ?? string.Empty;
-            WikiLinks = wikiLinks.AsReadOnly();
+            WikiLinks = GetWikiLinks(markdown).AsReadOnly();
+            Update();
         }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="MarkdownItem"/>.
-        /// </summary>
-        /// <param name="markdown">The raw markdown.</param>
-        protected MarkdownItem(string? markdown) : this(markdown, GetWikiLinks(markdown)) { }
 
         private MarkdownItem(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
-            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(MarkdownContent), typeof(string)),
+            (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]))
         { }
 
@@ -192,7 +218,9 @@ namespace NeverFoundry.Wiki
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);
+            info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
+            info.AddValue(nameof(Preview), Preview);
             info.AddValue(nameof(WikiLinks), WikiLinks);
         }
 
@@ -365,7 +393,7 @@ namespace NeverFoundry.Wiki
             return false;
         }
 
-        private protected static List<WikiLink> GetWikiLinks(string? markdown)
+        private protected static List<WikiLink> GetWikiLinks(string? markdown, string? title = null, string? wikiNamespace = null)
             => string.IsNullOrEmpty(markdown)
             ? new List<WikiLink>()
             : Markdown.Parse(markdown, WikiConfig.MarkdownPipeline)
@@ -381,7 +409,18 @@ namespace NeverFoundry.Wiki
                 || x.Title[1] != TransclusionParser.ParameterOpenChar
                 || x.Title[^1] != TransclusionParser.ParameterCloseChar
                 || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
-            .Select(x => new WikiLink(x.Missing, x.IsCategory, x.IsNamespaceEscaped, x.IsTalk, x.Title, x.WikiNamespace))
+            .Select(x =>
+            {
+                var anchorIndex = x.Title.LastIndexOf('#');
+                return new WikiLink(
+                    x.Article,
+                    x.Missing && (x.Title != title || x.WikiNamespace != wikiNamespace),
+                    x.IsCategory,
+                    x.IsNamespaceEscaped,
+                    x.IsTalk,
+                    anchorIndex == -1 ? x.Title : x.Title[..anchorIndex],
+                    x.WikiNamespace);
+            })
             .ToList();
 
         private static void Trim(MarkdownObject obj, ref int minCharactersAvailable, ref int maxCharactersAvailable)
@@ -629,6 +668,13 @@ namespace NeverFoundry.Wiki
                 var trimmed = TrimSpan(span, ref charactersAvailable);
                 slice.End = slice.Start + trimmed.Length - 1;
             }
+        }
+
+        [MemberNotNull(nameof(Html), nameof(Preview))]
+        internal void Update()
+        {
+            Html = GetHtml();
+            Preview = GetPreview();
         }
 
         private protected virtual string PostprocessMarkdown(string? markdown, bool isPreview = false) => markdown ?? string.Empty;

@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Samples.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
 {
     [AllowAnonymous]
     public class SignOutModel : PageModel

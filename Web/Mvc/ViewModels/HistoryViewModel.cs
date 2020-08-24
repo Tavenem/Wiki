@@ -56,7 +56,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     start,
                     end,
                     editor is null
-                        ? (Expression<Func<WikiRevision, bool>>?)null
+                        ? (Expression<Func<Revision, bool>>?)null
                         : x => x.Editor.Equals(editor, StringComparison.OrdinalIgnoreCase))
                 .ConfigureAwait(false);
             var list = new List<RevisionViewModel>();

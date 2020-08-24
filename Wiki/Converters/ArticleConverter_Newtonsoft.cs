@@ -78,6 +78,17 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
                 throw new JsonException();
             }
 
+            if (!jObj.TryGetValue(nameof(MarkdownItem.Html), out var htmlToken)
+                || htmlToken.Type != JTokenType.String)
+            {
+                throw new JsonException();
+            }
+            var html = htmlToken.Value<string>();
+            if (html is null)
+            {
+                throw new JsonException();
+            }
+
             if (!jObj.TryGetValue(nameof(Article.MarkdownContent), out var markdownContentToken)
                 || markdownContentToken.Type != JTokenType.String)
             {
@@ -85,6 +96,17 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
             }
             var markdownContent = markdownContentToken.Value<string>();
             if (markdownContent is null)
+            {
+                throw new JsonException();
+            }
+
+            if (!jObj.TryGetValue(nameof(MarkdownItem.Preview), out var previewToken)
+                || previewToken.Type != JTokenType.String)
+            {
+                throw new JsonException();
+            }
+            var preview = previewToken.Value<string>();
+            if (preview is null)
             {
                 throw new JsonException();
             }
@@ -231,7 +253,9 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
                 id,
                 idItemTypeName,
                 title,
+                html,
                 markdownContent,
+                preview,
                 wikiLinks,
                 timestampTicks,
                 wikiNamespace,
@@ -283,8 +307,14 @@ namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
             writer.WritePropertyName(nameof(Article.Title));
             writer.WriteValue(value.Title);
 
+            writer.WritePropertyName(nameof(MarkdownItem.Html));
+            writer.WriteValue(value.Html);
+
             writer.WritePropertyName(nameof(Article.MarkdownContent));
             writer.WriteValue(value.MarkdownContent);
+
+            writer.WritePropertyName(nameof(MarkdownItem.Preview));
+            writer.WriteValue(value.Preview);
 
             writer.WritePropertyName(nameof(Article.WikiLinks));
             serializer.Serialize(writer, value.WikiLinks);

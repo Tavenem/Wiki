@@ -17,7 +17,7 @@ namespace NeverFoundry.Wiki.Test
             const string AdminId = "AdminId";
 
             var welcome = GetDefaultWelcomeAsync(AdminId).GetAwaiter().GetResult();
-            Assert.AreEqual(ExpectedWelcome, welcome.GetHtml(), ignoreCase: false);
+            Assert.AreEqual(ExpectedWelcome, welcome.Html, ignoreCase: false);
 
             GetDefaultMainAsync(AdminId).GetAwaiter().GetResult();
 
@@ -31,7 +31,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.IsNotNull(category);
             SetDefaultCategoryAsync(category!, AdminId).GetAwaiter().GetResult();
 
-            Assert.AreEqual(_ExpectedAbout, about.GetHtml(), ignoreCase: false);
+            Assert.AreEqual(_ExpectedAbout, about.Html, ignoreCase: false);
         }
 
         private static Task<Article> GetDefaultAboutAsync(string adminId) => Article.NewAsync(

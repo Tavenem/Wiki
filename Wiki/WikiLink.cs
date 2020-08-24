@@ -13,6 +13,19 @@ namespace NeverFoundry.Wiki
     public class WikiLink : ISerializable, IEquatable<WikiLink>
     {
         /// <summary>
+        /// <para>
+        /// The linked article (if any).
+        /// </para>
+        /// <para>
+        /// Note: this property is not persisted to storage, and should only be considered valid
+        /// immediately after parsing.
+        /// </para>
+        /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
+        public Article? Article { get; set; }
+
+        /// <summary>
         /// Gets the full title of the linked article (including namespace if the namespace is not
         /// <see cref="WikiConfig.DefaultNamespace"/>, and the Talk pseudo-namespace if this is a
         /// discussion link).
@@ -62,6 +75,9 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Initializes a new instance of <see cref="WikiLink"/>.
         /// </summary>
+        /// <param name="article">
+        /// The linked article (if any).
+        /// </param>
         /// <param name="missing">
         /// Whether this is a link to a missing page.
         /// </param>
@@ -81,6 +97,7 @@ namespace NeverFoundry.Wiki
         /// The namespace for the linked article.
         /// </param>
         public WikiLink(
+            Article? article,
             bool missing,
             bool isCategory,
             bool isNamespaceEscaped,
@@ -88,6 +105,7 @@ namespace NeverFoundry.Wiki
             string title,
             string? wikiNamespace)
         {
+            Article = article;
             Missing = missing;
             IsCategory = isCategory;
             IsNamespaceEscaped = isNamespaceEscaped;

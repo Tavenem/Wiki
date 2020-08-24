@@ -1,4 +1,5 @@
 ﻿using Markdig.Syntax.Inlines;
+using System;
 
 namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
 {
@@ -7,6 +8,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
     /// </summary>
     public class WikiLinkInline : LinkInline
     {
+        /// <summary>
+        /// The linked article (if any).
+        /// </summary>
+        public Article? Article { get; set; }
+
         /// <summary>
         /// The display text.
         /// </summary>

@@ -414,16 +414,16 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 var articleMissing = false;
                 if (!isCategory && !isWikipedia && !isCommons)
                 {
-                    var articleExists = false;
-                    if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    var reference = WikiConfig.DataStore.GetItem<PageReference>($"{wikiNamespace}:{mainTitle}:reference");
+                    if (reference is null)
                     {
-                        articleExists = WikiFile.GetFile(mainTitle)?.IsDeleted == false;
+                        articleMissing = true;
                     }
                     else
                     {
-                        articleExists = Article.GetArticle(mainTitle, wikiNamespace)?.IsDeleted == false;
+                        var article = WikiConfig.DataStore.GetItem<Article>(reference.Reference);
+                        articleMissing = article?.IsDeleted == true;
                     }
-                    articleMissing = !articleExists;
                 }
 
                 var wikiLink = new WikiLinkInline()

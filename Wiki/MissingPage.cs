@@ -1,6 +1,8 @@
 ﻿using NeverFoundry.DataStorage;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
@@ -23,7 +25,7 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonIgnore]
         public virtual string FullTitle => string.CompareOrdinal(WikiNamespace, WikiConfig.DefaultNamespace) == 0
             ? Title
-            : $"{WikiNamespace}:{Title}";
+            : Id[..Id.LastIndexOf(':')];
 
         /// <summary>
         /// The type discriminator for this type.
@@ -43,30 +45,28 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The title of this missing page. Must be unique within its namespace, and non-empty.
         /// </summary>
-        public string Title { get; private protected set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
+        public string Title => Id[(Id.IndexOf(':') + 1)..Id.LastIndexOf(':')];
 
         /// <summary>
         /// The namespace to which this page should belong.
         /// </summary>
-        public string WikiNamespace { get; private protected set; }
+        [System.Text.Json.Serialization.JsonIgnore]
+        [Newtonsoft.Json.JsonIgnore]
+        public string WikiNamespace => Id[..Id.IndexOf(':')];
 
         /// <summary>
-        /// Initializes a new instance of <see cref="WikiRevision"/>.
+        /// Initializes a new instance of <see cref="Revision"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
         /// <param name="idItemTypeName">The type discriminator.</param>
-        /// <param name="title">
-        /// The title of this missing page. Must be unique within its namespace, and non-empty.
-        /// </param>
-        /// <param name="wikiNamespace">
-        /// The namespace to which this page should belong.
-        /// </param>
         /// <param name="references">
         /// The IDs of pages which reference this missing page.
         /// </param>
         /// <remarks>
         /// Note: this constructor is most useful for deserializers. The static <see
-        /// cref="NewAsync(string, string, string?, string)"/> method is expected to be used
+        /// cref="NewAsync(string, string?, string[])"/> method is expected to be used
         /// otherwise, as it persists instances to the <see cref="WikiConfig.DataStore"/> and builds
         /// the reference list dynamically.
         /// </remarks>
@@ -77,48 +77,77 @@ namespace NeverFoundry.Wiki
 #pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
             string idItemTypeName,
 #pragma warning restore IDE0060 // Remove unused parameter
-            string title,
-            string wikiNamespace,
             IReadOnlyList<string> references) : base(id)
-        {
-            if (string.IsNullOrWhiteSpace(title))
-            {
-                throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
-            }
-            Title = title;
-            WikiNamespace = wikiNamespace;
-            References = references;
-        }
+            => References = references;
 
         /// <summary>
         /// Get a new instance of <see cref="MissingPage"/>.
         /// </summary>
-        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
         /// <param name="title">
         /// The title of this missing page. Must be unique within its namespace, and non-empty.
         /// </param>
         /// <param name="wikiNamespace">
         /// The namespace to which this page should belong.
         /// </param>
-        /// <param name="referenceId">The ID of the initial page which references this missing page.</param>
+        /// <param name="referenceIds">The IDs of the initial pages which references this missing page.</param>
         public static async Task<MissingPage> NewAsync(
-            string id,
             string title,
             string? wikiNamespace,
-            string referenceId)
+            params string[] referenceIds)
         {
-            var result = new MissingPage(id, MissingPageIdItemTypeName, title, wikiNamespace ?? WikiConfig.DefaultNamespace, new List<string> { referenceId }.AsReadOnly());
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
+            }
+            var result = new MissingPage(
+                $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:missing",
+                MissingPageIdItemTypeName,
+                referenceIds);
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
         }
 
+        /// <summary>
+        /// Get a new instance of <see cref="MissingPage"/>.
+        /// </summary>
+        /// <param name="title">
+        /// The title of this missing page. Must be unique within its namespace, and non-empty.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace to which this page should belong.
+        /// </param>
+        /// <param name="referenceIds">The IDs of the initial pages which references this missing page.</param>
+        public static Task<MissingPage> NewAsync(
+            string title,
+            string? wikiNamespace,
+            IEnumerable<string> referenceIds)
+            => NewAsync(title, wikiNamespace, referenceIds.ToArray());
+
         private MissingPage(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             MissingPageIdItemTypeName,
-            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
-            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (IReadOnlyList<string>?)info.GetValue(nameof(References), typeof(IReadOnlyList<string>)) ?? new List<string>().AsReadOnly())
         { }
+
+        /// <summary>
+        /// Adds a page to this collection.
+        /// </summary>
+        /// <param name="id">
+        /// The <see cref="IdItem.Id"/> of the wiki page which links to the referenced wiki page.
+        /// </param>
+        public async Task AddReferenceAsync(string id)
+        {
+            if (References.Contains(id))
+            {
+                return;
+            }
+
+            var result = new MissingPage(
+                Id,
+                MissingPageIdItemTypeName,
+                References.ToImmutableList().Add(id));
+            await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
+        }
 
         /// <summary>Populates a <see cref="SerializationInfo"></see> with the data needed to
         /// serialize the target object.</summary>
@@ -132,9 +161,35 @@ namespace NeverFoundry.Wiki
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);
-            info.AddValue(nameof(Title), Title);
-            info.AddValue(nameof(WikiNamespace), WikiNamespace);
             info.AddValue(nameof(References), References);
+        }
+
+        /// <summary>
+        /// Removes a page from this collection.
+        /// </summary>
+        /// <param name="id">
+        /// The <see cref="IdItem.Id"/> of the wiki page which no longer links to the referenced
+        /// wiki page.
+        /// </param>
+        public async Task RemoveReferenceAsync(string id)
+        {
+            if (!References.Contains(id))
+            {
+                return;
+            }
+
+            if (References.Count == 1)
+            {
+                await WikiConfig.DataStore.RemoveItemAsync<MissingPage>(Id).ConfigureAwait(false);
+            }
+            else
+            {
+                var result = new MissingPage(
+                    Id,
+                    MissingPageIdItemTypeName,
+                    References.ToImmutableList().Remove(id));
+                await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
+            }
         }
     }
 }

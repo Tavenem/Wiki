@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.WebUtilities;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NeverFoundry.Wiki.Samples.Pages.Account
+namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
 {
     public class ForgotPasswordConfirmation : PageModel
     {

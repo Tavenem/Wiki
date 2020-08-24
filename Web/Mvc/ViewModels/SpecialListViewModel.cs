@@ -2,8 +2,10 @@
 using NeverFoundry.Wiki.Mvc.Models;
 using NeverFoundry.Wiki.Web;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -160,21 +162,16 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     filter,
                     x => x.ChildIds.Count() == 0)
                 .ConfigureAwait(false),
-
 #pragma warning restore RCS1077 // Optimize LINQ method call.
-                SpecialListType.What_Links_Here => await GetListAsync<Article>(
+
+                SpecialListType.What_Links_Here => await GetLinksHereAsync(
+                    data.Title,
+                    data.WikiNamespace,
                     pageNumber,
                     pageSize,
                     sort,
                     descending,
-                    filter,
-                    x => x.WikiLinks.Any(y => y.Title == data.Title
-                        && y.WikiNamespace == data.WikiNamespace
-                        && y.IsTalk == data.IsTalk)
-                        || (!data.IsTalk
-                        && x.Transclusions != null
-                        && x.Transclusions.Any(y => y.Title == data.Title
-                            && y.WikiNamespace == data.WikiNamespace)))
+                    filter)
                 .ConfigureAwait(false),
 
                 _ => new PagedList<Article>(null, 1, pageSize, 0),
@@ -221,7 +218,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 else
                 {
                     Expression<Func<T, bool>> baseExp = x => x.FullTitle.Contains(filter);
-                    pageCondition = condition is null ? baseExp : baseExp.AndAlso(condition);
+                    pageCondition = baseExp.AndAlso(condition);
                 }
             }
 
@@ -242,6 +239,77 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             return await query
                 .GetPageAsync(pageNumber, pageSize)
                 .ConfigureAwait(false);
+        }
+
+        private static async Task<IPagedList<Article>> GetLinksHereAsync(
+            string title,
+            string wikiNamespace,
+            int pageNumber = 1,
+            int pageSize = 50,
+            string? sort = null,
+            bool descending = false,
+            string? filter = null)
+        {
+            var allReferences = new HashSet<string>();
+            var references = await WikiConfig.DataStore.GetItemAsync<PageLinks>($"{wikiNamespace}:{title}:links").ConfigureAwait(false);
+            if (references is not null)
+            {
+                foreach (var reference in references.References)
+                {
+                    allReferences.Add(reference);
+                }
+            }
+            var transclusions = await WikiConfig.DataStore.GetItemAsync<PageTransclusions>($"{wikiNamespace}:{title}:transclusions").ConfigureAwait(false);
+            if (transclusions is not null)
+            {
+                foreach (var reference in transclusions.References)
+                {
+                    allReferences.Add(reference);
+                }
+            }
+            if (!string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.Ordinal)
+                && !string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.Ordinal))
+            {
+                var redirects = await WikiConfig.DataStore.GetItemAsync<PageRedirects>($"{wikiNamespace}:{title}:redirects").ConfigureAwait(false);
+                if (redirects is not null)
+                {
+                    foreach (var reference in redirects.References)
+                    {
+                        allReferences.Add(reference);
+                    }
+                }
+            }
+
+            var articles = new List<Article>();
+            var hasFilter = !string.IsNullOrWhiteSpace(filter);
+            foreach (var reference in allReferences)
+            {
+                var article = await WikiConfig.DataStore.GetItemAsync<Article>(reference).ConfigureAwait(false);
+                if (article is not null
+                    && (!hasFilter
+                    || article.FullTitle.Contains(filter!)))
+                {
+                    articles.Add(article);
+                }
+            }
+            if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
+            {
+                articles.Sort((x, y) => descending
+                    ? -x.TimestampTicks.CompareTo(y.TimestampTicks)
+                    : x.TimestampTicks.CompareTo(y.TimestampTicks));
+            }
+            else
+            {
+                articles.Sort((x, y) => descending
+                    ? -x.Title.CompareTo(y.Title)
+                    : x.Title.CompareTo(y.Title));
+            }
+
+            return new PagedList<Article>(
+                articles.Skip((pageNumber - 1) * pageSize).Take(pageSize),
+                pageNumber,
+                pageSize,
+                articles.Count);
         }
 
         private static async Task<IPagedList<MissingPage>> GetMissingAsync(

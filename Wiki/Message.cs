@@ -68,7 +68,9 @@ namespace NeverFoundry.Wiki
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
         /// <param name="idItemTypeName">The type discriminator.</param>
+        /// <param name="html">The rendered HTML content.</param>
         /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="preview">A preview of this item's rendered HTML.</param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
         /// <param name="senderId">The ID of the sender of this message.</param>
@@ -91,14 +93,16 @@ namespace NeverFoundry.Wiki
 #pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
             string idItemTypeName,
 #pragma warning restore IDE0060 // Remove unused parameter
+            string html,
             string markdownContent,
+            string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             string topicId,
             string senderId,
             bool senderIsAdmin,
             string senderName,
             long timestampTicks,
-            string? replyMessageId = null) : base(id, markdownContent, wikiLinks)
+            string? replyMessageId = null) : base(id, html, markdownContent, preview, wikiLinks)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
@@ -128,7 +132,9 @@ namespace NeverFoundry.Wiki
         private Message(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             MessageIdItemTypeName,
+            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
@@ -191,7 +197,9 @@ namespace NeverFoundry.Wiki
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);
+            info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
+            info.AddValue(nameof(Preview), Preview);
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TopicId), TopicId);
             info.AddValue(nameof(SenderId), SenderId);

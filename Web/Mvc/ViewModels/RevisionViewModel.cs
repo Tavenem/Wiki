@@ -11,7 +11,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// The revision.
         /// </summary>
-        public WikiRevision Revision { get; set; }
+        public Revision Revision { get; set; }
 
         /// <summary>
         /// Whether the editor still esists as a wiki user.
@@ -31,7 +31,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// Initialize a new <see cref="RevisionViewModel"/>.
         /// </summary>
-        public RevisionViewModel(WikiRevision revision, bool userExists, string userName, bool userPageExists)
+        public RevisionViewModel(Revision revision, bool userExists, string userName, bool userPageExists)
         {
             Revision = revision;
             EditorExists = userExists;
@@ -42,7 +42,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// Get a new <see cref="RevisionViewModel"/>.
         /// </summary>
-        public static async Task<RevisionViewModel> NewAsync(IWikiUserManager userManager, WikiRevision revision)
+        public static async Task<RevisionViewModel> NewAsync(IWikiUserManager userManager, Revision revision)
         {
             var editor = await userManager.FindByIdAsync(revision.Editor).ConfigureAwait(false);
             var userExists = editor is not null;

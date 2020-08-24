@@ -15,9 +15,9 @@ namespace NeverFoundry.Wiki.Test
         [TestMethod]
         public void WikiRevisionTest()
         {
-            var value = new WikiRevision(
+            var value = new Revision(
                 "TEST_ID",
-                WikiRevision.WikiRevisionIdItemTypeName,
+                Revision.RevisionIdItemTypeName,
                 "TEST_WIKI_ID",
                 "Test Editor",
                 "Test Title",
@@ -30,14 +30,14 @@ namespace NeverFoundry.Wiki.Test
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiRevision>(json);
+            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Revision>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
 
             json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<WikiRevision>(json);
+            deserialized = System.Text.Json.JsonSerializer.Deserialize<Revision>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -147,7 +147,7 @@ namespace NeverFoundry.Wiki.Test
         [TestMethod]
         public void MissingPageTest()
         {
-            var value = new MissingPage("TEST_ID", MissingPage.MissingPageIdItemTypeName, "Test Title", "Test Namespace", new List<string> { "Test_ID_2" }.AsReadOnly());
+            var value = new MissingPage("Test Namespace:Test Title:missing", MissingPage.MissingPageIdItemTypeName, new List<string> { "Test_ID_2" }.AsReadOnly());
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine(json);
@@ -169,6 +169,8 @@ namespace NeverFoundry.Wiki.Test
             var value = new Message(
                 "TEST_ID",
                 Message.MessageIdItemTypeName,
+                "Test markdown",
+                "Test markdown",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 "TEST_TOPIC_ID",
@@ -199,6 +201,8 @@ namespace NeverFoundry.Wiki.Test
                 "TEST_ID",
                 Article.ArticleIdItemTypeName,
                 "Test title",
+                "Test markdown",
+                "Test markdown",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 0,
@@ -231,6 +235,8 @@ namespace NeverFoundry.Wiki.Test
                 "TEST_ID",
                 Article.ArticleIdItemTypeName,
                 "Test title",
+                "Test markdown",
+                "Test markdown",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 0,
@@ -269,6 +275,8 @@ namespace NeverFoundry.Wiki.Test
                 Category.CategoryIdItemTypeName,
                 "Test title",
                 "Test markdown",
+                "Test markdown",
+                "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 new List<string> { "TEST_CHILD_ID" },
                 0,
@@ -304,6 +312,8 @@ namespace NeverFoundry.Wiki.Test
                 100,
                 "test/type",
                 "Test markdown",
+                "Test markdown",
+                "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                 0,
                 false,
@@ -337,6 +347,8 @@ namespace NeverFoundry.Wiki.Test
                     Article.ArticleIdItemTypeName,
                     "Test title",
                     "Test markdown",
+                    "Test markdown",
+                    "Test markdown",
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                     0,
                     "Test Namespace",
@@ -355,6 +367,8 @@ namespace NeverFoundry.Wiki.Test
                     Category.CategoryIdItemTypeName,
                     "Test title",
                     "Test markdown",
+                    "Test markdown",
+                    "Test markdown",
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                     new List<string> { "TEST_CHILD_ID" },
                     0,
@@ -371,6 +385,8 @@ namespace NeverFoundry.Wiki.Test
                     "Test/Path",
                     100,
                     "test/type",
+                    "Test markdown",
+                    "Test markdown",
                     "Test markdown",
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
                     0,

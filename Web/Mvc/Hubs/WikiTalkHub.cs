@@ -112,8 +112,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                     if (article is not null && !article.IsDeleted)
                     {
                         preview = true;
-                        var previewHtml = string.Empty;
-                        await Task.Run(() => previewHtml = article.GetPreview()).ConfigureAwait(false);
+                        var previewHtml = article.Preview;
                         var namespaceStr = article.WikiNamespace == WikiConfig.DefaultNamespace
                             ? string.Empty
                             : string.Format(PreviewNamespaceTemplate, article.WikiNamespace);
@@ -123,7 +122,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             }
             if (!preview)
             {
-                await Task.Run(() => html = message.GetHtml()).ConfigureAwait(false);
+                html = message.Html;
             }
 
             if (!string.IsNullOrWhiteSpace(html))

@@ -85,6 +85,20 @@ namespace NeverFoundry.Wiki.Converters
 
             if (!reader.Read()
                 || reader.TokenType != JsonTokenType.PropertyName
+                || reader.GetString() != nameof(MarkdownItem.Html)
+                || !reader.Read()
+                || reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException();
+            }
+            var html = reader.GetString();
+            if (html is null)
+            {
+                throw new JsonException();
+            }
+
+            if (!reader.Read()
+                || reader.TokenType != JsonTokenType.PropertyName
                 || reader.GetString() != nameof(Article.MarkdownContent)
                 || !reader.Read()
                 || reader.TokenType != JsonTokenType.String)
@@ -93,6 +107,20 @@ namespace NeverFoundry.Wiki.Converters
             }
             var markdownContent = reader.GetString();
             if (markdownContent is null)
+            {
+                throw new JsonException();
+            }
+
+            if (!reader.Read()
+                || reader.TokenType != JsonTokenType.PropertyName
+                || reader.GetString() != nameof(MarkdownItem.Preview)
+                || !reader.Read()
+                || reader.TokenType != JsonTokenType.String)
+            {
+                throw new JsonException();
+            }
+            var preview = reader.GetString();
+            if (preview is null)
             {
                 throw new JsonException();
             }
@@ -292,7 +320,9 @@ namespace NeverFoundry.Wiki.Converters
                 id,
                 idItemTypeName,
                 title,
+                html,
                 markdownContent,
+                preview,
                 wikiLinks,
                 timestampTicks,
                 wikiNamespace,
@@ -330,7 +360,9 @@ namespace NeverFoundry.Wiki.Converters
             writer.WriteString(nameof(IIdItem.IdItemTypeName), value.IdItemTypeName);
             writer.WriteString("id", value.Id);
             writer.WriteString(nameof(Article.Title), value.Title);
+            writer.WriteString(nameof(MarkdownItem.Html), value.Html);
             writer.WriteString(nameof(Article.MarkdownContent), value.MarkdownContent);
+            writer.WriteString(nameof(MarkdownItem.Preview), value.Preview);
 
             writer.WritePropertyName(nameof(Article.WikiLinks));
             JsonSerializer.Serialize(writer, value.WikiLinks, options);

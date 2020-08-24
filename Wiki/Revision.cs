@@ -13,12 +13,23 @@ namespace NeverFoundry.Wiki
     /// </summary>
     [Newtonsoft.Json.JsonObject]
     [Serializable]
-    public class WikiRevision : IdItem, ISerializable
+    public class Revision : IdItem, ISerializable
     {
         /// <summary>
         /// An optional comment supplied for this revision (e.g. to explain the changes).
         /// </summary>
         public string? Comment { get; }
+
+        /// <summary>
+        /// <para>
+        /// A delta-formatted string representing the revision (except for milestones, which contain
+        /// the full text).
+        /// </para>
+        /// <para>
+        /// <see langword="null"/> when <see cref="IsDeleted"/> is <see langword="true"/>
+        /// </para>
+        /// </summary>
+        public string? Delta { get; }
 
         /// <summary>
         /// The ID of the user who made this revision.
@@ -37,11 +48,11 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The type discriminator for this type.
         /// </summary>
-        public const string WikiRevisionIdItemTypeName = ":WikiRevision:";
+        public const string RevisionIdItemTypeName = ":Revision:";
         /// <summary>
         /// A built-in, read-only type discriminator.
         /// </summary>
-        public string IdItemTypeName => WikiRevisionIdItemTypeName;
+        public string IdItemTypeName => RevisionIdItemTypeName;
 
         /// <summary>
         /// Whether the item was marked as deleted by this revision.
@@ -66,17 +77,6 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </remarks>
         public bool IsMilestone { get; }
-
-        /// <summary>
-        /// <para>
-        /// The revision, as a delta-formatted string (except for milestones, which contain the full
-        /// text).
-        /// </para>
-        /// <para>
-        /// <see langword="null"/> when <see cref="IsDeleted"/> is <see langword="true"/>
-        /// </para>
-        /// </summary>
-        public string? Revision { get; }
 
         /// <summary>
         /// The timestamp of this revision, in UTC.
@@ -108,7 +108,7 @@ namespace NeverFoundry.Wiki
         public string WikiNamespace { get; }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="WikiRevision"/>.
+        /// Initializes a new instance of <see cref="Revision"/>.
         /// </summary>
         /// <param name="wikiId">
         /// A unique ID that identifies this wiki item across revisions.
@@ -133,7 +133,7 @@ namespace NeverFoundry.Wiki
         /// <param name="comment">
         /// An optional comment supplied for this revision (e.g. to explain the changes).
         /// </param>
-        public WikiRevision(
+        public Revision(
             string wikiId,
             string editor,
             string title,
@@ -157,21 +157,21 @@ namespace NeverFoundry.Wiki
             else if (string.IsNullOrWhiteSpace(previousText))
             {
                 IsMilestone = true;
-                Revision = newText;
+                Delta = newText;
             }
             else
             {
                 var revision = DiffPatchMerge.Revision.GetRevison(previousText, newText);
                 if (!revision.Patches.Any(x => x.Operation == DiffOperation.Deleted))
                 {
-                    Revision = revision.ToString();
+                    Delta = revision.ToString();
                 }
                 else
                 {
                     var deletionLength = revision.Patches.Where(x => x.Operation == DiffOperation.Deleted).Sum(x => x.Length);
                     if (deletionLength < previousText.Length * 0.75)
                     {
-                        Revision = revision.ToString();
+                        Delta = revision.ToString();
                     }
                     else
                     {
@@ -179,11 +179,11 @@ namespace NeverFoundry.Wiki
                         if (insertionLength >= (previousText.Length - deletionLength) * 3)
                         {
                             IsMilestone = true;
-                            Revision = newText;
+                            Delta = newText;
                         }
                         else
                         {
-                            Revision = revision.ToString();
+                            Delta = revision.ToString();
                         }
                     }
                 }
@@ -191,7 +191,7 @@ namespace NeverFoundry.Wiki
         }
 
         /// <summary>
-        /// Initializes a new instance of <see cref="WikiRevision"/>.
+        /// Initializes a new instance of <see cref="Revision"/>.
         /// </summary>
         /// <param name="id">
         /// The unique ID of this revision.
@@ -213,10 +213,10 @@ namespace NeverFoundry.Wiki
         /// The namespace to which this item belonged at the time of this revision. Must be
         /// non-empty.
         /// </param>
-        /// <param name="revision">
+        /// <param name="delta">
         /// <para>
-        /// The revision, as a delta-formatted string (except for milestones, which contain the full
-        /// text).
+        /// A delta-formatted string representing the revision (except for milestones, which contain
+        /// the full text).
         /// </para>
         /// <para>
         /// <see langword="null"/> when <paramref name="isDeleted"/> is <see langword="true"/>
@@ -240,7 +240,7 @@ namespace NeverFoundry.Wiki
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        public WikiRevision(
+        public Revision(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
             string idItemTypeName,
@@ -249,7 +249,7 @@ namespace NeverFoundry.Wiki
             string editor,
             string title,
             string wikiNamespace,
-            string? revision,
+            string? delta,
             bool isDeleted,
             bool isMilestone,
             string? comment,
@@ -264,21 +264,21 @@ namespace NeverFoundry.Wiki
             IsDeleted = isDeleted;
             IsMilestone = isMilestone;
             Comment = comment;
-            Revision = isDeleted ? null : revision;
+            Delta = isDeleted ? null : delta;
             TimestampTicks = timestampTicks;
             Title = title;
             WikiId = wikiId;
             WikiNamespace = wikiNamespace;
         }
 
-        private WikiRevision(SerializationInfo info, StreamingContext context) : this(
+        private Revision(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
-            WikiRevisionIdItemTypeName,
+            RevisionIdItemTypeName,
             (string?)info.GetValue(nameof(WikiId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Editor), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
-            (string?)info.GetValue(nameof(Revision), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Delta), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (bool?)info.GetValue(nameof(IsMilestone), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Comment), typeof(string)) ?? string.Empty,
@@ -328,7 +328,7 @@ namespace NeverFoundry.Wiki
         /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
         /// order given.
         /// </exception>
-        public static string GetDiff(IReadOnlyList<WikiRevision> revisions, string format = "md")
+        public static string GetDiff(IReadOnlyList<Revision> revisions, string format = "md")
         {
             if (revisions.Count == 0)
             {
@@ -343,16 +343,16 @@ namespace NeverFoundry.Wiki
                 }
                 else if (revision.IsMilestone)
                 {
-                    text = revision.Revision ?? string.Empty;
+                    text = revision.Delta ?? string.Empty;
                 }
-                else if (string.IsNullOrEmpty(revision.Revision))
+                else if (string.IsNullOrEmpty(revision.Delta))
                 {
                     if (!string.IsNullOrEmpty(text))
                     {
                         throw new ArgumentException("A revision was incorrectly formatted", nameof(revisions));
                     }
                 }
-                else if (DiffPatchMerge.Revision.TryParse(revision.Revision, out var r))
+                else if (DiffPatchMerge.Revision.TryParse(revision.Delta, out var r))
                 {
                     text = r.Apply(text);
                 }
@@ -366,16 +366,16 @@ namespace NeverFoundry.Wiki
             {
                 if (revisions[revisions.Count - 1].IsMilestone)
                 {
-                    finalText = revisions[revisions.Count - 1].Revision ?? string.Empty;
+                    finalText = revisions[revisions.Count - 1].Delta ?? string.Empty;
                 }
-                else if (string.IsNullOrEmpty(revisions[revisions.Count - 1].Revision))
+                else if (string.IsNullOrEmpty(revisions[revisions.Count - 1].Delta))
                 {
                     if (!string.IsNullOrEmpty(text))
                     {
                         throw new ArgumentException("A revision was incorrectly formatted", nameof(revisions));
                     }
                 }
-                else if (DiffPatchMerge.Revision.TryParse(revisions[revisions.Count - 1].Revision!, out var r))
+                else if (DiffPatchMerge.Revision.TryParse(revisions[revisions.Count - 1].Delta!, out var r))
                 {
                     finalText = r.Apply(text);
                 }
@@ -401,7 +401,7 @@ namespace NeverFoundry.Wiki
         /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
         /// order given.
         /// </exception>
-        public static string GetText(IEnumerable<WikiRevision> revisions)
+        public static string GetText(IEnumerable<Revision> revisions)
         {
             var text = string.Empty;
             foreach (var revision in revisions)
@@ -412,16 +412,16 @@ namespace NeverFoundry.Wiki
                 }
                 else if (revision.IsMilestone)
                 {
-                    text = revision.Revision ?? string.Empty;
+                    text = revision.Delta ?? string.Empty;
                 }
-                else if (string.IsNullOrEmpty(revision.Revision))
+                else if (string.IsNullOrEmpty(revision.Delta))
                 {
                     if (!string.IsNullOrEmpty(text))
                     {
                         throw new ArgumentException("A revision was incorrectly formatted", nameof(revisions));
                     }
                 }
-                else if (DiffPatchMerge.Revision.TryParse(revision.Revision, out var r))
+                else if (DiffPatchMerge.Revision.TryParse(revision.Delta, out var r))
                 {
                     text = r.Apply(text);
                 }
@@ -449,7 +449,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Editor), Editor);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(WikiNamespace), WikiNamespace);
-            info.AddValue(nameof(Revision), Revision);
+            info.AddValue(nameof(Delta), Delta);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(IsMilestone), IsMilestone);
             info.AddValue(nameof(Comment), Comment);

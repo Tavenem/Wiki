@@ -71,7 +71,9 @@ namespace NeverFoundry.Wiki
         /// <param name="fileType">
         /// The MIME type of the file.
         /// </param>
+        /// <param name="html">The rendered HTML content.</param>
         /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="preview">A preview of this item's rendered HTML.</param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="timestampTicks">
         /// The timestamp when this message was sent, in UTC Ticks.
@@ -132,14 +134,14 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public WikiFile(
             string id,
-#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
             string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string filePath,
             int fileSize,
             string fileType,
+            string html,
             string markdownContent,
+            string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
             bool isDeleted,
@@ -151,7 +153,9 @@ namespace NeverFoundry.Wiki
                 id,
                 idItemTypeName,
                 title,
+                html,
                 markdownContent,
+                preview,
                 wikiLinks,
                 timestampTicks,
                 WikiConfig.FileNamespace,
@@ -211,7 +215,9 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(FilePath), typeof(string)) ?? string.Empty,
             (int?)info.GetValue(nameof(FileSize), typeof(int)) ?? default,
             (string?)info.GetValue(nameof(FileType), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
@@ -230,48 +236,24 @@ namespace NeverFoundry.Wiki
         /// langword="null"/> if no such file exists.</returns>
         public static WikiFile? GetFile(string title)
         {
-            var file = WikiConfig.DataStore.Query<WikiFile>()
-                .Where(x => x.Title == title)
-                .OrderBy(x => x.TimestampTicks, descending: true)
-                .FirstOrDefault();
+            WikiFile? file = null;
+            var reference = WikiConfig.DataStore.GetItem<PageReference>($"{WikiConfig.FileNamespace}:{title}:reference");
+            if (reference is not null)
+            {
+                file = WikiConfig.DataStore.GetItem<WikiFile>(reference.Reference);
+            }
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
-                var files = WikiConfig.DataStore.Query<WikiFile>()
-                    .Where(x => x.Title.ToLower() == title.ToLower())
-                    .OrderBy(x => x.TimestampTicks, descending: true)
-                    .ToList();
-                if (files.Count == 1)
+                var normalizedReference = WikiConfig.DataStore
+                    .GetItem<NormalizedPageReference>($"{WikiConfig.FileNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference");
+                if (normalizedReference is not null
+                    && normalizedReference.References.Count == 1)
                 {
-                    file = files[0];
+                    file = WikiConfig.DataStore.GetItem<WikiFile>(normalizedReference.References[0]);
                 }
             }
-            return file;
-        }
 
-        /// <summary>
-        /// Gets a particular revision for the file with the given title.
-        /// </summary>
-        /// <param name="title">The title of the file to retrieve.</param>
-        /// <param name="timestamp">The timestamp of the revision.</param>
-        /// <returns>The revision of the file with the given title and timestamp; or <see
-        /// langword="null"/> if no such file exists.</returns>
-        public static WikiFile? GetFile(string title, DateTimeOffset timestamp)
-        {
-            var ticks = timestamp.ToUniversalTime().Ticks;
-            var file = WikiConfig.DataStore.Query<WikiFile>().FirstOrDefault(x => x.Title == title && x.TimestampTicks == ticks);
-            // If no exact match exists, ignore case if only one such match exists.
-            if (file is null)
-            {
-                var files = WikiConfig.DataStore.Query<WikiFile>()
-                    .Where(x => x.Title.ToLower() == title.ToLower()
-                        && x.TimestampTicks == ticks)
-                    .ToList();
-                if (files.Count == 1)
-                {
-                    file = files[0];
-                }
-            }
             return file;
         }
 
@@ -342,14 +324,12 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             title = title.ToWikiTitleCase();
-            if (WikiConfig.DataStore.Query<WikiFile>().Any(x => x.Title == title))
-            {
-                throw new ArgumentException("The given title is already in use", nameof(title));
-            }
 
             var wikiId = WikiConfig.DataStore.CreateNewIdFor<WikiFile>();
 
-            var revision = new WikiRevision(
+            await CreatePageReferenceAsync(wikiId, title, WikiConfig.FileNamespace).ConfigureAwait(false);
+
+            var revision = new Revision(
                 wikiId,
                 editor,
                 title,
@@ -369,40 +349,21 @@ namespace NeverFoundry.Wiki
             {
                 md = TransclusionParser.Transclude(
                     title,
-                    GetFullTitle(title, WikiConfig.FileNamespace),
+                    $"{WikiConfig.FileNamespace}:{title}",
                     markdown,
                     out transclusions);
             }
 
-            var wikiLinks = GetWikiLinks(md);
-            foreach (var link in wikiLinks.Where(x => x.Missing))
-            {
-                var existing = await WikiConfig.DataStore.Query<MissingPage>()
-                    .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
-                    .ConfigureAwait(false);
-                if (existing is null)
-                {
-                    var missingPage = await MissingPage.NewAsync(
-                        WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
-                        link.Title,
-                        link.WikiNamespace,
-                        wikiId)
-                        .ConfigureAwait(false);
-                }
-            }
+            var wikiLinks = GetWikiLinks(md, title, WikiConfig.FileNamespace);
 
-            var categories = new List<string>();
-            var categoryTitles = wikiLinks
-                .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
-                .Select(x => x.Title)
-                .ToList();
-            foreach (var categoryTitle in categoryTitles)
-            {
-                var category = Category.GetCategory(categoryTitle)
-                    ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
-                await category.AddArticleAsync(wikiId).ConfigureAwait(false);
-                categories.Add(category.Title);
-            }
+            var categories = await UpdateCategoriesAsync(
+                wikiId,
+                editor,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                wikiLinks)
+                .ConfigureAwait(false);
 
             var file = new WikiFile(
                 wikiId,
@@ -421,13 +382,20 @@ namespace NeverFoundry.Wiki
                 transclusions);
             await WikiConfig.DataStore.StoreItemAsync(file).ConfigureAwait(false);
 
-            var missing = await WikiConfig.DataStore.Query<MissingPage>()
-                .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.FileNamespace)
+            await AddPageTransclusionsAsync(wikiId, transclusions).ConfigureAwait(false);
+
+            await AddPageLinksAsync(wikiId, wikiLinks).ConfigureAwait(false);
+
+            await UpdateReferencesAsync(
+                title,
+                WikiConfig.FileNamespace,
+                false,
+                true,
+                null,
+                null,
+                false,
+                false)
                 .ConfigureAwait(false);
-            if (!(missing is null))
-            {
-                await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
-            }
 
             return file;
         }
@@ -448,7 +416,9 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(FilePath), FilePath);
             info.AddValue(nameof(FileSize), FileSize);
             info.AddValue(nameof(FileType), FileType);
+            info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
+            info.AddValue(nameof(Preview), Preview);
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
             info.AddValue(nameof(IsDeleted), IsDeleted);
@@ -535,11 +505,7 @@ namespace NeverFoundry.Wiki
             IEnumerable<string>? allowedEditors = null,
             IEnumerable<string>? allowedViewers = null)
         {
-            title ??= Title;
-            if (WikiConfig.DataStore.Query<WikiFile>().Any(x => x.Id != Id && x.Title == title))
-            {
-                throw new ArgumentException("The given title is already in use", nameof(title));
-            }
+            title ??= title?.ToWikiTitleCase() ?? Title;
 
             if (!string.IsNullOrWhiteSpace(path))
             {
@@ -556,148 +522,92 @@ namespace NeverFoundry.Wiki
 
             var previousTitle = Title;
             Title = title;
+            var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal);
 
             var previousMarkdown = MarkdownContent;
-            if (isDeleted)
-            {
-                IsDeleted = true;
-                MarkdownContent = string.Empty;
-                WikiLinks = new List<WikiLink>().AsReadOnly();
-                Categories = new List<string>().AsReadOnly();
-                Transclusions = null;
+            var wasDeleted = IsDeleted || string.IsNullOrWhiteSpace(previousMarkdown);
 
-                foreach (var link in WikiLinks)
-                {
-                    var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
-                        .FirstOrDefaultAsync(x => x.Title == link.Title
-                            && x.WikiNamespace == link.WikiNamespace
-                            && x.References.Count == 1
-                            && x.References.Contains(Id))
-                        .ConfigureAwait(false);
-                    if (!(missingLink is null))
-                    {
-                        await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
-                    }
-                }
-            }
-            else if (!(markdown is null))
+            if (isDeleted || string.IsNullOrWhiteSpace(markdown))
             {
-                if (string.IsNullOrWhiteSpace(markdown))
+                if (!wasDeleted)
                 {
+                    Html = string.Empty;
                     IsDeleted = true;
                     MarkdownContent = string.Empty;
-                    WikiLinks = new List<WikiLink>().AsReadOnly();
+                    Preview = string.Empty;
                     Categories = new List<string>().AsReadOnly();
+
+                    if (Transclusions is not null)
+                    {
+                        await RemovePageTransclusionsAsync(Id, Transclusions).ConfigureAwait(false);
+                    }
+
+                    await RemovePageLinksAsync(Id, WikiLinks).ConfigureAwait(false);
+
                     Transclusions = null;
-
-                    foreach (var link in WikiLinks)
-                    {
-                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
-                            .FirstOrDefaultAsync(x => x.Title == link.Title
-                                && x.WikiNamespace == link.WikiNamespace
-                                && x.References.Count == 1
-                                && x.References.Contains(Id))
-                            .ConfigureAwait(false);
-                        if (!(missingLink is null))
-                        {
-                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
-                        }
-                    }
+                    WikiLinks = new List<WikiLink>().AsReadOnly();
                 }
-                else
-                {
-                    MarkdownContent = markdown;
+            }
+            else
+            {
+                IsDeleted = false;
+            }
 
-                    var md = TransclusionParser.Transclude(
-                        title,
-                        GetFullTitle(title, WikiConfig.FileNamespace),
-                        markdown,
-                        out var transclusions);
-                    Transclusions = transclusions.Count == 0
-                        ? null
-                        : transclusions.AsReadOnly();
+            if (!sameTitle && !IsDeleted)
+            {
+                await CreatePageReferenceAsync(Id, title, WikiConfig.FileNamespace).ConfigureAwait(false);
+            }
+            if (!sameTitle)
+            {
+                await RemovePageReferenceAsync(Id, previousTitle, WikiConfig.FileNamespace).ConfigureAwait(false);
+            }
 
-                    var previousWikiLinks = WikiLinks.ToList();
-                    WikiLinks = GetWikiLinks(md).AsReadOnly();
-                    foreach (var link in previousWikiLinks.Except(WikiLinks))
-                    {
-                        var missingLink = await WikiConfig.DataStore.Query<MissingPage>()
-                            .FirstOrDefaultAsync(x => x.Title == link.Title
-                                && x.WikiNamespace == link.WikiNamespace
-                                && x.References.Count == 1
-                                && x.References.Contains(Id))
-                            .ConfigureAwait(false);
-                        if (!(missingLink is null))
-                        {
-                            await WikiConfig.DataStore.RemoveItemAsync(missingLink).ConfigureAwait(false);
-                        }
-                    }
-                    foreach (var link in WikiLinks.Except(previousWikiLinks).Where(x => x.Missing))
-                    {
-                        var existing = await WikiConfig.DataStore.Query<MissingPage>()
-                            .FirstOrDefaultAsync(x => x.Title == link.Title && x.WikiNamespace == link.WikiNamespace)
-                            .ConfigureAwait(false);
-                        if (existing is null)
-                        {
-                            var missingPage = await MissingPage.NewAsync(
-                                WikiConfig.DataStore.CreateNewIdFor<MissingPage>(),
-                                link.Title,
-                                link.WikiNamespace,
-                                Id)
-                                .ConfigureAwait(false);
-                        }
-                    }
+            var changed = wasDeleted != IsDeleted
+                || !string.Equals(previousMarkdown, markdown, StringComparison.Ordinal);
 
-                    var categories = Categories.ToList();
-                    var categoryTitles = WikiLinks
-                        .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
-                        .Select(x => x.Title)
-                        .ToList();
-                    var newCategories = new List<string>();
-                    foreach (var categoryTitle in categoryTitles)
-                    {
-                        var category = Category.GetCategory(categoryTitle)
-                            ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
-                        if (!category.ChildIds.Contains(Id))
-                        {
-                            await category.AddArticleAsync(Id).ConfigureAwait(false);
-                            newCategories.Add(category.Title);
-                        }
-                    }
-                    foreach (var removedCategory in categories.Except(newCategories).ToList())
-                    {
-                        var category = Category.GetCategory(removedCategory);
-                        if (category is null)
-                        {
-                            continue;
-                        }
-                        await category.RemoveChildAsync(this).ConfigureAwait(false);
-                        categories.Remove(category.Title);
-                    }
-                    if (newCategories.Count > 0)
-                    {
-                        categories.AddRange(newCategories);
-                    }
-                    Categories = categories.AsReadOnly();
-                }
+            if (!IsDeleted && changed)
+            {
+                MarkdownContent = markdown!;
 
-                if (!string.Equals(title, previousTitle, StringComparison.Ordinal))
-                {
-                    var missing = await WikiConfig.DataStore.Query<MissingPage>()
-                        .FirstOrDefaultAsync(x => x.Title == title && x.WikiNamespace == WikiConfig.FileNamespace)
-                        .ConfigureAwait(false);
-                    if (!(missing is null))
-                    {
-                        await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
-                    }
-                }
+                var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
+                var md = TransclusionParser.Transclude(
+                    title,
+                    $"{WikiConfig.FileNamespace}:{title}",
+                    markdown!,
+                    out var transclusions);
+                Transclusions = transclusions.Count == 0
+                    ? null
+                    : transclusions.AsReadOnly();
+                await RemovePageTransclusionsAsync(Id, previousTransclusions.Except(transclusions)).ConfigureAwait(false);
+                await AddPageTransclusionsAsync(Id, transclusions.Except(previousTransclusions)).ConfigureAwait(false);
+
+                var previousWikiLinks = WikiLinks.ToList();
+                WikiLinks = GetWikiLinks(md, title, WikiConfig.FileNamespace).AsReadOnly();
+                await RemovePageLinksAsync(Id, previousWikiLinks.Except(WikiLinks)).ConfigureAwait(false);
+                await AddPageLinksAsync(Id, WikiLinks.Except(previousWikiLinks)).ConfigureAwait(false);
+            }
+
+            if (changed)
+            {
+                Categories = (await UpdateCategoriesAsync(
+                    Id,
+                    editor,
+                    owner,
+                    allowedEditors,
+                    allowedViewers,
+                    WikiLinks,
+                    Categories)
+                    .ConfigureAwait(false))
+                    .AsReadOnly();
+
+                Update();
             }
 
             Owner = owner;
             AllowedEditors = allowedEditors?.ToList().AsReadOnly();
             AllowedViewers = allowedViewers?.ToList().AsReadOnly();
 
-            var revision = new WikiRevision(
+            var revision = new Revision(
                 Id,
                 editor,
                 title,
@@ -710,6 +620,17 @@ namespace NeverFoundry.Wiki
             TimestampTicks = revision.TimestampTicks;
 
             await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
+
+            await UpdateReferencesAsync(
+                title,
+                WikiConfig.FileNamespace,
+                IsDeleted,
+                sameTitle,
+                previousTitle,
+                WikiConfig.FileNamespace,
+                false,
+                false)
+                .ConfigureAwait(false);
         }
 
         /// <summary>

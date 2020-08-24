@@ -69,7 +69,7 @@ Fourth section text";
             TestTemplate("{{fullpagename}}", "Title");
 
             var nested = GetNestedArticle("{{fullpagename}}");
-            Assert.AreEqual($"<p>{WikiConfig.TransclusionNamespace}:Nested</p>\n", nested.GetHtml());
+            Assert.AreEqual($"<p>{WikiConfig.TransclusionNamespace}:Nested</p>\n", nested.Html);
             TestTemplate("{{Nested}}", "Title");
         }
 
@@ -101,7 +101,7 @@ Fourth section text";
                 Markdown)
                 .GetAwaiter()
                 .GetResult();
-            Assert.AreEqual("<p>yes</p>\n", category.GetHtml());
+            Assert.AreEqual("<p>yes</p>\n", category.Html);
         }
 
         [TestMethod]
@@ -186,15 +186,15 @@ Fourth section text";
         public void PreviewTest()
         {
             var article = GetArticle("content");
-            Assert.AreEqual("<p>content</p>\n", article.GetHtml());
-            Assert.AreEqual("<p>content</p>\n", article.GetPreview());
+            Assert.AreEqual("<p>content</p>\n", article.Html);
+            Assert.AreEqual("<p>content</p>\n", article.Preview);
 
             article = GetArticle(
 @"content
 
 {{preview|hidden}}");
-            Assert.AreEqual("<p>content</p>\n", article.GetHtml());
-            Assert.AreEqual("<p><span class=\"wiki-preview\">hidden</span></p>\n", article.GetPreview());
+            Assert.AreEqual("<p>content</p>\n", article.Html);
+            Assert.AreEqual("<p><span class=\"wiki-preview\">hidden</span></p>\n", article.Preview);
         }
 
         [TestMethod]
@@ -354,7 +354,7 @@ Fourth section text";
         private void TestTemplate(string markdown, string expected, bool paragraph = true)
         {
             var article = GetArticle(markdown);
-            Assert.AreEqual(paragraph ? $"<p>{expected}</p>\n" : expected, article.GetHtml());
+            Assert.AreEqual(paragraph ? $"<p>{expected}</p>\n" : expected, article.Html);
         }
     }
 }
