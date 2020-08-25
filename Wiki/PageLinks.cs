@@ -67,6 +67,41 @@ namespace NeverFoundry.Wiki
         { }
 
         /// <summary>
+        /// Gets an ID for a <see cref="PageLinks"/> given the parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The ID which should be used for a <see cref="PageLinks"/> given the parameters.
+        /// </returns>
+        public static string GetId(string title, string? wikiNamespace = null)
+            => $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:links";
+
+        /// <summary>
+        /// Gets the <see cref="PageLinks"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageLinks"/> that fits the given parameters; or <see langword="null"/>,
+        /// if there is no such item.
+        /// </returns>
+        public static PageLinks? GetPageLinks(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItem<PageLinks>(GetId(title, wikiNamespace));
+
+        /// <summary>
+        /// Gets the <see cref="PageLinks"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageLinks"/> that fits the given parameters; or <see langword="null"/>,
+        /// if there is no such item.
+        /// </returns>
+        public static ValueTask<PageLinks?> GetPageLinksAsync(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItemAsync<PageLinks>(GetId(title, wikiNamespace));
+
+        /// <summary>
         /// Get a new instance of <see cref="PageLinks"/>.
         /// </summary>
         /// <param name="title">
@@ -81,7 +116,7 @@ namespace NeverFoundry.Wiki
         public static async Task<PageLinks> NewAsync(string title, string wikiNamespace, string referenceId)
         {
             var result = new PageLinks(
-                $"{wikiNamespace}:{title}:links",
+                GetId(title, wikiNamespace),
                 PageLinksIdItemTypeName,
                 new List<string> { referenceId }.AsReadOnly());
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);

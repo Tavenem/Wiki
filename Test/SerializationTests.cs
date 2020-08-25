@@ -147,7 +147,12 @@ namespace NeverFoundry.Wiki.Test
         [TestMethod]
         public void MissingPageTest()
         {
-            var value = new MissingPage("Test Namespace:Test Title:missing", MissingPage.MissingPageIdItemTypeName, new List<string> { "Test_ID_2" }.AsReadOnly());
+            var value = new MissingPage(
+                MissingPage.GetId("Test Title", "Test Namespace"),
+                MissingPage.MissingPageIdItemTypeName,
+                "Test Title",
+                "Test Namespace",
+                new List<string> { "Test_ID_2" }.AsReadOnly());
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine(json);

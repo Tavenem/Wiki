@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Security.Permissions;
 using System.Threading.Tasks;
@@ -408,7 +409,7 @@ namespace NeverFoundry.Wiki
             {
                 redirect = false;
 
-                var reference = WikiConfig.DataStore.GetItem<PageReference>($"{wikiNamespace}:{title}:reference");
+                var reference = PageReference.GetPageReference(title, wikiNamespace);
                 if (reference is not null)
                 {
                     article = WikiConfig.DataStore.GetItem<Article>(reference.Reference);
@@ -416,8 +417,7 @@ namespace NeverFoundry.Wiki
                 // If no exact match exists, ignore case if only one such match exists.
                 if (article is null)
                 {
-                    var normalizedReference = WikiConfig.DataStore
-                        .GetItem<NormalizedPageReference>($"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference");
+                    var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(title, wikiNamespace);
                     if (normalizedReference is not null
                         && normalizedReference.References.Count == 1)
                     {
@@ -705,8 +705,8 @@ namespace NeverFoundry.Wiki
         {
             foreach (var link in wikiLinks.Where(x => !x.IsCategory))
             {
-                var linkReference = await WikiConfig.DataStore
-                    .GetItemAsync<PageLinks>($"{link.WikiNamespace}:{link.Title}:links")
+                var linkReference = await PageLinks
+                    .GetPageLinksAsync(link.Title, link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (linkReference is null)
                 {
@@ -719,8 +719,8 @@ namespace NeverFoundry.Wiki
 
                 if (link.Missing)
                 {
-                    var existing = await WikiConfig.DataStore
-                        .GetItemAsync<MissingPage>($"{link.WikiNamespace}:{link.Title}:missing")
+                    var existing = await MissingPage
+                        .GetMissingPageAsync(link.Title, link.WikiNamespace)
                         .ConfigureAwait(false);
                     if (existing is null)
                     {
@@ -742,8 +742,8 @@ namespace NeverFoundry.Wiki
         {
             foreach (var transclusion in transclusions)
             {
-                var reference = await WikiConfig.DataStore
-                    .GetItemAsync<PageTransclusions>($"{transclusion.WikiNamespace}:{transclusion.Title}:transclusions")
+                var reference = await PageTransclusions
+                    .GetPageTransclusionsAsync(transclusion.Title, transclusion.WikiNamespace)
                     .ConfigureAwait(false);
                 if (reference is null)
                 {
@@ -758,8 +758,8 @@ namespace NeverFoundry.Wiki
 
         private protected static async Task CreatePageReferenceAsync(string id, string title, string wikiNamespace)
         {
-            var existingPage = await WikiConfig.DataStore
-                .GetItemAsync<PageReference>($"{wikiNamespace}:{title}:reference")
+            var existingPage = await PageReference
+                .GetPageReferenceAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingPage is null)
             {
@@ -770,8 +770,8 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException("The given title is already in use for this namespace", nameof(title));
             }
 
-            var existingNormalizedReference = await WikiConfig.DataStore
-                .GetItemAsync<NormalizedPageReference>($"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference")
+            var existingNormalizedReference = await NormalizedPageReference
+                .GetNormalizedPageReferenceAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingNormalizedReference is null)
             {
@@ -782,8 +782,8 @@ namespace NeverFoundry.Wiki
                 await existingNormalizedReference.AddReferenceAsync(id).ConfigureAwait(false);
             }
 
-            var missing = await WikiConfig.DataStore
-                .GetItemAsync<MissingPage>($"{wikiNamespace}:{title}:missing")
+            var missing = await MissingPage
+                .GetMissingPageAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (missing is not null)
             {
@@ -810,8 +810,8 @@ namespace NeverFoundry.Wiki
             {
                 if (!sameTitle)
                 {
-                    var previousRedirectReference = await WikiConfig.DataStore
-                        .GetItemAsync<PageRedirects>($"{previousNamespace}:{previousTitle}:redirects")
+                    var previousRedirectReference = await PageRedirects
+                        .GetPageRedirectsAsync(previousTitle!, previousNamespace)
                         .ConfigureAwait(false);
                     if (previousRedirectReference is not null)
                     {
@@ -824,8 +824,8 @@ namespace NeverFoundry.Wiki
                     }
                 }
 
-                var redirectReference = await WikiConfig.DataStore
-                    .GetItemAsync<PageRedirects>($"{wikiNamespace}:{title}:redirects")
+                var redirectReference = await PageRedirects
+                    .GetPageRedirectsAsync(title, wikiNamespace)
                     .ConfigureAwait(false);
                 if (redirectReference is not null)
                 {
@@ -840,8 +840,8 @@ namespace NeverFoundry.Wiki
 
             if (!sameTitle)
             {
-                var previousPageTransclusions = await WikiConfig.DataStore
-                    .GetItemAsync<PageTransclusions>($"{previousNamespace}:{previousTitle}:transclusions")
+                var previousPageTransclusions = await PageTransclusions
+                    .GetPageTransclusionsAsync(previousTitle!, previousNamespace)
                     .ConfigureAwait(false);
                 if (previousPageTransclusions is not null)
                 {
@@ -852,8 +852,8 @@ namespace NeverFoundry.Wiki
                     }
                 }
 
-                var previousReferences = await WikiConfig.DataStore
-                    .GetItemAsync<PageLinks>($"{previousNamespace}:{previousTitle}:links")
+                var previousReferences = await PageLinks
+                    .GetPageLinksAsync(previousTitle!, previousNamespace)
                     .ConfigureAwait(false);
                 if (previousReferences is not null)
                 {
@@ -864,8 +864,8 @@ namespace NeverFoundry.Wiki
                 }
             }
 
-            var pageTransclusions = await WikiConfig.DataStore
-                .GetItemAsync<PageTransclusions>($"{wikiNamespace}:{title}:transclusions")
+            var pageTransclusions = await PageTransclusions
+                .GetPageTransclusionsAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (pageTransclusions is not null)
             {
@@ -876,8 +876,8 @@ namespace NeverFoundry.Wiki
                 }
             }
 
-            var references = await WikiConfig.DataStore
-                .GetItemAsync<PageLinks>($"{wikiNamespace}:{title}:links")
+            var references = await PageLinks
+                .GetPageLinksAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (references is not null)
             {
@@ -931,8 +931,8 @@ namespace NeverFoundry.Wiki
             var isBrokenRedirect = false;
             var isDoubleRedirect = false;
 
-            var redirect = await WikiConfig.DataStore
-                .GetItemAsync<PageReference>($"{redirectNamespace}:{redirectTitle}:reference")
+            var redirect = await PageReference
+                .GetPageReferenceAsync(redirectTitle, redirectNamespace)
                 .ConfigureAwait(false);
             if (redirect is null)
             {
@@ -954,8 +954,8 @@ namespace NeverFoundry.Wiki
                         isDoubleRedirect = true;
                     }
 
-                    var existingRedirect = await WikiConfig.DataStore
-                        .GetItemAsync<PageRedirects>($"{redirectNamespace}:{redirectTitle}:redirects")
+                    var existingRedirect = await PageRedirects
+                        .GetPageRedirectsAsync(redirectTitle, redirectNamespace)
                         .ConfigureAwait(false);
                     if (existingRedirect is null)
                     {
@@ -980,16 +980,16 @@ namespace NeverFoundry.Wiki
         {
             foreach (var link in wikiLinks.Where(x => !x.IsCategory))
             {
-                var linkReference = await WikiConfig.DataStore
-                    .GetItemAsync<PageLinks>($"{link.WikiNamespace}:{link.Title}:links")
+                var linkReference = await PageLinks
+                    .GetPageLinksAsync(link.Title, link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (linkReference is not null)
                 {
                     await linkReference.RemoveReferenceAsync(id).ConfigureAwait(false);
                 }
 
-                var missing = await WikiConfig.DataStore
-                    .GetItemAsync<MissingPage>($"{link.WikiNamespace}:{link.Title}:missing")
+                var missing = await MissingPage
+                    .GetMissingPageAsync(link.Title, link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (missing is not null)
                 {
@@ -1000,29 +1000,29 @@ namespace NeverFoundry.Wiki
 
         private protected static async Task RemovePageReferenceAsync(string id, string title, string wikiNamespace)
         {
-            var existingReference = await WikiConfig.DataStore
-                .GetItemAsync<PageReference>($"{wikiNamespace}:{title}:reference")
+            var existingReference = await PageReference
+                .GetPageReferenceAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingReference is not null)
             {
                 await WikiConfig.DataStore.RemoveItemAsync(existingReference).ConfigureAwait(false);
             }
 
-            var existingNormalizedReference = await WikiConfig.DataStore
-                .GetItemAsync<NormalizedPageReference>($"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference")
+            var existingNormalizedReference = await NormalizedPageReference
+                .GetNormalizedPageReferenceAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingNormalizedReference is not null)
             {
                 await existingNormalizedReference.RemoveReferenceAsync(id).ConfigureAwait(false);
             }
 
-            var linkReference = await WikiConfig.DataStore
-                .GetItemAsync<PageLinks>($"{wikiNamespace}:{title}:links")
+            var linkReference = await PageLinks
+                .GetPageLinksAsync(title, wikiNamespace)
                 .ConfigureAwait(false);
             if (linkReference is not null && linkReference.References.Count > 0)
             {
-                var missing = await WikiConfig.DataStore
-                    .GetItemAsync<MissingPage>($"{wikiNamespace}:{title}:missing")
+                var missing = await MissingPage
+                    .GetMissingPageAsync(title, wikiNamespace)
                     .ConfigureAwait(false);
                 if (missing is not null)
                 {
@@ -1035,8 +1035,8 @@ namespace NeverFoundry.Wiki
         {
             foreach (var transclusion in transclusions)
             {
-                var reference = await WikiConfig.DataStore
-                    .GetItemAsync<PageTransclusions>($"{transclusion.WikiNamespace}:{transclusion.Title}:transclusions")
+                var reference = await PageTransclusions
+                    .GetPageTransclusionsAsync(transclusion.Title, transclusion.WikiNamespace)
                     .ConfigureAwait(false);
                 if (reference is not null)
                 {

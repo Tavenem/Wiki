@@ -414,7 +414,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 var articleMissing = false;
                 if (!isCategory && !isWikipedia && !isCommons)
                 {
-                    var reference = WikiConfig.DataStore.GetItem<PageReference>($"{wikiNamespace}:{mainTitle}:reference");
+                    var reference = PageReference.GetPageReference(mainTitle, wikiNamespace);
                     if (reference is null)
                     {
                         articleMissing = true;

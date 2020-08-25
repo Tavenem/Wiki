@@ -237,7 +237,7 @@ namespace NeverFoundry.Wiki
         public static WikiFile? GetFile(string title)
         {
             WikiFile? file = null;
-            var reference = WikiConfig.DataStore.GetItem<PageReference>($"{WikiConfig.FileNamespace}:{title}:reference");
+            var reference = PageReference.GetPageReference(title, WikiConfig.FileNamespace);
             if (reference is not null)
             {
                 file = WikiConfig.DataStore.GetItem<WikiFile>(reference.Reference);
@@ -245,8 +245,7 @@ namespace NeverFoundry.Wiki
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
-                var normalizedReference = WikiConfig.DataStore
-                    .GetItem<NormalizedPageReference>($"{WikiConfig.FileNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference");
+                var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(title, WikiConfig.FileNamespace);
                 if (normalizedReference is not null
                     && normalizedReference.References.Count == 1)
                 {

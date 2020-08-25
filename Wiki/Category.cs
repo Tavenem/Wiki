@@ -216,7 +216,7 @@ namespace NeverFoundry.Wiki
             }
 
             Category? category = null;
-            var reference = WikiConfig.DataStore.GetItem<PageReference>($"{WikiConfig.CategoryNamespace}:{title}:reference");
+            var reference = PageReference.GetPageReference(title, WikiConfig.CategoryNamespace);
             if (reference is not null)
             {
                 category = WikiConfig.DataStore.GetItem<Category>(reference.Reference);
@@ -224,8 +224,7 @@ namespace NeverFoundry.Wiki
             // If no exact match exists, ignore case if only one such match exists.
             if (category is null)
             {
-                var normalizedReference = WikiConfig.DataStore
-                    .GetItem<NormalizedPageReference>($"{WikiConfig.CategoryNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference");
+                var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(title, WikiConfig.CategoryNamespace);
                 if (normalizedReference is not null
                     && normalizedReference.References.Count == 1)
                 {

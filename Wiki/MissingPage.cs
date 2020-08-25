@@ -87,6 +87,49 @@ namespace NeverFoundry.Wiki
             References = references;
         }
 
+        private MissingPage(SerializationInfo info, StreamingContext context) : this(
+            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
+            MissingPageIdItemTypeName,
+            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
+            (IReadOnlyList<string>?)info.GetValue(nameof(References), typeof(IReadOnlyList<string>)) ?? new List<string>().AsReadOnly())
+        { }
+
+        /// <summary>
+        /// Gets an ID for a <see cref="MissingPage"/> given the parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The ID which should be used for a <see cref="MissingPage"/> given the parameters.
+        /// </returns>
+        public static string GetId(string title, string? wikiNamespace = null)
+            => $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:missing";
+
+        /// <summary>
+        /// Gets the <see cref="MissingPage"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="MissingPage"/> that fits the given parameters; or <see langword="null"/>,
+        /// if there is no such item.
+        /// </returns>
+        public static MissingPage? GetMissingPage(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItem<MissingPage>(GetId(title, wikiNamespace));
+
+        /// <summary>
+        /// Gets the <see cref="MissingPage"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="MissingPage"/> that fits the given parameters; or <see langword="null"/>,
+        /// if there is no such item.
+        /// </returns>
+        public static ValueTask<MissingPage?> GetMissingPageAsync(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItemAsync<MissingPage>(GetId(title, wikiNamespace));
+
         /// <summary>
         /// Get a new instance of <see cref="MissingPage"/>.
         /// </summary>
@@ -107,7 +150,7 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             var result = new MissingPage(
-                $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:missing",
+                GetId(title, wikiNamespace),
                 MissingPageIdItemTypeName,
                 title,
                 wikiNamespace ?? WikiConfig.DefaultNamespace,
@@ -131,14 +174,6 @@ namespace NeverFoundry.Wiki
             string? wikiNamespace,
             IEnumerable<string> referenceIds)
             => NewAsync(title, wikiNamespace, referenceIds.ToArray());
-
-        private MissingPage(SerializationInfo info, StreamingContext context) : this(
-            (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
-            MissingPageIdItemTypeName,
-            (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
-            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
-            (IReadOnlyList<string>?)info.GetValue(nameof(References), typeof(IReadOnlyList<string>)) ?? new List<string>().AsReadOnly())
-        { }
 
         /// <summary>
         /// Adds a page to this collection.

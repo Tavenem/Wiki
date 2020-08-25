@@ -62,6 +62,41 @@ namespace NeverFoundry.Wiki
         { }
 
         /// <summary>
+        /// Gets an ID for a <see cref="PageRedirects"/> given the parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The ID which should be used for a <see cref="PageRedirects"/> given the parameters.
+        /// </returns>
+        public static string GetId(string title, string? wikiNamespace = null)
+            => $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:redirects";
+
+        /// <summary>
+        /// Gets the <see cref="PageRedirects"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageRedirects"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static PageRedirects? GetPageRedirects(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItem<PageRedirects>(GetId(title, wikiNamespace));
+
+        /// <summary>
+        /// Gets the <see cref="PageRedirects"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageRedirects"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static ValueTask<PageRedirects?> GetPageRedirectsAsync(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItemAsync<PageRedirects>(GetId(title, wikiNamespace));
+
+        /// <summary>
         /// Get a new instance of <see cref="PageRedirects"/>.
         /// </summary>
         /// <param name="title">
@@ -76,7 +111,7 @@ namespace NeverFoundry.Wiki
         public static async Task<PageRedirects> NewAsync(string title, string wikiNamespace, string referenceId)
         {
             var result = new PageRedirects(
-                $"{wikiNamespace}:{title}:redirects",
+                GetId(title, wikiNamespace),
                 PageRedirectsIdItemTypeName,
                 new List<string> { referenceId }.AsReadOnly());
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);

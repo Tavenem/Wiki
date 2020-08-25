@@ -58,6 +58,41 @@ namespace NeverFoundry.Wiki
         { }
 
         /// <summary>
+        /// Gets an ID for a <see cref="PageReference"/> given the parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The ID which should be used for a <see cref="PageReference"/> given the parameters.
+        /// </returns>
+        public static string GetId(string title, string? wikiNamespace = null)
+            => $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:reference";
+
+        /// <summary>
+        /// Gets the <see cref="PageReference"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageReference"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static PageReference? GetPageReference(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItem<PageReference>(GetId(title, wikiNamespace));
+
+        /// <summary>
+        /// Gets the <see cref="PageReference"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageReference"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static ValueTask<PageReference?> GetPageReferenceAsync(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItemAsync<PageReference>(GetId(title, wikiNamespace));
+
+        /// <summary>
         /// Get a new instance of <see cref="PageReference"/>.
         /// </summary>
         /// <param name="id">
@@ -73,7 +108,7 @@ namespace NeverFoundry.Wiki
         public static async Task<PageReference> NewAsync(string id, string title, string wikiNamespace)
         {
             var result = new PageReference(
-                $"{wikiNamespace}:{title}:reference",
+                GetId(title, wikiNamespace),
                 PageReferenceIdItemTypeName,
                 id);
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);

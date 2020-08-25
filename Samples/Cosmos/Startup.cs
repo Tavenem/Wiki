@@ -37,7 +37,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos
             {
                 Serializer = new SystemTextJsonCosmosSerializer(),
             });
-            var cosmosDataStore = new CosmosDataStore(cosmosClient, "Neventir", "Wiki");
+            var cosmosDataStore = new CosmosDataStore(cosmosClient, "NeverFoundry", "Wiki");
             DataStore.Instance = cosmosDataStore;
             services.AddSingleton<IDataStore>(_ => cosmosDataStore);
             services.AddSingleton(_ => cosmosDataStore);

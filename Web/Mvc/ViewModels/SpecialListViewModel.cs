@@ -251,7 +251,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             string? filter = null)
         {
             var allReferences = new HashSet<string>();
-            var references = await WikiConfig.DataStore.GetItemAsync<PageLinks>($"{wikiNamespace}:{title}:links").ConfigureAwait(false);
+            var references = await PageLinks.GetPageLinksAsync(title, wikiNamespace).ConfigureAwait(false);
             if (references is not null)
             {
                 foreach (var reference in references.References)
@@ -259,7 +259,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     allReferences.Add(reference);
                 }
             }
-            var transclusions = await WikiConfig.DataStore.GetItemAsync<PageTransclusions>($"{wikiNamespace}:{title}:transclusions").ConfigureAwait(false);
+            var transclusions = await PageTransclusions.GetPageTransclusionsAsync(title, wikiNamespace).ConfigureAwait(false);
             if (transclusions is not null)
             {
                 foreach (var reference in transclusions.References)
@@ -270,7 +270,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             if (!string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.Ordinal)
                 && !string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.Ordinal))
             {
-                var redirects = await WikiConfig.DataStore.GetItemAsync<PageRedirects>($"{wikiNamespace}:{title}:redirects").ConfigureAwait(false);
+                var redirects = await PageRedirects.GetPageRedirectsAsync(title, wikiNamespace).ConfigureAwait(false);
                 if (redirects is not null)
                 {
                     foreach (var reference in redirects.References)

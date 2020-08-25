@@ -8,32 +8,56 @@ namespace NeverFoundry.Wiki.Samples.Data
     {
         public static async Task AddDefaultWikiPagesAsync(string adminId)
         {
-            if (Article.GetArticle("Welcome", WikiConfig.TransclusionNamespace) is null)
+            var welcomeReference = await PageReference
+                .GetPageReferenceAsync("Welcome", WikiConfig.TransclusionNamespace)
+                .ConfigureAwait(false);
+            if (welcomeReference is null)
             {
                 _ = await GetDefaultWelcomeAsync(adminId).ConfigureAwait(false);
             }
 
-            if (Article.GetArticle(WikiConfig.MainPageTitle) is null)
+            var mainReference = await PageReference
+                .GetPageReferenceAsync(WikiConfig.MainPageTitle)
+                .ConfigureAwait(false);
+            if (mainReference is null)
             {
                 _ = await GetDefaultMainAsync(adminId).ConfigureAwait(false);
             }
 
-            if (Article.GetArticle(WikiWebConfig.AboutPageTitle, WikiWebConfig.SystemNamespace) is null)
+            if (!string.IsNullOrEmpty(WikiWebConfig.AboutPageTitle))
             {
-                _ = await GetDefaultAboutAsync(adminId).ConfigureAwait(false);
+                var aboutReference = await PageReference
+                    .GetPageReferenceAsync(WikiWebConfig.AboutPageTitle, WikiWebConfig.SystemNamespace)
+                    .ConfigureAwait(false);
+                if (aboutReference is null)
+                {
+                    _ = await GetDefaultAboutAsync(adminId).ConfigureAwait(false);
+                }
             }
 
-            if (Article.GetArticle("Blazor") is null)
+            var blazorReference = await PageReference
+                .GetPageReferenceAsync("Blazor")
+                .ConfigureAwait(false);
+            if (blazorReference is null)
             {
                 _ = await GetDefaultBlazorAsync(adminId).ConfigureAwait(false);
             }
 
-            if (Article.GetArticle(WikiWebConfig.HelpPageTitle, WikiWebConfig.SystemNamespace) is null)
+            if (!string.IsNullOrEmpty(WikiWebConfig.HelpPageTitle))
             {
-                _ = await GetDefaultHelpAsync(adminId).ConfigureAwait(false);
+                var helpReference = await PageReference
+                    .GetPageReferenceAsync(WikiWebConfig.HelpPageTitle, WikiWebConfig.SystemNamespace)
+                    .ConfigureAwait(false);
+                if (helpReference is null)
+                {
+                    _ = await GetDefaultHelpAsync(adminId).ConfigureAwait(false);
+                }
             }
 
-            if (Article.GetArticle("MVC") is null)
+            var mvcReference = await PageReference
+                .GetPageReferenceAsync("MVC")
+                .ConfigureAwait(false);
+            if (mvcReference is null)
             {
                 _ = await GetDefaultMVCAsync(adminId).ConfigureAwait(false);
             }

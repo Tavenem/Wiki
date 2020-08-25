@@ -67,6 +67,41 @@ namespace NeverFoundry.Wiki
         { }
 
         /// <summary>
+        /// Gets an ID for a <see cref="PageTransclusions"/> given the parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The ID which should be used for a <see cref="PageTransclusions"/> given the parameters.
+        /// </returns>
+        public static string GetId(string title, string? wikiNamespace = null)
+            => $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:transclusions";
+
+        /// <summary>
+        /// Gets the <see cref="PageTransclusions"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageTransclusions"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static PageTransclusions? GetPageTransclusions(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItem<PageTransclusions>(GetId(title, wikiNamespace));
+
+        /// <summary>
+        /// Gets the <see cref="PageTransclusions"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="PageTransclusions"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static ValueTask<PageTransclusions?> GetPageTransclusionsAsync(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItemAsync<PageTransclusions>(GetId(title, wikiNamespace));
+
+        /// <summary>
         /// Get a new instance of <see cref="PageTransclusions"/>.
         /// </summary>
         /// <param name="title">
@@ -81,7 +116,7 @@ namespace NeverFoundry.Wiki
         public static async Task<PageTransclusions> NewAsync(string title, string wikiNamespace, string referenceId)
         {
             var result = new PageTransclusions(
-                $"{wikiNamespace}:{title}:transclusions",
+                GetId(title, wikiNamespace),
                 PageTransclusionsIdItemTypeName,
                 new List<string> { referenceId }.AsReadOnly());
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);

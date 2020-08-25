@@ -62,6 +62,42 @@ namespace NeverFoundry.Wiki
         { }
 
         /// <summary>
+        /// Gets an ID for a <see cref="NormalizedPageReference"/> given the parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The ID which should be used for a <see cref="NormalizedPageReference"/> given the
+        /// parameters.
+        /// </returns>
+        public static string GetId(string title, string? wikiNamespace = null)
+            => $"{(wikiNamespace ?? WikiConfig.DefaultNamespace).ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference";
+
+        /// <summary>
+        /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static NormalizedPageReference? GetNormalizedPageReference(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItem<NormalizedPageReference>(GetId(title, wikiNamespace));
+
+        /// <summary>
+        /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
+        /// </summary>
+        /// <param name="title">The title of the wiki page.</param>
+        /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+        /// <returns>
+        /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
+        /// langword="null"/>, if there is no such item.
+        /// </returns>
+        public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(string title, string? wikiNamespace = null)
+            => WikiConfig.DataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace));
+
+        /// <summary>
         /// Get a new instance of <see cref="NormalizedPageReference"/>.
         /// </summary>
         /// <param name="id">
@@ -77,7 +113,7 @@ namespace NeverFoundry.Wiki
         public static async Task<NormalizedPageReference> NewAsync(string id, string title, string wikiNamespace)
         {
             var result = new NormalizedPageReference(
-                $"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference",
+                GetId(title, wikiNamespace),
                 NormalizedPageReferenceIdItemTypeName,
                 new List<string> { id }.AsReadOnly());
             await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
