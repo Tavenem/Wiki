@@ -11,25 +11,13 @@ namespace NeverFoundry.Wiki.Samples.Simple.Services
     public class WikiUserManager : IWikiUserManager
     {
         public const string UserId = "A478AF94-44AF-4F21-AD65-71B77B9A569A";
-        private static WikiUser _User = new WikiUser("User")
+        private static readonly WikiUser _User = new WikiUser("User")
         {
             Email = "example@example.com",
             EmailConfirmed = true,
             Id = UserId,
             IsWikiAdmin = true,
         };
-
-        /// <summary>
-        /// Gets the user, if any, associated with the normalized value of the specified
-        /// email address.
-        /// </summary>
-        /// <param name="email">The email address to return the user for.</param>
-        /// <returns>
-        /// The task object containing the results of the asynchronous lookup operation,
-        /// the user, if any, associated with a normalized value of the specified email address.
-        /// </returns>
-        public ValueTask<IWikiUser?> FindByEmailAsync(string? email)
-            => new ValueTask<IWikiUser?>(string.IsNullOrEmpty(email) ? null : _User);
 
         /// <summary>
         /// Finds and returns a user, if any, who has the specified <paramref name="userId"/>.

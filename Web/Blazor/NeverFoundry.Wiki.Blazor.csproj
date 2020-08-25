@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.43.0-preview</Version>
+    <Version>0.45.0-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>
       An implementation of NeverFoundry.Wiki for Blazor.
@@ -29,11 +29,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components" Version="5.0.0-preview.7.20365.19" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="5.0.0-preview.7.20365.19" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0-preview.7.20365.19" />
+    <PackageReference Include="Microsoft.AspNetCore.Components" Version="5.0.0-preview.8.20414.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="5.0.0-preview.8.20414.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="5.0.0-preview.8.20414.8" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="2.2.0" />
-    <PackageReference Include="NeverFoundry.Wiki" Version="0.43.0" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.43.1" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

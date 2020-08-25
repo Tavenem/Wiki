@@ -31,7 +31,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
         /// namespace is not <see cref="WikiConfig.DefaultNamespace"/>).
         /// </param>
         /// <param name="markdown">A markdown string.</param>
-        /// <param name="articles">
+        /// <param name="transcludedArticles">
         /// When this method returns, will be set to a <see cref="List{T}"/> of the full titles of
         /// all articles referenced by the transclusions within the given <paramref
         /// name="markdown"/> (including nested transclusions).
@@ -46,12 +46,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             string? title,
             string? fullTitle,
             string markdown,
-            out List<Wiki.Transclusion> articles,
+            out List<Wiki.Transclusion> transcludedArticles,
             bool isTemplate = false,
             bool isPreview = false,
             Dictionary<string, string>? parameterValues = null)
         {
-            articles = new List<Wiki.Transclusion>();
+            transcludedArticles = new List<Wiki.Transclusion>();
 
             if (string.IsNullOrWhiteSpace(markdown))
             {
@@ -108,7 +108,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                         lineTransclusions,
                         lineParameters,
                         out var lineArticles);
-                    articles = articles.Union(lineArticles).ToList();
+                    transcludedArticles = transcludedArticles.Union(lineArticles).ToList();
                 }
 
                 transclusions.AddRange(lineTransclusions);
@@ -129,9 +129,9 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             bool isPreview,
             List<Transclusion> transclusions,
             List<Transclusion> parameterInclusions,
-            out List<Wiki.Transclusion> articles)
+            out List<Wiki.Transclusion> transcludedArticles)
         {
-            articles = new List<Wiki.Transclusion>();
+            transcludedArticles = new List<Wiki.Transclusion>();
 
             var includedTransclusions = new List<Transclusion>();
             var j = 0;
@@ -180,7 +180,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                     includedTransclusions,
                     includedParameters,
                     out var nestedArticles);
-                articles = articles.Union(nestedArticles).ToList();
+                transcludedArticles = transcludedArticles.Union(nestedArticles).ToList();
             }
 
             var template = Render(markdown, offset, includedTransclusions, includedParameters);
@@ -248,10 +248,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             var article = Article.GetArticle(articleTitle, articleNamespace);
             if (article is null)
             {
+                transcludedArticles.Add(new Wiki.Transclusion(articleTitle, articleNamespace));
                 return template;
             }
 
-            articles.Add(new Wiki.Transclusion(article.Title, article.WikiNamespace));
+            transcludedArticles.Add(new Wiki.Transclusion(article.Title, article.WikiNamespace));
 
             parameterValues = ParseParameters(parameters);
 
@@ -264,7 +265,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 isPreview,
                 parameterValues);
 
-            articles = articles.Union(articleArticles).ToList();
+            transcludedArticles = transcludedArticles.Union(articleArticles).ToList();
 
             return articleContent ?? string.Empty;
         }

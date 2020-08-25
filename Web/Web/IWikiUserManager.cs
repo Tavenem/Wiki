@@ -10,17 +10,6 @@ namespace NeverFoundry.Wiki.Web
     public interface IWikiUserManager
     {
         /// <summary>
-        /// Gets the user, if any, associated with the normalized value of the specified
-        /// email address.
-        /// </summary>
-        /// <param name="email">The email address to return the user for.</param>
-        /// <returns>
-        /// The task object containing the results of the asynchronous lookup operation,
-        /// the user, if any, associated with a normalized value of the specified email address.
-        /// </returns>
-        ValueTask<IWikiUser?> FindByEmailAsync(string? email);
-
-        /// <summary>
         /// Finds and returns a user, if any, who has the specified <paramref name="userId"/>.
         /// </summary>
         /// <param name="userId">The user ID to search for.</param>

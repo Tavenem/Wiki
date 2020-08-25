@@ -177,7 +177,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (editor is not null)
                     {
@@ -192,7 +191,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (viewer is not null)
                     {
@@ -902,7 +900,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (editor is not null)
                     {
@@ -917,7 +914,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByEmailAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (viewer is not null)
                     {

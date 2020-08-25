@@ -414,10 +414,12 @@ blockquote {
         > * {
             background-color: $background-color;
             border-color: $border-color;
+            caret-color: $body-color;
             color: $body-color;
 
             &:focus {
                 background-color: $background-color;
+                caret-color: $body-color;
                 color: $body-color;
             }
         }
@@ -426,10 +428,12 @@ blockquote {
     input, select, option, textarea {
         background-color: $background-color-light;
         border-color: $border-color;
+        caret-color: $body-color;
         color: $body-color;
 
         &:focus {
             background-color: $background-color-dark;
+            caret-color: $body-color;
             color: $body-color;
         }
     }
@@ -1331,6 +1335,10 @@ blockquote {
     .CodeMirror-focused .CodeMirror-selected,
     .CodeMirror-selected {
         background-color: $border-color;
+    }
+
+    .CodeMirror-cursor {
+        border-left-color: $body-color;
     }
 
     .editor-statusbar {
