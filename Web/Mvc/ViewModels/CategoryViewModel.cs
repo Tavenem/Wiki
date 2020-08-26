@@ -8,22 +8,22 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     /// <summary>
     /// The category DTO.
     /// </summary>
-    public class CategoryViewModel : WikiItemViewModel
+    public record CategoryViewModel : WikiItemViewModel
     {
         /// <summary>
         /// The included articles.
         /// </summary>
-        public IList<IGrouping<string, CategoryPageViewModel>>? Articles { get; set; }
+        public IList<IGrouping<string, CategoryPageViewModel>>? Articles { get; init; }
 
         /// <summary>
         /// The included files.
         /// </summary>
-        public IList<IGrouping<string, CategoryFileViewModel>>? Files { get; set; }
+        public IList<IGrouping<string, CategoryFileViewModel>>? Files { get; init; }
 
         /// <summary>
         /// The included categories.
         /// </summary>
-        public IList<IGrouping<string, SubcategoryViewModel>>? Subcategories { get; set; }
+        public IList<IGrouping<string, SubcategoryViewModel>>? Subcategories { get; init; }
 
         /// <summary>
         /// Initialize a new instance of <see cref="CategoryViewModel"/>.

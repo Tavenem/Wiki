@@ -647,7 +647,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (string.IsNullOrWhiteSpace(title))
             {
-                return Json(new string[0]);
+                return Json(Array.Empty<string>());
             }
 
             IReadOnlyList<string> items;
@@ -1222,6 +1222,103 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             string? filter = null)
             => GetSpecialListAsync(SpecialListType.What_Links_Here, pageNumber, pageSize, sort, descending, filter);
 
+        private static Article? GetWikiItem(string title, string wikiNamespace, bool noRedirect = false)
+        {
+            if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
+            {
+                return Category.GetCategory(title);
+            }
+            else if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase))
+            {
+                return WikiFile.GetFile(title);
+            }
+            else
+            {
+                return Article.GetArticle(title, wikiNamespace, noRedirect);
+            }
+        }
+
+        private static bool IsValidContentType(string type)
+            => type.StartsWith("image/")
+            || type.StartsWith("audio/")
+            || type.StartsWith("video/")
+            || type.Equals("application/pdf");
+
+        private static bool VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
+            => VerifyPermission(data.WikiItem, user, data.IsUserPage, data.IsGroupPage, edit);
+
+        private static bool VerifyPermission(Article? item, IWikiUser? user, bool userPage = false, bool groupPage = false, bool edit = false)
+        {
+            if (user?.IsDeleted == true || user?.IsDisabled == true)
+            {
+                return false;
+            }
+
+            if (item is null)
+            {
+                return true;
+            }
+
+            if (edit)
+            {
+                if (user is null)
+                {
+                    return false;
+                }
+
+                if (userPage)
+                {
+                    return string.Equals(item.Title, user!.Id);
+                }
+
+                if (groupPage)
+                {
+                    if (item.Title == WikiWebConfig.AdminGroupName)
+                    {
+                        return user.IsWikiAdmin;
+                    }
+                    else if (user.Groups is null)
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return user.Groups.Contains(item.Title);
+                    }
+                }
+            }
+
+            if (item.Owner is null)
+            {
+                return true;
+            }
+
+            if (user is null)
+            {
+                return edit
+                    ? item.AllowedEditors is null
+                    : item.AllowedViewers is null;
+            }
+
+            if (string.Equals(item.Owner, user.Id)
+                || (edit
+                ? item.AllowedEditors?.Contains(user.Id) != false
+                : item.AllowedViewers?.Contains(user.Id) != false))
+            {
+                return true;
+            }
+
+            if (user.Groups is null)
+            {
+                return false;
+            }
+
+            return user.Groups.Contains(item.Owner)
+                || (edit
+                ? item.AllowedEditors?.Intersect(user.Groups).Any() != false
+                : item.AllowedViewers?.Intersect(user.Groups).Any() != false);
+        }
+
         private async Task<IActionResult> GetSpecialListAsync(
             SpecialListType type,
             int pageNumber = 1,
@@ -1271,22 +1368,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             var vm = await SpecialListViewModel.NewAsync(data, type, pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false);
             return View("WikiItemList", vm);
-        }
-
-        private Article? GetWikiItem(string title, string wikiNamespace, bool noRedirect = false)
-        {
-            if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
-            {
-                return Category.GetCategory(title);
-            }
-            else if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase))
-            {
-                return WikiFile.GetFile(title);
-            }
-            else
-            {
-                return Article.GetArticle(title, wikiNamespace, noRedirect);
-            }
         }
 
         private async Task<Article?> GetWikiItemAsync(WikiRouteData data)
@@ -1352,12 +1433,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             ViewData["Title"] = Article.GetFullTitle(data.Title, data.WikiNamespace, data.IsTalk);
             return data;
         }
-
-        private bool IsValidContentType(string type)
-            => type.StartsWith("image/")
-            || type.StartsWith("audio/")
-            || type.StartsWith("video/")
-            || type.Equals("application/pdf");
 
         private async Task<IActionResult?> TryGettingSystemPage(WikiRouteData data, IWikiUser? user)
         {
@@ -1430,81 +1505,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             return null;
-        }
-
-        private bool VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
-            => VerifyPermission(data.WikiItem, user, data.IsUserPage, data.IsGroupPage, edit);
-
-        private bool VerifyPermission(Article? item, IWikiUser? user, bool userPage = false, bool groupPage = false, bool edit = false)
-        {
-            if (user?.IsDeleted == true || user?.IsDisabled == true)
-            {
-                return false;
-            }
-
-            if (item is null)
-            {
-                return true;
-            }
-
-            if (edit)
-            {
-                if (user is null)
-                {
-                    return false;
-                }
-
-                if (userPage)
-                {
-                    return string.Equals(item.Title, user!.Id);
-                }
-
-                if (groupPage)
-                {
-                    if (item.Title == WikiWebConfig.AdminGroupName)
-                    {
-                        return user.IsWikiAdmin;
-                    }
-                    else if (user.Groups is null)
-                    {
-                        return false;
-                    }
-                    else
-                    {
-                        return user.Groups.Contains(item.Title);
-                    }
-                }
-            }
-
-            if (item.Owner is null)
-            {
-                return true;
-            }
-
-            if (user is null)
-            {
-                return edit
-                    ? item.AllowedEditors is null
-                    : item.AllowedViewers is null;
-            }
-
-            if (string.Equals(item.Owner, user.Id)
-                || (edit
-                ? item.AllowedEditors?.Contains(user.Id) != false
-                : item.AllowedViewers?.Contains(user.Id) != false))
-            {
-                return true;
-            }
-
-            if (user.Groups is null)
-            {
-                return false;
-            }
-
-            return user.Groups.Contains(item.Owner)
-                || (edit
-                ? item.AllowedEditors?.Intersect(user.Groups).Any() != false
-                : item.AllowedViewers?.Intersect(user.Groups).Any() != false);
         }
     }
 }

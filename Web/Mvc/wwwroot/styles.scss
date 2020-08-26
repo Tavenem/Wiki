@@ -779,6 +779,12 @@ blockquote {
     div {
         display: inline-block;
     }
+
+    .page-link {
+        background-color: $background-color;
+        border: none;
+        padding: 0;
+    }
 }
 
 .wiki-top-footer {

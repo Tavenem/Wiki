@@ -2,6 +2,7 @@
 using Markdig;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.MarkdownExtensions;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
@@ -365,7 +366,12 @@ namespace NeverFoundry.Wiki
 
         private static IHtmlSanitizer? _HtmlSanitizerFull;
         internal static IHtmlSanitizer HtmlSanitizerFull
-            => _HtmlSanitizerFull ??= new HtmlSanitizer(new string[0], new string[0], new string[0], new string[0], new string[0])
+            => _HtmlSanitizerFull ??= new HtmlSanitizer(
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<string>(),
+                Array.Empty<string>())
             {
                 KeepChildNodes = true
             };

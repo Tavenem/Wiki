@@ -6,33 +6,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     /// <summary>
     /// The wiki item DTO.
     /// </summary>
-    public class WikiItemViewModel
+    public record WikiItemViewModel(WikiRouteData Data, string Html, bool IsDiff)
     {
-        /// <summary>
-        /// The associated <see cref="WikiRouteData"/>.
-        /// </summary>
-        public WikiRouteData Data { get; }
-
-        /// <summary>
-        /// The rendered HTML.
-        /// </summary>
-        public string Html { get; }
-
-        /// <summary>
-        /// Whether this is a diff.
-        /// </summary>
-        public bool IsDiff { get; }
-
-        /// <summary>
-        /// Initialize a new instance of <see cref="WikiItemViewModel"/>.
-        /// </summary>
-        public WikiItemViewModel(WikiRouteData data, string html, bool isDiff)
-        {
-            Data = data;
-            Html = html;
-            IsDiff = isDiff;
-        }
-
         /// <summary>
         /// Get a new instance of <see cref="WikiItemViewModel"/>.
         /// </summary>

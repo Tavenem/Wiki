@@ -8,7 +8,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     /// <summary>
     /// The group DTO.
     /// </summary>
-    public class GroupViewModel : WikiItemViewModel
+    public record GroupViewModel : WikiItemViewModel
     {
         /// <summary>
         /// The included users.

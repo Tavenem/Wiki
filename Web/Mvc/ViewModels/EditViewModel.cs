@@ -10,30 +10,32 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     /// <summary>
     /// The edit DTO.
     /// </summary>
-    public class EditViewModel
-    {
-        /// <summary>
-        /// The allowed editor IDs.
-        /// </summary>
+    public record EditViewModel
+    (
         [Display(Name = "Allowed editors (optional)")]
-        public string? AllowedEditors { get; set; }
+        string? AllowedEditors,
 
-        /// <summary>
-        /// The allowed viewer IDs.
-        /// </summary>
         [Display(Name = "Allowed viewers (optional)")]
-        public string? AllowedViewers { get; set; }
+        string? AllowedViewers,
 
-        /// <summary>
-        /// The optional comment.
-        /// </summary>
+        WikiRouteData Data,
+        bool IsOutdated,
+        string Markdown,
+        string? Owner,
+
+        [Display(Name = "Make me the owner")]
+        bool OwnerSelf,
+
+        string? Preview,
+
+        [Required] string? Title,
+
         [Display(Name = "Revision comment (e.g. briefly describe your changes)")]
-        public string? Comment { get; set; }
+        string? Comment = null,
 
-        /// <summary>
-        /// The associated <see cref="WikiRouteData"/>.
-        /// </summary>
-        public WikiRouteData Data { get; }
+        [Display(Name = "Leave a redirect behind")]
+        bool Redirect = true)
+    {
 
         /// <summary>
         /// The ID of the item.
@@ -42,70 +44,31 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         public string? Id => Data.WikiItem?.Id;
 
         /// <summary>
-        /// Whether the item has been edited since starting this edit session.
-        /// </summary>
-        public bool IsOutdated { get; }
-
-        /// <summary>
-        /// The markdown content.
-        /// </summary>
-        public string Markdown { get; set; }
-
-        /// <summary>
-        /// The ID of the owner.
-        /// </summary>
-        public string? Owner { get; set; }
-
-        /// <summary>
-        /// Whether to make the owner the editor.
-        /// </summary>
-        [Display(Name = "Make me the owner")]
-        public bool OwnerSelf { get; set; }
-
-        /// <summary>
-        /// The rendered preview.
-        /// </summary>
-        public string? Preview { get; }
-
-        /// <summary>
-        /// Whether to automatically create a redirect for a renamed article.
-        /// </summary>
-        [Display(Name = "Leave a redirect behind")]
-        public bool Redirect { get; set; } = true;
-
-        /// <summary>
-        /// The title.
-        /// </summary>
-        [Required]
-        public string? Title { get; set; }
-
-        /// <summary>
         /// Initialize a new instance of <see cref="EditViewModel"/>.
         /// </summary>
         public EditViewModel(
-            WikiRouteData data,
-            IWikiUser user,
-            string markdown,
-            string? previewTitle = null,
-            string? preview = null,
-            bool isOutdated = false,
-            string? allowedEditors = null,
-            string? allowedViewers = null)
-        {
-            AllowedEditors = allowedEditors;
-            AllowedViewers = allowedViewers;
-            Data = data;
-            IsOutdated = isOutdated;
-            Markdown = markdown;
-            Owner = data.WikiItem?.Owner;
-            OwnerSelf = string.Equals(data.WikiItem?.Owner, user.Id, System.StringComparison.Ordinal);
-            Preview = preview;
-            Title = previewTitle
-                ?? data.WikiItem?.FullTitle
-                ?? (string.IsNullOrEmpty(data.Title)
-                    ? null
-                    : Article.GetFullTitle(data.Title, data.WikiNamespace));
-        }
+                WikiRouteData data,
+                IWikiUser user,
+                string markdown,
+                string? previewTitle = null,
+                string? preview = null,
+                bool isOutdated = false,
+                string? allowedEditors = null,
+                string? allowedViewers = null) : this(
+                    allowedEditors,
+                    allowedViewers,
+                    data,
+                    isOutdated,
+                    markdown,
+                    data.WikiItem?.Owner,
+                    string.Equals(data.WikiItem?.Owner, user.Id, System.StringComparison.Ordinal),
+                    preview,
+                    previewTitle
+                        ?? data.WikiItem?.FullTitle
+                        ?? (string.IsNullOrEmpty(data.Title)
+                            ? null
+                            : Article.GetFullTitle(data.Title, data.WikiNamespace)))
+        { }
 
         /// <summary>
         /// Get a new <see cref="EditViewModel"/>.

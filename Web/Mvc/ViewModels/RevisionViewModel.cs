@@ -6,39 +6,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     /// <summary>
     /// The revision DTO.
     /// </summary>
-    public class RevisionViewModel
+    public record RevisionViewModel(Revision Revision, bool EditorExists, string EditorName, bool EditorPageExists)
     {
-        /// <summary>
-        /// The revision.
-        /// </summary>
-        public Revision Revision { get; set; }
-
-        /// <summary>
-        /// Whether the editor still esists as a wiki user.
-        /// </summary>
-        public bool EditorExists { get; set; }
-
-        /// <summary>
-        /// The editor's user name.
-        /// </summary>
-        public string EditorName { get; set; }
-
-        /// <summary>
-        /// Whether there is a user page associated with the editor.
-        /// </summary>
-        public bool EditorPageExists { get; set; }
-
-        /// <summary>
-        /// Initialize a new <see cref="RevisionViewModel"/>.
-        /// </summary>
-        public RevisionViewModel(Revision revision, bool userExists, string userName, bool userPageExists)
-        {
-            Revision = revision;
-            EditorExists = userExists;
-            EditorName = userName;
-            EditorPageExists = userPageExists;
-        }
-
         /// <summary>
         /// Get a new <see cref="RevisionViewModel"/>.
         /// </summary>

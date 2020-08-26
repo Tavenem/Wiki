@@ -1,0 +1,10 @@
+# C# files
+[*.cs]
+
+# IDE0060: Remove unused parameter if it is not part of a shipped public API: properties in records
+# defined with short syntax adorned with attributes are incorrectly flagged.
+dotnet_diagnostic.IDE0060.severity = none
+
+# CS1591: Missing XML comment for publicly visible type or member: Cannot add XML comments for
+# parameters in short-format record declarations.
+dotnet_diagnostic.CS1591.severity = none

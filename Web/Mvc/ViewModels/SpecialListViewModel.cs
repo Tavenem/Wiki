@@ -14,53 +14,19 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
     /// <summary>
     /// The wiki page list DTO.
     /// </summary>
-    public class SpecialListViewModel
+    public record SpecialListViewModel
+    (
+        WikiRouteData Data,
+        SpecialListType Type,
+        bool Descending,
+        IPagedList<Article> Items,
+        string Description,
+        string? SecondaryDescription = null,
+        IPagedList<MissingPage>? MissingItems = null,
+        string? Sort = null,
+        string? Filter = null
+    )
     {
-        /// <summary>
-        /// The associated <see cref="WikiRouteData"/>.
-        /// </summary>
-        public WikiRouteData Data { get; }
-
-        /// <summary>
-        /// Whether the results are sorted in descending order.
-        /// </summary>
-        public bool Descending { get; }
-
-        /// <summary>
-        /// The description of the list.
-        /// </summary>
-        public string Description { get; }
-
-        /// <summary>
-        /// An optional filter to apply to results.
-        /// </summary>
-        public string? Filter { get; }
-
-        /// <summary>
-        /// The results for this page.
-        /// </summary>
-        public IPagedList<Article> Items { get; }
-
-        /// <summary>
-        /// Missing item results for this page.
-        /// </summary>
-        public IPagedList<MissingPage>? MissingItems { get; }
-
-        /// <summary>
-        /// An optional secondary description for the list.
-        /// </summary>
-        public string? SecondaryDescription { get; }
-
-        /// <summary>
-        /// The type of sort.
-        /// </summary>
-        public string? Sort { get; }
-
-        /// <summary>
-        /// The type of page listing.
-        /// </summary>
-        public SpecialListType Type { get; }
-
         /// <summary>
         /// Initialize a new <see cref="SpecialListViewModel"/>.
         /// </summary>
@@ -71,18 +37,17 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             IPagedList<Article> items,
             IPagedList<MissingPage>? missingItems = null,
             string? sort = null,
-            string? filter = null)
-        {
-            Data = data;
-            Descending = descending;
-            Description = GetDescription(type, data);
-            Filter = filter;
-            Items = items;
-            MissingItems = missingItems;
-            SecondaryDescription = GetSecondaryDescription(type);
-            Sort = sort;
-            Type = type;
-        }
+            string? filter = null) : this(
+                data,
+                type,
+                descending,
+                items,
+                GetDescription(type, data),
+                GetSecondaryDescription(type),
+                missingItems,
+                sort,
+                filter)
+        { }
 
         /// <summary>
         /// Get a <see cref="SpecialListViewModel"/>.
@@ -126,7 +91,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
                 SpecialListType.Double_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsDoubleRedirect).ConfigureAwait(false),
 
-#pragma warning disable RCS1077 // Optimize LINQ method call: Count() is translated to SQL by various data providers (Relinq), while the Count property is not necessarily serialized/recognized
+#pragma warning disable CA1829 // Optimize LINQ method call: Count() is translated to SQL by various data providers (Relinq), while the Count property is not necessarily serialized/recognized
                 SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(
                     pageNumber,
                     pageSize,
@@ -162,7 +127,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     filter,
                     x => x.ChildIds.Count() == 0)
                 .ConfigureAwait(false),
-#pragma warning restore RCS1077 // Optimize LINQ method call.
+#pragma warning restore CA1829 // Optimize LINQ method call.
 
                 SpecialListType.What_Links_Here => await GetLinksHereAsync(
                     data.Title,
@@ -351,7 +316,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 {
                     sb.Append("Top-level categories are typically linked on the <a href=\"/Wiki/")
                         .Append(WikiWebConfig.SystemNamespace)
-                        .Append(":")
+                        .Append(':')
                         .Append(WikiWebConfig.ContentsPageTitle)
                         .Append("\" class=\"wiki-link wiki-link-exists\">")
                         .Append(WikiWebConfig.ContentsPageTitle)
