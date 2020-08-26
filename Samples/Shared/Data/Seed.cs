@@ -293,11 +293,6 @@ The `WikiConfig` static class contains a number of properties which can be set t
    Default is ""A NeverFoundry Wiki Sample""; this is clearly not suitable for production, and should always be replaced.
 
    May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
-- **`ServerUrl`** - The primary URL of your wiki.
-
-   Default is ""http://localhost:5000/""; this is clearly not suitable for production, and should always be replaced.
-
-   May not be `null` or empty. Setting to an empty or all-whitespace value resets it to the default.
 
 ##  Site pages
 - **`CategoriesTitle`** - The title of the article on categories in the main wiki.
