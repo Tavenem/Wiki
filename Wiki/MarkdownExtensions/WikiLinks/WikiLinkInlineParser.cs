@@ -98,7 +98,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             return false;
         }
 
-        private string? ParseEndmatter(ref StringSlice lines)
+        private static string? ParseEndmatter(ref StringSlice lines)
         {
             string? endmatter = null;
             var buffer = new StringBuilder();
@@ -124,7 +124,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             return endmatter;
         }
 
-        private bool TryParseLink(ref StringSlice lines, out string? title, out string? display, out bool hasDisplay, out int endPosition)
+        private static bool TryParseLink(ref StringSlice lines, out string? title, out string? display, out bool hasDisplay, out int endPosition)
         {
             lines.NextChar(); // skip second opening char, which has already been confirmed
 
@@ -297,7 +297,13 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
 
                         display = title[startIndex..endIndex].Trim();
 
-                        if (anchor != -1)
+                        if (anchor == 0)
+                        {
+                            display = openParen == -1 || openParen < anchor
+                                ? title[(anchor + 1)..]
+                                : title[(anchor + 1)..openParen];
+                        }
+                        else if (anchor > 0)
                         {
                             display = openParen == -1 || openParen < anchor
                                 ? $"{display} § {title[(anchor + 1)..]}"
@@ -317,7 +323,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             return isValid;
         }
 
-        private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
+        private static bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
         {
             var openParent = inlineState.Inline.FindParentOfType<WikiLinkDelimiterInline>().FirstOrDefault();
             if (openParent is null)
@@ -362,6 +368,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 var isNamespaceEscaped = false;
                 var isTalk = false;
                 string? wikiNamespace = null;
+                var localAnchor = false;
 
                 var mainTitle = title;
                 if (isWikipedia)
@@ -392,27 +399,39 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 else
                 {
                     var anchorIndex = title.IndexOf('#');
-                    if (anchorIndex != -1)
+                    if (anchorIndex == 0)
                     {
-                        mainTitle = title[..anchorIndex];
+                        localAnchor = true;
+                        if (string.IsNullOrEmpty(display))
+                        {
+                            display = title[1..];
+                            openParent.HasDisplay = true;
+                        }
                     }
-                    var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(mainTitle);
-                    isTalk = wIsTalk;
-                    wikiNamespace = wWikiNamespace;
-                    isCategory = string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
-                    if (isCategory)
+                    else
                     {
-                        isNamespaceEscaped = title.StartsWith(':');
-                        wikiNamespace = WikiConfig.CategoryNamespace; // normalize casing
+                        if (anchorIndex != -1)
+                        {
+                            mainTitle = title[..anchorIndex];
+                        }
+                        var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(mainTitle);
+                        isTalk = wIsTalk;
+                        wikiNamespace = wWikiNamespace;
+                        isCategory = string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
+                        if (isCategory)
+                        {
+                            isNamespaceEscaped = title.StartsWith(':');
+                            wikiNamespace = WikiConfig.CategoryNamespace; // normalize casing
+                        }
+                        mainTitle = wTitle;
+                        title = anchorIndex == -1 || anchorIndex >= title.Length - 1
+                            ? wTitle
+                            : wTitle + title[anchorIndex..];
                     }
-                    mainTitle = wTitle;
-                    title = anchorIndex == -1 || anchorIndex >= title.Length - 1
-                        ? wTitle
-                        : wTitle + title[anchorIndex..];
                 }
 
                 var articleMissing = false;
-                if (!isCategory && !isWikipedia && !isCommons)
+                if (!isCategory && !isWikipedia && !isCommons && !localAnchor)
                 {
                     var reference = PageReference.GetPageReference(mainTitle, wikiNamespace);
                     if (reference is null)

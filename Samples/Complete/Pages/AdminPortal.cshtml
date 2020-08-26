@@ -4,6 +4,7 @@
 @inject UserManager<WikiUser> UserManager
 
 @{
+    Layout = "Account/_Layout";
     ViewData["Title"] = "Admin";
 }
 
@@ -94,7 +95,7 @@ else if ((Model.Users?.Count ?? 0) > 0)
                                     <h5 class="mb-1 @(user.User.LastAccess.AddYears(1) < DateTimeOffset.UtcNow ? "text-muted" : string.Empty)">@user.User.UserName</h5>
                                     @if (user.Claims.HasBoolClaim(WikiClaims.Claim_SiteAdmin))
                                     {
-                                        <span class="badge badge-pill badge-primary">
+                                        <span class="badge rounded-pill bg-primary">
                                             <i class="material-icons">star</i>
                                             <span class="sr-only">site admin</span>
                                         </span>
@@ -115,7 +116,7 @@ else if ((Model.Users?.Count ?? 0) > 0)
                                             }
                                             else
                                             {
-                                                <span class="badge badge-pill badge-warning" title="Wiki admin">
+                                                <span class="badge rounded-pill bg-warning" title="Wiki admin">
                                                     <i class="material-icons">star</i>
                                                     <span class="sr-only">is a wiki admin</span>
                                                 </span>
@@ -134,7 +135,7 @@ else if ((Model.Users?.Count ?? 0) > 0)
                                     }
                                     else if (user.Claims.HasBoolClaim(WikiClaims.Claim_WikiAdmin))
                                     {
-                                        <span class="badge badge-pill badge-warning" title="Wiki admin">
+                                        <span class="badge rounded-pill bg-warning" title="Wiki admin">
                                             <i class="material-icons">star</i>
                                             <span class="sr-only">is a wiki admin</span>
                                         </span>

@@ -42,8 +42,10 @@ Fourth section text";
         [TestMethod]
         public void AnchorLinkTest()
         {
-            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
-            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">title § anchor</a>");
+            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists wiki-link-Wiki\">Title § Anchor</a>");
+            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists wiki-link-Wiki\">title § anchor</a>");
+            TestTemplate("[[#Local Anchor|]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">Local Anchor</a>");
+            TestTemplate("[[#Local Anchor||]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">local anchor</a>");
         }
 
         [TestMethod]
@@ -53,7 +55,7 @@ Fourth section text";
             TestTemplate("{{format|52|D3}}", "052");
             TestTemplate("{{format|54321}}", "54,321");
 
-            TestTemplate("{{format|5.2}}", "5.200");
+            TestTemplate("{{format|5.2}}", "5.20");
             TestTemplate("{{format|5.2|C2}}", "$5.20");
             TestTemplate("{{format|54321|e5}}", "5.43210e+004");
 
@@ -138,8 +140,8 @@ Fourth section text";
         [TestMethod]
         public void LinkTest()
         {
-            TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
-            TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
+            TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists wiki-link-Wiki\">Alt <strong>title</strong></a>");
+            TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists wiki-link-Wiki\"><span class=\"wiki-link-title\">Title</span></a>");
         }
 
         [TestMethod]
@@ -305,15 +307,15 @@ Fourth section text";
 
             TestTemplate(
                 $"{{{{{NestedTitle}|Title}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Title</a></p>\n</div>\n",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists wiki-link-Wiki\">Title</a></p>\n</div>\n",
                 false);
             TestTemplate(
                 $"{{{{{NestedTitle}|Title#Anchor}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a></p>\n</div>\n",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists wiki-link-Wiki\">Title § Anchor</a></p>\n</div>\n",
                 false);
         }
 
-        private Article GetArticle(string markdown)
+        private static Article GetArticle(string markdown)
         {
             if (_Article is null)
             {
@@ -331,7 +333,7 @@ Fourth section text";
             return _Article;
         }
 
-        private Article GetNestedArticle(string markdown)
+        private static Article GetNestedArticle(string markdown)
         {
             if (_NestedArticle is null)
             {
@@ -350,7 +352,7 @@ Fourth section text";
             return _NestedArticle;
         }
 
-        private void TestTemplate(string markdown, string expected, bool paragraph = true)
+        private static void TestTemplate(string markdown, string expected, bool paragraph = true)
         {
             var article = GetArticle(markdown);
             Assert.AreEqual(paragraph ? $"<p>{expected}</p>\n" : expected, article.Html);

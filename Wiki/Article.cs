@@ -359,7 +359,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
-            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
@@ -370,7 +370,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(RedirectTitle), typeof(string)),
             (bool?)info.GetValue(nameof(IsBrokenRedirect), typeof(bool)) ?? default,
             (bool?)info.GetValue(nameof(IsDoubleRedirect), typeof(bool)) ?? default,
-            (IReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(IReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(IReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(Array.Empty<string>()),
             (IReadOnlyList<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(IReadOnlyList<Transclusion>)))
         { }
 
@@ -903,7 +903,7 @@ namespace NeverFoundry.Wiki
             string? markdown)
         {
             if ((markdown?.StartsWith("{{redirect|", StringComparison.OrdinalIgnoreCase)) != true
-                || markdown.IndexOf("}}") == -1)
+                || !markdown.Contains("}}", StringComparison.Ordinal))
             {
                 return (
                     null,

@@ -21,7 +21,9 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             {
                 return; // do not render unescaped category links
             }
-            var fullTitle = !link.IsCommons && !link.IsWikipedia
+            var fullTitle = !link.IsCommons
+                && !link.IsWikipedia
+                && (link.Title.Length == 0 || link.Title[0] != '#')
                 ? Article.GetFullTitle(link.Title, link.WikiNamespace, link.IsTalk)
                 : link.Title;
 
@@ -37,14 +39,32 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
                 else
                 {
-                    renderer.Write(link.IsImage ? "<img src=\"/" : $"<a href=\"/{WikiConfig.WikiLinkPrefix}/");
+                    if (link.IsImage)
+                    {
+                        renderer.Write("<img src=\"/");
+                    }
+                    else if (link.Title.Length > 0 && link.Title[0] == '#')
+                    {
+                        renderer.Write("<a href=\"");
+                    }
+                    else
+                    {
+                        renderer.Write($"<a href=\"/{WikiConfig.WikiLinkPrefix}/");
+                    }
                     link.GetAttributes().AddClass(link.Missing ? "wiki-link-missing" : "wiki-link-exists");
+                    if (!string.IsNullOrEmpty(link.WikiNamespace))
+                    {
+                        link.GetAttributes().AddClass($"wiki-link-{link.WikiNamespace}");
+                    }
                 }
                 renderer.WriteEscapeUrl(fullTitle);
                 renderer.Write("\"");
                 renderer.WriteAttributes(link);
 
-                if (!link.IsWikipedia && !link.IsCommons && !string.IsNullOrEmpty(WikiConfig.LinkTemplate))
+                if (!link.IsWikipedia
+                    && !link.IsCommons
+                    && (link.Title.Length == 0 || link.Title[0] != '#')
+                    && !string.IsNullOrEmpty(WikiConfig.LinkTemplate))
                 {
                     renderer.Write(" ");
                     renderer.Write(WikiConfig.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(fullTitle)));

@@ -171,30 +171,46 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             List<string>? allowedEditors = null;
-            if (!(model.AllowedEditors is null))
+            if (model.AllowedEditors is not null)
             {
-                allowedEditors = new List<string>();
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (editor is not null)
                     {
-                        allowedEditors.Add(editor.Id);
+                        (allowedEditors ??= new List<string>()).Add(editor.Id);
+                    }
+                    else
+                    {
+                        var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                        if (groupEditor is not null)
+                        {
+                            (allowedEditors ??= new List<string>()).Add(groupEditor.Id);
+                        }
                     }
                 }
             }
             List<string>? allowedViewers = null;
-            if (!(model.AllowedViewers is null))
+            if (model.AllowedViewers is not null)
             {
-                allowedViewers = new List<string>();
                 foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (viewer is not null)
                     {
-                        allowedViewers.Add(viewer.Id);
+                        (allowedViewers ??= new List<string>()).Add(viewer.Id);
+                    }
+                    else
+                    {
+                        var groupViewer = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                        if (groupViewer is not null)
+                        {
+                            (allowedViewers ??= new List<string>()).Add(groupViewer.Id);
+                        }
                     }
                 }
             }
@@ -412,6 +428,16 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
 
+            if (data.IsSystem)
+            {
+                var special = await TryGettingSystemPage(data, user).ConfigureAwait(false);
+                if (special is not null)
+                {
+                    return special;
+                }
+                data.IsSystem = false;
+            }
+
             var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             if (wikiItem is null)
             {
@@ -467,7 +493,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 data.CanEdit = user is not null
                     && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
-                    && (!user.IsWikiAdmin
+                    && (user.IsWikiAdmin
                     || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
                 return View("NoContent", data);
             }
@@ -894,30 +920,46 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             List<string>? allowedEditors = null;
-            if (!(model.AllowedEditors is null))
+            if (model.AllowedEditors is not null)
             {
-                allowedEditors = new List<string>();
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (editor is not null)
                     {
-                        allowedEditors.Add(editor.Id);
+                        (allowedEditors ??= new List<string>()).Add(editor.Id);
+                    }
+                    else
+                    {
+                        var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                        if (groupEditor is not null)
+                        {
+                            (allowedEditors ??= new List<string>()).Add(groupEditor.Id);
+                        }
                     }
                 }
             }
             List<string>? allowedViewers = null;
-            if (!(model.AllowedViewers is null))
+            if (model.AllowedViewers is not null)
             {
-                allowedViewers = new List<string>();
                 foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (viewer is not null)
                     {
-                        allowedViewers.Add(viewer.Id);
+                        (allowedViewers ??= new List<string>()).Add(viewer.Id);
+                    }
+                    else
+                    {
+                        var groupViewer = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                        if (groupViewer is not null)
+                        {
+                            (allowedViewers ??= new List<string>()).Add(groupViewer.Id);
+                        }
                     }
                 }
             }
