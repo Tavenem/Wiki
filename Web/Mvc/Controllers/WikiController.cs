@@ -152,6 +152,33 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     return View("NotAuthorized", data);
                 }
             }
+            else if (wikiItem.Owner is not null)
+            {
+                if (model.OwnerSelf)
+                {
+                    if (user.Id != wikiItem.Owner
+                        && user.Groups?.Contains(wikiItem.Owner) != true)
+                    {
+                        return View("NotAuthorized", data);
+                    }
+                }
+                else if (model.Owner is not null
+                    && model.Owner != wikiItem.Owner)
+                {
+                    return View("NotAuthorized", data);
+                }
+            }
+            if (!model.OwnerSelf && model.Owner is not null)
+            {
+                var intendedOwner = await _userManager.FindByIdAsync(model.Owner).ConfigureAwait(false)
+                    ?? await _userManager.FindByNameAsync(model.Owner).ConfigureAwait(false);
+                if (intendedOwner is null)
+                {
+                    ModelState.AddModelError("Model", "No such owner found.");
+                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    return View("Edit", vm);
+                }
+            }
 
             if (wikiItem is not null)
             {
@@ -171,7 +198,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             List<string>? allowedEditors = null;
-            if (model.AllowedEditors is not null)
+            if (model.AllowedEditors is not null
+                && (model.OwnerSelf || model.Owner is not null))
             {
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
@@ -193,7 +221,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
             }
             List<string>? allowedViewers = null;
-            if (model.AllowedViewers is not null)
+            if (model.AllowedViewers is not null
+                && (model.OwnerSelf || model.Owner is not null))
             {
                 foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
@@ -920,7 +949,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             List<string>? allowedEditors = null;
-            if (model.AllowedEditors is not null)
+            if (model.AllowedEditors is not null
+                && (model.OwnerSelf || model.Owner is not null))
             {
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
@@ -942,7 +972,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
             }
             List<string>? allowedViewers = null;
-            if (model.AllowedViewers is not null)
+            if (model.AllowedViewers is not null
+                && (model.OwnerSelf || model.Owner is not null))
             {
                 foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {

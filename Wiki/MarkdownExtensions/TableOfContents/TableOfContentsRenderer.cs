@@ -139,7 +139,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
                 }
                 var n = i + 1;
                 while (childList > 0
-                    && (n >= headings.Count - 1
+                    && (n > headings.Count - 1
                     || headings[n].Level - block.LevelOffset < adjustedLevel))
                 {
                     renderer.EnsureLine();

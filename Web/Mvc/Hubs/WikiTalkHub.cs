@@ -43,8 +43,8 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         public async Task JoinTopic(string topicId)
         {
             var user = await _userManager.GetUserAsync(Context.User).ConfigureAwait(false);
-            var viewPermission = await GetTopicViewPermissionAsync(topicId, user).ConfigureAwait(false);
-            if (viewPermission)
+            var permission = await GetTopicPermissionAsync(topicId, user).ConfigureAwait(false);
+            if (permission)
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, topicId).ConfigureAwait(false);
             }
@@ -89,8 +89,8 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 throw new HubException("You do not have permission to reply to this topic.");
             }
 
-            var editPermission = await GetTopicEditPermissionAsync(reply.TopicId, user).ConfigureAwait(false);
-            if (!editPermission)
+            var permission = await GetTopicPermissionAsync(reply.TopicId, user).ConfigureAwait(false);
+            if (!permission)
             {
                 throw new HubException("You do not have permission to reply to this topic.");
             }
@@ -133,10 +133,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             }
         }
 
-        private ValueTask<bool> GetTopicEditPermissionAsync(string topicId, IWikiUser user)
-            => GetTopicPermissionAsync(topicId, user, edit: true);
-
-        private async ValueTask<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user, bool edit)
+        private static async ValueTask<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user)
         {
             if (string.IsNullOrWhiteSpace(topicId)
                 || string.IsNullOrEmpty(topicId))
@@ -156,27 +153,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 return true;
             }
 
-            if (edit)
-            {
-                if (user is null)
-                {
-                    return false;
-                }
-                else if (article.AllowedEditors?.Contains(user.Id) == true)
-                {
-                    return true;
-                }
-                else if (user.Groups is null)
-                {
-                    return false;
-                }
-                else
-                {
-                    return user.Groups.Contains(article.Owner)
-                        || article.AllowedEditors?.Intersect(user.Groups).Any() != false;
-                }
-            }
-            else if (article.AllowedViewers is null)
+            if (article.AllowedViewers is null)
             {
                 return true;
             }
@@ -198,8 +175,5 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                     || article.AllowedViewers?.Intersect(user.Groups).Any() != false;
             }
         }
-
-        private ValueTask<bool> GetTopicViewPermissionAsync(string topicId, IWikiUser? user)
-            => GetTopicPermissionAsync(topicId, user, edit: false);
     }
 }
