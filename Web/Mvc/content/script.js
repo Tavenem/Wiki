@@ -3,7 +3,7 @@
 window.addEventListener('load', function () {
     window.wikiAutosuggestXHR = new XMLHttpRequest();
 
-    var search = this.document.getElementById("searchInput");
+    var search = this.document.getElementById("wiki-search-input");
     if (search) {
         search.addEventListener('keyup', function (event) {
             const input = event.target;

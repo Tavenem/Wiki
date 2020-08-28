@@ -199,6 +199,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             List<string>? allowedEditors = null;
             if (model.AllowedEditors is not null
+                && !data.IsUserPage
+                && !data.IsGroupPage
                 && (model.OwnerSelf || model.Owner is not null))
             {
                 foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
@@ -244,7 +246,19 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
             }
 
-            var owner = model.OwnerSelf ? user.Id : model.Owner;
+            string? owner = null;
+            if (data.IsUserPage)
+            {
+                owner = user.Id;
+            }
+            else if (data.IsGroupPage)
+            {
+                owner = model.Title;
+            }
+            else
+            {
+                owner = model.OwnerSelf ? user.Id : model.Owner;
+            }
 
             if (model.Delete)
             {
@@ -1327,7 +1341,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return false;
             }
 
-            if (item is null)
+            if (item is null || user?.IsWikiAdmin == true)
             {
                 return true;
             }

@@ -52,10 +52,6 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         renderer.Write($"<a href=\"/{WikiConfig.WikiLinkPrefix}/");
                     }
                     link.GetAttributes().AddClass(link.Missing ? "wiki-link-missing" : "wiki-link-exists");
-                    if (!string.IsNullOrEmpty(link.WikiNamespace))
-                    {
-                        link.GetAttributes().AddClass($"wiki-link-{link.WikiNamespace}");
-                    }
                 }
                 renderer.WriteEscapeUrl(fullTitle);
                 renderer.Write("\"");

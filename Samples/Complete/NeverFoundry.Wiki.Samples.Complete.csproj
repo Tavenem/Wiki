@@ -4,6 +4,7 @@
     <TargetFramework>net5.0</TargetFramework>
     <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
+    <AnalysisLevel>preview</AnalysisLevel>
     <UserSecretsId>aspnet-NeverFoundry.Wiki.MVCSample-BEB7FB0D-A5EE-4734-8EF8-D433C633615A</UserSecretsId>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerFileContext>.</DockerFileContext>
@@ -14,7 +15,7 @@
     <PackageReference Include="Fido2" Version="1.1.0" />
     <PackageReference Include="HaemmerElectronics.SeppPenner.SerilogSinkForPostgreSQL" Version="2.2.0" />
     <PackageReference Include="MailKit" Version="2.8.0" />
-    <PackageReference Include="Marten" Version="3.13.0" />
+    <PackageReference Include="Marten" Version="3.13.1" />
     <PackageReference Include="Marten.AspNetCore.Mvc" Version="1.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="5.0.0-preview.8.20414.8" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="5.0.0-preview.8.20414.8" />
@@ -37,6 +38,33 @@
   
   <ItemGroup>
     <ProjectReference Include="..\Shared\NeverFoundry.Wiki.Samples.Shared.csproj" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\chat.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\chat.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\libs.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\libstyles.css">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\script.js">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+    <Content Update="wwwroot\_content\NeverFoundry.Wiki.Mvc\script.js.map">
+      <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
   
   <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>

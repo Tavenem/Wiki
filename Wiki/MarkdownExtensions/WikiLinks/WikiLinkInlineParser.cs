@@ -368,7 +368,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 var isNamespaceEscaped = false;
                 var isTalk = false;
                 string? wikiNamespace = null;
-                var localAnchor = false;
+                var ignoreMissing = false;
 
                 var mainTitle = title;
                 if (isWikipedia)
@@ -401,7 +401,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     var anchorIndex = title.IndexOf('#');
                     if (anchorIndex == 0)
                     {
-                        localAnchor = true;
+                        ignoreMissing = true;
                         if (string.IsNullOrEmpty(display))
                         {
                             display = title[1..];
@@ -413,6 +413,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         if (anchorIndex != -1)
                         {
                             mainTitle = title[..anchorIndex];
+                        }
+                        if (mainTitle.Length > 0
+                            && mainTitle[0] == '~')
+                        {
+                            ignoreMissing = true;
+                            mainTitle = mainTitle[1..];
                         }
                         var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(mainTitle);
                         isTalk = wIsTalk;
@@ -431,7 +437,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
 
                 var articleMissing = false;
-                if (!isCategory && !isWikipedia && !isCommons && !localAnchor)
+                if (!isCategory && !isWikipedia && !isCommons && !ignoreMissing)
                 {
                     var reference = PageReference.GetPageReference(mainTitle, wikiNamespace);
                     if (reference is null)

@@ -5,6 +5,7 @@
     <RazorLangVersion>3.0</RazorLangVersion>
     <LangVersion>Preview</LangVersion>
     <Nullable>enable</Nullable>
+    <AnalysisLevel>preview</AnalysisLevel>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -12,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.48.1-preview</Version>
+    <Version>0.49.0-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>
       An implementation of NeverFoundry.Wiki for Blazor.
@@ -30,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components" Version="5.0.0-preview.8.20414.8" />
-    <PackageReference Include="NeverFoundry.Wiki" Version="0.48.1" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.49.0" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

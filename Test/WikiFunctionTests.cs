@@ -42,8 +42,8 @@ Fourth section text";
         [TestMethod]
         public void AnchorLinkTest()
         {
-            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists wiki-link-Wiki\">Title § Anchor</a>");
-            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists wiki-link-Wiki\">title § anchor</a>");
+            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
+            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">title § anchor</a>");
             TestTemplate("[[#Local Anchor|]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">Local Anchor</a>");
             TestTemplate("[[#Local Anchor||]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">local anchor</a>");
         }
@@ -140,8 +140,8 @@ Fourth section text";
         [TestMethod]
         public void LinkTest()
         {
-            TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists wiki-link-Wiki\">Alt <strong>title</strong></a>");
-            TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists wiki-link-Wiki\"><span class=\"wiki-link-title\">Title</span></a>");
+            TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
+            TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
         }
 
         [TestMethod]
@@ -307,11 +307,11 @@ Fourth section text";
 
             TestTemplate(
                 $"{{{{{NestedTitle}|Title}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists wiki-link-Wiki\">Title</a></p>\n</div>\n",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Title</a></p>\n</div>\n",
                 false);
             TestTemplate(
                 $"{{{{{NestedTitle}|Title#Anchor}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists wiki-link-Wiki\">Title § Anchor</a></p>\n</div>\n",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a></p>\n</div>\n",
                 false);
         }
 

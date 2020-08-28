@@ -139,7 +139,8 @@
                         </ul>
                     }
                     <div class="wiki-header-search">
-                        <form asp-controller="Wiki" asp-route-isCompact="@data.IsCompact" asp-route-wikiNamespace="@(WikiWebConfig.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
+                        <form method="get"
+                              action="@(data.IsCompact ? $"Compact/{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:Search/Search" : $"{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:Search/Search")">
                             <input id="wiki-search-input"
                                    type="search"
                                    role="search"
@@ -147,9 +148,7 @@
                                    placeholder="Search the wiki"
                                    autocomplete="off"
                                    list="searchSuggestions" />
-                            <datalist id="searchSuggestions" />
                             <button type="submit"
-                                    name="go"
                                     title="Go to a page with this exact name, or search for the text">
                                 <svg xmlns="http://www.w3.org/2000/svg">
                                     <g fill="none" stroke-width="2">
@@ -158,6 +157,7 @@
                                     </g>
                                 </svg>
                             </button>
+                            <datalist id="searchSuggestions"></datalist>
                         </form>
                     </div>
                 </nav>

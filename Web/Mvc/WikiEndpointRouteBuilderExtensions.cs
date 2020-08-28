@@ -228,19 +228,19 @@ namespace NeverFoundry.Wiki.Mvc
 
             endpoints.MapControllerRoute(
                 name: "wiki-ns",
-                pattern: "Wiki/{wikiNamespace}:{title}/{action=Read}",
+                pattern: $"{WikiConfig.WikiLinkPrefix}/{{wikiNamespace}}:{{title}}/{{action=Read}}",
                 defaults: new { controller = WikiController, isCompact = false });
             endpoints.MapControllerRoute(
                 name: "wiki",
-                pattern: $"Wiki/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
+                pattern: $"{WikiConfig.WikiLinkPrefix}/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
                 defaults: new { controller = WikiController, isCompact = false, wikiNamespace = WikiConfig.DefaultNamespace });
             endpoints.MapControllerRoute(
                 name: "wiki-ns-c",
-                pattern: "Compact/Wiki/{wikiNamespace}:{title}/{action=Read}",
+                pattern: $"Compact/{WikiConfig.WikiLinkPrefix}/{{wikiNamespace}}:{{title}}/{{action=Read}}",
                 defaults: new { controller = WikiController, isCompact = true });
             endpoints.MapControllerRoute(
                 name: "wiki-c",
-                pattern: $"Compact/Wiki/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
+                pattern: $"Compact/{WikiConfig.WikiLinkPrefix}/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
                 defaults: new { controller = WikiController, isCompact = true, wikiNamespace = WikiConfig.DefaultNamespace });
         }
     }
