@@ -178,13 +178,13 @@ else
                 @if (Model.Revisions[0].EditorExists)
                 {
                     <a class="wiki-username wiki-username-link wiki-history-list-editor @(Model.Revisions[0].EditorPageExists ? string.Empty : "wiki-link-missing")"
-                       href="/Wiki/@(WikiWebConfig.UserNamespace):@(Model.Revisions[0].Revision.Editor)"
+                       href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.UserNamespace:@(Model.Revisions[0].Revision.Editor)"
                        title="Visit the user page for @(Model.Revisions[0].EditorName)">@Model.Revisions[0].EditorName</a>
                 }
                 else
                 {
                     <span class="wiki-username wiki-username-nolink wiki-history-list-editor"
-                          href="/Wiki/@(WikiWebConfig.UserNamespace):@(Model.Revisions[0].Revision.Editor)">
+                          href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.UserNamespace:@(Model.Revisions[0].Revision.Editor)">
                         @Model.Revisions[0].EditorName
                     </span>
                 }
@@ -211,13 +211,13 @@ else
                     @if (Model.Revisions[i].EditorExists)
                     {
                         <a class="wiki-username wiki-username-link wiki-history-list-editor @(Model.Revisions[i].EditorPageExists ? string.Empty : "wiki-link-missing")"
-                           href="/Wiki/@(WikiWebConfig.UserNamespace):@(Model.Revisions[i].Revision.Editor)"
+                           href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.UserNamespace:@(Model.Revisions[i].Revision.Editor)"
                            title="Visit the user page for @(Model.Revisions[i].EditorName)">@Model.Revisions[i].EditorName</a>
                     }
                     else
                     {
                         <span class="wiki-username wiki-username-nolink wiki-history-list-editor"
-                              href="/Wiki/@(WikiWebConfig.UserNamespace):@(Model.Revisions[i].Revision.Editor)">
+                              href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.UserNamespace:@(Model.Revisions[i].Revision.Editor)">
                             @Model.Revisions[i].EditorName
                         </span>
                     }
@@ -248,13 +248,13 @@ else
                     @if (Model.Revisions[(int)(Model.Revisions.Count - 1)].EditorExists)
                     {
                         <a class="wiki-username wiki-username-link wiki-history-list-editor @(Model.Revisions[(int)(Model.Revisions.Count - 1)].EditorPageExists ? string.Empty : "wiki-link-missing")"
-                           href="/Wiki/@(WikiWebConfig.UserNamespace):@(Model.Revisions[(int)(Model.Revisions.Count - 1)].Revision.Editor)"
+                           href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.UserNamespace:@(Model.Revisions[(int)(Model.Revisions.Count - 1)].Revision.Editor)"
                            title="Visit the user page for @(Model.Revisions[(int)(Model.Revisions.Count - 1)].EditorName)">@Model.Revisions[(int)(Model.Revisions.Count - 1)].EditorName</a>
                     }
                     else
                     {
                         <span class="wiki-username wiki-username-nolink wiki-history-list-editor"
-                              href="/Wiki/@(WikiWebConfig.UserNamespace):@(Model.Revisions[(int)(Model.Revisions.Count
+                              href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.UserNamespace:@(Model.Revisions[(int)(Model.Revisions.Count
                               - 1)].Revision.Editor)">
                             @Model.Revisions[(int)(Model.Revisions.Count - 1)].EditorName
                         </span>

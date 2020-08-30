@@ -398,6 +398,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
                 else
                 {
+                    if (title.Length > 0 && title[0] == '~')
+                    {
+                        ignoreMissing = true;
+                        title = title[1..];
+                    }
+
                     var anchorIndex = title.IndexOf('#');
                     if (anchorIndex == 0)
                     {
@@ -413,12 +419,6 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         if (anchorIndex != -1)
                         {
                             mainTitle = title[..anchorIndex];
-                        }
-                        if (mainTitle.Length > 0
-                            && mainTitle[0] == '~')
-                        {
-                            ignoreMissing = true;
-                            mainTitle = mainTitle[1..];
                         }
                         var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(mainTitle);
                         isTalk = wIsTalk;

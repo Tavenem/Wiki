@@ -35,16 +35,8 @@ namespace NeverFoundry.Wiki
         public string FullTitle => Article.GetFullTitle(Title, WikiNamespace, IsTalk);
 
         /// <summary>
-        /// <para>
         /// Whether this is a link to an existing page.
-        /// </para>
-        /// <para>
-        /// Note: this property is not persisted to storage, and should only be considered valid
-        /// immediately after parsing.
-        /// </para>
         /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
         public bool Missing { get; set; }
 
         /// <summary>
@@ -126,6 +118,9 @@ namespace NeverFoundry.Wiki
         /// <param name="isTalk">
         /// Whether this is a link to a discussion page.
         /// </param>
+        /// <param name="missing">
+        /// Whether this is a link to an existing page.
+        /// </param>
         /// <param name="title">
         /// The title for the linked article.
         /// </param>
@@ -138,12 +133,14 @@ namespace NeverFoundry.Wiki
             bool isCategory,
             bool isNamespaceEscaped,
             bool isTalk,
+            bool missing,
             string title,
             string? wikiNamespace)
         {
             IsCategory = isCategory;
             IsNamespaceEscaped = isNamespaceEscaped;
             IsTalk = isTalk;
+            Missing = missing;
             Title = title;
             WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
         }
@@ -152,6 +149,7 @@ namespace NeverFoundry.Wiki
             (bool?)info.GetValue(nameof(IsCategory), typeof(bool)) ?? default,
             (bool?)info.GetValue(nameof(IsNamespaceEscaped), typeof(bool)) ?? default,
             (bool?)info.GetValue(nameof(IsTalk), typeof(bool)) ?? default,
+            (bool?)info.GetValue(nameof(Missing), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Title), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty)
         { }
@@ -165,6 +163,7 @@ namespace NeverFoundry.Wiki
         /// parameter; otherwise, <see langword="false" />.
         /// </returns>
         public bool Equals(WikiLink? other) => !(other is null)
+            && Missing == other.Missing
             && IsNamespaceEscaped == other.IsNamespaceEscaped
             && IsTalk == other.IsTalk
             && Title == other.Title
@@ -194,13 +193,14 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(IsCategory), IsCategory);
             info.AddValue(nameof(IsNamespaceEscaped), IsNamespaceEscaped);
             info.AddValue(nameof(IsTalk), IsTalk);
+            info.AddValue(nameof(Missing), Missing);
             info.AddValue(nameof(Title), Title);
             info.AddValue(nameof(WikiNamespace), WikiNamespace);
         }
 
         /// <summary>Serves as the default hash function.</summary>
         /// <returns>A hash code for the current object.</returns>
-        public override int GetHashCode() => HashCode.Combine(IsNamespaceEscaped, IsTalk, Title, WikiNamespace);
+        public override int GetHashCode() => HashCode.Combine(Missing, IsNamespaceEscaped, IsTalk, Title, WikiNamespace);
 
         /// <summary>
         /// Determines whether this link corresponds to the given article.

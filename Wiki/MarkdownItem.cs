@@ -111,7 +111,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)),
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
-            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]))
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()))
         { }
 
         /// <summary>

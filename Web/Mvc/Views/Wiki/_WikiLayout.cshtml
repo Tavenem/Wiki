@@ -9,38 +9,38 @@
     {
         <nav>
             <div class="wiki-sidebar-logo" role="banner">
-                <a class="wiki-sidebar-logo-link" href="/Wiki/@WikiConfig.MainPageTitle" title="Visit the main page"></a>
+                <a class="wiki-sidebar-logo-link" href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.MainPageTitle" title="Visit the main page"></a>
             </div>
             <div class="wiki-sidebar-section">
                 <ul>
-                    <li><a href="/Wiki/@WikiConfig.MainPageTitle" class="wiki-link wiki-link-exists" title="Visit the main page">@WikiConfig.MainPageTitle</a></li>
+                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.MainPageTitle" class="wiki-link wiki-link-exists" title="Visit the main page">@WikiConfig.MainPageTitle</a></li>
                     @if (!string.IsNullOrWhiteSpace(WikiWebConfig.ContentsPageTitle))
                     {
-                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContentsPageTitle" class="wiki-link wiki-link-exists" title="Visit the main contents page">@WikiWebConfig.ContentsPageTitle</a></li>
+                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContentsPageTitle" class="wiki-link wiki-link-exists" title="Visit the main contents page">@WikiWebConfig.ContentsPageTitle</a></li>
                     }
                     @if (!string.IsNullOrWhiteSpace(WikiWebConfig.HelpPageTitle))
                     {
-                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.HelpPageTitle" class="wiki-link wiki-link-exists" title="Visit the main help page">@WikiWebConfig.HelpPageTitle</a></li>
+                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.HelpPageTitle" class="wiki-link wiki-link-exists" title="Visit the main help page">@WikiWebConfig.HelpPageTitle</a></li>
                     }
                     @if (!string.IsNullOrWhiteSpace(WikiWebConfig.AboutPageTitle))
                     {
-                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.AboutPageTitle" class="wiki-link wiki-link-exists" title="Learn about this site">@WikiWebConfig.AboutPageTitle</a></li>
+                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.AboutPageTitle" class="wiki-link wiki-link-exists" title="Learn about this site">@WikiWebConfig.AboutPageTitle</a></li>
                     }
                     @if (!string.IsNullOrWhiteSpace(WikiWebConfig.ContactPageTitle))
                     {
-                        <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContactPageTitle" class="wiki-link wiki-link-exists" title="Contact the site administrators">@WikiWebConfig.ContactPageTitle</a></li>
+                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContactPageTitle" class="wiki-link wiki-link-exists" title="Contact the site administrators">@WikiWebConfig.ContactPageTitle</a></li>
                     }
                 </ul>
             </div>
             <div class="wiki-sidebar-section">
                 <ul>
-                    <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:All_Pages?sort=timestamp&descending=true" class="wiki-link wiki-link-exists" title="A list of recent revisions">Recent changes</a></li>
+                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:All_Pages?sort=timestamp&descending=true" class="wiki-link wiki-link-exists" title="A list of recent revisions">Recent changes</a></li>
                     @if (!data.IsSystem)
                     {
                         <li><a href="@Url.Action("WhatLinksHere")" class="wiki-link wiki-link-exists" title="A list of articles with links to this one">What links here</a></li>
                     }
-                    <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:Upload" class="wiki-link wiki-link-exists">Upload files</a></li>
-                    <li><a href="/Wiki/@WikiWebConfig.SystemNamespace:Special" class="wiki-link wiki-link-exists" title="A list of all special pages">Special pages</a></li>
+                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:Upload" class="wiki-link wiki-link-exists">Upload files</a></li>
+                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:Special" class="wiki-link wiki-link-exists" title="A list of all special pages">Special pages</a></li>
                 </ul>
             </div>
         </nav>
@@ -237,12 +237,12 @@
                    && data.Categories?.Count > 0)
                 {
                     <section class="wiki-category-list-section">
-                        <a href="/Wiki/@WikiConfig.CategoriesTitle" class="wiki-category-list-category-link">@WikiConfig.CategoriesTitle</a>
+                        <a href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.CategoriesTitle" class="wiki-category-list-category-link">@WikiConfig.CategoriesTitle</a>
                         <ul>
                             @foreach (var category in data.Categories)
                             {
                                 <li>
-                                    <a href="/Wiki/@WikiConfig.CategoryNamespace:@category"
+                                    <a href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.CategoryNamespace:@category"
                                        title="@WikiConfig.CategoryNamespace:@category">@category</a>
                                 </li>
                             }
@@ -268,11 +268,11 @@
                             <li class="wiki-footer-copyright">
                                 @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))
                                 {
-                                    <span>The content of this page is available under the terms of the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
+                                    <span>The content of this page is available under the terms of the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
                                 }
                                 @if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
                                 {
-                                    <span>By using this site, you agree to the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
+                                    <span>By using this site, you agree to the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
                                 }
                             </li>
                         }

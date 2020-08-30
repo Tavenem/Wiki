@@ -12,7 +12,7 @@
     @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
     {
         <p>
-            Please check the <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policy page</a>
+            Please check the <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policy page</a>
             to find information about who is permitted to upload files to this wiki, and how permission is obtained.
         </p>
     }

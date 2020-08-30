@@ -119,7 +119,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
                     }
                 }
                 if (i < headings.Count - 1
-                    && headings[i + 1].Level - block.LevelOffset > adjustedLevel)
+                    && headings[i + 1].Level - block.LevelOffset - (block.StartingLevel - 1) > adjustedLevel)
                 {
                     childList++;
                     renderer.EnsureLine();
@@ -130,17 +130,15 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
                         renderer.PushIndent(Tab);
                     }
                 }
-                else
+                else if (renderer.EnableHtmlForBlock)
                 {
-                    if (renderer.EnableHtmlForBlock)
-                    {
-                        renderer.Write("</li>");
-                    }
+                    renderer.Write("</li>");
                 }
                 var n = i + 1;
-                while (childList > 0
-                    && (n > headings.Count - 1
-                    || headings[n].Level - block.LevelOffset < adjustedLevel))
+                var offset = n > headings.Count - 1
+                    ? adjustedLevel
+                    : adjustedLevel - headings[n].Level - block.LevelOffset - (block.StartingLevel - 1);
+                while (childList > 0 && offset > 0)
                 {
                     renderer.EnsureLine();
                     renderer.PopIndent();
@@ -155,6 +153,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.TableOfContents
                         renderer.Write("</li>");
                     }
                     childList--;
+                    offset--;
                 }
             }
 

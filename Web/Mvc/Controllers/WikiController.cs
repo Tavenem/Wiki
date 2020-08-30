@@ -203,8 +203,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 && !data.IsGroupPage
                 && (model.OwnerSelf || model.Owner is not null))
             {
-                foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
+                    var id = name;
+                    var bracketIndex = id.IndexOf('[');
+                    if (bracketIndex != -1 && id[^1] == ']')
+                    {
+                        id = id[(bracketIndex + 1)..^1];
+                    }
+
                     var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (editor is not null)
@@ -226,8 +233,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (model.AllowedViewers is not null
                 && (model.OwnerSelf || model.Owner is not null))
             {
-                foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
+                    var id = name;
+                    var bracketIndex = id.IndexOf('[');
+                    if (bracketIndex != -1 && id[^1] == ']')
+                    {
+                        id = id[(bracketIndex + 1)..^1];
+                    }
+
                     var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
                         ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
                     if (viewer is not null)
@@ -1463,7 +1477,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (data.IsUserPage)
             {
-                var user = await _userManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false);
+                var user = await _userManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false)
+                    ?? await _userManager.FindByNameAsync(article?.Title ?? data.Title).ConfigureAwait(false);
                 if (user is not null)
                 {
                     data.DisplayTitle = user.UserName;
@@ -1481,7 +1496,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             else if (data.IsGroupPage)
             {
-                var group = await _groupManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false);
+                var group = await _groupManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false)
+                    ?? await _groupManager.FindByNameAsync(article?.Title ?? data.Title).ConfigureAwait(false);
                 if (group is not null)
                 {
                     data.Group = group;

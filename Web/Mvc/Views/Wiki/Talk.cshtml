@@ -48,7 +48,7 @@ else
     <script src="~/_content/NeverFoundry.Wiki.Mvc/chat.js"></script>
     <script>
         window.addEventListener("load", function () {
-            window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiWebConfig.UserNamespace", "@WikiWebConfig.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
+            window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiConfig.WikiLinkPrefix", "@WikiWebConfig.UserNamespace", "@WikiWebConfig.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
                 System.Text.Json.JsonSerializer.Serialize(
                     Model.Messages,
                     new System.Text.Json.JsonSerializerOptions

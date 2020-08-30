@@ -10,15 +10,15 @@
     <p>
         @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))
         {
-            <span>Please note that all files submitted to this wiki are implicitly made available under the terms of the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
+            <span>Please note that all files submitted to this wiki are implicitly made available under the terms of the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
             @if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
             {
-                <span>Other <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to content policies, may also apply.</span>
+                <span>Other <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to content policies, may also apply.</span>
             }
         }
         else if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
         {
-            <span>Please note that all files submitted to this wiki are subject to the site's <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
+            <span>Please note that all files submitted to this wiki are subject to the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
         }
         else
         {
@@ -77,20 +77,20 @@
                         if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
                         {
                             <div class="wiki-edit-terms-notice">
-                                <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
                             </div>
                         }
                         else
                         {
                             <div class="wiki-edit-terms-notice">
-                                <p>Content submitted to this wiki is subject to each of its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+                                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
                             </div>
                         }
                     }
                     else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
                     {
                         <div class="wiki-edit-terms-notice">
-                            <p>Content submitted to this wiki is subject to its <a href="/Wiki/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                            <p>Content submitted to this wiki is subject to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
                         </div>
                     }
                     else

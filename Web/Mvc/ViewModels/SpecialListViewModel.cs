@@ -306,7 +306,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             {
                 if (!string.IsNullOrEmpty(WikiWebConfig.ContentsPageTitle))
                 {
-                    return $"For a more organized overview you may wish to check the <a href=\"/Wiki/{WikiWebConfig.SystemNamespace}:{WikiWebConfig.ContentsPageTitle}\" class=\"wiki-link wiki-link-exists\">{WikiWebConfig.ContentsPageTitle}</a> page.";
+                    return $"For a more organized overview you may wish to check the <a href=\"/{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:{WikiWebConfig.ContentsPageTitle}\" class=\"wiki-link wiki-link-exists\">{WikiWebConfig.ContentsPageTitle}</a> page.";
                 }
             }
             else if (type == SpecialListType.Uncategorized_Categories)
@@ -314,13 +314,17 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 var sb = new StringBuilder("Note that top-level categories might show up in this list deliberately, and may not require categorization.");
                 if (!string.IsNullOrEmpty(WikiWebConfig.ContentsPageTitle))
                 {
-                    sb.Append("Top-level categories are typically linked on the <a href=\"/Wiki/")
+                    sb.Append("Top-level categories are typically linked on the <a href=\"/")
+                        .Append(WikiConfig.WikiLinkPrefix)
+                        .Append('/')
                         .Append(WikiWebConfig.SystemNamespace)
                         .Append(':')
                         .Append(WikiWebConfig.ContentsPageTitle)
                         .Append("\" class=\"wiki-link wiki-link-exists\">")
                         .Append(WikiWebConfig.ContentsPageTitle)
-                        .Append("</a>, or in some other prominent place (such as the <a href=\"/Wiki/")
+                        .Append("</a>, or in some other prominent place (such as the <a href=\"/")
+                        .Append(WikiConfig.WikiLinkPrefix)
+                        .Append('/')
                         .Append(WikiConfig.MainPageTitle)
                         .Append("\">")
                         .Append(WikiConfig.MainPageTitle)

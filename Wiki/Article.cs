@@ -1071,7 +1071,7 @@ namespace NeverFoundry.Wiki
                 }
             }
 
-            foreach (var removedCategory in categories.Except(newCategories))
+            foreach (var removedCategory in categories.Except(newCategories).ToList())
             {
                 var category = Category.GetCategory(removedCategory);
                 if (category is not null)

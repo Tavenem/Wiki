@@ -14,8 +14,10 @@ window.wikimvcchat = {
     tenorSearchNext: null,
     tenorSearchTerm: '',
     userNamespace: "Users",
+    prefix: "Wiki",
 
-    init: function (url, userNamespace, tenorAPIKey, topicId, messages) {
+    init: function (url, prefix, userNamespace, tenorAPIKey, topicId, messages) {
+        window.wikimvcchat.prefix = prefix;
         window.wikimvcchat.userNamespace = userNamespace;
         window.wikimvcchat.tenorAPIKey = tenorAPIKey;
 
@@ -369,7 +371,7 @@ window.wikimvcchat = {
             if (!message.senderPageExists) {
                 userLink.classList.add("wiki-link-missing");
             }
-            userLink.href = `/Wiki/${window.wikimvcchat.userNamespace}:${message.senderId}`;
+            userLink.href = `/${window.wikimvcchat.prefix}/${window.wikimvcchat.userNamespace}:${message.senderId}`;
             userLink.title = `Visit the user page for ${message.senderName}`
             userLink.appendChild(username);
         } else {
@@ -779,7 +781,7 @@ window.wikimvcchat = {
             if (!reaction.senderPageExists) {
                 userLink.classList.add("wiki-link-missing");
             }
-            userLink.href = `/Wiki/${window.wikimvcchat.userNamespace}:${reaction.senderId}`;
+            userLink.href = `/${window.wikimvcchat.prefix}/${window.wikimvcchat.userNamespace}:${reaction.senderId}`;
             userLink.title = `Visit the user page for ${reaction.senderName}`;
             userLink.appendChild(username);
         } else {

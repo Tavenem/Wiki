@@ -82,7 +82,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             string? previewTitle = null)
         {
             var isOutdated = false;
-            if (!(data.WikiItem is null))
+            if (data.WikiItem is not null)
             {
                 isOutdated = data.RequestedTimestamp.HasValue;
                 if (string.IsNullOrWhiteSpace(markdown)
@@ -105,7 +105,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             }
 
             string? allowedEditors = null;
-            if (!(data.WikiItem?.AllowedEditors is null))
+            if (data.WikiItem?.AllowedEditors is not null)
             {
                 var editors = new List<string>();
                 foreach (var editorId in data.WikiItem.AllowedEditors)
@@ -120,7 +120,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                         }
                         else
                         {
-                            editors.Add(group.GroupName);
+                            editors.Add($"{group.GroupName} [{group.Id}]");
                         }
                     }
                     else
@@ -132,7 +132,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             }
 
             string? allowedViewers = null;
-            if (!(data.WikiItem?.AllowedViewers is null))
+            if (data.WikiItem?.AllowedViewers is not null)
             {
                 var viewers = new List<string>();
                 foreach (var viewerId in data.WikiItem.AllowedViewers)
