@@ -9,6 +9,11 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
     public class WikiLinkDelimiterInline : LinkDelimiterInline
     {
         /// <summary>
+        /// Whether this link's display label was auto-generated.
+        /// </summary>
+        public bool AutoDisplay { get; set; }
+
+        /// <summary>
         /// The display text.
         /// </summary>
         public string? Display { get; set; }

@@ -45,7 +45,7 @@ namespace NeverFoundry.Wiki.Test
         [TestMethod]
         public void WikiLinkTest()
         {
-            var value = new WikiLink(false, false, false, "Test Title", "Test Namespace");
+            var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace");
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine(json);
@@ -60,7 +60,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
-            value = new WikiLink(false, true, false, "Test Title", "Test Namespace");
+            value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace");
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine();
@@ -76,7 +76,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
-            value = new WikiLink(true, false, false, "Test Title", WikiConfig.CategoryNamespace);
+            value = new WikiLink(true, false, false, false, "Test Title", WikiConfig.CategoryNamespace);
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine();
@@ -92,7 +92,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
-            value = new WikiLink(true, true, false, "Test Title", WikiConfig.CategoryNamespace);
+            value = new WikiLink(true, true, false, false, "Test Title", WikiConfig.CategoryNamespace);
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine();
@@ -108,7 +108,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
-            value = new WikiLink(false, false, true, "Test Title", "Test Namespace");
+            value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace");
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine();
@@ -177,7 +177,7 @@ namespace NeverFoundry.Wiki.Test
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 "TEST_TOPIC_ID",
                 "TEST_SENDER_ID",
                 false,
@@ -209,7 +209,7 @@ namespace NeverFoundry.Wiki.Test
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 0,
                 "Test Namespace",
                 false,
@@ -220,7 +220,7 @@ namespace NeverFoundry.Wiki.Test
                 null,
                 false,
                 false,
-                new ReadOnlyCollection<string>(new string[0]),
+                new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
@@ -243,7 +243,7 @@ namespace NeverFoundry.Wiki.Test
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 0,
                 "Test Namespace",
                 false,
@@ -254,7 +254,7 @@ namespace NeverFoundry.Wiki.Test
                 null,
                 false,
                 false,
-                new ReadOnlyCollection<string>(new string[0]),
+                new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
@@ -282,14 +282,14 @@ namespace NeverFoundry.Wiki.Test
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 new List<string> { "TEST_CHILD_ID" },
                 0,
                 false,
                 "TEST_OWNER_ID",
                 null,
                 null,
-                new ReadOnlyCollection<string>(new string[0]),
+                new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
@@ -319,13 +319,13 @@ namespace NeverFoundry.Wiki.Test
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 0,
                 false,
                 "TEST_OWNER_ID",
                 null,
                 null,
-                new ReadOnlyCollection<string>(new string[0]),
+                new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
             var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
@@ -354,7 +354,7 @@ namespace NeverFoundry.Wiki.Test
                     "Test markdown",
                     "Test markdown",
                     "Test markdown",
-                    new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                    new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                     0,
                     "Test Namespace",
                     false,
@@ -365,7 +365,7 @@ namespace NeverFoundry.Wiki.Test
                     null,
                     false,
                     false,
-                    new ReadOnlyCollection<string>(new string[0]),
+                    new ReadOnlyCollection<string>(Array.Empty<string>()),
                     null),
                 new Category(
                     "TEST_ID",
@@ -374,14 +374,14 @@ namespace NeverFoundry.Wiki.Test
                     "Test markdown",
                     "Test markdown",
                     "Test markdown",
-                    new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                    new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                     new List<string> { "TEST_CHILD_ID" },
                     0,
                     false,
                     "TEST_OWNER_ID",
                     null,
                     null,
-                    new ReadOnlyCollection<string>(new string[0]),
+                    new ReadOnlyCollection<string>(Array.Empty<string>()),
                     null),
                 new WikiFile(
                     "TEST_ID",
@@ -393,13 +393,13 @@ namespace NeverFoundry.Wiki.Test
                     "Test markdown",
                     "Test markdown",
                     "Test markdown",
-                    new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, "Test Title", "Test Namespace") }),
+                    new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                     0,
                     false,
                     "TEST_OWNER_ID",
                     null,
                     null,
-                    new ReadOnlyCollection<string>(new string[0]),
+                    new ReadOnlyCollection<string>(Array.Empty<string>()),
                     null),
         };
 

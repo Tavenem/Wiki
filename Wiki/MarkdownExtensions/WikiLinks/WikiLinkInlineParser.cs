@@ -54,11 +54,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     }
                     var saved = slice;
                     var currentPosition = slice.Start;
-                    if (TryParseLink(ref slice, out var title, out var display, out var hasDisplay, out var endPosition))
+                    if (TryParseLink(ref slice, out var title, out var display, out var hasDisplay, out var autoDisplay, out var endPosition))
                     {
                         processor.Inline = new WikiLinkDelimiterInline(this)
                         {
                             Type = DelimiterType.Open,
+                            AutoDisplay = autoDisplay,
                             Display = display,
                             HasDisplay = hasDisplay,
                             Title = title,
@@ -124,11 +125,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             return endmatter;
         }
 
-        private static bool TryParseLink(ref StringSlice lines, out string? title, out string? display, out bool hasDisplay, out int endPosition)
+        private static bool TryParseLink(ref StringSlice lines, out string? title, out string? display, out bool hasDisplay, out bool autoDisplay, out int endPosition)
         {
             lines.NextChar(); // skip second opening char, which has already been confirmed
 
             endPosition = lines.Start;
+            autoDisplay = false;
             hasDisplay = false;
             title = null;
             display = null;
@@ -273,6 +275,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     }
                     else if (!hasNonWhitespace && title != null)
                     {
+                        autoDisplay = true;
                         hasDisplay = true;
 
                         // Remove namespace(s).
@@ -350,7 +353,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             if (openParent.Title != null)
             {
                 string? endmatter = null;
-                if (!openParent.HasDisplay)
+                if (!openParent.HasDisplay || openParent.AutoDisplay)
                 {
                     endmatter = ParseEndmatter(ref text);
                     text = savedText;

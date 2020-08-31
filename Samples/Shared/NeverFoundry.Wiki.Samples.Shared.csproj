@@ -42,7 +42,7 @@
   </Target>
 
   <!-- npm build -->
-  <Target Name="NpmBuild" BeforeTargets="Build" Inputs="package.json;package-lock.json;postcss.config.js;styles\_custom.scss;styles\site.scss" Outputs="..\Complete\wwwroot\site.css;..\Simple\wwwroot\site.css">
+  <Target Name="NpmBuild" BeforeTargets="Build" Inputs="package.json;package-lock.json;postcss.config.js;styles\_custom.scss;styles\site.scss" Outputs="..\Complete\wwwroot\site.css;..\Simple\wwwroot\site.css;..\Cosmos\wwwroot\site.css">
     <!-- Ensure Node.js is installed -->
     <Exec Command="node --version" ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />

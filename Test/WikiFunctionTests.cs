@@ -142,6 +142,12 @@ Fourth section text";
         {
             TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
             TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
+            TestTemplate("[[Title]]s", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span>s</a>");
+            TestTemplate("[[Wiki:Title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
+            TestTemplate("[[Wiki:Title|]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Title</a>");
+            TestTemplate("[[Wiki:Title||]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">title</a>");
+            TestTemplate("[[Wiki:Title|]]s", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Titles</a>");
+            TestTemplate("[[Wiki:Title||]]s", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">titles</a>");
         }
 
         [TestMethod]
