@@ -46,7 +46,7 @@ else
     <input asp-for="Id" />
     <div class="form-group wiki-edit-titleinputgroup">
         <label asp-for="Title"></label>
-        <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" title="Move this article by changing its title" onchange="wikiRedirectCheck();" />
+        <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" title="Move this article by changing its title" oninput="wikiRedirectCheck();" />
         <span asp-validation-for="Title" class="error-text"></span>
     </div>
     <div id="wiki-edit-redirect" class="form-group form-check" style="display: none;">

@@ -1054,13 +1054,15 @@ namespace NeverFoundry.Wiki
             IEnumerable<WikiLink> wikiLinks,
             IEnumerable<string>? previousCategories = null)
         {
-            var categories = previousCategories?.ToList() ?? new List<string>();
-
-            var newCategories = new List<string>();
-            foreach (var categoryTitle in wikiLinks
+            var currentCategories = wikiLinks
                 .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
                 .Select(x => x.Title)
-                .Except(categories))
+                .ToList();
+
+            var oldCategories = previousCategories?.ToList() ?? new List<string>();
+
+            var newCategories = new List<string>();
+            foreach (var categoryTitle in currentCategories.Except(oldCategories))
             {
                 var category = Category.GetCategory(categoryTitle)
                     ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
@@ -1071,19 +1073,22 @@ namespace NeverFoundry.Wiki
                 }
             }
 
-            foreach (var removedCategory in categories.Except(newCategories).ToList())
+            var retainedCategories = oldCategories
+                .Intersect(currentCategories)
+                .ToList();
+            foreach (var removedCategory in oldCategories.Except(currentCategories))
             {
                 var category = Category.GetCategory(removedCategory);
                 if (category is not null)
                 {
                     await category.RemoveChildIdAsync(id).ConfigureAwait(false);
-                    categories.Remove(category.Title);
+                    retainedCategories.Remove(category.Title);
                 }
             }
 
-            categories.AddRange(newCategories);
+            retainedCategories.AddRange(newCategories);
 
-            return categories;
+            return retainedCategories;
         }
 
         private protected static async Task UpdateReferencesAsync(
@@ -1700,11 +1705,20 @@ namespace NeverFoundry.Wiki
                 }
 
                 var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
-                var md = TransclusionParser.Transclude(
-                    title,
-                    GetFullTitle(title, wikiNamespace),
-                    markdown!,
-                    out var transclusions);
+                List<Transclusion> transclusions;
+                var md = markdown ?? string.Empty;
+                if (isRedirect)
+                {
+                    transclusions = new List<Transclusion>();
+                }
+                else
+                {
+                    md = TransclusionParser.Transclude(
+                        title,
+                        GetFullTitle(title, wikiNamespace),
+                        markdown!,
+                        out transclusions);
+                }
                 Transclusions = transclusions.Count == 0
                     ? null
                     : transclusions.AsReadOnly();
@@ -1712,7 +1726,9 @@ namespace NeverFoundry.Wiki
                 await AddPageTransclusionsAsync(Id, transclusions.Except(previousTransclusions)).ConfigureAwait(false);
 
                 var previousWikiLinks = WikiLinks.ToList();
-                WikiLinks = GetWikiLinks(md, title, wikiNamespace).AsReadOnly();
+                WikiLinks = isRedirect
+                    ? new List<WikiLink>()
+                    : GetWikiLinks(md, title, wikiNamespace).AsReadOnly();
                 await RemovePageLinksAsync(Id, previousWikiLinks.Except(WikiLinks)).ConfigureAwait(false);
                 await AddPageLinksAsync(Id, WikiLinks.Except(previousWikiLinks)).ConfigureAwait(false);
             }

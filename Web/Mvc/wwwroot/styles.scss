@@ -677,8 +677,9 @@ blockquote {
 .wiki-parser-output {
     flex-grow: 1;
 
-    img {
+    img, figure {
         float: right;
+        margin: 1em;
     }
 }
 
@@ -1315,6 +1316,11 @@ blockquote {
     border: 1px solid $border-color;
     flex-grow: 1;
     min-height: 30em;
+
+    img, figure {
+        float: right;
+        margin: 1em;
+    }
 }
 
 .wiki-edit-editor {

@@ -98,7 +98,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     sort,
                     descending,
                     filter,
-                    x => x.IdItemTypeName == Article.ArticleIdItemTypeName && (x.Categories == null || x.Categories.Count() == 0))
+                    x => x.IdItemTypeName == Article.ArticleIdItemTypeName
+                        && x.RedirectTitle == null
+                        && (x.Categories == null || x.Categories.Count() == 0))
                 .ConfigureAwait(false),
 
                 SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(

@@ -12,7 +12,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.51.0</Version>
+    <Version>0.55.3</Version>
     <Authors>Wil Stead</Authors>
     <Description>A .NET wiki library.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

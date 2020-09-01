@@ -398,7 +398,6 @@ namespace NeverFoundry.Wiki
             .UseFootnotes()
             .UseGridTables()
             .UseMathematics()
-            .UseMediaLinks()
             .UsePipeTables()
             .UseListExtras()
             .UseTaskLists()

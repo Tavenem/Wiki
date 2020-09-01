@@ -99,10 +99,41 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 {
                     renderer.Write("\"");
                 }
-            }
 
-            if (link.IsImage)
-            {
+                var heightIndex = link.GetAttributes().Properties.FindIndex(x => x.Key.Equals("height", StringComparison.OrdinalIgnoreCase));
+                if (heightIndex != -1)
+                {
+                    if (int.TryParse(link.GetAttributes().Properties[heightIndex].Value, out var heightInt))
+                    {
+                        renderer.Write("height=\"");
+                        renderer.Write(heightInt.ToString());
+                        renderer.Write("\"");
+                    }
+                    else if (double.TryParse(link.GetAttributes().Properties[heightIndex].Value, out var heightFloat))
+                    {
+                        renderer.Write("height=\"");
+                        renderer.Write(heightFloat.ToString());
+                        renderer.Write("\"");
+                    }
+                }
+
+                var widthIndex = link.GetAttributes().Properties.FindIndex(x => x.Key.Equals("width", StringComparison.OrdinalIgnoreCase));
+                if (widthIndex != -1)
+                {
+                    if (int.TryParse(link.GetAttributes().Properties[widthIndex].Value, out var widthInt))
+                    {
+                        renderer.Write("width=\"");
+                        renderer.Write(widthInt.ToString());
+                        renderer.Write("\"");
+                    }
+                    else if (double.TryParse(link.GetAttributes().Properties[widthIndex].Value, out var widthFloat))
+                    {
+                        renderer.Write("width=\"");
+                        renderer.Write(widthFloat.ToString());
+                        renderer.Write("\"");
+                    }
+                }
+
                 if (renderer.EnableHtmlForInline)
                 {
                     renderer.Write(" />");
@@ -124,7 +155,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 }
                 else
                 {
-                    if (!string.Equals(link.WikiNamespace, WikiConfig.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(link.WikiNamespace)
+                        && !string.Equals(link.WikiNamespace, WikiConfig.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
                     {
                         if (renderer.EnableHtmlForInline)
                         {

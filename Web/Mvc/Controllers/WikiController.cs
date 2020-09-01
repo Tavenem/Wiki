@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -72,7 +73,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthenticated");
             }
 
-            var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
+            var wikiItem = await GetWikiItemAsync(data, true).ConfigureAwait(false);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
             if (!data.CanEdit)
@@ -136,6 +137,31 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
+
+            string? owner = null;
+            var ownerHasId = false;
+            var ownerIsGroup = false;
+            if (data.IsUserPage)
+            {
+                owner = user.Id;
+                ownerHasId = true;
+            }
+            else if (data.IsGroupPage)
+            {
+                owner = model.Title;
+                ownerHasId = true;
+            }
+            else
+            {
+                owner = model.OwnerSelf ? user.Id : GetEditorId(model.Owner, out ownerHasId, out ownerIsGroup);
+            }
+            if (ownerIsGroup)
+            {
+                ModelState.AddModelError("Model", "Groups cannot own items.");
+                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                return View("Edit", vm);
+            }
+
             if (!data.CanEdit)
             {
                 return View("NotAuthorized", data);
@@ -162,16 +188,18 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                         return View("NotAuthorized", data);
                     }
                 }
-                else if (model.Owner is not null
-                    && model.Owner != wikiItem.Owner)
+                else if (owner is not null && owner != wikiItem.Owner)
                 {
                     return View("NotAuthorized", data);
                 }
             }
-            if (!model.OwnerSelf && model.Owner is not null)
+            if (!model.OwnerSelf && owner is not null)
             {
-                var intendedOwner = await _userManager.FindByIdAsync(model.Owner).ConfigureAwait(false)
-                    ?? await _userManager.FindByNameAsync(model.Owner).ConfigureAwait(false);
+                var intendedOwner = await _userManager.FindByIdAsync(owner).ConfigureAwait(false);
+                if (intendedOwner is null && !ownerHasId)
+                {
+                    intendedOwner = await _userManager.FindByNameAsync(owner).ConfigureAwait(false);
+                }
                 if (intendedOwner is null)
                 {
                     ModelState.AddModelError("Model", "No such owner found.");
@@ -201,77 +229,81 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (model.AllowedEditors is not null
                 && !data.IsUserPage
                 && !data.IsGroupPage
-                && (model.OwnerSelf || model.Owner is not null))
+                && (model.OwnerSelf || owner is not null))
             {
                 foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
-                    var id = name;
-                    var bracketIndex = id.IndexOf('[');
-                    if (bracketIndex != -1 && id[^1] == ']')
-                    {
-                        id = id[(bracketIndex + 1)..^1];
-                    }
+                    var id = GetEditorId(name, out var hasId, out var isGroup);
 
-                    var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (editor is not null)
+                    if (isGroup)
                     {
-                        (allowedEditors ??= new List<string>()).Add(editor.Id);
+                        var group = await _groupManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (group is not null)
+                        {
+                            (allowedEditors ??= new List<string>()).Add($"G:{group.Id}");
+                        }
                     }
                     else
                     {
-                        var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
-                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
-                        if (groupEditor is not null)
+                        var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (editor is null && !hasId)
                         {
-                            (allowedEditors ??= new List<string>()).Add(groupEditor.Id);
+                            editor = await _userManager.FindByNameAsync(id).ConfigureAwait(false);
+                        }
+                        if (editor is not null)
+                        {
+                            (allowedEditors ??= new List<string>()).Add(editor.Id);
+                        }
+                        else if (!hasId)
+                        {
+                            var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                                ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                            if (groupEditor is not null)
+                            {
+                                (allowedEditors ??= new List<string>()).Add($"G:{groupEditor.Id}");
+                            }
                         }
                     }
                 }
             }
             List<string>? allowedViewers = null;
             if (model.AllowedViewers is not null
-                && (model.OwnerSelf || model.Owner is not null))
+                && (model.OwnerSelf || owner is not null))
             {
                 foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
-                    var id = name;
-                    var bracketIndex = id.IndexOf('[');
-                    if (bracketIndex != -1 && id[^1] == ']')
-                    {
-                        id = id[(bracketIndex + 1)..^1];
-                    }
+                    var id = GetEditorId(name, out var hasId, out var isGroup);
 
-                    var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (viewer is not null)
+                    if (isGroup)
                     {
-                        (allowedViewers ??= new List<string>()).Add(viewer.Id);
+                        var group = await _groupManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (group is not null)
+                        {
+                            (allowedViewers ??= new List<string>()).Add($"G:{group.Id}");
+                        }
                     }
                     else
                     {
-                        var groupViewer = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
-                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
-                        if (groupViewer is not null)
+                        var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (viewer is null && !hasId)
                         {
-                            (allowedViewers ??= new List<string>()).Add(groupViewer.Id);
+                            viewer = await _userManager.FindByNameAsync(id).ConfigureAwait(false);
+                        }
+                        if (viewer is not null)
+                        {
+                            (allowedViewers ??= new List<string>()).Add(viewer.Id);
+                        }
+                        else if (!hasId)
+                        {
+                            var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                                ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                            if (groupEditor is not null)
+                            {
+                                (allowedViewers ??= new List<string>()).Add($"G:{groupEditor.Id}");
+                            }
                         }
                     }
                 }
-            }
-
-            string? owner = null;
-            if (data.IsUserPage)
-            {
-                owner = user.Id;
-            }
-            else if (data.IsGroupPage)
-            {
-                owner = model.Title;
-            }
-            else
-            {
-                owner = model.OwnerSelf ? user.Id : model.Owner;
             }
 
             if (model.Delete)
@@ -365,10 +397,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     try
                     {
                         await Article.NewAsync(
-                            title,
+                            wikiItem.Title,
                             user.Id,
                             $"{{{{redirect|{Article.GetFullTitle(newTitle ?? wikiItem.Title, newNamespace ?? wikiItem.WikiNamespace)}}}}}",
-                            wikiNamespace,
+                            wikiItem.WikiNamespace,
                             owner,
                             allowedEditors,
                             allowedViewers)
@@ -877,6 +909,17 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var wikiItem = WikiFile.GetFile(title);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
+
+            var ownerHasId = false;
+            var ownerIsGroup = false;
+            var owner = model.OwnerSelf ? user.Id : GetEditorId(model.Owner, out ownerHasId, out ownerIsGroup);
+            if (ownerIsGroup)
+            {
+                ModelState.AddModelError("Model", "Groups cannot own items.");
+                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                return View("Edit", vm);
+            }
+
             if (!data.CanEdit)
             {
                 return View("NotAuthorized", data);
@@ -893,6 +936,36 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     return View("NotAuthorized", data);
                 }
             }
+            else if (wikiItem.Owner is not null)
+            {
+                if (model.OwnerSelf)
+                {
+                    if (user.Id != wikiItem.Owner
+                        && user.Groups?.Contains(wikiItem.Owner) != true)
+                    {
+                        return View("NotAuthorized", data);
+                    }
+                }
+                else if (owner is not null && owner != wikiItem.Owner)
+                {
+                    return View("NotAuthorized", data);
+                }
+            }
+            if (!model.OwnerSelf && owner is not null)
+            {
+                var intendedOwner = await _userManager.FindByIdAsync(owner).ConfigureAwait(false);
+                if (intendedOwner is null && !ownerHasId)
+                {
+                    intendedOwner = await _userManager.FindByNameAsync(owner).ConfigureAwait(false);
+                }
+                if (intendedOwner is null)
+                {
+                    ModelState.AddModelError("Model", "No such owner found.");
+                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    return View("Edit", vm);
+                }
+            }
+
             if (wikiItem is not null)
             {
                 model.OverwritePermission = VerifyPermission(wikiItem, user, userPage: false, groupPage: false, edit: true);
@@ -978,52 +1051,82 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             List<string>? allowedEditors = null;
             if (model.AllowedEditors is not null
-                && (model.OwnerSelf || model.Owner is not null))
+                && (model.OwnerSelf || owner is not null))
             {
-                foreach (var id in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
-                    var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (editor is not null)
+                    var id = GetEditorId(name, out var hasId, out var isGroup);
+
+                    if (isGroup)
                     {
-                        (allowedEditors ??= new List<string>()).Add(editor.Id);
+                        var group = await _groupManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (group is not null)
+                        {
+                            (allowedEditors ??= new List<string>()).Add($"G:{group.Id}");
+                        }
                     }
                     else
                     {
-                        var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
-                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
-                        if (groupEditor is not null)
+                        var editor = await _userManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (editor is null && !hasId)
                         {
-                            (allowedEditors ??= new List<string>()).Add(groupEditor.Id);
+                            editor = await _userManager.FindByNameAsync(id).ConfigureAwait(false);
+                        }
+                        if (editor is not null)
+                        {
+                            (allowedEditors ??= new List<string>()).Add(editor.Id);
+                        }
+                        else if (!hasId)
+                        {
+                            var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                                ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                            if (groupEditor is not null)
+                            {
+                                (allowedEditors ??= new List<string>()).Add($"G:{groupEditor.Id}");
+                            }
                         }
                     }
                 }
             }
             List<string>? allowedViewers = null;
             if (model.AllowedViewers is not null
-                && (model.OwnerSelf || model.Owner is not null))
+                && (model.OwnerSelf || owner is not null))
             {
-                foreach (var id in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
                 {
-                    var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false)
-                        ?? await _userManager.FindByNameAsync(id).ConfigureAwait(false);
-                    if (viewer is not null)
+                    var id = GetEditorId(name, out var hasId, out var isGroup);
+
+                    if (isGroup)
                     {
-                        (allowedViewers ??= new List<string>()).Add(viewer.Id);
+                        var group = await _groupManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (group is not null)
+                        {
+                            (allowedViewers ??= new List<string>()).Add($"G:{group.Id}");
+                        }
                     }
                     else
                     {
-                        var groupViewer = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
-                            ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
-                        if (groupViewer is not null)
+                        var viewer = await _userManager.FindByIdAsync(id).ConfigureAwait(false);
+                        if (viewer is null && !hasId)
                         {
-                            (allowedViewers ??= new List<string>()).Add(groupViewer.Id);
+                            viewer = await _userManager.FindByNameAsync(id).ConfigureAwait(false);
+                        }
+                        if (viewer is not null)
+                        {
+                            (allowedViewers ??= new List<string>()).Add(viewer.Id);
+                        }
+                        else if (!hasId)
+                        {
+                            var groupEditor = await _groupManager.FindByIdAsync(id).ConfigureAwait(false)
+                                ?? await _groupManager.FindByNameAsync(id).ConfigureAwait(false);
+                            if (groupEditor is not null)
+                            {
+                                (allowedViewers ??= new List<string>()).Add($"G:{groupEditor.Id}");
+                            }
                         }
                     }
                 }
             }
-
-            var owner = model.OwnerSelf ? user.Id : model.Owner;
 
             if (wikiItem is null)
             {
@@ -1323,6 +1426,33 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             string? filter = null)
             => GetSpecialListAsync(SpecialListType.What_Links_Here, pageNumber, pageSize, sort, descending, filter);
 
+        private static string? GetEditorId(string? name, out bool hasId, out bool isGroup)
+        {
+            hasId = false;
+            isGroup = false;
+            if (string.IsNullOrEmpty(name))
+            {
+                return name;
+            }
+
+            var bracketIndex = name.IndexOf('[');
+            if (bracketIndex != -1 && name[^1] == ']')
+            {
+                hasId = true;
+                if (name.AsSpan().Slice(bracketIndex + 1, 7).Equals("Group: ", StringComparison.OrdinalIgnoreCase))
+                {
+                    isGroup = true;
+                    return name[(bracketIndex + 8)..^1];
+                }
+                else
+                {
+                    return name[(bracketIndex + 1)..^1];
+                }
+            }
+
+            return name;
+        }
+
         private static Article? GetWikiItem(string title, string wikiNamespace, bool noRedirect = false)
         {
             if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
@@ -1401,10 +1531,26 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     : item.AllowedViewers is null;
             }
 
-            if (string.Equals(item.Owner, user.Id)
-                || (edit
-                ? item.AllowedEditors?.Contains(user.Id) != false
-                : item.AllowedViewers?.Contains(user.Id) != false))
+            if (edit)
+            {
+                if (item.AllowedEditors is null)
+                {
+                    return true;
+                }
+            }
+            else if (item.AllowedViewers is null)
+            {
+                return true;
+            }
+
+            if (string.Equals(item.Owner, user.Id))
+            {
+                return true;
+            }
+
+            if (edit
+                ? item.AllowedEditors!.Contains(user.Id)
+                : item.AllowedViewers!.Contains(user.Id))
             {
                 return true;
             }
@@ -1414,10 +1560,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return false;
             }
 
-            return user.Groups.Contains(item.Owner)
-                || (edit
-                ? item.AllowedEditors?.Intersect(user.Groups).Any() != false
-                : item.AllowedViewers?.Intersect(user.Groups).Any() != false);
+            if (user.Groups.Contains(item.Owner))
+            {
+                return true;
+            }
+
+            var formattedGroups = user.Groups.Select(x => $"G:{x}").ToList();
+            return edit
+                ? item.AllowedEditors!.Intersect(formattedGroups).Any()
+                : item.AllowedViewers!.Intersect(formattedGroups).Any();
         }
 
         private async Task<IActionResult> GetSpecialListAsync(
@@ -1471,9 +1622,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return View("WikiItemList", vm);
         }
 
-        private async Task<Article?> GetWikiItemAsync(WikiRouteData data)
+        private async Task<Article?> GetWikiItemAsync(WikiRouteData data, bool noRedirect = false)
         {
-            var article = GetWikiItem(data.Title, data.WikiNamespace, data.NoRedirect);
+            var article = GetWikiItem(data.Title, data.WikiNamespace, noRedirect || data.NoRedirect);
 
             if (data.IsUserPage)
             {
@@ -1486,7 +1637,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                     if (article is null && user.Id != data.Title)
                     {
-                        article = GetWikiItem(user.Id, data.WikiNamespace, data.NoRedirect);
+                        article = GetWikiItem(user.Id, data.WikiNamespace, noRedirect || data.NoRedirect);
                         if (article is not null)
                         {
                             data.Title = article.Title;
@@ -1506,7 +1657,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                     if (article is null && group.Id != data.Title)
                     {
-                        article = GetWikiItem(group.Id, data.WikiNamespace, data.NoRedirect);
+                        article = GetWikiItem(group.Id, data.WikiNamespace, noRedirect || data.NoRedirect);
                         if (article is not null)
                         {
                             data.Title = article.Title;

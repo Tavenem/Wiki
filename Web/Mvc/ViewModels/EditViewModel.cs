@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
+using NeverFoundry.Wiki.Mvc.Controllers;
 using NeverFoundry.Wiki.Web;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -110,22 +111,29 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 var editors = new List<string>();
                 foreach (var editorId in data.WikiItem.AllowedEditors)
                 {
-                    var editor = await userManager.FindByIdAsync(editorId).ConfigureAwait(false);
-                    if (editor is null)
+                    if (editorId.StartsWith("G:"))
                     {
-                        var group = await groupManager.FindByIdAsync(editorId).ConfigureAwait(false);
+                        var group = await groupManager.FindByIdAsync(editorId[2..]).ConfigureAwait(false);
                         if (group is null)
                         {
                             editors.Add(editorId);
                         }
                         else
                         {
-                            editors.Add($"{group.GroupName} [{group.Id}]");
+                            editors.Add($"{group.GroupName} [Group: {group.Id}]");
                         }
                     }
                     else
                     {
-                        editors.Add(editor.UserName);
+                        var editor = await userManager.FindByIdAsync(editorId).ConfigureAwait(false);
+                        if (editor is null)
+                        {
+                            editors.Add(editorId);
+                        }
+                        else
+                        {
+                            editors.Add($"{editor.UserName} [{editor.Id}]");
+                        }
                     }
                 }
                 allowedEditors = string.Join("; ", editors);
@@ -137,22 +145,29 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 var viewers = new List<string>();
                 foreach (var viewerId in data.WikiItem.AllowedViewers)
                 {
-                    var viewer = await userManager.FindByIdAsync(viewerId).ConfigureAwait(false);
-                    if (viewer is null)
+                    if (viewerId.StartsWith("G:"))
                     {
-                        var group = await groupManager.FindByIdAsync(viewerId).ConfigureAwait(false);
+                        var group = await groupManager.FindByIdAsync(viewerId[2..]).ConfigureAwait(false);
                         if (group is null)
                         {
                             viewers.Add(viewerId);
                         }
                         else
                         {
-                            viewers.Add(group.GroupName);
+                            viewers.Add($"{group.GroupName} [Group: {group.Id}]");
                         }
                     }
                     else
                     {
-                        viewers.Add(viewer.UserName);
+                        var viewer = await userManager.FindByIdAsync(viewerId).ConfigureAwait(false);
+                        if (viewer is null)
+                        {
+                            viewers.Add(viewerId);
+                        }
+                        else
+                        {
+                            viewers.Add($"{viewer.UserName} [{viewer.Id}]");
+                        }
                     }
                 }
                 allowedViewers = string.Join("; ", viewers);

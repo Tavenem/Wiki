@@ -379,24 +379,35 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     title = openParent.Title[2..];
                     if (!openParent.HasDisplay)
                     {
-                        display = display?[2..];
+                        display = display?[2..].Replace('_', ' ');
                         openParent.HasDisplay = true;
+                    }
+                    else if (openParent.AutoDisplay)
+                    {
+                        display = display?.Replace('_', ' ');
                     }
                 }
                 else if (isCommons)
                 {
                     title = openParent.Title[3..];
 
-                    if (!openParent.HasDisplay && display is not null)
+                    if (!openParent.HasDisplay)
                     {
-                        var extIndex = display.IndexOf('.');
+                        if (display is not null)
                         {
-                            if (extIndex != -1)
+                            var extIndex = display.IndexOf('.');
                             {
-                                display = display[3..extIndex];
-                                openParent.HasDisplay = true;
+                                if (extIndex != -1)
+                                {
+                                    display = display[3..extIndex].Replace('_', ' ');
+                                    openParent.HasDisplay = true;
+                                }
                             }
                         }
+                    }
+                    else if (openParent.AutoDisplay)
+                    {
+                        display = display?.Replace('_', ' ');
                     }
                 }
                 else
@@ -405,6 +416,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     {
                         ignoreMissing = true;
                         title = title[1..];
+                        mainTitle = title;
                     }
 
                     var anchorIndex = title.IndexOf('#');
@@ -433,9 +445,10 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                             wikiNamespace = WikiConfig.CategoryNamespace; // normalize casing
                         }
                         mainTitle = wTitle;
+
                         title = anchorIndex == -1 || anchorIndex >= title.Length - 1
                             ? wTitle
-                            : wTitle + title[anchorIndex..];
+                            : wTitle + title[anchorIndex..].ToLowerInvariant().Replace(' ', '-');
                     }
                 }
 
