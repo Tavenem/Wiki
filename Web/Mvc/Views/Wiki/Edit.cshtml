@@ -55,11 +55,11 @@ else
     </div>
     <textarea asp-for="Markdown"></textarea>
     <div class="wiki-markdown-editor">
-        <div class="form-group">
+        <div>
             <label asp-for="Comment">Revision comment (e.g. briefly describe your changes)</label>
             <input asp-for="Comment" class="form-control" spellcheck="true" />
         </div>
-        <div class="form-group">
+        <div>
             <label asp-for="Owner" title="Should be a username or user ID. Can be left blank to make the article community-owned.">Owner (optional)</label>
             <input asp-for="Owner" class="form-control" title="Should be a username or user ID. Can be left blank to make the article community-owned." readonly="@(Model.OwnerSelf ? "readonly" : null)" />
         </div>
@@ -67,11 +67,11 @@ else
             <input asp-for="OwnerSelf" class="form-check-input" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);" />
             <label asp-for="OwnerSelf" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);">Make me the owner</label>
         </div>
-        <div class="form-group">
+        <div>
             <label asp-for="AllowedEditors" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included.">Allowed editors (optional)</label>
             <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
         </div>
-        <div class="form-group">
+        <div>
             <label asp-for="AllowedViewers" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included.">Allowed viewers (optional)</label>
             <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
         </div>

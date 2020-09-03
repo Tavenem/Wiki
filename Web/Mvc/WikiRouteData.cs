@@ -26,6 +26,16 @@ namespace NeverFoundry.Wiki.Mvc
         /// </summary>
         public IReadOnlyCollection<string>? Categories { get; set; }
 
+        private string? _displayNamespace;
+        /// <summary>
+        /// The namespace to display.
+        /// </summary>
+        public string DisplayNamespace
+        {
+            get => _displayNamespace ?? WikiNamespace;
+            set => _displayNamespace = value;
+        }
+
         private string? _displayTitle;
         /// <summary>
         /// The title to display.

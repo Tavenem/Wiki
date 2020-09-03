@@ -1530,6 +1530,12 @@ blockquote {
         max-width: 50em;
         padding: 1em;
     }
+
+    #wiki-search-advanced-controls {
+        > div {
+            margin-bottom: 1em;
+        }
+    }
 }
 
 .wiki-search-results {

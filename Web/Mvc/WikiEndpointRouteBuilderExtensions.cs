@@ -51,7 +51,7 @@ namespace NeverFoundry.Wiki.Mvc
                 services.AddScoped<ISearchClient>(provider =>
                 {
                     var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>(), userManager);
+                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>());
                 });
             }
             else
@@ -100,7 +100,7 @@ namespace NeverFoundry.Wiki.Mvc
                 {
                     var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
                     var userManager = provider.GetRequiredService<IWikiUserManager>();
-                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>(), userManager);
+                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>());
                 });
             }
             else
@@ -146,7 +146,7 @@ namespace NeverFoundry.Wiki.Mvc
                 if (options?.SearchClient is null)
                 {
                     var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>(), userManager);
+                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>());
                 }
                 else
                 {
@@ -197,7 +197,7 @@ namespace NeverFoundry.Wiki.Mvc
                 {
                     var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
                     var userManager = provider.GetRequiredService<IWikiUserManager>();
-                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>(), userManager);
+                    return new DefaultSearchClient(loggerFactory.CreateLogger<DefaultSearchClient>());
                 }
                 else
                 {

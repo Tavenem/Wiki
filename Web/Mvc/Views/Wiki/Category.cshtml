@@ -22,7 +22,7 @@ else
                     @foreach (var item in group)
                     {
                         <li class="wiki-category-sub">
-                            <a href="@Url.Action("Read", new { isCompact = Model.Data.IsCompact, title = item.Title, wikiNamespace = WikiConfig.CategoryNamespace })">@item.Title</a>
+                            <a href="@(Model.Data.IsCompact ? $"/Compact/{WikiConfig.WikiLinkPrefix}/{WikiConfig.CategoryNamespace}:{item.Title}" : $"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.CategoryNamespace}:{item.Title}")">@item.Title</a>
                             (@($"{item.Count:N0}") members)
                         </li>
                     }
@@ -43,9 +43,9 @@ else
                 <ul>
                     @foreach (var item in group)
                     {
-                        <li class="wiki-category-article">
-                            <a href="@Url.Action("Read", new { isCompact = Model.Data.IsCompact, title = item.Title, wikiNamespace = item.WikiNamespace })">@item.FullTitle</a>
-                        </li>
+                    <li class="wiki-category-article">
+                        <a href="@(Model.Data.IsCompact ? $"/Compact/{WikiConfig.WikiLinkPrefix}/{WikiConfig.CategoryNamespace}:{item.Title}" : $"/{WikiConfig.WikiLinkPrefix}/{item.WikiNamespace}:{item.Title}")">@item.FullTitle</a>
+                    </li>
                     }
                 </ul>
             </div>
@@ -64,10 +64,10 @@ else
                 <ul>
                     @foreach (var item in group)
                     {
-                        <li class="wiki-category-file">
-                            <a href="@Url.Action("Read", new { isCompact = Model.Data.IsCompact, title = item.Title, wikiNamespace = WikiConfig.FileNamespace })">@item.Title</a>
-                            (@WikiFile.GetFileSizeString(item.Size))
-                        </li>
+                    <li class="wiki-category-file">
+                        <a href="@(Model.Data.IsCompact ? $"/Compact/{WikiConfig.WikiLinkPrefix}/{WikiConfig.CategoryNamespace}:{item.Title}" : $"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.FileNamespace}:{item.Title}")">@item.Title</a>
+                        (@WikiFile.GetFileSizeString(item.Size))
+                    </li>
                     }
                 </ul>
             </div>

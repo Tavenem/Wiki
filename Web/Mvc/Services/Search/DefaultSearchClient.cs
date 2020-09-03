@@ -1,10 +1,9 @@
 ﻿using Microsoft.Extensions.Logging;
 using NeverFoundry.DataStorage;
-using NeverFoundry.Wiki.Web;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.Services.Search
@@ -23,20 +22,12 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
     public class DefaultSearchClient : ISearchClient
     {
         private readonly ILogger<DefaultSearchClient> _logger;
-        private readonly IWikiUserManager _userManager;
 
         /// <summary>
         /// Initializes a new instance of <see cref="DefaultSearchClient"/>.
         /// </summary>
         /// <param name="logger">An <see cref="ILogger"/> instance.</param>
-        /// <param name="userManager">An <see cref="IWikiUserManager"/>.</param>
-        public DefaultSearchClient(
-            ILogger<DefaultSearchClient> logger,
-            IWikiUserManager userManager)
-        {
-            _logger = logger;
-            _userManager = userManager;
-        }
+        public DefaultSearchClient(ILogger<DefaultSearchClient> logger) => _logger = logger;
 
         /// <summary>
         /// Search for wiki content which matches the given search criteria.
@@ -44,13 +35,16 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
         /// <param name="request">
         /// An <see cref="ISearchRequest" /> instance with search criteria.
         /// </param>
-        /// <param name="principal">
-        /// The <see cref="ClaimsPrincipal" /> making the request.
+        /// <param name="user">
+        /// The <see cref="IWikiUser" /> making the request.
         /// </param>
         /// <returns>An <see cref="ISearchResult" /> instance with search results.</returns>
-        public async Task<ISearchResult> SearchAsync(ISearchRequest request, ClaimsPrincipal principal)
+        public async Task<ISearchResult> SearchAsync(ISearchRequest request, IWikiUser? user)
         {
-            if (string.IsNullOrWhiteSpace(request.Query))
+            var queryEmpty = string.IsNullOrWhiteSpace(request.Query);
+            var namespaceEmpty = string.IsNullOrWhiteSpace(request.WikiNamespace);
+            var ownerEmpty = string.IsNullOrWhiteSpace(request.Owner);
+            if (queryEmpty && namespaceEmpty && ownerEmpty)
             {
                 return new SearchResult
                 {
@@ -60,40 +54,122 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                 };
             }
 
-            var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
-            var groupIds = user?.Groups ?? new List<string>();
-
-            IPagedList<Article> articles;
-            System.Linq.Expressions.Expression<Func<Article, bool>> exp = x => x.Owner == null || x.AllowedViewers == null;
-            if (user is not null)
+            System.Linq.Expressions.Expression<Func<Article, bool>> exp;
+            if (namespaceEmpty)
             {
-                exp = exp.OrElse(x => x.AllowedViewers!.Contains(user.Id)
-                    || user.Id.Equals(x.Owner, StringComparison.OrdinalIgnoreCase)
-                    || groupIds.Contains(x.Owner!)
-                    || x.AllowedViewers!.Any(y => groupIds.Contains(y)));
-            }
-            exp = exp.AndAlso(x => x.Title.Contains(request.Query, StringComparison.OrdinalIgnoreCase)
-                || x.MarkdownContent.Contains(request.Query, StringComparison.OrdinalIgnoreCase));
-            try
-            {
-                if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
+                if (ownerEmpty)
                 {
-                    articles = await WikiConfig.DataStore.Query<Article>()
-                        .Where(exp)
-                        .OrderBy(x => x.TimestampTicks, request.Descending)
-                        .GetPageAsync(request.PageNumber, request.PageSize)
-                        .ConfigureAwait(false);
+                    exp = x => x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
+                        || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase);
+                }
+                else if (queryEmpty)
+                {
+                    exp = x => x.Owner == request.Owner;
                 }
                 else
                 {
-                    articles = await WikiConfig.DataStore.Query<Article>()
-                        .Where(exp)
-                        .OrderBy(x => x.Title, request.Descending)
-                        .GetPageAsync(request.PageNumber, request.PageSize)
-                        .ConfigureAwait(false);
+                    exp = x => x.Owner == request.Owner
+                        && (x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
+                        || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase));
                 }
+            }
+            else if (queryEmpty)
+            {
+                if (ownerEmpty)
+                {
+                    exp = x => x.WikiNamespace == request.WikiNamespace;
+                }
+                else
+                {
+                    exp = x => x.WikiNamespace == request.WikiNamespace
+                        && x.Owner == request.Owner;
+                }
+            }
+            else if (ownerEmpty)
+            {
+                exp = x => x.WikiNamespace == request.WikiNamespace
+                    && (x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
+                    || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                exp = x => x.WikiNamespace == request.WikiNamespace
+                    && x.Owner == request.Owner
+                    && (x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
+                    || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase));
+            }
+
+            if (user is null)
+            {
+                if (ownerEmpty)
+                {
+                    exp = exp.AndAlso(x => x.Owner == null || x.AllowedEditors == null || x.AllowedViewers == null);
+                }
+                else
+                {
+                    exp = exp.AndAlso(x => x.AllowedEditors == null || x.AllowedViewers == null);
+                }
+            }
+            else if (!user.IsWikiAdmin)
+            {
+                var groupIds = user.Groups ?? new List<string>();
+                if (ownerEmpty)
+                {
+                    exp = exp.AndAlso(x => x.Owner == null
+                        || x.AllowedEditors == null
+                        || x.AllowedViewers == null
+                        || user.Id == x.Owner
+                        || x.AllowedEditors.Contains(user.Id)
+                        || x.AllowedViewers.Contains(user.Id)
+                        || groupIds.Contains(x.Owner)
+                        || x.AllowedEditors.Any(y => groupIds.Contains(y))
+                        || x.AllowedViewers.Any(y => groupIds.Contains(y)));
+                }
+                else
+                {
+                    exp = exp.AndAlso(x => x.AllowedEditors == null
+                        || x.AllowedViewers == null
+                        || user.Id == x.Owner
+                        || x.AllowedEditors.Contains(user.Id)
+                        || x.AllowedViewers.Contains(user.Id)
+                        || groupIds.Contains(x.Owner!)
+                        || x.AllowedEditors.Any(y => groupIds.Contains(y))
+                        || x.AllowedViewers.Any(y => groupIds.Contains(y)));
+                }
+            }
+
+            try
+            {
+                var query = WikiConfig.DataStore.Query<Article>().Where(exp);
+                if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.OrderBy(x => x.TimestampTicks, request.Descending);
+                }
+                else
+                {
+                    query = query.OrderBy(x => x.Title, request.Descending);
+                }
+                var articles = await query.GetPageAsync(request.PageNumber, request.PageSize)
+                    .ConfigureAwait(false);
+
                 var hits = new PagedList<SearchHit>(
-                    articles.Select(x => new SearchHit(x.Title, x.WikiNamespace, x.GetPlainText())),
+                    articles.Select(x => new SearchHit(
+                        x.Title,
+                        x.WikiNamespace,
+                        queryEmpty
+                            ? x.GetPlainText()
+                            : Regex.Replace(
+                                x.GetPlainText(x.MarkdownContent[
+                                    Math.Max(0, x.MarkdownContent.LastIndexOf(
+                                        ' ',
+                                        Math.Max(0, x.MarkdownContent.LastIndexOf(
+                                            ' ',
+                                            Math.Max(0, x.MarkdownContent.IndexOf(
+                                                request.Query!,
+                                                StringComparison.OrdinalIgnoreCase))) - 1)))..]),
+                                $"({Regex.Escape(request.Query!)})",
+                                "<strong class=\"wiki-search-hit\">$1</strong>",
+                                RegexOptions.IgnoreCase))),
                     articles.PageNumber,
                     articles.PageSize,
                     articles.TotalCount);

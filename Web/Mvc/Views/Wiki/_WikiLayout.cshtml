@@ -9,7 +9,7 @@
     {
         <nav>
             <div class="wiki-sidebar-logo" role="banner">
-                <a class="wiki-sidebar-logo-link" href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.MainPageTitle" title="Visit the main page"></a>
+                <a class="wiki-sidebar-logo-link" href="/" title="Visit the site home page"></a>
             </div>
             <div class="wiki-sidebar-section">
                 <ul>
@@ -66,16 +66,16 @@
                         else if (data.IsSpecialList)
                         {
                             <li>
-                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
                             </li>
                             <li>
-                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = $"{WikiConfig.TalkNamespace}:{data.WikiNamespace}", title = data.Title, action = "Read" })" title="View discussion">@WikiConfig.TalkNamespace</a>
+                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.TalkNamespace}:{data.WikiNamespace}:{data.Title}")" title="View discussion">@WikiConfig.TalkNamespace</a>
                             </li>
                         }
                         else if (data.IsTalk)
                         {
                             <li>
-                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
                             </li>
                             <li class="is-active">
                                 <span title="View discussion">@WikiConfig.TalkNamespace</span>
@@ -87,7 +87,7 @@
                                 <span title="View article">@(data.IsCategory ? "Category" : "Article")</span>
                             </li>
                             <li>
-                                <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = $"{WikiConfig.TalkNamespace}:{data.WikiNamespace}", title = data.Title, action = "Read" })" title="View discussion">@WikiConfig.TalkNamespace</a>
+                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.TalkNamespace}:{data.WikiNamespace}:{data.Title}")" title="View discussion">@WikiConfig.TalkNamespace</a>
                             </li>
                         }
                     </ul>
@@ -100,7 +100,7 @@
                             @if (data.IsEdit || data.IsHistory || data.IsSpecialList)
                             {
                                 <li>
-                                    <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Read" })">Read</a>
+                                    <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")">Read</a>
                                 </li>
                             }
                             else
@@ -120,7 +120,7 @@
                                 else
                                 {
                                     <li>
-                                        <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "Edit" })" title="Edit this page">Edit</a>
+                                        <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}/Edit")" title="Edit this page">Edit</a>
                                     </li>
                                 }
                             }
@@ -133,14 +133,14 @@
                             else
                             {
                                 <li>
-                                    <a href="@Url.Link("wiki-ns", new { isCompact = data.IsCompact, wikiNamespace = data.WikiNamespace, title = data.Title, action = "History" })" title="Past revisions of this page">View history</a>
+                                    <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}/History")" title="Past revisions of this page">View history</a>
                                 </li>
                             }
                         </ul>
                     }
                     <div class="wiki-header-search">
                         <form method="get"
-                              action="@(data.IsCompact ? $"Compact/{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:Search/Search" : $"{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:Search/Search")">
+                              action="@($"/{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:Search/Search")">
                             <input id="wiki-search-input"
                                    type="search"
                                    role="search"
@@ -195,7 +195,7 @@
                         {
                             @if (data.ShowNamespace)
                             {
-                                <span class="wiki-main-heading-namespace">@data.WikiNamespace</span>
+                                <span class="wiki-main-heading-namespace">@data.DisplayNamespace</span>
                                 <span class="wiki-main-heading-namespace-separator">:</span>
                             }
                             <span class="wiki-main-heading-title">@data.DisplayTitle</span>
@@ -210,7 +210,7 @@
                             <a href="@Url.Action("Edit", new { isCompact = data.IsCompact })" class="wiki-link-missing" title="Create this page">
                                 @if (data.ShowNamespace)
                                 {
-                                    <span class="wiki-main-heading-namespace">@data.WikiNamespace</span>
+                                    <span class="wiki-main-heading-namespace">@data.DisplayNamespace</span>
                                     <span class="wiki-main-heading-namespace-separator">:</span>
                                 }
                                 <span class="wiki-main-heading-title">@data.DisplayTitle</span>

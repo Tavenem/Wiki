@@ -100,7 +100,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     renderer.Write("\"");
                 }
 
-                var heightIndex = link.GetAttributes().Properties.FindIndex(x => x.Key.Equals("height", StringComparison.OrdinalIgnoreCase));
+                var heightIndex = link.GetAttributes()?.Properties?.FindIndex(x => x.Key.Equals("height", StringComparison.OrdinalIgnoreCase)) ?? -1;
                 if (heightIndex != -1)
                 {
                     if (int.TryParse(link.GetAttributes().Properties[heightIndex].Value, out var heightInt))
@@ -117,7 +117,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     }
                 }
 
-                var widthIndex = link.GetAttributes().Properties.FindIndex(x => x.Key.Equals("width", StringComparison.OrdinalIgnoreCase));
+                var widthIndex = link.GetAttributes()?.Properties?.FindIndex(x => x.Key.Equals("width", StringComparison.OrdinalIgnoreCase)) ?? -1;
                 if (widthIndex != -1)
                 {
                     if (int.TryParse(link.GetAttributes().Properties[widthIndex].Value, out var widthInt))

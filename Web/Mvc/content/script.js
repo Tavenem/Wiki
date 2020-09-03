@@ -1,32 +1,34 @@
 ﻿import tippy from 'tippy.js';
 
 window.addEventListener('load', function () {
-    window.wikiAutosuggestXHR = new XMLHttpRequest();
-
     var search = this.document.getElementById("wiki-search-input");
-    if (search) {
+    var searchSuggestions = this.document.getElementById("searchSuggestions");
+    if (search && searchSuggestions) {
+        window.wikiAutosuggestXHR = new XMLHttpRequest();
+        window.wikiAutosuggestXHR.onreadystatechange = function () {
+            if (this.readyState == XMLHttpRequest.DONE && this.status == 200) {
+                var response = JSON.parse(this.responseText);
+                searchSuggestions.innerHTML = "";
+                response.forEach(function (item) {
+                    var option = document.createElement('option');
+                    option.value = item;
+                    searchSuggestions.appendChild(option);
+                });
+            }
+        };
+
         search.addEventListener('keyup', function (event) {
             const input = event.target;
             if (input.value.length < 3) {
                 return;
             }
-            var searchSuggestions = document.getElementById("searchSuggestions");
-            if (searchSuggestions) {
-                window.wikiAutosuggestXHR.abort();
-                window.wikiAutosuggestXHR.onreadystatechange = function () {
-                    if (this.readyState == 4 && this.status == 200) {
-                        var response = JSON.parse(this.responseText);
-                        searchSuggestions.innerHTML = "";
-                        response.forEach(function (item) {
-                            var option = document.createElement('option');
-                            option.value = item;
-                            searchSuggestions.appendChild(option);
-                        });
-                    }
-                };
-                window.wikiAutosuggestXHR.open("GET", "/wiki/api/suggest?search=" + encodeURIComponent(input.value), true);
-                window.wikiAutosuggestXHR.send();
-            }
+            window.wikiAutosuggestXHR.abort();
+            window.wikiAutosuggestXHR.open("POST", "/wiki/api/suggest", true);
+
+            var formData = new FormData();
+            formData.append('search', input.value);
+
+            window.wikiAutosuggestXHR.send(formData);
         });
     }
 });

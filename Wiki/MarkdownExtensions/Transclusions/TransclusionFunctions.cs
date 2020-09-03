@@ -225,7 +225,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             }
             else
             {
-                return elseValue;
+                return second;
             }
         }
 

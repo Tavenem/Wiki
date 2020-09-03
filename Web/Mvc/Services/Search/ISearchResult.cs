@@ -26,5 +26,15 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
         /// The originally specified sort property.
         /// </summary>
         string? Sort { get; set; }
+
+        /// <summary>
+        /// The originally specified owner.
+        /// </summary>
+        string? Owner { get; set; }
+
+        /// <summary>
+        /// The originally specified wiki namespace.
+        /// </summary>
+        string? WikiNamespace { get; set; }
     }
 }

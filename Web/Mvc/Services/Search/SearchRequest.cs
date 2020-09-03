@@ -44,5 +44,15 @@
         /// </para>
         /// </summary>
         public string? Sort { get; set; }
+
+        /// <summary>
+        /// An optional owner for whom to restrict results.
+        /// </summary>
+        public string? Owner { get; set; }
+
+        /// <summary>
+        /// An optional wiki namespace within which to restrict results.
+        /// </summary>
+        public string? WikiNamespace { get; set; }
     }
 }

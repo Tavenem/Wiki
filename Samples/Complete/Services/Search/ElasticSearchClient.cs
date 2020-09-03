@@ -1,13 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Nest;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Mvc;
 using NeverFoundry.Wiki.Mvc.Services.Search;
-using NeverFoundry.Wiki.Web;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Samples.Complete.Services
@@ -19,19 +17,16 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
     {
         private readonly IElasticClient _elasticClient;
         private readonly ILogger<ElasticSearchClient> _logger;
-        private readonly UserManager<WikiUser> _userManager;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ElasticSearchClient"/>.
         /// </summary>
         public ElasticSearchClient(
             IElasticClient elasticClient,
-            ILogger<ElasticSearchClient> logger,
-            UserManager<WikiUser> userManager)
+            ILogger<ElasticSearchClient> logger)
         {
             _elasticClient = elasticClient;
             _logger = logger;
-            _userManager = userManager;
         }
 
         /// <summary>
@@ -40,43 +35,161 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
         /// <param name="request">
         /// An <see cref="Mvc.Services.Search.ISearchRequest" /> instance with search criteria.
         /// </param>
-        /// <param name="principal">
-        /// The <see cref="ClaimsPrincipal" /> making the request.
+        /// <param name="user">
+        /// The <see cref="IWikiUser" /> making the request.
         /// </param>
         /// <returns>An <see cref="ISearchResult" /> instance with search results.</returns>
-        public async Task<ISearchResult> SearchAsync(Mvc.Services.Search.ISearchRequest request, ClaimsPrincipal principal)
+        public async Task<ISearchResult> SearchAsync(Mvc.Services.Search.ISearchRequest request, IWikiUser? user)
         {
-            var user = await _userManager.GetUserAsync(principal).ConfigureAwait(false);
-            var claims = user is null
-                ? new List<Claim>()
-                : await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            var groupIds = claims
-                .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
-                .Select(x => x.Value)
-                .ToList();
+            var queryEmpty = string.IsNullOrWhiteSpace(request.Query);
+            var namespaceEmpty = string.IsNullOrWhiteSpace(request.WikiNamespace);
+            var ownerEmpty = string.IsNullOrWhiteSpace(request.Owner);
+            if (queryEmpty && namespaceEmpty && ownerEmpty)
+            {
+                return new SearchResult
+                {
+                    Descending = request.Descending,
+                    Query = request.Query,
+                    Sort = request.Sort,
+                };
+            }
 
-            CountResponse? count;
+            var groupIds = user?.Groups ?? new List<string>();
+
+            Func<QueryContainerDescriptor<Article>, QueryContainer> query;
             if (user is null)
             {
-                count = await _elasticClient.CountAsync<Article>(x =>
-                    x.Query(q =>
-                        +!q.Exists(m => m.Field(f => f.Owner))
-                        && +!q.Exists(m => m.Field(f => f.AllowedViewers))
-                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
-                    .ConfigureAwait(false);
+                if (namespaceEmpty)
+                {
+                    if (ownerEmpty)
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                            || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                    }
+                    else
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                            && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                    }
+                }
+                else if (queryEmpty)
+                {
+                    if (ownerEmpty)
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                            || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim());
+                    }
+                    else
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                            && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim());
+                    }
+                }
+                else if (ownerEmpty)
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                        || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                }
+                else
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                        && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                }
+            }
+            else if (namespaceEmpty)
+            {
+                if (ownerEmpty)
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                        || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                }
+                else
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                }
+            }
+            else if (queryEmpty)
+            {
+                if (ownerEmpty)
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                        || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                }
+                else
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
+                }
+            }
+            else if (ownerEmpty)
+            {
+                query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                    || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                    || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                    || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                    || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                    && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                    && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
             }
             else
             {
-                count = await _elasticClient.CountAsync<Article>(x =>
-                    x.Query(q =>
-                        ((+!q.Exists(m => m.Field(f => f.Owner))
-                        && +!q.Exists(m => m.Field(f => f.AllowedViewers)))
-                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim())
-                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
-                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
-                        && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
-                    .ConfigureAwait(false);
+                query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                    || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                    || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                    || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                    && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                    && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                    && q.SimpleQueryString(m => m.Fields(f => f.Fields(p => p.Title, p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And));
             }
+
+            var count = await _elasticClient
+                .CountAsync<Article>(x => x.Query(query))
+                .ConfigureAwait(false);
 
             if (count?.IsValid != true)
             {
@@ -91,80 +204,175 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
                 return new SearchResult();
             }
 
-            var sortDefault = string.CompareOrdinal(request.Sort, "timestamp") != 0;
-
-            ISearchResponse<Article>? response;
             if (user is null)
             {
-                response = await _elasticClient.SearchAsync<Article>(x =>
-                    x.Query(q =>
-                        +!q.Exists(m => m.Field(f => f.Owner))
-                        && +!q.Exists(m => m.Field(f => f.AllowedViewers))
-                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
-                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
-                    .Highlight(h =>
-                        h.Fields(f =>
-                            f.Field(ff => ff.MarkdownContent)
-                            .FragmentSize(200)
-                            .NoMatchSize(200))
-                        .PreTags("#H#H#")
-                        .PostTags("%H%H%"))
-                    .Sort(s =>
+                if (namespaceEmpty)
+                {
+                    if (ownerEmpty)
                     {
-                        if (sortDefault)
-                        {
-                            return s.Descending(SortSpecialField.Score);
-                        }
-                        else if (request.Descending)
-                        {
-                            return s.Descending(a => a.TimestampTicks);
-                        }
-                        else
-                        {
-                            return s.Ascending(a => a.TimestampTicks);
-                        }
-                    })
-                    .From((request.PageNumber - 1) * request.PageSize)
-                    .Size(request.PageSize))
-                    .ConfigureAwait(false);
+                        query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                            || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                            || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                    }
+                    else
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                            && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                            || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                    }
+                }
+                else if (queryEmpty)
+                {
+                    if (ownerEmpty)
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                            || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim());
+                    }
+                    else
+                    {
+                        query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                            || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                            && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                            && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim());
+                    }
+                }
+                else if (ownerEmpty)
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                        || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                }
+                else
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers)))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                }
+            }
+            else if (namespaceEmpty)
+            {
+                if (ownerEmpty)
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                        || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                }
+                else
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                }
+            }
+            else if (queryEmpty)
+            {
+                if (ownerEmpty)
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                        || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                }
+                else
+                {
+                    query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                        || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                        && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                        && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
+                }
+            }
+            else if (ownerEmpty)
+            {
+                query = q => (+!q.Exists(m => m.Field(f => f.Owner))
+                    || +!q.Exists(m => m.Field(f => f.AllowedEditors))
+                    || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                    || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                    || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                    && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                    && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                    || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
             }
             else
             {
-                response = await _elasticClient.SearchAsync<Article>(x =>
-                    x.Query(q =>
-                        ((+!q.Exists(m => m.Field(f => f.Owner))
-                        && +!q.Exists(m => m.Field(f => f.AllowedViewers)))
-                        || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.AllowedViewers, p => p.Owner)).Query(user.Id).Verbatim())
-                        || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
-                        || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
-                        && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
-                        || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And))))
-                    .Highlight(h =>
-                        h.Fields(f =>
-                            f.Field(ff => ff.MarkdownContent)
-                            .FragmentSize(200)
-                            .NoMatchSize(200))
-                        .PreTags("#H#H#")
-                        .PostTags("%H%H%"))
-                    .Sort(s =>
-                    {
-                        if (sortDefault)
-                        {
-                            return s.Descending(SortSpecialField.Score);
-                        }
-                        else if (request.Descending)
-                        {
-                            return s.Descending(a => a.TimestampTicks);
-                        }
-                        else
-                        {
-                            return s.Ascending(a => a.TimestampTicks);
-                        }
-                    })
-                    .From((request.PageNumber - 1) * request.PageSize)
-                    .Size(request.PageSize))
-                    .ConfigureAwait(false);
+                query = q => (+!q.Exists(m => m.Field(f => f.AllowedEditors))
+                    || +!q.Exists(m => m.Field(f => f.AllowedViewers))
+                    || q.MultiMatch(m => m.Fields(f => f.Fields(p => p.Owner, p => p.AllowedEditors, p => p.AllowedViewers)).Query(user.Id).Verbatim())
+                    || q.Terms(m => m.Field(f => f.Owner).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedEditors).Terms(groupIds).Verbatim())
+                    || q.Terms(m => m.Field(f => f.AllowedViewers).Terms(groupIds).Verbatim()))
+                    && q.Match(m => m.Field(f => f.WikiNamespace).Query(request.WikiNamespace).Verbatim())
+                    && q.Match(m => m.Field(f => f.Owner).Query(request.Owner).Verbatim())
+                    && (q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.Title)).Query(request.Query).DefaultOperator(Operator.And).Boost(3))
+                    || q.SimpleQueryString(m => m.Fields(f => f.Field(p => p.MarkdownContent)).Query(request.Query).DefaultOperator(Operator.And)));
             }
+
+            var sortDefault = string.CompareOrdinal(request.Sort, "timestamp") != 0;
+
+            var response = await _elasticClient.SearchAsync<Article>(x =>
+                x.Query(query)
+                .Highlight(h =>
+                    h.Fields(f =>
+                        f.Field(ff => ff.MarkdownContent)
+                        .FragmentSize(200)
+                        .NoMatchSize(200))
+                    .PreTags("#H#H#")
+                    .PostTags("%H%H%"))
+                .Sort(s =>
+                {
+                    if (sortDefault)
+                    {
+                        return s.Descending(SortSpecialField.Score);
+                    }
+                    else if (request.Descending)
+                    {
+                        return s.Descending(a => a.TimestampTicks);
+                    }
+                    else
+                    {
+                        return s.Ascending(a => a.TimestampTicks);
+                    }
+                })
+                .From((request.PageNumber - 1) * request.PageSize)
+                .Size(request.PageSize))
+                .ConfigureAwait(false);
             if (response?.IsValid != true)
             {
                 if (response?.OriginalException != null)

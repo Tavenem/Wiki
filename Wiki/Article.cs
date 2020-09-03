@@ -524,13 +524,10 @@ namespace NeverFoundry.Wiki
                 defaultNamespace = string.CompareOrdinal(wikiNamespace, WikiConfig.DefaultNamespace) != 0;
                 wikiNamespace = WikiConfig.DefaultNamespace;
             }
-            else
+            else if (string.IsNullOrWhiteSpace(wikiNamespace))
             {
-                if (string.IsNullOrWhiteSpace(wikiNamespace))
-                {
-                    wikiNamespace = WikiConfig.DefaultNamespace;
-                    defaultNamespace = true;
-                }
+                wikiNamespace = WikiConfig.DefaultNamespace;
+                defaultNamespace = true;
             }
             return (wikiNamespace, title, isTalk, defaultNamespace);
         }

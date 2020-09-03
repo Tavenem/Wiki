@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.55.3-preview</Version>
+    <Version>0.56.6-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>An implementation of NeverFoundry.Wiki for ASP.NET MVC.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="NeverFoundry.Wiki.Web" Version="0.55.3-preview" />
+    <PackageReference Include="NeverFoundry.Wiki.Web" Version="0.56.1-preview" />
   </ItemGroup>
 
   <!-- npm -->

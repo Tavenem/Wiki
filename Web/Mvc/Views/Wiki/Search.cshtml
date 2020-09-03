@@ -53,8 +53,16 @@
                 </svg>
             </a>
             <div id="wiki-search-advanced-controls" style="display: none;">
-                <div class="form-group">
-                    <label asp-for="SearchResult.Sort">Sort by</label>
+                <div>
+                    <label asp-for="SearchResult.WikiNamespace" class="form-label">Restrict results to Namespace</label>
+                    <input asp-for="SearchResult.WikiNamespace" name="searchNamespace" class="form-control" />
+                </div>
+                <div>
+                    <label asp-for="SearchResult.Owner" class="form-label">Restrict results to Owner</label>
+                    <input asp-for="SearchResult.Owner" class="form-control" />
+                </div>
+                <div>
+                    <label asp-for="SearchResult.Sort" class="form-label">Sort by</label>
                     <select asp-for="SearchResult.Sort" class="custom-select">
                         @if (string.Equals(Model.SearchResult.Sort, "timstamp", StringComparison.OrdinalIgnoreCase))
                         {
@@ -79,7 +87,7 @@
 <div class="wiki-search-results">
     @if (!(Model.ExactMatch is null))
     {
-        <p class="wiki-search-exact-match">There is an article with the exact name "<a href="@(Url.Action("Read", new { isCompact = false, title = Model.ExactMatch.Title, wikiNamespace = Model.ExactMatch.WikiNamespace }))" class="wiki-link wiki-link-exists">@Model.ExactMatch.Title</a>."</p>
+        <p class="wiki-search-exact-match">There is an article with the exact name "<a href="@($"/{WikiConfig.WikiLinkPrefix}/{Model.ExactMatch.WikiNamespace}:{Model.ExactMatch.Title}")">@Model.ExactMatch.Title</a>."</p>
     }
     @if (Model.SearchResult.SearchHits.Count > 0)
     {
@@ -91,7 +99,7 @@
                     continue;
                 }
                 <li>
-                    <div class="wiki-search-result-title"><a href="@(Url.Action("Read", new { isCompact = false, title = result.Title, wikiNamespace = result.WikiNamespace }))" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
+                    <div class="wiki-search-result-title"><a href="@($"/{WikiConfig.WikiLinkPrefix}/{result.WikiNamespace}:{result.Title}")" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
                     <div class="wiki-search-result-excerpt">@Html.Raw(result.Excerpt)</div>
                 </li>
             }
@@ -165,7 +173,7 @@
                                 });
                             }
                         };
-                        window.wikiAutosuggestXHR.open("GET", "/wiki/api/suggest?search=" + encodeURIComponent(input.value), true);
+                        window.wikiAutosuggestXHR.open("POST", "/wiki/api/suggest?search=" + encodeURIComponent(input.value), true);
                         window.wikiAutosuggestXHR.send();
                     }
                 });

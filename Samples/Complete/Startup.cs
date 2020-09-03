@@ -76,7 +76,7 @@ namespace NeverFoundry.Wiki.Samples.Complete
                 config.Schema.For<Article>()
                     .AddSubClass<Category>()
                     .AddSubClass<WikiFile>();
-                config.Schema.For<WikiRevision>();
+                config.Schema.For<Revision>();
                 config.Schema.For<MissingPage>();
                 config.Schema.For<Message>();
                 config.Schema.For<WikiGroup>();
@@ -119,8 +119,7 @@ namespace NeverFoundry.Wiki.Samples.Complete
                     MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
                     SearchClient = new ElasticSearchClient(
                         provider.GetRequiredService<IElasticClient>(),
-                        loggerFactory.CreateLogger<ElasticSearchClient>(),
-                        provider.GetRequiredService<UserManager<WikiUser>>()),
+                        loggerFactory.CreateLogger<ElasticSearchClient>()),
                     TenorAPIKey = "ZB1P1TN5PVFQ",
                 };
             });

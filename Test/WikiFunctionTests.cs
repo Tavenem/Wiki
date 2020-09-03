@@ -307,7 +307,7 @@ Fourth section text";
         {
             const string Template =
 @":::wiki-main-article-ref
-{{ifcategory|The main article for this category is|Main article:}} {{if|((2))|[[((1))|((2))]]|[[((1))|]]}}
+{{ifcategory|The main article for this category is|Main article:}} {{if|((2))|[[{{if|((1))|((1))|Wiki:{{pagename}}}}|((2))]]|{{if|((1))|[[((1))|]]|[[Wiki:{{pagename}}]]}}}}
 :::";
             _ = GetNestedArticle(Template);
 
@@ -317,7 +317,15 @@ Fourth section text";
                 false);
             TestTemplate(
                 $"{{{{{NestedTitle}|Title#Anchor}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a></p>\n</div>\n",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#anchor\" class=\"wiki-link-exists\">Title § Anchor</a></p>\n</div>\n",
+                false);
+            TestTemplate(
+                $"{{{{{NestedTitle}}}}}",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
+                false);
+            TestTemplate(
+                $"{{{{{NestedTitle}|Title|Display}}}}",
+                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Display</a></p>\n</div>\n",
                 false);
         }
 
