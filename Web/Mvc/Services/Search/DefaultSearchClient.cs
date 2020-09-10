@@ -54,66 +54,81 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                 };
             }
 
-            System.Linq.Expressions.Expression<Func<Article, bool>> exp;
-            if (namespaceEmpty)
+            var namespaces = namespaceEmpty
+                ? Array.Empty<string>()
+                : request.WikiNamespace!.Split(';');
+            var excludedNamespaces = namespaces
+                .Where(x => x[0] == '!')
+                .Select(x => x[1..])
+                .ToList();
+            var anyExcludedNamespaces = excludedNamespaces.Count > 0;
+            var includedNamespaces = namespaces
+                .Where(x => x[0] != '!')
+                .ToList();
+            var anyIncludedNamespaces = includedNamespaces.Count > 0;
+
+            var owners = ownerEmpty
+                ? Array.Empty<string>()
+                : request.Owner!.Split(';');
+            var excludedOwners = owners
+                .Where(x => x[0] == '!')
+                .Select(x => x[1..])
+                .ToList();
+            var anyExcludedOwners = excludedOwners.Count > 0;
+            var includedOwners = owners
+                .Where(x => x[0] != '!')
+                .ToList();
+            var anyIncludedOwners = includedOwners.Count > 0;
+
+            System.Linq.Expressions.Expression<Func<Article, bool>> exp = queryEmpty
+                ? x => true
+                : x => x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
+                || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase);
+
+            if (anyIncludedNamespaces)
             {
-                if (ownerEmpty)
-                {
-                    exp = x => x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
-                        || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase);
-                }
-                else if (queryEmpty)
-                {
-                    exp = x => x.Owner == request.Owner;
-                }
-                else
-                {
-                    exp = x => x.Owner == request.Owner
-                        && (x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
-                        || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase));
-                }
+                exp = exp.AndAlso(x => includedNamespaces.Contains(x.WikiNamespace));
             }
-            else if (queryEmpty)
+            if (anyExcludedNamespaces)
             {
-                if (ownerEmpty)
-                {
-                    exp = x => x.WikiNamespace == request.WikiNamespace;
-                }
-                else
-                {
-                    exp = x => x.WikiNamespace == request.WikiNamespace
-                        && x.Owner == request.Owner;
-                }
+                exp = exp.AndAlso(x => !excludedNamespaces.Contains(x.WikiNamespace));
             }
-            else if (ownerEmpty)
+
+            if (anyIncludedOwners)
             {
-                exp = x => x.WikiNamespace == request.WikiNamespace
-                    && (x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
-                    || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase));
+                exp = exp.AndAlso(x => x.Owner != null && includedOwners.Contains(x.Owner));
             }
-            else
+            if (anyExcludedOwners)
             {
-                exp = x => x.WikiNamespace == request.WikiNamespace
-                    && x.Owner == request.Owner
-                    && (x.Title.Contains(request.Query!, StringComparison.OrdinalIgnoreCase)
-                    || x.MarkdownContent.Contains(request.Query!, StringComparison.OrdinalIgnoreCase));
+                exp = exp.AndAlso(x => x.Owner == null || !excludedOwners.Contains(x.Owner));
             }
 
             if (user is null)
             {
-                if (ownerEmpty)
+                if (anyIncludedOwners)
                 {
-                    exp = exp.AndAlso(x => x.Owner == null || x.AllowedEditors == null || x.AllowedViewers == null);
+                    exp = exp.AndAlso(x => x.AllowedEditors == null || x.AllowedViewers == null);
                 }
                 else
                 {
-                    exp = exp.AndAlso(x => x.AllowedEditors == null || x.AllowedViewers == null);
+                    exp = exp.AndAlso(x => x.Owner == null || x.AllowedEditors == null || x.AllowedViewers == null);
                 }
             }
             else if (!user.IsWikiAdmin)
             {
                 var groupIds = user.Groups ?? new List<string>();
-                if (ownerEmpty)
+                if (anyIncludedOwners)
+                {
+                    exp = exp.AndAlso(x => x.AllowedEditors == null
+                        || x.AllowedViewers == null
+                        || user.Id == x.Owner
+                        || x.AllowedEditors.Contains(user.Id)
+                        || x.AllowedViewers.Contains(user.Id)
+                        || groupIds.Contains(x.Owner!)
+                        || x.AllowedEditors.Any(y => groupIds.Contains(y))
+                        || x.AllowedViewers.Any(y => groupIds.Contains(y)));
+                }
+                else
                 {
                     exp = exp.AndAlso(x => x.Owner == null
                         || x.AllowedEditors == null
@@ -122,17 +137,6 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                         || x.AllowedEditors.Contains(user.Id)
                         || x.AllowedViewers.Contains(user.Id)
                         || groupIds.Contains(x.Owner)
-                        || x.AllowedEditors.Any(y => groupIds.Contains(y))
-                        || x.AllowedViewers.Any(y => groupIds.Contains(y)));
-                }
-                else
-                {
-                    exp = exp.AndAlso(x => x.AllowedEditors == null
-                        || x.AllowedViewers == null
-                        || user.Id == x.Owner
-                        || x.AllowedEditors.Contains(user.Id)
-                        || x.AllowedViewers.Contains(user.Id)
-                        || groupIds.Contains(x.Owner!)
                         || x.AllowedEditors.Any(y => groupIds.Contains(y))
                         || x.AllowedViewers.Any(y => groupIds.Contains(y)));
                 }

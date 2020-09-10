@@ -15,7 +15,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Security.Policy;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -231,7 +230,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 && !data.IsGroupPage
                 && (model.OwnerSelf || owner is not null))
             {
-                foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
                     var id = GetEditorId(name, out var hasId, out var isGroup);
 
@@ -270,7 +269,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (model.AllowedViewers is not null
                 && (model.OwnerSelf || owner is not null))
             {
-                foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
                     var id = GetEditorId(name, out var hasId, out var isGroup);
 
@@ -713,16 +712,40 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (!string.IsNullOrEmpty(owner))
             {
-                var foundOwner = await _userManager.FindByIdAsync(owner).ConfigureAwait(false)
-                    ?? await _userManager.FindByNameAsync(owner).ConfigureAwait(false);
-                if (foundOwner is not null)
+                var owners = owner.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var ownerIds = new List<string>();
+                foreach (var name in owners)
                 {
-                    owner = foundOwner.Id;
+                    var excluded = name.Length > 0 && name[0] == '!';
+                    var ownerName = excluded ? name[1..] : name;
+                    var ownerId = GetEditorId(ownerName, out var hasId, out var isGroup);
+                    if (isGroup) // Nothing is owned by a group.
+                    {
+                        continue;
+                    }
+
+                    if (hasId)
+                    {
+                        if (!string.IsNullOrEmpty(ownerId))
+                        {
+                            ownerIds.Add(excluded ? $"!{ownerId}" : ownerId);
+                        }
+                    }
+                    else
+                    {
+                        var foundOwner = await _userManager.FindByNameAsync(ownerId).ConfigureAwait(false)
+                            ?? await _userManager.FindByIdAsync(ownerId).ConfigureAwait(false);
+                        if (foundOwner is not null)
+                        {
+                            ownerIds.Add(excluded ? $"!{foundOwner.Id}" : foundOwner.Id);
+                        }
+                    }
                 }
-                else
+                if (ownerIds.Count == 0)
                 {
                     return View(new SearchViewModel(new SearchResult()));
                 }
+                owner = string.Join(';', ownerIds);
             }
 
             query = query.Trim();
@@ -757,6 +780,26 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             data.IsSearch = true;
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
+
+            if (!string.IsNullOrEmpty(searchNamespace))
+            {
+                var namespaces = searchNamespace.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var normalizedNamespaces = new List<string>();
+                foreach (var name in namespaces)
+                {
+                    var excluded = name.Length > 0 && name[0] == '!';
+                    var normalizedNamespace = excluded ? name[1..].ToWikiTitleCase() : name.ToWikiTitleCase();
+                    if (!string.IsNullOrEmpty(normalizedNamespace))
+                    {
+                        normalizedNamespaces.Add(excluded ? $"!{normalizedNamespace}" : normalizedNamespace);
+                    }
+                }
+                if (normalizedNamespaces.Count == 0)
+                {
+                    return View(new SearchViewModel(new SearchResult()));
+                }
+                owner = string.Join(';', normalizedNamespaces);
+            }
 
             var result = await _searchClient.SearchAsync(new SearchRequest
             {
@@ -1087,7 +1130,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (model.AllowedEditors is not null
                 && (model.OwnerSelf || owner is not null))
             {
-                foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedEditors.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
                     var id = GetEditorId(name, out var hasId, out var isGroup);
 
@@ -1126,7 +1169,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (model.AllowedViewers is not null
                 && (model.OwnerSelf || owner is not null))
             {
-                foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()))
+                foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                 {
                     var id = GetEditorId(name, out var hasId, out var isGroup);
 

@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.56.6-preview</Version>
+    <Version>0.56.8-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>An implementation of NeverFoundry.Wiki for ASP.NET MVC.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>

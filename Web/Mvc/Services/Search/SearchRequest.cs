@@ -46,12 +46,25 @@
         public string? Sort { get; set; }
 
         /// <summary>
-        /// An optional owner for whom to restrict results.
+        /// <para>
+        /// An optional owner or owners for whom to restrict results, or to exclude.
+        /// </para>
+        /// <para>
+        /// Each entry should be a user ID. May be a semicolon-delimited list, and any entry may be
+        /// prefixed with an exclamation mark to indicate that it should be excluded.
+        /// </para>
         /// </summary>
         public string? Owner { get; set; }
 
         /// <summary>
-        /// An optional wiki namespace within which to restrict results.
+        /// <para>
+        /// An optional wiki namespace within which to restrict results, or to exclude.
+        /// </para>
+        /// <para>
+        /// Each entry should already be in correct wiki title case (i.e. searching may be exact,
+        /// and can disregard case-insensitive matches). May be a semicolon-delimited list, and any
+        /// entry may be prefixed with an exclamation mark to indicate that it should be excluded.
+        /// </para>
         /// </summary>
         public string? WikiNamespace { get; set; }
     }
