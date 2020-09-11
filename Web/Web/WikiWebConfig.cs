@@ -9,14 +9,6 @@ namespace NeverFoundry.Wiki.Web
     /// </summary>
     public static class WikiWebConfig
     {
-        /// <summary>
-        /// The relative URL of the <see cref="SignalR.IWikiTalkHub"/>.
-        /// </summary>
-        public const string WikiTalkHubRoute = "/wikiTalkHub";
-
-        private const string DefaultLayoutPath = "/Views/Wiki/_DefaultWikiMainLayout.cshtml";
-        private const string DefaultLoginPath = "/Pages/Account/Login.cshtml";
-
         private const string AdminGroupNameDefault = "Wiki Admins";
         private static string _AdminGroupName = AdminGroupNameDefault;
         /// <summary>
@@ -69,26 +61,6 @@ namespace NeverFoundry.Wiki.Web
         /// </para>
         /// </summary>
         public static string? AboutPageTitle { get; set; } = "About";
-
-        private static string? _CompactLayoutPath;
-        /// <summary>
-        /// <para>
-        /// The layout used by wiki pages in compact view.
-        /// </para>
-        /// <para>
-        /// Default is "/Views/Wiki/_DefaultWikiMainLayout.cshtml"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
-        /// </para>
-        /// </summary>
-        [NotNull]
-        public static string? CompactLayoutPath
-        {
-            get => _CompactLayoutPath ?? DefaultLayoutPath;
-            set => _CompactLayoutPath = value;
-        }
 
         /// <summary>
         /// <para>
@@ -176,46 +148,6 @@ namespace NeverFoundry.Wiki.Web
         /// </summary>
         public static string? HelpPageTitle { get; set; } = "Help";
 
-        private static string? _LoginPath;
-        /// <summary>
-        /// <para>
-        /// The path to the login page.
-        /// </para>
-        /// <para>
-        /// Default is "/Pages/Account/Login.cshtml"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
-        /// </para>
-        /// </summary>
-        [NotNull]
-        public static string? LoginPath
-        {
-            get => _LoginPath ?? DefaultLoginPath;
-            set => _LoginPath = value;
-        }
-
-        private static string? _MainLayoutPath;
-        /// <summary>
-        /// <para>
-        /// The layout used by wiki pages.
-        /// </para>
-        /// <para>
-        /// Default is "/Views/Wiki/_DefaultWikiMainLayout.cshtml"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
-        /// </para>
-        /// </summary>
-        [NotNull]
-        public static string? MainLayoutPath
-        {
-            get => _MainLayoutPath ?? DefaultLayoutPath;
-            set => _MainLayoutPath = value;
-        }
-
         /// <summary>
         /// <para>
         /// The maximum size (in bytes) of uploaded files.
@@ -292,16 +224,6 @@ namespace NeverFoundry.Wiki.Web
                     : value;
             }
         }
-
-        /// <summary>
-        /// <para>
-        /// The API key to be used for Tenor GIF integration.
-        /// </para>
-        /// <para>
-        /// Leave <see langword="null"/> (the default) to omit GIF functionality.
-        /// </para>
-        /// </summary>
-        public static string? TenorAPIKey { get; set; }
 
         private const string UserNamespaceDefault = "User";
         private static string _UserNamespace = UserNamespaceDefault;

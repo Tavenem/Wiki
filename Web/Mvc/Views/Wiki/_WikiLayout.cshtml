@@ -1,7 +1,7 @@
 ﻿@{
     var data = ViewData[nameof(WikiRouteData)] as WikiRouteData
         ?? new WikiRouteData();
-    Layout = data.IsCompact ? WikiWebConfig.CompactLayoutPath : WikiWebConfig.MainLayoutPath;
+    Layout = data.LayoutPath;
 }
 
 <div class="wiki @(data.IsCompact ? "compact" : null)">

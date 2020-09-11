@@ -13,6 +13,20 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A file tracked by the wiki system.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Note that this does not represent an actual file, but only wiki information about a file. In
+    /// other words: storage and retrieval of the file itself is expected to be handled
+    /// independently. The file bytes are not recorded in the wiki system. The wiki instead records
+    /// information about the file such as its properties, its owner, permissions assigned to it,
+    /// wiki text describing it, revision history, and so forth.
+    /// </para>
+    /// <para>
+    /// This separation allows implementations of the wiki system to utilize any persistence
+    /// mechanism which suits their use case: local storage, database storage, cloud storage, CDN
+    /// delivery, etc.
+    /// </para>
+    /// </remarks>
     [Newtonsoft.Json.JsonObject]
     [Serializable]
     [Newtonsoft.Json.JsonConverter(typeof(Converters.NewtonsoftJson.NoConverter))]
@@ -218,13 +232,15 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
-            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>))
+                ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
             (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(IReadOnlyCollection<string>)),
             (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedViewers), typeof(IReadOnlyCollection<string>)),
-            (IReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(IReadOnlyCollection<string>)) ?? new ReadOnlyCollection<string>(new string[0]),
+            (IReadOnlyCollection<string>?)info.GetValue(nameof(Categories), typeof(IReadOnlyCollection<string>))
+                ?? new ReadOnlyCollection<string>(Array.Empty<string>()),
             (IReadOnlyList<Transclusion>?)info.GetValue(nameof(Transclusions), typeof(IReadOnlyList<Transclusion>)))
         { }
 

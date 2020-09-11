@@ -98,31 +98,21 @@ namespace NeverFoundry.Wiki.Samples.Complete
             WikiWebConfig.PolicyPageTitle = null;
             WikiWebConfig.MaxFileSize = 100000000; // 100 MB
             services.AddWiki(
+                typeof(WikiUserManager<WikiUser>),
+                typeof(WikiGroupManager<WikiUser>),
                 provider =>
                 {
-                    var um = provider.GetRequiredService<UserManager<WikiUser>>();
-                    return new WikiUserManager<WikiUser>(um);
+                    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+                    return new WikiOptions
+                    {
+                        DataStore = provider.GetRequiredService<IDataStore>(),
+                        CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
+                        LoginPath = "/Account/Login",
+                        MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
+                        TenorAPIKey = "ZB1P1TN5PVFQ",
+                    };
                 },
-                provider =>
-                {
-                    var um = provider.GetRequiredService<UserManager<WikiUser>>();
-                    return new WikiGroupManager<WikiUser>(um);
-                },
-                provider =>
-            {
-                var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-                return new WikiOptions
-                {
-                    DataStore = provider.GetRequiredService<IDataStore>(),
-                    CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
-                    LoginPath = "/Account/Login",
-                    MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
-                    SearchClient = new ElasticSearchClient(
-                        provider.GetRequiredService<IElasticClient>(),
-                        loggerFactory.CreateLogger<ElasticSearchClient>()),
-                    TenorAPIKey = "ZB1P1TN5PVFQ",
-                };
-            });
+                searchClientType: typeof(ElasticSearchClient));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

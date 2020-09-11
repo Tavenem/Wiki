@@ -26,6 +26,22 @@ namespace NeverFoundry.Wiki.Mvc
         /// </summary>
         public IReadOnlyCollection<string>? Categories { get; set; }
 
+        private string? _compactLayoutPath;
+        /// <summary>
+        /// <para>
+        /// The path to the layout used when requesting a compact version of a wiki page. Wiki pages
+        /// will be nested within this layout.
+        /// </para>
+        /// <para>
+        /// If omitted, the main layout will be used (as specified in <see cref="MainLayoutPath"/>).
+        /// </para>
+        /// </summary>
+        public string CompactLayoutPath
+        {
+            get => _compactLayoutPath ?? MainLayoutPath;
+            set => _compactLayoutPath = value;
+        }
+
         private string? _displayNamespace;
         /// <summary>
         /// The namespace to display.
@@ -107,6 +123,35 @@ namespace NeverFoundry.Wiki.Mvc
         public bool IsUserPage { get; }
 
         /// <summary>
+        /// <para>
+        /// The path to the layout for the current view. Wiki pages will be nested within this
+        /// layout.
+        /// </para>
+        /// <para>
+        /// The <see cref="CompactLayoutPath"/> or <see cref="MainLayoutPath"/> will be selected
+        /// based on <see cref="IsCompact"/>.
+        /// </para>
+        /// </summary>
+        public string LayoutPath => IsCompact ? CompactLayoutPath : MainLayoutPath;
+
+        private string? _mainLayoutPath;
+        /// <summary>
+        /// <para>
+        /// The path to the main layout for the application. Wiki pages will be nested within this
+        /// layout.
+        /// </para>
+        /// <para>
+        /// If omitted, the default layout will be used (as specified in <see
+        /// cref="WikiOptions.DefaultLayoutPath"/>).
+        /// </para>
+        /// </summary>
+        public string MainLayoutPath
+        {
+            get => _mainLayoutPath ?? WikiOptions.DefaultLayoutPath;
+            set => _mainLayoutPath = value;
+        }
+
+        /// <summary>
         /// Whether a no redirect request was made.
         /// </summary>
         public bool NoRedirect { get; }
@@ -163,8 +208,11 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Initializes a new instance of <see cref="WikiRouteData"/>.
         /// </summary>
-        public WikiRouteData(RouteData routeData, IQueryCollection query)
+        public WikiRouteData(IWikiOptions wikiOptions, RouteData routeData, IQueryCollection query)
         {
+            _compactLayoutPath = wikiOptions.CompactLayoutPath;
+            _mainLayoutPath = wikiOptions.MainLayoutPath;
+
             IsCompact = routeData.Values.TryGetValue(RouteIsCompact, out var c)
                 && c is bool iC
                 && iC;

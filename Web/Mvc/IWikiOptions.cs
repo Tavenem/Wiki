@@ -74,6 +74,11 @@ namespace NeverFoundry.Wiki.Mvc
         ISearchClient? SearchClient { get; set; }
 
         /// <summary>
+        /// The relative URL of the <see cref="Web.SignalR.IWikiTalkHub"/>.
+        /// </summary>
+        string? TalkHubRoute { get; set; }
+
+        /// <summary>
         /// <para>
         /// The API key to be used for Tenor GIF integration.
         /// </para>

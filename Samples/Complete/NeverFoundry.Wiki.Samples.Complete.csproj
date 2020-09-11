@@ -13,7 +13,7 @@
   
   <ItemGroup>
     <PackageReference Include="Fido2" Version="1.1.0" />
-    <PackageReference Include="HaemmerElectronics.SeppPenner.SerilogSinkForPostgreSQL" Version="2.2.0" />
+    <PackageReference Include="HaemmerElectronics.SeppPenner.SerilogSinkForPostgreSQL" Version="2.4.0" />
     <PackageReference Include="MailKit" Version="2.8.0" />
     <PackageReference Include="Marten" Version="3.13.1" />
     <PackageReference Include="Marten.AspNetCore.Mvc" Version="1.0.0" />

@@ -30,6 +30,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         private readonly ILogger<WikiController> _logger;
         private readonly ISearchClient _searchClient;
         private readonly IWikiUserManager _userManager;
+        private readonly IWikiOptions _wikiOptions;
 
         /// <summary>
         /// Initializes a new instance of <see cref="WikiController"/>.
@@ -39,13 +40,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             IWikiGroupManager groupManager,
             ILogger<WikiController> logger,
             ISearchClient searchClient,
-            IWikiUserManager userManager)
+            IWikiUserManager userManager,
+            IWikiOptions wikiOptions)
         {
             _environment = environment;
             _groupManager = groupManager;
             _logger = logger;
             _searchClient = searchClient;
             _userManager = userManager;
+            _wikiOptions = wikiOptions;
         }
 
         /// <summary>
@@ -60,10 +63,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(WikiWebConfig.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
                 {
-                    var url = new StringBuilder(WikiWebConfig.LoginPath)
-                        .Append(WikiWebConfig.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiOptions.LoginPath)
+                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -117,10 +120,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(WikiWebConfig.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
                 {
-                    var url = new StringBuilder(WikiWebConfig.LoginPath)
-                        .Append(WikiWebConfig.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiOptions.LoginPath)
+                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -595,7 +598,11 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (data.IsTalk)
             {
-                var vm = new TalkViewModel(data, wikiItem?.Id);
+                var vm = new TalkViewModel(
+                    data,
+                    _wikiOptions.TalkHubRoute ?? WikiOptions.DefaultTalkHubRoute,
+                    _wikiOptions.TenorAPIKey,
+                    wikiItem?.Id);
                 if (wikiItem is not null)
                 {
                     var replies = await WikiConfig.DataStore.Query<Message>().Where(x => x.TopicId == wikiItem.Id)
@@ -912,10 +919,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(WikiWebConfig.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
                 {
-                    var url = new StringBuilder(WikiWebConfig.LoginPath)
-                        .Append(WikiWebConfig.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiOptions.LoginPath)
+                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -955,10 +962,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(WikiWebConfig.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
                 {
-                    var url = new StringBuilder(WikiWebConfig.LoginPath)
-                        .Append(WikiWebConfig.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiOptions.LoginPath)
+                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -1754,7 +1761,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
         private WikiRouteData GetWikiRouteData()
         {
-            var data = new WikiRouteData(ControllerContext.RouteData, HttpContext.Request.Query);
+            var data = new WikiRouteData(_wikiOptions, ControllerContext.RouteData, HttpContext.Request.Query);
             if (data.IsCompact)
             {
                 if (!WikiConfig.WikiLinkPrefix.EndsWith("/Compact"))
@@ -1785,10 +1792,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 if (user is null)
                 {
-                    if (!string.IsNullOrEmpty(WikiWebConfig.LoginPath))
+                    if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
                     {
-                        var url = new StringBuilder(WikiWebConfig.LoginPath)
-                            .Append(WikiWebConfig.LoginPath.Contains('?') ? '&' : '?')
+                        var url = new StringBuilder(_wikiOptions.LoginPath)
+                            .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
                             .Append("returnUrl=")
                             .Append(HttpContext.Request.GetEncodedUrl())
                             .ToString();

@@ -8,12 +8,24 @@ namespace NeverFoundry.Wiki.Mvc
     public class WikiOptions : IWikiOptions
     {
         /// <summary>
+        /// The relative URL of the <see cref="Web.SignalR.IWikiTalkHub"/> used if <see
+        /// cref="TalkHubRoute"/> is not provided.
+        /// </summary>
+        public const string DefaultLayoutPath = "/Views/Wiki/_DefaultWikiMainLayout.cshtml";
+
+        /// <summary>
+        /// The relative URL of the <see cref="Web.SignalR.IWikiTalkHub"/> used if <see
+        /// cref="TalkHubRoute"/> is not provided.
+        /// </summary>
+        public const string DefaultTalkHubRoute = "/wikiTalkHub";
+
+        /// <summary>
         /// <para>
         /// The path to the layout used when requesting a compact version of a wiki page. Wiki pages
         /// will be nested within this layout.
         /// </para>
         /// <para>
-        /// If omitted, a default layout will be used.
+        /// If omitted, the main layout will be used (as specified in <see cref="MainLayoutPath"/>).
         /// </para>
         /// </summary>
         public string? CompactLayoutPath { get; set; }
@@ -42,11 +54,11 @@ namespace NeverFoundry.Wiki.Mvc
         /// initiated the logic request will be appended to this URL (if provided). Your login page
         /// may ignore this parameter, but to improve user experience it should redirect the user
         /// back to this URL after performing a successful login. Be sure to validate that the value
-        /// of the parameter is from a ligetimate source to avoid exploits.
+        /// of the parameter is from a legitimate source to avoid exploits.
         /// </para>
         /// <para>
-        /// If this option is omitted, a generic "not signed in" message will be displayed whenever
-        /// a user who is not logged in attempts any action which requires an account.
+        /// If this option is omitted, an unauthorized page will be displayed whenever a user who is
+        /// not logged in attempts any action which requires an account.
         /// </para>
         /// </summary>
         public string? LoginPath { get; set; }
@@ -57,7 +69,7 @@ namespace NeverFoundry.Wiki.Mvc
         /// layout.
         /// </para>
         /// <para>
-        /// If omitted, a default layout will be used.
+        /// If omitted, a default layout will be used (as specified in <see cref="DefaultLayoutPath"/>).
         /// </para>
         /// </summary>
         public string? MainLayoutPath { get; set; }
@@ -72,6 +84,16 @@ namespace NeverFoundry.Wiki.Mvc
         /// </para>
         /// </summary>
         public ISearchClient? SearchClient { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The relative URL of the <see cref="Web.SignalR.IWikiTalkHub"/>.
+        /// </para>
+        /// <para>
+        /// If omitted, <see cref="DefaultTalkHubRoute"/> is used.
+        /// </para>
+        /// </summary>
+        public string? TalkHubRoute { get; set; }
 
         /// <summary>
         /// <para>

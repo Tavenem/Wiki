@@ -14,7 +14,7 @@
         <div class="wiki-message-controls">
             <div>
                 <button id="wiki-talk-emoji" class="btn btn-sm btn-outline-light">😀</button>
-                @if (!string.IsNullOrEmpty(WikiWebConfig.TenorAPIKey))
+                @if (!string.IsNullOrEmpty(Model.TenorAPIKey))
                 {
                     <button id="wiki-talk-gif" class="btn btn-sm btn-outline-light">GIF</button>
                 }
@@ -48,7 +48,7 @@ else
     <script src="~/_content/NeverFoundry.Wiki.Mvc/chat.js"></script>
     <script>
         window.addEventListener("load", function () {
-            window.wikimvcchat.init("@WikiWebConfig.WikiTalkHubRoute", "@WikiConfig.WikiLinkPrefix", "@WikiWebConfig.UserNamespace", "@WikiWebConfig.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
+            window.wikimvcchat.init("@Model.TalkHubRoute", "@WikiConfig.WikiLinkPrefix", "@WikiWebConfig.UserNamespace", "@Model.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
                 System.Text.Json.JsonSerializer.Serialize(
                     Model.Messages,
                     new System.Text.Json.JsonSerializerOptions
