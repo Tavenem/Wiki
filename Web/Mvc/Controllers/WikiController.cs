@@ -26,6 +26,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
     public class WikiController : Controller
     {
         private readonly IWebHostEnvironment _environment;
+        private readonly IFileManager _fileManager;
         private readonly IWikiGroupManager _groupManager;
         private readonly ILogger<WikiController> _logger;
         private readonly ISearchClient _searchClient;
@@ -37,6 +38,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         /// </summary>
         public WikiController(
             IWebHostEnvironment environment,
+            IFileManager fileManager,
             IWikiGroupManager groupManager,
             ILogger<WikiController> logger,
             ISearchClient searchClient,
@@ -44,6 +46,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             IWikiOptions wikiOptions)
         {
             _environment = environment;
+            _fileManager = fileManager;
             _groupManager = groupManager;
             _logger = logger;
             _searchClient = searchClient;
@@ -1091,20 +1094,19 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             var size = (int)fileInfo.Length;
             var fileName = fileInfo.Name;
-            var relativePath = Path.Combine("files", fileName);
-            var path = Path.Combine(_environment.WebRootPath, relativePath);
+            string? storagePath = null;
             try
             {
-                var dir = Path.GetDirectoryName(path);
-                if (!string.IsNullOrWhiteSpace(dir) && !Directory.Exists(dir))
-                {
-                    Directory.CreateDirectory(dir);
-                }
-                System.IO.File.Copy(fileInfo.FullName, path);
+                storagePath = await _fileManager.SaveFileAsync(fileInfo.OpenRead(), fileInfo.Name, owner).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception during file copy for file at path {Path} to destination {Destination}", fileInfo.FullName, path);
+                _logger.LogError(ex, "Exception during file upload for file at path {Path}", fileInfo.FullName);
+                ModelState.AddModelError(nameof(UploadViewModel.File), "File could not be uploaded");
+                return View("Upload", model);
+            }
+            if (string.IsNullOrWhiteSpace(storagePath))
+            {
                 ModelState.AddModelError(nameof(UploadViewModel.File), "File could not be uploaded");
                 return View("Upload", model);
             }
@@ -1219,7 +1221,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     var newArticle = await WikiFile.NewAsync(
                         title,
                         user.Id,
-                        "/" + relativePath.Replace('\\', '/'),
+                        storagePath,
                         size,
                         new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream",
                         model.Markdown,
@@ -1247,7 +1249,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 await wikiItem.ReviseAsync(
                     user.Id,
                     newTitle,
-                    "/" + relativePath.Replace('\\', '/'),
+                    storagePath,
                     size,
                     new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream",
                     model.Markdown,
@@ -1354,7 +1356,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         }
 
         /// <summary>
-        /// The fetch remopte upload file api endpoint.
+        /// The fetch remote upload file api endpoint.
         /// </summary>
         [HttpGet("wiki/api/fileupload/fetch/{url}")]
         public async Task<IActionResult> UploadFileFetchRemoteAsync(string url)

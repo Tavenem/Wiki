@@ -11,7 +11,7 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Load the given file from a persistence store.
         /// </summary>
-        /// <param name="path">The path to the file.</param>
+        /// <param name="path">The path to the file. A relative URL is expected.</param>
         /// <returns>
         /// A <see cref="byte"/> array containing the file; or <see langword="null"/> if no such
         /// file was found.
@@ -29,9 +29,7 @@ namespace NeverFoundry.Wiki.Mvc
         /// langword="null"/>.
         /// </returns>
         /// <remarks>
-        /// The returned path may be a URI, a relative file path, or an absolute file path,
-        /// depending on persistence implementation. Whatever the format, it should be accepted as
-        /// an input to the <c>LoadFileAsync</c> methods of the same implementation.
+        /// The returned path is the relative URL to the file.
         /// </remarks>
         public ValueTask<string?> SaveFileAsync(byte[]? data, string? fileName, string? owner = null);
 
@@ -46,16 +44,14 @@ namespace NeverFoundry.Wiki.Mvc
         /// langword="null"/>.
         /// </returns>
         /// <remarks>
-        /// The returned path may be a URI, a relative file path, or an absolute file path,
-        /// depending on persistence implementation. Whatever the format, it should be accepted as
-        /// an input to the <c>LoadFileAsync</c> methods of the same implementation.
+        /// The returned path is the relative URL to the file.
         /// </remarks>
         public ValueTask<string?> SaveFileAsync(Stream? data, string? fileName, string? owner = null);
 
         /// <summary>
         /// Load the given file from a persistence store.
         /// </summary>
-        /// <param name="path">The path to the file.</param>
+        /// <param name="path">The path to the file. A relative URL is expected.</param>
         /// <returns>
         /// A <see cref="Stream"/> containing the file; or <see langword="null"/> if no such file
         /// was found.
