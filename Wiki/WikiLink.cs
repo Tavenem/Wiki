@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 
 namespace NeverFoundry.Wiki
 {
@@ -187,7 +186,6 @@ namespace NeverFoundry.Wiki
         /// serialization.</param>
         /// <exception cref="System.Security.SecurityException">The caller does not have the
         /// required permission.</exception>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(IsCategory), IsCategory);

@@ -44,7 +44,8 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
             var queryEmpty = string.IsNullOrWhiteSpace(request.Query);
             var namespaceEmpty = string.IsNullOrWhiteSpace(request.WikiNamespace);
             var ownerEmpty = string.IsNullOrWhiteSpace(request.Owner);
-            if (queryEmpty && namespaceEmpty && ownerEmpty)
+            var uploaderEmpty = string.IsNullOrWhiteSpace(request.Uploader);
+            if (queryEmpty && namespaceEmpty && ownerEmpty && uploaderEmpty)
             {
                 return new SearchResult
                 {
@@ -92,6 +93,25 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
                 ? string.Empty
                 : string.Join(';', includedOwners);
 
+            var uploaders = uploaderEmpty
+                ? Array.Empty<string>()
+                : request.Uploader!.Split(';');
+            var excludedUploaders = uploaders
+                .Where(x => x[0] == '!')
+                .Select(x => x[1..])
+                .ToList();
+            var anyExcludedUploaders = excludedUploaders.Count > 0;
+            var excludedUploaderString = anyExcludedUploaders
+                ? string.Empty
+                : string.Join(';', excludedUploaders);
+            var includedUploaders = uploaders
+                .Where(x => x[0] != '!')
+                .ToList();
+            var anyIncludedUploaders = includedUploaders.Count > 0;
+            var includedUploaderString = anyIncludedUploaders
+                ? string.Empty
+                : string.Join(';', includedUploaders);
+
             QueryContainer query = new MatchAllQuery();
 
             if (anyIncludedNamespaces)
@@ -110,6 +130,15 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
             if (anyExcludedOwners)
             {
                 query = query && !Query<Article>.Match(m => m.Field(f => f.Owner).Query(excludedOwnerString).Verbatim());
+            }
+
+            if (anyIncludedUploaders)
+            {
+                query = query && Query<WikiFile>.Match(m => m.Field(f => f.Uploader).Query(includedUploaderString).Verbatim());
+            }
+            if (anyExcludedUploaders)
+            {
+                query = query && !Query<WikiFile>.Match(m => m.Field(f => f.Uploader).Query(excludedUploaderString).Verbatim());
             }
 
             if (user is null)

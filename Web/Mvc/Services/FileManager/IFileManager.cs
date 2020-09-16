@@ -9,6 +9,17 @@ namespace NeverFoundry.Wiki.Mvc
     public interface IFileManager
     {
         /// <summary>
+        /// Remove the given file from a persistence store.
+        /// </summary>
+        /// <param name="path">The path to the file. A relative URL is expected.</param>
+        /// <returns>
+        /// <see langword="true"/> if the file was successfully removed; otherwise <see
+        /// langword="false"/>. Also returns <see langword="true"/> if the given file does not exist
+        /// (to indicate no issues "removing" it).
+        /// </returns>
+        public ValueTask<bool> DeleteFileAsync(string? path);
+
+        /// <summary>
         /// Load the given file from a persistence store.
         /// </summary>
         /// <param name="path">The path to the file. A relative URL is expected.</param>

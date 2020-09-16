@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 
 namespace NeverFoundry.Wiki
 {
@@ -52,7 +51,9 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// A built-in, read-only type discriminator.
         /// </summary>
+#pragma warning disable CA1822 // Mark members as static: Serialized
         public string IdItemTypeName => RevisionIdItemTypeName;
+#pragma warning restore CA1822 // Mark members as static
 
         /// <summary>
         /// Whether the item was marked as deleted by this revision.
@@ -242,7 +243,7 @@ namespace NeverFoundry.Wiki
         [Newtonsoft.Json.JsonConstructor]
         public Revision(
             string id,
-#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
+#pragma warning disable IDE0060 // Remove unused parameter: Serialization
             string idItemTypeName,
 #pragma warning restore IDE0060 // Remove unused parameter
             string wikiId,
@@ -441,7 +442,6 @@ namespace NeverFoundry.Wiki
         /// serialization.</param>
         /// <exception cref="System.Security.SecurityException">The caller does not have the
         /// required permission.</exception>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);

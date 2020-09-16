@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using NeverFoundry.Wiki.Web;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
@@ -170,52 +171,57 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
             => new ValueTask<bool>(group is not null && user?.Groups?.Contains(group.Id) == true);
 
         /// <summary>
-        /// Determines if a user with the given ID is in any group with upload permission.
+        /// Determines the maximum upload limit of a user with the given ID.
         /// </summary>
         /// <param name="userId">The user ID to search for.</param>
         /// <returns>
-        /// The <see cref="ValueTask" /> that represents the asynchronous operation, containing <see
-        /// langword="true" /> if a user with the given ID is in any group with upload permission,
-        /// and <see langword="false" /> if no such user exists, or if the user does not belong to
-        /// such a group.
+        /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
+        /// maximum upload limit of the user with the given ID (note that any negative value is
+        /// "greater" than any positive value, since it indicates no limit). Returns zero if no such
+        /// user exists.
         /// </returns>
-        public async ValueTask<bool> UserIsInUploadGroup(string? userId)
+        public async ValueTask<int> UserMaxUploadLimit(string? userId)
         {
             if (string.IsNullOrEmpty(userId))
             {
-                return false;
+                return 0;
             }
             var user = await _userManager.FindByIdAsync(userId).ConfigureAwait(false);
             if (user is null)
             {
-                return false;
+                return 0;
             }
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
+            var max = 0;
             foreach (var groupId in claims
                 .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
                 .Select(x => x.Value))
             {
                 var group = await WikiConfig.DataStore.GetItemAsync<WikiGroup>(groupId).ConfigureAwait(false);
-                if (group?.HasUploadPermission == true)
+                if (group is not null)
                 {
-                    return true;
+                    if (group.UploadLimit < 0)
+                    {
+                        return group.UploadLimit;
+                    }
+                    max = Math.Max(max, group.UploadLimit);
                 }
             }
-            return false;
+            return max;
         }
 
         /// <summary>
-        /// Determines if the given <paramref name="user" /> is in any group with upload permission.
+        /// Determines if the given <paramref name="user"/> is in any group with upload permission.
         /// </summary>
         /// <param name="user">The user to check.</param>
         /// <returns>
-        /// The <see cref="ValueTask" /> that represents the asynchronous operation, containing <see
-        /// langword="true" /> if the given <paramref name="user" /> is in any group with upload
-        /// permission, and <see langword="false" /> if no such user exists, or if the user does not
-        /// belong to such a group.
+        /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
+        /// maximum upload limit of the given <paramref name="user"/> (note that any negative value
+        /// is "greater" than any positive value, since it indicates no limit). Returns zero if no
+        /// such user exists.
         /// </returns>
-        public ValueTask<bool> UserIsInUploadGroup(IWikiUser? user)
-            => UserIsInUploadGroup(user?.Id);
+        public ValueTask<int> UserMaxUploadLimit(IWikiUser? user)
+            => UserMaxUploadLimit(user?.Id);
 
         private async ValueTask<TUser?> AddClaimsAsync(TUser? user)
         {

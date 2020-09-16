@@ -19,26 +19,15 @@ namespace NeverFoundry.Wiki
         public string GroupName { get; set; }
 
         /// <summary>
-        /// <para>
-        /// Whether members of this group may upload files.
-        /// </para>
-        /// <para>
-        /// If <see langword="false"/>, individual members with this property set to <see
-        /// langword="true"/> may still upload. If <see langword="true"/>, members may upload
-        /// regardless of their individual setting. This allows upload permission to be granted
-        /// either individually, or to entire groups.
-        /// </para>
-        /// </summary>
-        public bool HasUploadPermission { get; set; }
-
-        /// <summary>
         /// The type discriminator for this type.
         /// </summary>
         public const string WikiGroupIdItemTypeName = ":WikiGroup:";
         /// <summary>
         /// A built-in, read-only type discriminator.
         /// </summary>
+#pragma warning disable CA1822 // Mark members as static: Serialized
         public string IdItemTypeName => WikiGroupIdItemTypeName;
+#pragma warning restore CA1822 // Mark members as static
 
         /// <summary>
         /// <para>
@@ -49,6 +38,23 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </summary>
         public string Owner { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The total number of kilobytes of uploaded files permitted for users who belong to this
+        /// group.
+        /// </para>
+        /// <para>
+        /// A negative value indicates that group members may upload files without limit.
+        /// </para>
+        /// <para>
+        /// This value may be overridden by the value assigned to individual group members, or by
+        /// the value of other groups to which a user belongs. Any negative value indicates that the
+        /// user may upload without limit. Otherwise, the maximum value among the groups and the
+        /// user's individual limit is used.
+        /// </para>
+        /// </summary>
+        public int UploadLimit { get; set; }
 
         /// <summary>
         /// Initializes a new instance of <see cref="UserGroup"/>.
@@ -64,25 +70,29 @@ namespace NeverFoundry.Wiki
         /// May be a user or another group.
         /// </para>
         /// </param>
-        /// <param name="hasUploadPermission">
+        /// <param name="uploadLimit">
         /// <para>
-        /// Whether members of this group may upload files.
+        /// The total number of kilobytes of uploaded files permitted for users who belong to this
+        /// group.
         /// </para>
         /// <para>
-        /// If <see langword="false"/>, individual members with this property set to <see
-        /// langword="true"/> may still upload. If <see langword="true"/>, members may upload
-        /// regardless of their individual setting. This allows upload permission to be granted
-        /// either individually, or to entire groups.
+        /// A negative value indicates that group members may upload files without limit.
+        /// </para>
+        /// <para>
+        /// This value may be overridden by the value assigned to individual group members, or by
+        /// the value of other groups to which a user belongs. Any negative value indicates that the
+        /// user may upload without limit. Otherwise, the maximum value among the groups and the
+        /// user's individual limit is used.
         /// </para>
         /// </param>
         public WikiGroup(
             string groupName,
             string owner,
-            bool hasUploadPermission)
+            int uploadLimit)
         {
             GroupName = groupName;
             Owner = owner;
-            HasUploadPermission = hasUploadPermission;
+            UploadLimit = uploadLimit;
         }
 
         /// <summary>
@@ -101,15 +111,20 @@ namespace NeverFoundry.Wiki
         /// May be a user or another group.
         /// </para>
         /// </param>
-        /// <param name="hasUploadPermission">
+        /// </param>
+        /// <param name="uploadLimit">
         /// <para>
-        /// Whether members of this group may upload files.
+        /// The total number of kilobytes of uploaded files permitted for users who belong to this
+        /// group.
         /// </para>
         /// <para>
-        /// If <see langword="false"/>, individual members with this property set to <see
-        /// langword="true"/> may still upload. If <see langword="true"/>, members may upload
-        /// regardless of their individual setting. This allows upload permission to be granted
-        /// either individually, or to entire groups.
+        /// A negative value indicates that group members may upload files without limit.
+        /// </para>
+        /// <para>
+        /// This value may be overridden by the value assigned to individual group members, or by
+        /// the value of other groups to which a user belongs. Any negative value indicates that the
+        /// user may upload without limit. Otherwise, the maximum value among the groups and the
+        /// user's individual limit is used.
         /// </para>
         /// </param>
         /// <remarks>
@@ -124,11 +139,11 @@ namespace NeverFoundry.Wiki
 #pragma warning restore IDE0060 // Remove unused parameter
             string groupName,
             string owner,
-            bool hasUploadPermission) : base(id)
+            int uploadLimit) : base(id)
         {
             GroupName = groupName;
             Owner = owner;
-            HasUploadPermission = hasUploadPermission;
+            UploadLimit = uploadLimit;
         }
     }
 }

@@ -280,7 +280,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages
                 return RedirectToPage();
             }
 
-            group.HasUploadPermission = !group.HasUploadPermission;
+            group.UploadLimit = group.UploadLimit == 0 ? -1 : 0;
             var dataResult = await _dataStore.StoreItemAsync(group).ConfigureAwait(false);
             if (!dataResult)
             {
@@ -288,7 +288,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages
                 return RedirectToPage();
             }
 
-            StatusMessage = $"Group {(group.HasUploadPermission ? "now has" : "no longer has ")} permission to upload files";
+            StatusMessage = $"Group {(group.UploadLimit == 0 ? "no longer has " : "now has")} permission to upload files";
             return RedirectToPage();
         }
 
@@ -313,7 +313,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages
                 return RedirectToPage();
             }
 
-            user.HasUploadPermission = !user.HasUploadPermission;
+            user.UploadLimit = user.UploadLimit == 0 ? -1 : 0;
             var identityResult = await _userManager.UpdateAsync(user).ConfigureAwait(false);
             if (!identityResult.Succeeded)
             {
@@ -321,7 +321,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages
                 return RedirectToPage();
             }
 
-            StatusMessage = $"User {(user.HasUploadPermission ? "now has" : "no longer has ")} permission to upload files";
+            StatusMessage = $"User {(user.UploadLimit == 0 ? "no longer has " : "now has")} permission to upload files";
             return RedirectToPage();
         }
 

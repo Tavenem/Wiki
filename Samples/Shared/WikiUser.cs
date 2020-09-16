@@ -25,11 +25,6 @@ namespace NeverFoundry.Wiki
         public List<string>? Groups { get; set; }
 
         /// <summary>
-        /// Whether this user may upload files.
-        /// </summary>
-        public bool HasUploadPermission { get; set; }
-
-        /// <summary>
         /// Whether this user's account has been (soft) deleted.
         /// </summary>
         public bool IsDeleted { get; set; }
@@ -48,6 +43,22 @@ namespace NeverFoundry.Wiki
         /// The date and time when this account was last used to sign in.
         /// </summary>
         public DateTimeOffset LastAccess { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The total number of kilobytes of uploaded files permitted for this user.
+        /// </para>
+        /// <para>
+        /// A negative value indicates that the user may upload files without limit.
+        /// </para>
+        /// <para>
+        /// This value may be overridden by the value assigned to any <see cref="IWikiGroup"/> to
+        /// which this user belongs. Any negative value indicates that the user may upload without
+        /// limit. Otherwise, the maximum value among the groups and the user's individual limit is
+        /// used.
+        /// </para>
+        /// </summary>
+        public int UploadLimit { get; set; }
 
         /// <summary>
         /// Initializes a new instance of <see cref="WikiUser"/>.

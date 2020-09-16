@@ -10,7 +10,16 @@ using System.Linq;
 namespace NeverFoundry.Wiki
 {
     /// <summary>
-    /// A static class containing various customization and configuration options for the wiki system.
+    /// <para>
+    /// A static class containing various customization and configuration options for the wiki
+    /// system.
+    /// </para>
+    /// <para>
+    /// Note: this class' members are not thread-safe. It is expected that these configuration
+    /// values will be set once per application, during startup or initialization procedures. If
+    /// your use-case requires changing any of these values during the lifetime of your application,
+    /// you must implement thread-safe operations around those properties yourself.
+    /// </para>
     /// </summary>
     public static class WikiConfig
     {
@@ -72,12 +81,12 @@ namespace NeverFoundry.Wiki
         /// The <see cref="IDataStore"/> to be used by the wiki.
         /// </para>
         /// <para>
-        /// If omitted, the static <see cref="DataStorage.DataStore.Instance"/> will be used.
+        /// If omitted, an <see cref="InMemoryDataStore"/> will be used.
         /// </para>
         /// </summary>
         public static IDataStore DataStore
         {
-            get => _DataStore ??= DataStorage.DataStore.Instance;
+            get => _DataStore ??= new InMemoryDataStore();
             set => _DataStore = value;
         }
 

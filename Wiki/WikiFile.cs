@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki
@@ -64,6 +63,11 @@ namespace NeverFoundry.Wiki
         public override string FullTitle => $"{WikiConfig.FileNamespace}:{Title}";
 
         /// <summary>
+        /// The ID of the user who uploaded the file.
+        /// </summary>
+        public string Uploader { get; set; }
+
+        /// <summary>
         /// The namespace to which this file belongs.
         /// </summary>
         public override string WikiNamespace => WikiConfig.FileNamespace;
@@ -84,6 +88,9 @@ namespace NeverFoundry.Wiki
         /// </param>
         /// <param name="fileType">
         /// The MIME type of the file.
+        /// </param>
+        /// <param name="uploader">
+        /// The ID of the user who uploaded the file.
         /// </param>
         /// <param name="html">The rendered HTML content.</param>
         /// <param name="markdownContent">The raw markdown.</param>
@@ -153,6 +160,7 @@ namespace NeverFoundry.Wiki
             string filePath,
             int fileSize,
             string fileType,
+            string uploader,
             string html,
             string markdownContent,
             string preview,
@@ -187,6 +195,7 @@ namespace NeverFoundry.Wiki
             FilePath = filePath;
             FileSize = fileSize;
             FileType = fileType;
+            Uploader = uploader;
         }
 
         private WikiFile(
@@ -195,6 +204,7 @@ namespace NeverFoundry.Wiki
             string filePath,
             int fileSize,
             string fileType,
+            string uploader,
             string? markdown,
             IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
@@ -220,6 +230,7 @@ namespace NeverFoundry.Wiki
             FilePath = filePath;
             FileSize = fileSize;
             FileType = fileType;
+            Uploader = uploader;
         }
 
         private WikiFile(SerializationInfo info, StreamingContext context) : this(
@@ -229,6 +240,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(FilePath), typeof(string)) ?? string.Empty,
             (int?)info.GetValue(nameof(FileSize), typeof(int)) ?? default,
             (string?)info.GetValue(nameof(FileType), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Uploader), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
@@ -385,6 +397,7 @@ namespace NeverFoundry.Wiki
                 title,
                 filePath,
                 fileSize,
+                editor,
                 type,
                 markdown,
                 new ReadOnlyCollection<WikiLink>(wikiLinks),
@@ -423,7 +436,6 @@ namespace NeverFoundry.Wiki
         /// serialization.</param>
         /// <exception cref="System.Security.SecurityException">The caller does not have the
         /// required permission.</exception>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);
@@ -431,6 +443,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(FilePath), FilePath);
             info.AddValue(nameof(FileSize), FileSize);
             info.AddValue(nameof(FileType), FileType);
+            info.AddValue(nameof(Uploader), Uploader);
             info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
             info.AddValue(nameof(Preview), Preview);
@@ -522,17 +535,26 @@ namespace NeverFoundry.Wiki
         {
             title ??= title?.ToWikiTitleCase() ?? Title;
 
+            var newFile = false;
             if (!string.IsNullOrWhiteSpace(path))
             {
+                newFile = path != FilePath;
                 FilePath = path;
             }
             if (fileSize.HasValue)
             {
+                newFile |= fileSize.Value != FileSize;
                 FileSize = fileSize.Value;
             }
             if (!string.IsNullOrEmpty(type))
             {
+                newFile |= type != FileType;
                 FileType = type;
+            }
+
+            if (newFile)
+            {
+                Uploader = editor;
             }
 
             var previousTitle = Title;

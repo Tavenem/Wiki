@@ -60,13 +60,13 @@
                                             <form method="post" asp-page-handler="ToggleGroupUploadPermission" style="display: inline-block">
                                                 <input type="hidden" value="@group.Id" />
                                                 <button type="submit" class="btn btn-info">
-                                                    @if (group.HasUploadPermission)
+                                                    @if (group.UploadLimit == 0)
                                                     {
-                                                        <span>Remove Upload Permission</span>
+                                                        <span>Grant Upload Permission</span>
                                                     }
                                                     else
                                                     {
-                                                        <span>Grant Upload Permission</span>
+                                                        <span>Remove Upload Permission</span>
                                                     }
                                                 </button>
                                             </form>
@@ -191,13 +191,13 @@ else if ((Model.Users?.Count ?? 0) > 0)
                                         <form method="post" asp-page-handler="ToggleUploadPermission" style="display: inline-block">
                                             <input type="hidden" value="@user.User.Id" />
                                             <button type="submit" class="btn btn-info">
-                                                @if (user.User.HasUploadPermission)
+                                                @if (user.User.UploadLimit == 0)
                                                 {
-                                                    <span>Remove Upload Permission</span>
+                                                    <span>Grant Upload Permission</span>
                                                 }
                                                 else
                                                 {
-                                                    <span>Grant Upload Permission</span>
+                                                    <span>Remove Upload Permission</span>
                                                 }
                                             </button>
                                         </form>

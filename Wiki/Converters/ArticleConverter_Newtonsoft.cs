@@ -1,9 +1,9 @@
 ﻿using NeverFoundry.DataStorage;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace NeverFoundry.Wiki.Converters.NewtonsoftJson
 {

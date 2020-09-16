@@ -36,6 +36,42 @@ namespace NeverFoundry.Wiki.Mvc.Services.FileManager
         }
 
         /// <summary>
+        /// Remove the given file from a persistence store.
+        /// </summary>
+        /// <param name="path">The path to the file. A relative URL is expected.</param>
+        /// <returns>
+        /// <see langword="true"/> if the file was successfully removed; otherwise <see
+        /// langword="false"/>. Also returns <see langword="true"/> if the given file does not exist
+        /// (to indicate no issues "removing" it).
+        /// </returns>
+        public ValueTask<bool> DeleteFileAsync(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                return new ValueTask<bool>(false);
+            }
+            try
+            {
+                var request = _httpContextAccessor.HttpContext?.Request;
+                if (request is null)
+                {
+                    throw new Exception("Files cannot be deleted outside of an HTTP request context.");
+                }
+                var filePath = Path.Combine(_environment.WebRootPath, "files", path);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+                return new ValueTask<bool>(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception deleting file at path {Path}", path);
+                return new ValueTask<bool>(false);
+            }
+        }
+
+        /// <summary>
         /// Load the given file from a persistence store.
         /// </summary>
         /// <param name="path">The path to the file. A relative URL is expected.</param>

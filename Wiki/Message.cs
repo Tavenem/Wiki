@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki
@@ -135,7 +134,7 @@ namespace NeverFoundry.Wiki
             (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
-            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(new WikiLink[0]),
+            (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()),
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(SenderId), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(SenderIsAdmin), typeof(bool)) ?? default,
@@ -193,7 +192,6 @@ namespace NeverFoundry.Wiki
         /// serialization.</param>
         /// <exception cref="System.Security.SecurityException">The caller does not have the
         /// required permission.</exception>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);

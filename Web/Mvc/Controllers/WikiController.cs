@@ -339,17 +339,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                 if (wikiItem is WikiFile file)
                 {
-                    var path = Path.Combine(_environment.WebRootPath, file.FilePath);
                     try
                     {
-                        if (System.IO.File.Exists(path))
-                        {
-                            System.IO.File.Delete(path);
-                        }
+                        await _fileManager.DeleteFileAsync(file.FilePath).ConfigureAwait(false);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Unable to delete file {Path} during delete operation", path);
+                        _logger.LogError(ex, "Unable to delete file {Path} during delete operation", file.FilePath);
                     }
                 }
 
@@ -934,11 +930,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthenticated");
             }
 
-            if (user.IsDeleted
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+            if (user.IsDeleted || user.IsDisabled)
+            {
+                return View("NotAuthorizedToUpload");
+            }
+
+            var limit = await _groupManager.UserMaxUploadLimit(user).ConfigureAwait(false);
+            if (limit == 0)
             {
                 return View("NotAuthorizedToUpload");
             }
@@ -977,11 +975,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthenticated");
             }
 
-            if (user.IsDeleted
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+            if (user.IsDeleted || user.IsDisabled)
+            {
+                return View("NotAuthorizedToUpload");
+            }
+
+            var limit = await _groupManager.UserMaxUploadLimit(user).ConfigureAwait(false);
+            if (limit == 0)
             {
                 return View("NotAuthorizedToUpload");
             }
@@ -1092,7 +1092,34 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return new StatusCodeResult(500);
             }
 
-            var size = (int)fileInfo.Length;
+            var size = fileInfo.Length / 1000;
+            if (size > WikiWebConfig.MaxFileSize || (limit > 0 && size > limit))
+            {
+                return View("NotAuthorizedForUploadSize");
+            }
+
+            if (limit > 0)
+            {
+                var nextPage = false;
+                var totalSize = size;
+                do
+                {
+                    var result = await _searchClient.SearchAsync(new SearchRequest
+                    {
+                        WikiNamespace = WikiConfig.FileNamespace,
+                        Uploader = user.Id,
+                    }, null).ConfigureAwait(false);
+
+                    totalSize += result.SearchHits.OfType<WikiFile>().Sum(x => (long)(x.FileSize / 1000));
+
+                    nextPage = result.SearchHits.HasNextPage;
+                } while (nextPage && totalSize < limit);
+                if (totalSize > limit)
+                {
+                    return View("NotAuthorizedForUploadSize");
+                }
+            }
+
             var fileName = fileInfo.Name;
             string? storagePath = null;
             try
@@ -1222,7 +1249,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                         title,
                         user.Id,
                         storagePath,
-                        size,
+                        (int)size,
                         new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream",
                         model.Markdown,
                         model.Comment,
@@ -1250,7 +1277,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     user.Id,
                     newTitle,
                     storagePath,
-                    size,
+                    (int)size,
                     new FileExtensionContentTypeProvider().TryGetContentType(fileName, out var type) ? type : "application/octet-stream",
                     model.Markdown,
                     model.Comment,
@@ -1276,11 +1303,14 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         public async Task<IActionResult> UploadFileAsync(IFormFile file)
         {
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
-            if (user?.IsDeleted != false
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+
+            if (user?.IsDeleted != false || user.IsDisabled)
+            {
+                return Unauthorized();
+            }
+
+            var limit = await _groupManager.UserMaxUploadLimit(user).ConfigureAwait(false);
+            if (limit == 0)
             {
                 return Unauthorized();
             }
@@ -1288,6 +1318,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (file.Length == 0 || file.Length > WikiWebConfig.MaxFileSize)
             {
                 return BadRequest();
+            }
+
+            if (file.Length > WikiWebConfig.MaxFileSize
+                || (limit > 0 && file.Length / 1000 > limit))
+            {
+                return Unauthorized();
             }
 
             if (!IsValidContentType(file.ContentType))
@@ -1328,11 +1364,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
-            if (user?.IsDeleted != false
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+            if (user?.IsDeleted != false || user.IsDisabled)
             {
                 return Unauthorized();
             }
@@ -1368,11 +1400,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
-            if (user?.IsDeleted != false
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+            if (user?.IsDeleted != false || user.IsDisabled)
             {
                 return Unauthorized();
             }
@@ -1411,11 +1439,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
-            if (user?.IsDeleted != false
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+            if (user?.IsDeleted != false || user.IsDisabled)
             {
                 return Unauthorized();
             }
@@ -1464,11 +1488,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
-            if (user?.IsDeleted != false
-                || user.IsDisabled
-                || (!user.HasUploadPermission
-                && (user.Groups is null
-                || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+            if (user?.IsDeleted != false || user.IsDisabled)
             {
                 return Unauthorized();
             }
@@ -1672,7 +1692,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 data.IsSpecialList = true;
 
                 if (!ControllerContext.RouteData.Values.TryGetValue(WikiRouteData.RouteTitle, out var ti)
-                    || !(ti is string wT)
+                    || ti is not string wT
                     || string.IsNullOrWhiteSpace(wT))
                 {
                     return RedirectToAction("Read");
@@ -1806,11 +1826,13 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     return View("NotAuthenticated");
                 }
 
-                if (user.IsDeleted
-                    || user.IsDisabled
-                    || (!user.HasUploadPermission
-                    && (user.Groups is null
-                    || !await _groupManager.UserIsInUploadGroup(user).ConfigureAwait(false))))
+                if (user.IsDeleted || user.IsDisabled)
+                {
+                    return View("NotAuthorizedToUpload");
+                }
+
+                var limit = await _groupManager.UserMaxUploadLimit(user).ConfigureAwait(false);
+                if (limit == 0)
                 {
                     return View("NotAuthorizedToUpload");
                 }

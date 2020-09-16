@@ -117,29 +117,27 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
             => new ValueTask<bool>(false);
 
         /// <summary>
-        /// Determines if a user with the given ID is in any group with upload permission.
+        /// Determines the maximum upload limit of a user with the given ID.
         /// </summary>
         /// <param name="userId">The user ID to search for.</param>
         /// <returns>
-        /// The <see cref="ValueTask" /> that represents the asynchronous operation, containing <see
-        /// langword="true" /> if a user with the given ID is in any group with upload permission,
-        /// and <see langword="false" /> if no such user exists, or if the user does not belong to
-        /// such a group.
+        /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
+        /// maximum upload limit of the user with the given ID (note that any negative value is
+        /// "greater" than any positive value, since it indicates no limit). Returns zero if no such
+        /// user exists.
         /// </returns>
-        public ValueTask<bool> UserIsInUploadGroup(string? userId)
-            => new ValueTask<bool>(false);
+        public ValueTask<int> UserMaxUploadLimit(string? userId) => new ValueTask<int>(0);
 
         /// <summary>
-        /// Determines if the given <paramref name="user" /> is in any group with upload permission.
+        /// Determines if the given <paramref name="user"/> is in any group with upload permission.
         /// </summary>
         /// <param name="user">The user to check.</param>
         /// <returns>
-        /// The <see cref="ValueTask" /> that represents the asynchronous operation, containing <see
-        /// langword="true" /> if the given <paramref name="user" /> is in any group with upload
-        /// permission, and <see langword="false" /> if no such user exists, or if the user does not
-        /// belong to such a group.
+        /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
+        /// maximum upload limit of the given <paramref name="user"/> (note that any negative value
+        /// is "greater" than any positive value, since it indicates no limit). Returns zero if no
+        /// such user exists.
         /// </returns>
-        public ValueTask<bool> UserIsInUploadGroup(IWikiUser? user)
-            => new ValueTask<bool>(false);
+        public ValueTask<int> UserMaxUploadLimit(IWikiUser? user) => new ValueTask<int>(0);
     }
 }

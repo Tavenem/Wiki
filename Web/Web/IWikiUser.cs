@@ -18,20 +18,6 @@ namespace NeverFoundry.Wiki
         List<string>? Groups { get; set; }
 
         /// <summary>
-        /// <para>
-        /// Whether this user may upload files.
-        /// </para>
-        /// <para>
-        /// If <see langword="false"/>, this user may still upload if it belongs to a <see
-        /// cref="IWikiGroup"/> with this property set to <see langword="true"/>. If <see
-        /// langword="true"/>, this user may upload regardless of the setting of any group to which
-        /// it belongs. This allows upload permission to be granted either individually, or to
-        /// entire groups.
-        /// </para>
-        /// </summary>
-        bool HasUploadPermission { get; set; }
-
-        /// <summary>
         /// Whether this user's account has been (soft) deleted.
         /// </summary>
         bool IsDeleted { get; set; }
@@ -45,6 +31,22 @@ namespace NeverFoundry.Wiki
         /// Whether this user is a wiki administrator.
         /// </summary>
         bool IsWikiAdmin { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The total number of kilobytes of uploaded files permitted for this user.
+        /// </para>
+        /// <para>
+        /// A negative value indicates that the user may upload files without limit.
+        /// </para>
+        /// <para>
+        /// This value may be overridden by the value assigned to any <see cref="IWikiGroup"/> to
+        /// which this user belongs. Any negative value indicates that the user may upload without
+        /// limit. Otherwise, the maximum value among the groups and the user's individual limit is
+        /// used.
+        /// </para>
+        /// </summary>
+        int UploadLimit { get; set; }
 
         /// <summary>
         /// The user name for this user.

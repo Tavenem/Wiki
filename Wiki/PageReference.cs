@@ -1,7 +1,6 @@
 ﻿using NeverFoundry.DataStorage;
 using System;
 using System.Runtime.Serialization;
-using System.Security.Permissions;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki
@@ -20,7 +19,9 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// A built-in, read-only type discriminator.
         /// </summary>
+#pragma warning disable CA1822 // Mark members as static: Serialized
         public string IdItemTypeName => PageReferenceIdItemTypeName;
+#pragma warning restore CA1822 // Mark members as static
 
         /// <summary>
         /// The ID of the wiki page which is currently assigned to the referenced full title.
@@ -123,7 +124,6 @@ namespace NeverFoundry.Wiki
         /// serialization.</param>
         /// <exception cref="System.Security.SecurityException">The caller does not have the
         /// required permission.</exception>
-        [SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);

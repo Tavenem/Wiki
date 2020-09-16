@@ -1,5 +1,4 @@
 ﻿using Markdig.Syntax.Inlines;
-using System;
 
 namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
 {

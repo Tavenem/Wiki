@@ -36,6 +36,8 @@ namespace NeverFoundry.Wiki.Samples.Complete
                     Configuration.GetConnectionString("Auth"),
                     a => a.MigrationsAssembly(typeof(Startup).GetTypeInfo().Assembly.GetName().Name)));
 
+            services.AddDatabaseDeveloperPageExceptionFilter();
+
             services.Configure<IdentityOptions>(options =>
                 options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier);
 
@@ -125,7 +127,6 @@ namespace NeverFoundry.Wiki.Samples.Complete
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseDatabaseErrorPage();
             }
             else
             {

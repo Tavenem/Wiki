@@ -58,6 +58,20 @@
 
         /// <summary>
         /// <para>
+        /// An optional uploader or uploaders for whom to restrict results, or to exclude.
+        /// </para>
+        /// <para>
+        /// Each entry should be a user ID. May be a semicolon-delimited list, and any entry may be
+        /// prefixed with an exclamation mark to indicate that it should be excluded.
+        /// </para>
+        /// <para>
+        /// Only applies to <see cref="WikiFile"/>s.
+        /// </para>
+        /// </summary>
+        public string? Uploader { get; set; }
+
+        /// <summary>
+        /// <para>
         /// An optional wiki namespace within which to restrict results, or to exclude.
         /// </para>
         /// <para>

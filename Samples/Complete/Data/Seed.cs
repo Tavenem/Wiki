@@ -60,7 +60,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Data
                 {
                     Email = AdminEmail,
                     EmailConfirmed = true,
-                    HasUploadPermission = true,
+                    UploadLimit = -1,
                     UserName = AdminUsername,
                 };
                 var result = await userMgr.CreateAsync(admin, "Admin1!").ConfigureAwait(false);
@@ -101,7 +101,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Data
                 .ConfigureAwait(false);
             if (adminGroup is null)
             {
-                adminGroup = new WikiGroup(WikiWebConfig.AdminGroupName, admin.Id, true);
+                adminGroup = new WikiGroup(WikiWebConfig.AdminGroupName, admin.Id, -1);
                 await WikiConfig.DataStore.StoreItemAsync(adminGroup).ConfigureAwait(false);
             }
         }
