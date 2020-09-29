@@ -1,11 +1,11 @@
-﻿using NeverFoundry.DataStorage;
+﻿using System;
 
 namespace NeverFoundry.Wiki.Mvc
 {
     /// <summary>
     /// Options used to configure the wiki system.
     /// </summary>
-    public class WikiOptions : IWikiOptions
+    public class WikiMvcOptions : IWikiMvcOptions
     {
         /// <summary>
         /// The relative URL of the <see cref="Web.SignalR.IWikiTalkHub"/> used if <see
@@ -14,10 +14,27 @@ namespace NeverFoundry.Wiki.Mvc
         public const string DefaultLayoutPath = "/Views/Wiki/_DefaultWikiMainLayout.cshtml";
 
         /// <summary>
+        /// The link template to be used for the MVC wiki system.
+        /// </summary>
+        public const string DefaultLinkTemplate = "onmousemove=\"wikimvc.showPreview(event, '{LINK}');\" onmouseleave=\"wikimvc.hidePreview();\"";
+
+        /// <summary>
         /// The relative URL of the <see cref="Web.SignalR.IWikiTalkHub"/> used if <see
         /// cref="TalkHubRoute"/> is not provided.
         /// </summary>
         public const string DefaultTalkHubRoute = "/wikiTalkHub";
+
+        /// <summary>
+        /// A function which gets the name or path of a partial view which should be displayed after
+        /// the content of the given wiki article (before the category list).
+        /// </summary>
+        public Func<Article, string?>? ArticleEndMatter { get; set; }
+
+        /// <summary>
+        /// A function which gets the name or path of a partial view which should be displayed
+        /// before the content of the given wiki article (after the subtitle).
+        /// </summary>
+        public Func<Article, string?>? ArticleFrontMatter { get; set; }
 
         /// <summary>
         /// <para>
@@ -32,13 +49,37 @@ namespace NeverFoundry.Wiki.Mvc
 
         /// <summary>
         /// <para>
-        /// The <see cref="IDataStore"/> to be used by the wiki.
+        /// The host part which will be recognized as indicating a request for the compact version
+        /// of the wiki.
         /// </para>
         /// <para>
-        /// If omitted, the value already set in <see cref="WikiConfig.DataStore"/> will not be changed.
+        /// If left <see langword="null"/> the compact view can only be reached by using the query
+        /// parameter "compact".
         /// </para>
         /// </summary>
-        public IDataStore? DataStore { get; set; }
+        public string? CompactRouteHostPart { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The position (zero-based) within the parts of the host string which will be examined to
+        /// determine a request for the compact version of the wiki.
+        /// </para>
+        /// <para>
+        /// If left <see langword="null"/> position zero will be assumed.
+        /// </para>
+        /// </summary>
+        public int? CompactRouteHostPosition { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The port which will be recognized as indicating a request for the compact version of the
+        /// wiki.
+        /// </para>
+        /// <para>
+        /// If left <see langword="null"/> the compact view cannot be reached at a particular port.
+        /// </para>
+        /// </summary>
+        public int? CompactRoutePort { get; set; }
 
         /// <summary>
         /// <para>
@@ -104,5 +145,25 @@ namespace NeverFoundry.Wiki.Mvc
         /// </para>
         /// </summary>
         public string? TenorAPIKey { get; set; }
+
+        /// <summary>
+        /// Gets the name or path of a partial view which should be displayed after the content of
+        /// the given wiki article (before the category list).
+        /// </summary>
+        /// <param name="article">A wiki article.</param>
+        /// <returns>
+        /// The name or path of a partial view.
+        /// </returns>
+        public string? GetArticleEndMatter(Article article) => ArticleEndMatter?.Invoke(article);
+
+        /// <summary>
+        /// Gets the name or path of a partial view which should be displayed before the content of
+        /// the given wiki article (after the subtitle).
+        /// </summary>
+        /// <param name="article">A wiki article.</param>
+        /// <returns>
+        /// The name or path of a partial view.
+        /// </returns>
+        public string? GetArticleFrontMatter(Article article) => ArticleFrontMatter?.Invoke(article);
     }
 }

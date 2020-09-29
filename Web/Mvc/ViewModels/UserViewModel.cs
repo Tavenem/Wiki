@@ -1,4 +1,5 @@
-﻿using NeverFoundry.Wiki.Web;
+﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
 {
@@ -10,7 +11,13 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// Initialize a new instance of <see cref="UserViewModel"/>.
         /// </summary>
-        /// <param name="user"></param>
-        public UserViewModel(IWikiUser user) : this(user.Id, Article.GetArticle(user.Id, WikiWebConfig.UserNamespace) is not null, user.UserName) { }
+        public UserViewModel(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
+            IWikiUser user) : this(
+                user.Id,
+                Article.GetArticle(wikiOptions, dataStore, user.Id, wikiWebOptions.UserNamespace) is not null,
+                user.UserName) { }
     }
 }

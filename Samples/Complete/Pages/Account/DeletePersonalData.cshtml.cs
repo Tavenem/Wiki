@@ -18,6 +18,8 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
         private readonly ILogger<DeletePersonalDataModel> _logger;
         private readonly SignInManager<WikiUser> _signInManager;
         private readonly UserManager<WikiUser> _userManager;
+        private readonly IWikiOptions _wikiOptions;
+        private readonly IWikiWebOptions _wikiWebOptions;
 
         [TempData] public string? ErrorMessage { get; set; }
 
@@ -35,12 +37,16 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
             IDataStore dataStore,
             ILogger<DeletePersonalDataModel> logger,
             SignInManager<WikiUser> signInManager,
-            UserManager<WikiUser> userManager)
+            UserManager<WikiUser> userManager,
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions)
         {
             _dataStore = dataStore;
             _logger = logger;
             _signInManager = signInManager;
             _userManager = userManager;
+            _wikiOptions = wikiOptions;
+            _wikiWebOptions = wikiWebOptions;
         }
 
         public async Task<IActionResult> OnGet()
@@ -103,10 +109,10 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
                 }
             }
 
-            var userPage = Article.GetArticle(userId, WikiWebConfig.UserNamespace);
+            var userPage = Article.GetArticle(_wikiOptions, _dataStore, userId, _wikiWebOptions.UserNamespace);
             if (!(userPage is null))
             {
-                await userPage.ReviseAsync(userId, isDeleted: true).ConfigureAwait(false);
+                await userPage.ReviseAsync(_wikiOptions, _dataStore, userId, isDeleted: true).ConfigureAwait(false);
             }
 
             return Redirect("~/");

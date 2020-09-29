@@ -36,15 +36,6 @@ namespace NeverFoundry.Wiki
         public string Editor { get; }
 
         /// <summary>
-        /// Gets the full title of the item at the tile of this revision (including namespace if the
-        /// namespace was not
-        /// <see cref="WikiConfig.DefaultNamespace"/>).
-        /// </summary>
-        public string FullTitle => string.CompareOrdinal(WikiNamespace, WikiConfig.DefaultNamespace) == 0
-            ? Title
-            : $"{WikiNamespace}:{Title}";
-
-        /// <summary>
         /// The type discriminator for this type.
         /// </summary>
         public const string RevisionIdItemTypeName = ":Revision:";

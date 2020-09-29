@@ -1,11 +1,12 @@
 ﻿@model SearchViewModel
-
+@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
 @{
     ViewData["Title"] = "Search";
 }
 
 <div class="wiki-search-form">
-    <form asp-controller="Wiki" asp-route-wikiNamespace="@(WikiWebConfig.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
+    <form asp-controller="Wiki" asp-route-wikiNamespace="@(WikiWebOptions.SystemNamespace)" asp-route-title="Search" asp-action="Search" method="get">
         <input type="hidden" name="pageNumber" value="@Model.SearchResult.SearchHits.PageNumber" />
         <input type="hidden" name="pageSize" value="@Model.SearchResult.SearchHits.PageSize" />
         <div class="wiki-search-basic">
@@ -87,7 +88,7 @@
 <div class="wiki-search-results">
     @if (!(Model.ExactMatch is null))
     {
-        <p class="wiki-search-exact-match">There is an article with the exact name "<a href="@($"/{WikiConfig.WikiLinkPrefix}/{Model.ExactMatch.WikiNamespace}:{Model.ExactMatch.Title}")">@Model.ExactMatch.Title</a>."</p>
+        <p class="wiki-search-exact-match">There is an article with the exact name "<a href="@($"/{WikiOptions.WikiLinkPrefix}/{Model.ExactMatch.WikiNamespace}:{Model.ExactMatch.Title}")">@Model.ExactMatch.Title</a>."</p>
     }
     @if (Model.SearchResult.SearchHits.Count > 0)
     {
@@ -99,7 +100,7 @@
                     continue;
                 }
                 <li>
-                    <div class="wiki-search-result-title"><a href="@($"/{WikiConfig.WikiLinkPrefix}/{result.WikiNamespace}:{result.Title}")" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
+                    <div class="wiki-search-result-title"><a href="@($"/{WikiOptions.WikiLinkPrefix}/{result.WikiNamespace}:{result.Title}")" class="wiki-link wiki-link-exists">@result.FullTitle</a></div>
                     <div class="wiki-search-result-excerpt">@Html.Raw(result.Excerpt)</div>
                 </li>
             }

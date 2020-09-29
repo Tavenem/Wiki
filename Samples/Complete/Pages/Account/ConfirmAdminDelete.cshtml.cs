@@ -15,6 +15,8 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
     {
         private readonly IDataStore _dataStore;
         private readonly UserManager<WikiUser> _userManager;
+        private readonly IWikiOptions _wikiOptions;
+        private readonly IWikiWebOptions _wikiWebOptions;
 
         [TempData] public string? ErrorMessage { get; set; }
 
@@ -25,10 +27,16 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
             [Required] public string? UserId { get; set; }
         }
 
-        public ConfirmAdminDeleteModel(IDataStore dataStore, UserManager<WikiUser> userManager)
+        public ConfirmAdminDeleteModel(
+            IDataStore dataStore,
+            UserManager<WikiUser> userManager,
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions)
         {
             _dataStore = dataStore;
             _userManager = userManager;
+            _wikiOptions = wikiOptions;
+            _wikiWebOptions = wikiWebOptions;
         }
 
         public async Task<IActionResult> OnGetAsync(string? userId = null)
@@ -114,10 +122,10 @@ namespace NeverFoundry.Wiki.Samples.Complete.Pages.Account
                 }
             }
 
-            var userPage = Article.GetArticle(user.Id, WikiWebConfig.UserNamespace);
+            var userPage = Article.GetArticle(_wikiOptions, _dataStore, user.Id, _wikiWebOptions.UserNamespace);
             if (!(userPage is null))
             {
-                await userPage.ReviseAsync(adminId, isDeleted: true).ConfigureAwait(false);
+                await userPage.ReviseAsync(_wikiOptions, _dataStore, adminId, isDeleted: true).ConfigureAwait(false);
             }
 
             return RedirectToPage("/AdminPortal");

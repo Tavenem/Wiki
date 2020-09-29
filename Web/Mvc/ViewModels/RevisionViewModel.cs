@@ -1,4 +1,5 @@
-﻿using NeverFoundry.Wiki.Web;
+﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
@@ -11,11 +12,16 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// Get a new <see cref="RevisionViewModel"/>.
         /// </summary>
-        public static async Task<RevisionViewModel> NewAsync(IWikiUserManager userManager, Revision revision)
+        public static async Task<RevisionViewModel> NewAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
+            IWikiUserManager userManager,
+            Revision revision)
         {
             var editor = await userManager.FindByIdAsync(revision.Editor).ConfigureAwait(false);
             var userExists = editor is not null;
-            var userPageExists = userExists && !(Article.GetArticle(revision.Editor, WikiWebConfig.UserNamespace) is null);
+            var userPageExists = userExists && !(Article.GetArticle(wikiOptions, dataStore, revision.Editor, wikiWebOptions.UserNamespace) is null);
             return new RevisionViewModel(revision, userExists, editor?.UserName ?? revision.Editor, userPageExists);
         }
     }

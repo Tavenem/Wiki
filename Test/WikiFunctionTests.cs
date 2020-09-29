@@ -1,4 +1,5 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeverFoundry.DataStorage;
 using System;
 using System.Threading.Tasks;
 
@@ -33,6 +34,9 @@ Third section text
 Fourth section text";
         private const string LongArticleExpected = "<p>First paragraph text</p>\n{0}<p>Second paragraph text</p>\n<h1 id=\"first-heading\">First heading</h1>\n<p>Second section text</p>\n<h2 id=\"nested-heading\">Nested heading</h2>\n<p>Nested section text</p>\n<h1 id=\"second-heading\">Second heading</h1>\n<p>Third section text</p>\n<h1 id=\"third-heading\">Third heading</h1>\n<p>Fourth section text</p>\n";
 
+        private static readonly IWikiOptions _Options = new WikiOptions();
+        private static readonly IDataStore _DataStore = new InMemoryDataStore();
+
         private static Article? _Article;
         private static Article? _NestedArticle;
 
@@ -42,8 +46,8 @@ Fourth section text";
         [TestMethod]
         public void AnchorLinkTest()
         {
-            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
-            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#Anchor\" class=\"wiki-link-exists\">title § anchor</a>");
+            TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
+            TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#anchor\" class=\"wiki-link-exists\">title § anchor</a>");
             TestTemplate("[[#Local Anchor|]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">Local Anchor</a>");
             TestTemplate("[[#Local Anchor||]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">local anchor</a>");
         }
@@ -70,7 +74,7 @@ Fourth section text";
             TestTemplate("{{fullpagename}}", "Title");
 
             var nested = GetNestedArticle("{{fullpagename}}");
-            Assert.AreEqual($"<p>{WikiConfig.TransclusionNamespace}:Nested</p>\n", nested.Html);
+            Assert.AreEqual($"<p>{_Options.TransclusionNamespace}:Nested</p>\n", nested.Html);
             TestTemplate("{{Nested}}", "Title");
         }
 
@@ -97,6 +101,8 @@ Fourth section text";
             TestTemplate(Markdown, "no");
 
             var category = Category.NewAsync(
+                _Options,
+                _DataStore,
                 Title,
                 Editor,
                 Markdown)
@@ -151,7 +157,7 @@ Fourth section text";
         }
 
         [TestMethod]
-        public void NamespaceTest() => TestTemplate("{{namespace}}", WikiConfig.DefaultNamespace);
+        public void NamespaceTest() => TestTemplate("{{namespace}}", _Options.DefaultNamespace);
 
         [TestMethod]
         public void NoTableOfContentsTest()
@@ -209,7 +215,7 @@ Fourth section text";
         {
             var article = GetArticle("Test content");
             var timestamp = article.Timestamp;
-            var revision = await article.GetHtmlAsync(timestamp).ConfigureAwait(false);
+            var revision = await article.GetHtmlAsync(_Options, _DataStore, timestamp).ConfigureAwait(false);
             Assert.AreEqual("<p>Test content</p>\n", revision);
         }
 
@@ -334,6 +340,8 @@ Fourth section text";
             if (_Article is null)
             {
                 _Article = Article.NewAsync(
+                    _Options,
+                    _DataStore,
                     Title,
                     Editor,
                     markdown)
@@ -342,7 +350,7 @@ Fourth section text";
             }
             else
             {
-                _Article.ReviseAsync(Editor, markdown: markdown).GetAwaiter().GetResult();
+                _Article.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
             }
             return _Article;
         }
@@ -352,16 +360,18 @@ Fourth section text";
             if (_NestedArticle is null)
             {
                 _NestedArticle = Article.NewAsync(
+                    _Options,
+                    _DataStore,
                     NestedTitle,
                     Editor,
                     markdown,
-                    WikiConfig.TransclusionNamespace)
+                    _Options.TransclusionNamespace)
                     .GetAwaiter()
                     .GetResult();
             }
             else
             {
-                _NestedArticle.ReviseAsync(Editor, markdown: markdown).GetAwaiter().GetResult();
+                _NestedArticle.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
             }
             return _NestedArticle;
         }

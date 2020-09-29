@@ -31,6 +31,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// Initialize a new <see cref="SpecialListViewModel"/>.
         /// </summary>
         public SpecialListViewModel(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
             WikiRouteData data,
             SpecialListType type,
             bool descending,
@@ -42,8 +44,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 type,
                 descending,
                 items,
-                GetDescription(type, data),
-                GetSecondaryDescription(type),
+                GetDescription(wikiOptions, type, data),
+                GetSecondaryDescription(wikiOptions, wikiWebOptions, type),
                 missingItems,
                 sort,
                 filter)
@@ -53,6 +55,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// Get a <see cref="SpecialListViewModel"/>.
         /// </summary>
         public static async Task<SpecialListViewModel> NewAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
             WikiRouteData data,
             SpecialListType type,
             int pageNumber = 1,
@@ -63,11 +68,12 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         {
             var list = type switch
             {
-                SpecialListType.All_Categories => await GetListAsync<Category>(pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
+                SpecialListType.All_Categories => await GetListAsync<Category>(dataStore, pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
 
-                SpecialListType.All_Files => await GetListAsync<WikiFile>(pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
+                SpecialListType.All_Files => await GetListAsync<WikiFile>(dataStore, pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false),
 
                 SpecialListType.All_Pages => await GetListAsync<Article>(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     sort,
@@ -78,6 +84,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
 #pragma warning disable RCS1113 // Use 'string.IsNullOrEmpty' method: not necessarily supported by data provider
                 SpecialListType.All_Redirects => await GetListAsync<Article>(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     sort,
@@ -87,12 +94,13 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 .ConfigureAwait(false),
 #pragma warning restore RCS1113 // Use 'string.IsNullOrEmpty' method.
 
-                SpecialListType.Broken_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsBrokenRedirect).ConfigureAwait(false),
+                SpecialListType.Broken_Redirects => await GetListAsync<Article>(dataStore, pageNumber, pageSize, sort, descending, filter, x => x.IsBrokenRedirect).ConfigureAwait(false),
 
-                SpecialListType.Double_Redirects => await GetListAsync<Article>(pageNumber, pageSize, sort, descending, filter, x => x.IsDoubleRedirect).ConfigureAwait(false),
+                SpecialListType.Double_Redirects => await GetListAsync<Article>(dataStore, pageNumber, pageSize, sort, descending, filter, x => x.IsDoubleRedirect).ConfigureAwait(false),
 
 #pragma warning disable CA1829 // Optimize LINQ method call: Count() is translated to SQL by various data providers (Relinq), while the Count property is not necessarily serialized/recognized
                 SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     sort,
@@ -104,6 +112,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 .ConfigureAwait(false),
 
                 SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     sort,
@@ -113,6 +122,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 .ConfigureAwait(false),
 
                 SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     sort,
@@ -122,6 +132,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 .ConfigureAwait(false),
 
                 SpecialListType.Unused_Categories => await GetListAsync<Category>(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     sort,
@@ -132,6 +143,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 #pragma warning restore CA1829 // Optimize LINQ method call.
 
                 SpecialListType.What_Links_Here => await GetLinksHereAsync(
+                    wikiOptions,
+                    dataStore,
                     data.Title,
                     data.WikiNamespace,
                     pageNumber,
@@ -144,13 +157,13 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 _ => new PagedList<Article>(null, 1, pageSize, 0),
             };
             var missing = type == SpecialListType.Missing_Pages
-                ? await GetMissingAsync(pageNumber, pageSize, descending, filter).ConfigureAwait(false)
+                ? await GetMissingAsync(wikiWebOptions, dataStore, pageNumber, pageSize, descending, filter).ConfigureAwait(false)
                 : null;
 
-            return new SpecialListViewModel(data, type, descending, list, missing, sort, filter);
+            return new SpecialListViewModel(wikiOptions, wikiWebOptions, data, type, descending, list, missing, sort, filter);
         }
 
-        private static string GetDescription(SpecialListType type, WikiRouteData data) => type switch
+        private static string GetDescription(IWikiOptions options, SpecialListType type, WikiRouteData data) => type switch
         {
             SpecialListType.All_Categories => "This page lists all categories, either alphabetically or by most recent update.",
             SpecialListType.All_Files => "This page lists all files, either alphabetically or by most recent update.",
@@ -163,11 +176,12 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             SpecialListType.Uncategorized_Categories => "This page lists all categories which are not categorized, either alphabetically or by most recent update.",
             SpecialListType.Uncategorized_Files => "This page lists all files which are not categorized, either alphabetically or by most recent update.",
             SpecialListType.Unused_Categories => "This page lists all categories which have no articles or subcategories, either alphabetically or by most recent update.",
-            SpecialListType.What_Links_Here => $"The following pages link to {Article.GetFullTitle(data.Title, data.WikiNamespace, data.IsTalk)}.",
+            SpecialListType.What_Links_Here => $"The following pages link to {Article.GetFullTitle(options, data.Title, data.WikiNamespace, data.IsTalk)}.",
             _ => string.Empty,
         };
 
         private static async Task<IPagedList<T>> GetListAsync<T>(
+            IDataStore dataStore,
             int pageNumber = 1,
             int pageSize = 50,
             string? sort = null,
@@ -180,16 +194,16 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             {
                 if (condition is null)
                 {
-                    pageCondition = (T x) => x.FullTitle.Contains(filter);
+                    pageCondition = (T x) => x.Title.Contains(filter);
                 }
                 else
                 {
-                    Expression<Func<T, bool>> baseExp = x => x.FullTitle.Contains(filter);
+                    Expression<Func<T, bool>> baseExp = x => x.Title.Contains(filter);
                     pageCondition = baseExp.AndAlso(condition);
                 }
             }
 
-            var query = WikiConfig.DataStore.Query<T>();
+            var query = dataStore.Query<T>();
             if (pageCondition is not null)
             {
                 query = query.Where(pageCondition);
@@ -209,6 +223,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         }
 
         private static async Task<IPagedList<Article>> GetLinksHereAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string title,
             string wikiNamespace,
             int pageNumber = 1,
@@ -218,7 +234,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             string? filter = null)
         {
             var allReferences = new HashSet<string>();
-            var references = await PageLinks.GetPageLinksAsync(title, wikiNamespace).ConfigureAwait(false);
+            var references = await PageLinks.GetPageLinksAsync(dataStore, title, wikiNamespace).ConfigureAwait(false);
             if (references is not null)
             {
                 foreach (var reference in references.References)
@@ -226,7 +242,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     allReferences.Add(reference);
                 }
             }
-            var transclusions = await PageTransclusions.GetPageTransclusionsAsync(title, wikiNamespace).ConfigureAwait(false);
+            var transclusions = await PageTransclusions.GetPageTransclusionsAsync(dataStore, title, wikiNamespace).ConfigureAwait(false);
             if (transclusions is not null)
             {
                 foreach (var reference in transclusions.References)
@@ -234,10 +250,10 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     allReferences.Add(reference);
                 }
             }
-            if (!string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.Ordinal)
-                && !string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.Ordinal))
+            if (!string.Equals(wikiNamespace, options.CategoryNamespace, StringComparison.Ordinal)
+                && !string.Equals(wikiNamespace, options.FileNamespace, StringComparison.Ordinal))
             {
-                var redirects = await PageRedirects.GetPageRedirectsAsync(title, wikiNamespace).ConfigureAwait(false);
+                var redirects = await PageRedirects.GetPageRedirectsAsync(dataStore, title, wikiNamespace).ConfigureAwait(false);
                 if (redirects is not null)
                 {
                     foreach (var reference in redirects.References)
@@ -251,10 +267,10 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             var hasFilter = !string.IsNullOrWhiteSpace(filter);
             foreach (var reference in allReferences)
             {
-                var article = await WikiConfig.DataStore.GetItemAsync<Article>(reference).ConfigureAwait(false);
+                var article = await dataStore.GetItemAsync<Article>(reference).ConfigureAwait(false);
                 if (article is not null
                     && (!hasFilter
-                    || article.FullTitle.Contains(filter!)))
+                    || article.Title.Contains(filter!)))
                 {
                     articles.Add(article);
                 }
@@ -280,13 +296,15 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         }
 
         private static async Task<IPagedList<MissingPage>> GetMissingAsync(
+            IWikiWebOptions options,
+            IDataStore dataStore,
             int pageNumber = 1,
             int pageSize = 50,
             bool descending = false,
             string? filter = null)
         {
-            var query = WikiConfig.DataStore.Query<MissingPage>()
-                .Where(x => x.WikiNamespace != WikiWebConfig.UserNamespace && x.WikiNamespace != WikiWebConfig.GroupNamespace);
+            var query = dataStore.Query<MissingPage>()
+                .Where(x => x.WikiNamespace != options.UserNamespace && x.WikiNamespace != options.GroupNamespace);
             if (!string.IsNullOrEmpty(filter))
             {
 #pragma warning disable IDE0057 // Use range operator; Not necessarily implemented by data providers.
@@ -300,36 +318,36 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 .ConfigureAwait(false);
         }
 
-        private static string? GetSecondaryDescription(SpecialListType type)
+        private static string? GetSecondaryDescription(IWikiOptions wikiOptions, IWikiWebOptions wikiWebOptions, SpecialListType type)
         {
             if (type == SpecialListType.All_Categories
                 || type == SpecialListType.All_Files
                 || type == SpecialListType.All_Pages)
             {
-                if (!string.IsNullOrEmpty(WikiWebConfig.ContentsPageTitle))
+                if (!string.IsNullOrEmpty(wikiWebOptions.ContentsPageTitle))
                 {
-                    return $"For a more organized overview you may wish to check the <a href=\"/{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:{WikiWebConfig.ContentsPageTitle}\" class=\"wiki-link wiki-link-exists\">{WikiWebConfig.ContentsPageTitle}</a> page.";
+                    return $"For a more organized overview you may wish to check the <a href=\"/{wikiOptions.WikiLinkPrefix}/{wikiWebOptions.SystemNamespace}:{wikiWebOptions.ContentsPageTitle}\" class=\"wiki-link wiki-link-exists\">{wikiWebOptions.ContentsPageTitle}</a> page.";
                 }
             }
             else if (type == SpecialListType.Uncategorized_Categories)
             {
                 var sb = new StringBuilder("Note that top-level categories might show up in this list deliberately, and may not require categorization.");
-                if (!string.IsNullOrEmpty(WikiWebConfig.ContentsPageTitle))
+                if (!string.IsNullOrEmpty(wikiWebOptions.ContentsPageTitle))
                 {
                     sb.Append("Top-level categories are typically linked on the <a href=\"/")
-                        .Append(WikiConfig.WikiLinkPrefix)
+                        .Append(wikiOptions.WikiLinkPrefix)
                         .Append('/')
-                        .Append(WikiWebConfig.SystemNamespace)
+                        .Append(wikiWebOptions.SystemNamespace)
                         .Append(':')
-                        .Append(WikiWebConfig.ContentsPageTitle)
+                        .Append(wikiWebOptions.ContentsPageTitle)
                         .Append("\" class=\"wiki-link wiki-link-exists\">")
-                        .Append(WikiWebConfig.ContentsPageTitle)
+                        .Append(wikiWebOptions.ContentsPageTitle)
                         .Append("</a>, or in some other prominent place (such as the <a href=\"/")
-                        .Append(WikiConfig.WikiLinkPrefix)
+                        .Append(wikiOptions.WikiLinkPrefix)
                         .Append('/')
-                        .Append(WikiConfig.MainPageTitle)
+                        .Append(wikiOptions.MainPageTitle)
                         .Append("\">")
-                        .Append(WikiConfig.MainPageTitle)
+                        .Append(wikiOptions.MainPageTitle)
                         .Append("</a>).");
                 }
                 return sb.ToString();

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using NeverFoundry.DataStorage;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,7 +45,11 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// Get a new <see cref="CategoryViewModel"/>.
         /// </summary>
-        public static async Task<CategoryViewModel> NewAsync(WikiRouteData data, WikiItemViewModel vm)
+        public static async Task<CategoryViewModel> NewAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
+            WikiRouteData data,
+            WikiItemViewModel vm)
         {
             var articles = new List<Article>();
             var files = new List<WikiFile>();
@@ -53,7 +58,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             {
                 foreach (var id in category.ChildIds)
                 {
-                    var child = await WikiConfig.DataStore.GetItemAsync<Article>(id).ConfigureAwait(false);
+                    var child = await dataStore.GetItemAsync<Article>(id).ConfigureAwait(false);
                     if (child is null)
                     {
                         continue;
@@ -78,7 +83,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 vm.Html,
                 vm.IsDiff,
                 articles
-                    .Select(x => new CategoryPageViewModel(x.Title, x.WikiNamespace))
+                    .Select(x => new CategoryPageViewModel(x.Title, x.WikiNamespace, Article.GetFullTitle(options, x.Title, x.WikiNamespace)))
                     .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                     .ToList(),
                 files

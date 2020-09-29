@@ -42,8 +42,8 @@ namespace NeverFoundry.Wiki
         /// </param>
         /// <remarks>
         /// Note: this constructor is most useful for deserializers. The static <see
-        /// cref="NewAsync(string, string, string)"/> method is expected to be used otherwise, as it
-        /// persists instances to the <see cref="WikiConfig.DataStore"/> and assigns the ID
+        /// cref="NewAsync(IDataStore, string, string, string)"/> method is expected to be used
+        /// otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns the ID
         /// dynamically.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
@@ -71,36 +71,39 @@ namespace NeverFoundry.Wiki
         /// The ID which should be used for a <see cref="NormalizedPageReference"/> given the
         /// parameters.
         /// </returns>
-        public static string GetId(string title, string? wikiNamespace = null)
-            => $"{(wikiNamespace ?? WikiConfig.DefaultNamespace).ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference";
+        public static string GetId(string title, string wikiNamespace)
+            => $"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference";
 
         /// <summary>
         /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the wiki page.</param>
         /// <param name="wikiNamespace">The namespace of the wiki page.</param>
         /// <returns>
         /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
         /// langword="null"/>, if there is no such item.
         /// </returns>
-        public static NormalizedPageReference? GetNormalizedPageReference(string title, string? wikiNamespace = null)
-            => WikiConfig.DataStore.GetItem<NormalizedPageReference>(GetId(title, wikiNamespace));
+        public static NormalizedPageReference? GetNormalizedPageReference(IDataStore dataStore, string title, string wikiNamespace)
+            => dataStore.GetItem<NormalizedPageReference>(GetId(title, wikiNamespace));
 
         /// <summary>
         /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the wiki page.</param>
         /// <param name="wikiNamespace">The namespace of the wiki page.</param>
         /// <returns>
         /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
         /// langword="null"/>, if there is no such item.
         /// </returns>
-        public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(string title, string? wikiNamespace = null)
-            => WikiConfig.DataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace));
+        public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(IDataStore dataStore, string title, string wikiNamespace)
+            => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace));
 
         /// <summary>
         /// Get a new instance of <see cref="NormalizedPageReference"/>.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="id">
         /// The <see cref="IdItem.Id"/> of the wiki page which is currently assigned to the
         /// referenced full title.
@@ -111,24 +114,25 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiNamespace">
         /// The namespace of the wiki page which is currently assigned to the referenced full title.
         /// </param>
-        public static async Task<NormalizedPageReference> NewAsync(string id, string title, string wikiNamespace)
+        public static async Task<NormalizedPageReference> NewAsync(IDataStore dataStore, string id, string title, string wikiNamespace)
         {
             var result = new NormalizedPageReference(
                 GetId(title, wikiNamespace),
                 NormalizedPageReferenceIdItemTypeName,
                 new List<string> { id }.AsReadOnly());
-            await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
         }
 
         /// <summary>
         /// Adds a page to this reference.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="id">
         /// The <see cref="IdItem.Id"/> of the wiki page which is to be assigned to the referenced
         /// full title.
         /// </param>
-        public async Task AddReferenceAsync(string id)
+        public async Task AddReferenceAsync(IDataStore dataStore, string id)
         {
             if (References.Contains(id))
             {
@@ -139,7 +143,7 @@ namespace NeverFoundry.Wiki
                 Id,
                 NormalizedPageReferenceIdItemTypeName,
                 References.ToImmutableList().Add(id));
-            await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         }
 
         /// <summary>Populates a <see cref="SerializationInfo"></see> with the data needed to
@@ -159,11 +163,12 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Removes a page from this reference.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="id">
         /// The <see cref="IdItem.Id"/> of the wiki page which is to be removed from the referenced
         /// full title.
         /// </param>
-        public async Task RemoveReferenceAsync(string id)
+        public async Task RemoveReferenceAsync(IDataStore dataStore, string id)
         {
             if (!References.Contains(id))
             {
@@ -172,7 +177,7 @@ namespace NeverFoundry.Wiki
 
             if (References.Count == 1)
             {
-                await WikiConfig.DataStore.RemoveItemAsync<NormalizedPageReference>(Id).ConfigureAwait(false);
+                await dataStore.RemoveItemAsync<NormalizedPageReference>(Id).ConfigureAwait(false);
             }
             else
             {
@@ -180,7 +185,7 @@ namespace NeverFoundry.Wiki
                     Id,
                     NormalizedPageReferenceIdItemTypeName,
                     References.ToImmutableList().Remove(id));
-                await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
+                await dataStore.StoreItemAsync(result).ConfigureAwait(false);
             }
         }
     }

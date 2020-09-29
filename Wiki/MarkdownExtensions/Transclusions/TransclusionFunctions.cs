@@ -16,31 +16,31 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
 
         private const int ScriptExecutionTimeoutInMilliseconds = 5000;
 
-        internal static readonly Dictionary<string, Func<Dictionary<string, string>, string?, string?, bool, bool, string>> _Functions
-            = new Dictionary<string, Func<Dictionary<string, string>, string?, string?, bool, bool, string>>
+        internal static readonly Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>> _Functions
+            = new Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>>
             {
                 ["exec"] = Exec,
                 ["format"] = Format,
-                ["fullpagename"] = (_, __, fullTitle, ___, ____) => fullTitle ?? string.Empty,
+                ["fullpagename"] = (_, _, _, fullTitle, _, _) => fullTitle ?? string.Empty,
                 ["if"] = If,
                 ["ifcategory"] = IfCategory,
                 ["ifeq"] = IfEq,
                 ["ifnottemplate"] = IfNotTemplate,
                 ["iftalk"] = IfTalk,
                 ["iftemplate"] = IfTemplate,
-                ["namespace"] = (_, __, fullTitle, ___, ____) => Article.GetTitleParts(fullTitle).wikiNamespace,
-                ["notoc"] = (_, __, ___, ____, _____) => "<!-- NOTOC -->",
+                ["namespace"] = (options, _, _, fullTitle, _, _) => Article.GetTitleParts(options, fullTitle).wikiNamespace,
+                ["notoc"] = (_, _, _, _, _, _) => "<!-- NOTOC -->",
                 ["padleft"] = PadLeft,
                 ["padright"] = PadRight,
-                ["pagename"] = (_, title, __, ___, ____) => title ?? string.Empty,
+                ["pagename"] = (_, _, title, _, _, _) => title ?? string.Empty,
                 ["preview"] = Preview,
                 ["toc"] = TableOfContents,
-                ["tolower"] = (parameters, _, __, ___, ____) => parameters.TryGetValue("1", out var value) ? value.ToLower() : string.Empty,
+                ["tolower"] = (_, parameters, _, _, _, _) => parameters.TryGetValue("1", out var value) ? value.ToLower() : string.Empty,
                 ["totitlecase"] = TitleCase,
-                ["toupper"] = (parameters, _, __, ___, ____) => parameters.TryGetValue("1", out var value) ? value.ToUpper() : string.Empty,
+                ["toupper"] = (_, parameters, _, __, ___, ____) => parameters.TryGetValue("1", out var value) ? value.ToUpper() : string.Empty,
             };
 
-        private static string Exec(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string Exec(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (parameters.Count == 0)
             {
@@ -135,7 +135,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return state.ReturnValue?.ToString() ?? string.Empty;
         }
 
-        private static string Format(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string Format(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (!parameters.TryGetValue("1", out var first))
             {
@@ -196,7 +196,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return result;
         }
 
-        private static string If(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string If(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (!parameters.TryGetValue("2", out var second))
             {
@@ -229,16 +229,16 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             }
         }
 
-        private static string IfCategory(Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
+        private static string IfCategory(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
         {
-            if (Article.GetTitleParts(fullTitle).wikiNamespace != WikiConfig.CategoryNamespace)
+            if (Article.GetTitleParts(options, fullTitle).wikiNamespace != options.CategoryNamespace)
             {
                 return parameters.TryGetValue("2", out var second) ? second : string.Empty;
             }
             return parameters.TryGetValue("1", out var first) ? first : string.Empty;
         }
 
-        private static string IfEq(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string IfEq(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (!parameters.TryGetValue("1", out var first))
             {
@@ -283,7 +283,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             }
         }
 
-        private static string IfNotTemplate(Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
+        private static string IfNotTemplate(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
         {
             if (isTemplate)
             {
@@ -292,16 +292,16 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return parameters.TryGetValue("1", out var first) ? first : string.Empty;
         }
 
-        private static string IfTalk(Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
+        private static string IfTalk(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
         {
-            if (Article.GetTitleParts(fullTitle).isTalk)
+            if (Article.GetTitleParts(options, fullTitle).isTalk)
             {
                 return parameters.TryGetValue("1", out var first) ? first : string.Empty;
             }
             return parameters.TryGetValue("2", out var second) ? second : string.Empty;
         }
 
-        private static string IfTemplate(Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
+        private static string IfTemplate(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
         {
             if (!isTemplate)
             {
@@ -310,7 +310,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return parameters.TryGetValue("1", out var first) ? first : string.Empty;
         }
 
-        private static string PadLeft(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string PadLeft(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (!parameters.TryGetValue("1", out var value))
             {
@@ -330,7 +330,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return value.PadLeft(totalWidth, paddingChar);
         }
 
-        private static string PadRight(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string PadRight(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (!parameters.TryGetValue("1", out var value))
             {
@@ -350,7 +350,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return value.PadRight(totalWidth, paddingChar);
         }
 
-        private static string Preview(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool isPreview)
+        private static string Preview(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool isPreview)
         {
             if (!isPreview)
             {
@@ -361,7 +361,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 : string.Empty;
         }
 
-        private static string TableOfContents(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string TableOfContents(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             string depth;
             if (!parameters.TryGetValue("1", out var first)
@@ -400,7 +400,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return string.Format(TableOfContentsExtension.ToCFormat, depth, startingLevel, title);
         }
 
-        private static string TitleCase(Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string TitleCase(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (!parameters.TryGetValue("1", out var value))
             {

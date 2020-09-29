@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Logging;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Mvc.Hubs;
 using NeverFoundry.Wiki.Mvc.Models;
 using NeverFoundry.Wiki.Mvc.Services.Search;
@@ -25,6 +26,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
     /// </summary>
     public class WikiController : Controller
     {
+        private readonly IDataStore _dataStore;
         private readonly IWebHostEnvironment _environment;
         private readonly IFileManager _fileManager;
         private readonly IWikiGroupManager _groupManager;
@@ -32,19 +34,25 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         private readonly ISearchClient _searchClient;
         private readonly IWikiUserManager _userManager;
         private readonly IWikiOptions _wikiOptions;
+        private readonly IWikiWebOptions _wikiWebOptions;
+        private readonly IWikiMvcOptions _wikiMvcOptions;
 
         /// <summary>
         /// Initializes a new instance of <see cref="WikiController"/>.
         /// </summary>
         public WikiController(
+            IDataStore dataStore,
             IWebHostEnvironment environment,
             IFileManager fileManager,
             IWikiGroupManager groupManager,
             ILogger<WikiController> logger,
             ISearchClient searchClient,
             IWikiUserManager userManager,
-            IWikiOptions wikiOptions)
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IWikiMvcOptions wikiMvcOptions)
         {
+            _dataStore = dataStore;
             _environment = environment;
             _fileManager = fileManager;
             _groupManager = groupManager;
@@ -52,6 +60,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             _searchClient = searchClient;
             _userManager = userManager;
             _wikiOptions = wikiOptions;
+            _wikiWebOptions = wikiWebOptions;
+            _wikiMvcOptions = wikiMvcOptions;
         }
 
         /// <summary>
@@ -66,10 +76,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiMvcOptions.LoginPath))
                 {
-                    var url = new StringBuilder(_wikiOptions.LoginPath)
-                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiMvcOptions.LoginPath)
+                        .Append(_wikiMvcOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -87,12 +97,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             else if (wikiItem is null)
             {
-                if (WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                if (_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     return View("NotAuthorized", data);
                 }
                 else if (!user.IsWikiAdmin
-                    && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                    && _wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     return View("NotAuthorized", data);
                 }
@@ -105,7 +115,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 data.Categories = wikiItem.Categories;
             }
 
-            var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user).ConfigureAwait(false);
+            var vm = await EditViewModel
+                .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user)
+                .ConfigureAwait(false);
             return View("Edit", vm);
         }
 
@@ -123,10 +135,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiMvcOptions.LoginPath))
                 {
-                    var url = new StringBuilder(_wikiOptions.LoginPath)
-                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiMvcOptions.LoginPath)
+                        .Append(_wikiMvcOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -135,7 +147,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthenticated");
             }
 
-            var (wikiNamespace, title, _, _) = Article.GetTitleParts(model.Title);
+            var (wikiNamespace, title, _, _) = Article.GetTitleParts(_wikiOptions, model.Title);
             data.Title = title;
             data.WikiNamespace = wikiNamespace;
 
@@ -163,7 +175,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (ownerIsGroup)
             {
                 ModelState.AddModelError("Model", "Groups cannot own items.");
-                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                var vm = await EditViewModel
+                    .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                    .ConfigureAwait(false);
                 return View("Edit", vm);
             }
 
@@ -173,12 +187,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             else if (wikiItem is null)
             {
-                if (WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                if (_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     return View("NotAuthorized", data);
                 }
                 else if (!user.IsWikiAdmin
-                    && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                    && _wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     return View("NotAuthorized", data);
                 }
@@ -208,7 +222,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 if (intendedOwner is null)
                 {
                     ModelState.AddModelError("Model", "No such owner found.");
-                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    var vm = await EditViewModel
+                        .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                        .ConfigureAwait(false);
                     return View("Edit", vm);
                 }
             }
@@ -220,13 +236,17 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (!ModelState.IsValid)
             {
-                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                var vm = await EditViewModel
+                    .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                    .ConfigureAwait(false);
                 return View("Edit", vm);
             }
 
             if (model.ShowPreview)
             {
-                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown, model.Title).ConfigureAwait(false);
+                var vm = await EditViewModel
+                    .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown, model.Title)
+                    .ConfigureAwait(false);
                 return View("Edit", vm);
             }
 
@@ -321,6 +341,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 try
                 {
                     await wikiItem.ReviseAsync(
+                        _wikiOptions,
+                        _dataStore,
                         user.Id,
                         revisionComment: model.Comment,
                         isDeleted: true,
@@ -333,7 +355,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     _logger.LogError(ex, "Wiki item with ID {Id} could not be deleted by user with ID {UserId}.", wikiItem.Id, user.Id);
                     ModelState.AddModelError("Model", "The article was not deleted successfully.");
-                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    var vm = await EditViewModel
+                        .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                        .ConfigureAwait(false);
                     return View("Edit", vm);
                 }
 
@@ -358,6 +382,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 try
                 {
                     var newArticle = await Article.NewAsync(
+                        _wikiOptions,
+                        _dataStore,
                         title,
                         user.Id,
                         model.Markdown,
@@ -372,7 +398,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     _logger.LogError(ex, "User with ID {UserId} failed to add a new wiki item with title {Title} to namespace {WikiNamespace}.", user.Id, title, wikiNamespace);
                     ModelState.AddModelError("Model", "The new item could not be created.");
-                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    var vm = await EditViewModel
+                        .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                        .ConfigureAwait(false);
                     return View("Edit", vm);
                 }
             }
@@ -396,6 +424,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             try
             {
                 await wikiItem.ReviseAsync(
+                    _wikiOptions,
+                    _dataStore,
                     user.Id,
                     newTitle,
                     model.Markdown,
@@ -411,7 +441,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 _logger.LogError(ex, "User with ID {UserId} failed to edit wiki item with ID {Id}, new title {Title}, and new namespace {WikiNamespace}.", user.Id, wikiItem.Id, newTitle, newNamespace);
                 ModelState.AddModelError("Model", "The edit could not be completed.");
-                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                var vm = await EditViewModel
+                    .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                    .ConfigureAwait(false);
                 return View("Edit", vm);
             }
 
@@ -420,9 +452,11 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 try
                 {
                     await Article.NewAsync(
+                        _wikiOptions,
+                        _dataStore,
                         oldTitle,
                         user.Id,
-                        $"{{{{redirect|{Article.GetFullTitle(newTitle ?? oldTitle, newNamespace ?? oldNamespace)}}}}}",
+                        $"{{{{redirect|{Article.GetFullTitle(_wikiOptions, newTitle ?? oldTitle, newNamespace ?? oldNamespace)}}}}}",
                         oldNamespace,
                         owner,
                         allowedEditors,
@@ -433,7 +467,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     _logger.LogError(ex, "Failed to add redirect to wiki item with ID {Id}, title {Title}, and namespace {WikiNamespace} for user with ID {UserId}.", wikiItem.Id, newTitle ?? oldTitle, newNamespace ?? oldNamespace, user.Id);
                     ModelState.AddModelError("Model", "The redirect could not be created automatically.");
-                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    var vm = await EditViewModel
+                        .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                        .ConfigureAwait(false);
                     return View("Edit", vm);
                 }
             }
@@ -452,24 +488,24 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return Json(string.Empty);
             }
 
-            var (wikiNamespace, title, isTalk, _) = Article.GetTitleParts(link);
+            var (wikiNamespace, title, isTalk, _) = Article.GetTitleParts(_wikiOptions, link);
             if (isTalk)
             {
                 return Json(string.Empty);
             }
 
             Article? article;
-            if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(wikiNamespace, _wikiOptions.FileNamespace, StringComparison.OrdinalIgnoreCase))
             {
-                article = WikiFile.GetFile(title);
+                article = WikiFile.GetFile(_wikiOptions, _dataStore, title);
             }
-            else if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(wikiNamespace, _wikiOptions.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
             {
-                article = Category.GetCategory(title);
+                article = Category.GetCategory(_wikiOptions, _dataStore, title);
             }
             else
             {
-                article = Article.GetArticle(title, wikiNamespace);
+                article = Article.GetArticle(_wikiOptions, _dataStore, title, wikiNamespace);
             }
             if (article is null)
             {
@@ -532,9 +568,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (wikiItem is null)
             {
                 data.CanEdit = user is not null
-                    && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    && !_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
                     && (user.IsWikiAdmin
-                    || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
+                    || !_wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
                 return View("NoContent", data);
             }
 
@@ -548,6 +584,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             data.IsHistory = true;
 
             var vm = await HistoryViewModel.NewAsync(
+                _wikiOptions,
+                _wikiWebOptions,
+                _dataStore,
                 _userManager,
                 data,
                 pageNumber,
@@ -582,9 +621,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (wikiItem?.IsDeleted != false)
             {
                 data.CanEdit = user is not null
-                    && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
+                    && !_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
                     && (user.IsWikiAdmin
-                    || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
+                    || !_wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
                 return View("NoContent", data);
             }
 
@@ -599,12 +638,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             {
                 var vm = new TalkViewModel(
                     data,
-                    _wikiOptions.TalkHubRoute ?? WikiOptions.DefaultTalkHubRoute,
-                    _wikiOptions.TenorAPIKey,
+                    _wikiMvcOptions.TalkHubRoute ?? WikiMvcOptions.DefaultTalkHubRoute,
+                    _wikiMvcOptions.TenorAPIKey,
                     wikiItem?.Id);
                 if (wikiItem is not null)
                 {
-                    var replies = await WikiConfig.DataStore.Query<Message>().Where(x => x.TopicId == wikiItem.Id)
+                    var replies = await _dataStore.Query<Message>().Where(x => x.TopicId == wikiItem.Id)
                         .ToListAsync()
                         .ConfigureAwait(false);
                     var responses = new List<MessageResponse>();
@@ -622,11 +661,11 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                                 && !link.Missing
                                 && !string.IsNullOrEmpty(link.WikiNamespace))
                             {
-                                var article = Article.GetArticle(link.Title, link.WikiNamespace);
+                                var article = Article.GetArticle(_wikiOptions, _dataStore, link.Title, link.WikiNamespace);
                                 if (article is not null && !article.IsDeleted)
                                 {
                                     preview = true;
-                                    var namespaceStr = article.WikiNamespace == WikiConfig.DefaultNamespace
+                                    var namespaceStr = article.WikiNamespace == _wikiOptions.DefaultNamespace
                                         ? string.Empty
                                         : string.Format(WikiTalkHub.PreviewNamespaceTemplate, article.WikiNamespace);
                                     html = System.Text.Encodings.Web.HtmlEncoder.Default.Encode(string.Format(WikiTalkHub.PreviewTemplate, namespaceStr, article.Title, article.Preview));
@@ -657,7 +696,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                                     replyUser = await _userManager.FindByIdAsync(reply.SenderId).ConfigureAwait(false);
                                 }
                                 pageExists = replyUser?.IsDeleted == false
-                                    && !(Article.GetArticle(replyUser.Id, WikiWebConfig.UserNamespace) is null);
+                                    && Article.GetArticle(_wikiOptions, _dataStore, replyUser.Id, _wikiWebOptions.UserNamespace) is not null;
                             }
                             senderPages.Add(reply.SenderId, pageExists);
                         }
@@ -672,16 +711,20 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("Talk", vm);
             }
 
-            var model = await WikiItemViewModel.NewAsync(data).ConfigureAwait(false);
+            var model = await WikiItemViewModel.NewAsync(_wikiOptions, _dataStore, data).ConfigureAwait(false);
 
             if (data.IsCategory)
             {
-                var categoryModel = await CategoryViewModel.NewAsync(data, model).ConfigureAwait(false);
+                var categoryModel = await CategoryViewModel
+                    .NewAsync(_wikiOptions, _dataStore, data, model)
+                    .ConfigureAwait(false);
                 return View("Category", categoryModel);
             }
             else if (data.IsGroupPage)
             {
-                var groupModel = await GroupViewModel.NewAsync(_groupManager, data, model).ConfigureAwait(false);
+                var groupModel = await GroupViewModel
+                    .NewAsync(_wikiOptions, _wikiWebOptions, _dataStore, _groupManager, data, model)
+                    .ConfigureAwait(false);
                 return View("Group", groupModel);
             }
 
@@ -758,12 +801,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var original = query;
 
             query = query.Trim('"');
-            var (queryNamespace, title, isTalk, _) = Article.GetTitleParts(query);
+            var (queryNamespace, title, isTalk, _) = Article.GetTitleParts(_wikiOptions, query);
             var wikiItem = GetWikiItem(title, queryNamespace);
 
             if (!original.StartsWith("\"") && wikiItem is not null)
             {
-                return RedirectToAction("Read", new { wikiNamespace = isTalk ? $"{WikiConfig.TalkNamespace}:{queryNamespace}" : queryNamespace, title });
+                return RedirectToAction("Read", new { wikiNamespace = isTalk ? $"{_wikiOptions.TalkNamespace}:{queryNamespace}" : queryNamespace, title });
             }
 
             if (!data.IsSystem || !string.Equals(data.Title, "Search", StringComparison.OrdinalIgnoreCase))
@@ -771,7 +814,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return RedirectToAction("Search", new
                 {
                     isTalk = false,
-                    wikiNamespace = WikiWebConfig.SystemNamespace,
+                    wikiNamespace = _wikiWebOptions.SystemNamespace,
                     title = "Search",
                     query = original,
                     pageNumber,
@@ -827,7 +870,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
         [HttpPost("wiki/api/suggest")]
         public async Task<JsonResult> GetSearchSuggestionsAsync([FromForm] string? search = null)
         {
-            var (wikiNamespace, title, isTalk, defaultNamespace) = Article.GetTitleParts(search);
+            var (wikiNamespace, title, isTalk, defaultNamespace) = Article.GetTitleParts(_wikiOptions, search);
 
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -837,57 +880,57 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             IReadOnlyList<Article> items;
             if (defaultNamespace)
             {
-                items = await WikiConfig.DataStore.Query<Article>()
+                items = await _dataStore.Query<Article>()
                     .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase)
-                        && x.WikiNamespace == WikiConfig.DefaultNamespace)
+                        && x.WikiNamespace == _wikiOptions.DefaultNamespace)
                     .ToListAsync()
                     .ConfigureAwait(false);
                 if (items.Count == 0)
                 {
-                    items = await WikiConfig.DataStore.Query<Article>()
+                    items = await _dataStore.Query<Article>()
                         .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase))
                         .ToListAsync()
                         .ConfigureAwait(false);
                 }
                 if (items.Count == 0)
                 {
-                    items = await WikiConfig.DataStore.Query<Category>()
+                    items = await _dataStore.Query<Category>()
                         .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase))
                         .ToListAsync()
                         .ConfigureAwait(false);
                 }
                 if (items.Count == 0)
                 {
-                    items = await WikiConfig.DataStore.Query<WikiFile>()
+                    items = await _dataStore.Query<WikiFile>()
                         .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase))
                         .ToListAsync()
                         .ConfigureAwait(false);
                 }
             }
-            else if (wikiNamespace == WikiConfig.CategoryNamespace)
+            else if (wikiNamespace == _wikiOptions.CategoryNamespace)
             {
-                items = await WikiConfig.DataStore.Query<Category>()
+                items = await _dataStore.Query<Category>()
                     .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase))
                     .ToListAsync()
                     .ConfigureAwait(false);
             }
-            else if (wikiNamespace == WikiConfig.FileNamespace)
+            else if (wikiNamespace == _wikiOptions.FileNamespace)
             {
-                items = await WikiConfig.DataStore.Query<WikiFile>()
+                items = await _dataStore.Query<WikiFile>()
                     .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase))
                     .ToListAsync()
                     .ConfigureAwait(false);
             }
             else
             {
-                items = await WikiConfig.DataStore.Query<Article>()
+                items = await _dataStore.Query<Article>()
                     .Where(x => x.Title.StartsWith(title, StringComparison.OrdinalIgnoreCase)
                         && x.WikiNamespace == wikiNamespace)
                     .ToListAsync()
                     .ConfigureAwait(false);
             }
 
-            return Json(items.Select(x => x.FullTitle));
+            return Json(items.Select(x => Article.GetFullTitle(_wikiOptions, x.Title, x.WikiNamespace)));
         }
 
         /// <summary>
@@ -918,10 +961,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiMvcOptions.LoginPath))
                 {
-                    var url = new StringBuilder(_wikiOptions.LoginPath)
-                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiMvcOptions.LoginPath)
+                        .Append(_wikiMvcOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -963,10 +1006,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
             if (user is null)
             {
-                if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
+                if (!string.IsNullOrEmpty(_wikiMvcOptions.LoginPath))
                 {
-                    var url = new StringBuilder(_wikiOptions.LoginPath)
-                        .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
+                    var url = new StringBuilder(_wikiMvcOptions.LoginPath)
+                        .Append(_wikiMvcOptions.LoginPath.Contains('?') ? '&' : '?')
                         .Append("returnUrl=")
                         .Append(HttpContext.Request.GetEncodedUrl())
                         .ToString();
@@ -986,14 +1029,14 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthorizedToUpload");
             }
 
-            var (wikiNamespace, title, _, defaultNamespace) = Article.GetTitleParts(model.Title);
-            if (!defaultNamespace && !string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase))
+            var (wikiNamespace, title, _, defaultNamespace) = Article.GetTitleParts(_wikiOptions, model.Title);
+            if (!defaultNamespace && !string.Equals(wikiNamespace, _wikiOptions.FileNamespace, StringComparison.OrdinalIgnoreCase))
             {
                 ModelState.AddModelError(nameof(UploadViewModel.Title), "Files cannot be given a namespace");
                 return View("Upload", model);
             }
 
-            var wikiItem = WikiFile.GetFile(title);
+            var wikiItem = WikiFile.GetFile(_wikiOptions, _dataStore, title);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
 
@@ -1003,7 +1046,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             if (ownerIsGroup)
             {
                 ModelState.AddModelError("Model", "Groups cannot own items.");
-                var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                var vm = await EditViewModel
+                    .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                    .ConfigureAwait(false);
                 return View("Edit", vm);
             }
 
@@ -1013,12 +1058,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
             else if (wikiItem is null)
             {
-                if (WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                if (_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     return View("NotAuthorized", data);
                 }
                 else if (!user.IsWikiAdmin
-                    && WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
+                    && _wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)))
                 {
                     return View("NotAuthorized", data);
                 }
@@ -1048,7 +1093,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 if (intendedOwner is null)
                 {
                     ModelState.AddModelError("Model", "No such owner found.");
-                    var vm = await EditViewModel.NewAsync(_userManager, _groupManager, data, user, model.Markdown).ConfigureAwait(false);
+                    var vm = await EditViewModel
+                        .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                        .ConfigureAwait(false);
                     return View("Edit", vm);
                 }
             }
@@ -1064,7 +1111,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
             if (model.ShowPreview)
             {
-                var vm = new UploadViewModel(data, model.Markdown, model.Title);
+                var vm = new UploadViewModel(_wikiOptions, _dataStore, data, model.Markdown, model.Title);
                 return View("Upload", vm);
             }
 
@@ -1093,7 +1140,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             }
 
             var size = fileInfo.Length / 1000;
-            if (size > WikiWebConfig.MaxFileSize || (limit > 0 && size > limit))
+            if (size > _wikiWebOptions.MaxFileSize || (limit > 0 && size > limit))
             {
                 return View("NotAuthorizedForUploadSize");
             }
@@ -1106,7 +1153,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 {
                     var result = await _searchClient.SearchAsync(new SearchRequest
                     {
-                        WikiNamespace = WikiConfig.FileNamespace,
+                        WikiNamespace = _wikiOptions.FileNamespace,
                         Uploader = user.Id,
                     }, null).ConfigureAwait(false);
 
@@ -1246,6 +1293,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 try
                 {
                     var newArticle = await WikiFile.NewAsync(
+                        _wikiOptions,
+                        _dataStore,
                         title,
                         user.Id,
                         storagePath,
@@ -1257,7 +1306,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                         allowedEditors,
                         allowedViewers)
                         .ConfigureAwait(false);
-                    return RedirectToAction("Read", new { title = newArticle.Title, wikiNamespace = WikiConfig.FileNamespace });
+                    return RedirectToAction("Read", new { title = newArticle.Title, wikiNamespace = _wikiOptions.FileNamespace });
                 }
                 catch (Exception ex)
                 {
@@ -1274,6 +1323,8 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             try
             {
                 await wikiItem.ReviseAsync(
+                    _wikiOptions,
+                    _dataStore,
                     user.Id,
                     newTitle,
                     storagePath,
@@ -1286,7 +1337,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     allowedEditors,
                     allowedViewers)
                     .ConfigureAwait(false);
-                return RedirectToAction("Read", new { title = newTitle ?? wikiItem.Title, wikiNamespace = WikiConfig.FileNamespace });
+                return RedirectToAction("Read", new { title = newTitle ?? wikiItem.Title, wikiNamespace = _wikiOptions.FileNamespace });
             }
             catch (Exception ex)
             {
@@ -1315,12 +1366,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return Unauthorized();
             }
 
-            if (file.Length == 0 || file.Length > WikiWebConfig.MaxFileSize)
+            if (file.Length == 0 || file.Length > _wikiWebOptions.MaxFileSize)
             {
                 return BadRequest();
             }
 
-            if (file.Length > WikiWebConfig.MaxFileSize
+            if (file.Length > _wikiWebOptions.MaxFileSize
                 || (limit > 0 && file.Length / 1000 > limit))
             {
                 return Unauthorized();
@@ -1559,32 +1610,221 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return name;
         }
 
-        private static Article? GetWikiItem(string title, string wikiNamespace, bool noRedirect = false)
-        {
-            if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
-            {
-                return Category.GetCategory(title);
-            }
-            else if (string.Equals(wikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase))
-            {
-                return WikiFile.GetFile(title);
-            }
-            else
-            {
-                return Article.GetArticle(title, wikiNamespace, noRedirect);
-            }
-        }
-
         private static bool IsValidContentType(string type)
             => type.StartsWith("image/")
             || type.StartsWith("audio/")
             || type.StartsWith("video/")
             || type.Equals("application/pdf");
 
-        private static bool VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
+        private async Task<IActionResult> GetSpecialListAsync(
+            SpecialListType type,
+            int pageNumber = 1,
+            int pageSize = 50,
+            string? sort = null,
+            bool descending = false,
+            string? filter = null)
+        {
+            var data = GetWikiRouteData();
+
+            if (type == SpecialListType.What_Links_Here)
+            {
+                data.IsSpecialList = true;
+
+                if (!ControllerContext.RouteData.Values.TryGetValue(WikiRouteData.RouteTitle, out var ti)
+                    || ti is not string wT
+                    || string.IsNullOrWhiteSpace(wT))
+                {
+                    return RedirectToAction("Read");
+                }
+
+                var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
+
+                var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
+                data.WikiItem = wikiItem;
+                if (wikiItem is null)
+                {
+                    data.CanEdit = user is not null
+                        && !_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
+                        && (user.IsWikiAdmin
+                        || !_wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
+                }
+                else
+                {
+                    if (!VerifyPermission(data, user))
+                    {
+                        return View("NotAuthorized", data);
+                    }
+                    data.CanEdit = VerifyPermission(data, user, edit: true);
+                }
+            }
+            else
+            {
+                data.IsSystem = true;
+                data.Title = data.Title.Replace('_', ' ');
+                ViewData["Title"] = type.ToString().Replace('_', ' ');
+            }
+            var vm = await SpecialListViewModel
+                .NewAsync(_wikiOptions, _wikiWebOptions, _dataStore, data, type, pageNumber, pageSize, sort, descending, filter)
+                .ConfigureAwait(false);
+            return View("WikiItemList", vm);
+        }
+
+        private Article? GetWikiItem(string title, string wikiNamespace, bool noRedirect = false)
+        {
+            if (string.Equals(wikiNamespace, _wikiOptions.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
+            {
+                return Category.GetCategory(_wikiOptions, _dataStore, title);
+            }
+            else if (string.Equals(wikiNamespace, _wikiOptions.FileNamespace, StringComparison.OrdinalIgnoreCase))
+            {
+                return WikiFile.GetFile(_wikiOptions, _dataStore, title);
+            }
+            else
+            {
+                return Article.GetArticle(_wikiOptions, _dataStore, title, wikiNamespace, noRedirect);
+            }
+        }
+
+        private async Task<Article?> GetWikiItemAsync(WikiRouteData data, bool noRedirect = false)
+        {
+            var article = GetWikiItem(data.Title, data.WikiNamespace, noRedirect || data.NoRedirect);
+            if (article is not null)
+            {
+                data.DisplayNamespace = article.WikiNamespace;
+                data.DisplayTitle = article.Title;
+                ViewData["Title"] = Article.GetFullTitle(_wikiOptions, data.DisplayTitle, data.DisplayNamespace, data.IsTalk);
+            }
+
+            if (data.IsUserPage)
+            {
+                var user = await _userManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false)
+                    ?? await _userManager.FindByNameAsync(article?.Title ?? data.Title).ConfigureAwait(false);
+                if (user is not null)
+                {
+                    data.DisplayTitle = user.UserName;
+                    ViewData["Title"] = Article.GetFullTitle(_wikiOptions, data.DisplayTitle, data.WikiNamespace, data.IsTalk);
+
+                    if (article is null && user.Id != data.Title)
+                    {
+                        article = GetWikiItem(user.Id, data.WikiNamespace, noRedirect || data.NoRedirect);
+                        if (article is not null)
+                        {
+                            data.Title = article.Title;
+                        }
+                    }
+                }
+            }
+            else if (data.IsGroupPage)
+            {
+                var group = await _groupManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false)
+                    ?? await _groupManager.FindByNameAsync(article?.Title ?? data.Title).ConfigureAwait(false);
+                if (group is not null)
+                {
+                    data.Group = group;
+                    data.DisplayTitle = group.GroupName;
+                    ViewData["Title"] = Article.GetFullTitle(_wikiOptions, data.DisplayTitle, data.WikiNamespace, data.IsTalk);
+
+                    if (article is null && group.Id != data.Title)
+                    {
+                        article = GetWikiItem(group.Id, data.WikiNamespace, noRedirect || data.NoRedirect);
+                        if (article is not null)
+                        {
+                            data.Title = article.Title;
+                        }
+                    }
+                }
+            }
+
+            return article;
+        }
+
+        private WikiRouteData GetWikiRouteData()
+        {
+            var data = new WikiRouteData(_wikiOptions, _wikiWebOptions, _wikiMvcOptions, ControllerContext.RouteData, HttpContext.Request);
+            ViewData[nameof(WikiRouteData)] = data;
+            ViewData["Title"] = Article.GetFullTitle(_wikiOptions, data.Title, data.WikiNamespace, data.IsTalk);
+            return data;
+        }
+
+        private async Task<IActionResult?> TryGettingSystemPage(WikiRouteData data, IWikiUser? user)
+        {
+            if (string.Equals(data.Title, "Search", StringComparison.OrdinalIgnoreCase))
+            {
+                return RedirectToAction("Search");
+            }
+            else if (string.Equals(data.Title, "Special", StringComparison.OrdinalIgnoreCase))
+            {
+                return View("Special");
+            }
+            else if (string.Equals(data.Title, "Upload", StringComparison.OrdinalIgnoreCase))
+            {
+                if (user is null)
+                {
+                    if (!string.IsNullOrEmpty(_wikiMvcOptions.LoginPath))
+                    {
+                        var url = new StringBuilder(_wikiMvcOptions.LoginPath)
+                            .Append(_wikiMvcOptions.LoginPath.Contains('?') ? '&' : '?')
+                            .Append("returnUrl=")
+                            .Append(HttpContext.Request.GetEncodedUrl())
+                            .ToString();
+                        return LocalRedirect(url);
+                    }
+                    return View("NotAuthenticated");
+                }
+
+                if (user.IsDeleted || user.IsDisabled)
+                {
+                    return View("NotAuthorizedToUpload");
+                }
+
+                var limit = await _groupManager.UserMaxUploadLimit(user).ConfigureAwait(false);
+                if (limit == 0)
+                {
+                    return View("NotAuthorizedToUpload");
+                }
+
+                return View("Upload", new UploadViewModel(_wikiOptions, _dataStore, data));
+            }
+            else if (Enum.TryParse<SpecialListType>(data.Title, ignoreCase: true, out var type))
+            {
+                var pageNumber = HttpContext.Request.Query.TryGetValue("pageNumber", out var n)
+                    && n.Count >= 1
+                    && int.TryParse(n[0], out var pN)
+                    ? pN
+                    : 1;
+                var pageSize = HttpContext.Request.Query.TryGetValue("pageSize", out var p)
+                    && p.Count >= 1
+                    && int.TryParse(p[0], out var pS)
+                    ? pS
+                    : 50;
+                var sort = HttpContext.Request.Query.TryGetValue("sort", out var s)
+                    && s.Count >= 1
+                    ? s[0]
+                    : null;
+                var descending = HttpContext.Request.Query.TryGetValue("descending", out var d)
+                    && d.Count >= 1
+                    && bool.TryParse(d[0], out var ds)
+                    && ds;
+                var filter = HttpContext.Request.Query.TryGetValue("filter", out var f)
+                    && f.Count >= 1
+                    ? f[0]
+                    : null;
+                return await GetSpecialListAsync(
+                    type,
+                    pageNumber,
+                    pageSize,
+                    sort,
+                    descending,
+                    filter).ConfigureAwait(false);
+            }
+
+            return null;
+        }
+
+        private bool VerifyPermission(WikiRouteData data, IWikiUser? user, bool edit = false)
             => VerifyPermission(data.WikiItem, user, data.IsUserPage, data.IsGroupPage, edit);
 
-        private static bool VerifyPermission(Article? item, IWikiUser? user, bool userPage = false, bool groupPage = false, bool edit = false)
+        private bool VerifyPermission(Article? item, IWikiUser? user, bool userPage = false, bool groupPage = false, bool edit = false)
         {
             if (user?.IsDeleted == true || user?.IsDisabled == true)
             {
@@ -1610,7 +1850,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
 
                 if (groupPage)
                 {
-                    if (item.Title == WikiWebConfig.AdminGroupName)
+                    if (item.Title == _wikiWebOptions.AdminGroupName)
                     {
                         return user.IsWikiAdmin;
                     }
@@ -1675,204 +1915,6 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             return edit
                 ? item.AllowedEditors!.Intersect(formattedGroups).Any()
                 : item.AllowedViewers!.Intersect(formattedGroups).Any();
-        }
-
-        private async Task<IActionResult> GetSpecialListAsync(
-            SpecialListType type,
-            int pageNumber = 1,
-            int pageSize = 50,
-            string? sort = null,
-            bool descending = false,
-            string? filter = null)
-        {
-            var data = GetWikiRouteData();
-
-            if (type == SpecialListType.What_Links_Here)
-            {
-                data.IsSpecialList = true;
-
-                if (!ControllerContext.RouteData.Values.TryGetValue(WikiRouteData.RouteTitle, out var ti)
-                    || ti is not string wT
-                    || string.IsNullOrWhiteSpace(wT))
-                {
-                    return RedirectToAction("Read");
-                }
-
-                var user = await _userManager.GetUserAsync(User).ConfigureAwait(false);
-
-                var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
-                data.WikiItem = wikiItem;
-                if (wikiItem is null)
-                {
-                    data.CanEdit = user is not null
-                        && !WikiConfig.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
-                        && (user.IsWikiAdmin
-                        || !WikiWebConfig.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
-                }
-                else
-                {
-                    if (!VerifyPermission(data, user))
-                    {
-                        return View("NotAuthorized", data);
-                    }
-                    data.CanEdit = VerifyPermission(data, user, edit: true);
-                }
-            }
-            else
-            {
-                data.IsSystem = true;
-                data.Title = data.Title.Replace('_', ' ');
-                ViewData["Title"] = type.ToString().Replace('_', ' ');
-            }
-            var vm = await SpecialListViewModel.NewAsync(data, type, pageNumber, pageSize, sort, descending, filter).ConfigureAwait(false);
-            return View("WikiItemList", vm);
-        }
-
-        private async Task<Article?> GetWikiItemAsync(WikiRouteData data, bool noRedirect = false)
-        {
-            var article = GetWikiItem(data.Title, data.WikiNamespace, noRedirect || data.NoRedirect);
-            if (article is not null)
-            {
-                data.DisplayNamespace = article.WikiNamespace;
-                data.DisplayTitle = article.Title;
-                ViewData["Title"] = Article.GetFullTitle(data.DisplayTitle, data.DisplayNamespace, data.IsTalk);
-            }
-
-            if (data.IsUserPage)
-            {
-                var user = await _userManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false)
-                    ?? await _userManager.FindByNameAsync(article?.Title ?? data.Title).ConfigureAwait(false);
-                if (user is not null)
-                {
-                    data.DisplayTitle = user.UserName;
-                    ViewData["Title"] = Article.GetFullTitle(data.DisplayTitle, data.WikiNamespace, data.IsTalk);
-
-                    if (article is null && user.Id != data.Title)
-                    {
-                        article = GetWikiItem(user.Id, data.WikiNamespace, noRedirect || data.NoRedirect);
-                        if (article is not null)
-                        {
-                            data.Title = article.Title;
-                        }
-                    }
-                }
-            }
-            else if (data.IsGroupPage)
-            {
-                var group = await _groupManager.FindByIdAsync(article?.Title ?? data.Title).ConfigureAwait(false)
-                    ?? await _groupManager.FindByNameAsync(article?.Title ?? data.Title).ConfigureAwait(false);
-                if (group is not null)
-                {
-                    data.Group = group;
-                    data.DisplayTitle = group.GroupName;
-                    ViewData["Title"] = Article.GetFullTitle(data.DisplayTitle, data.WikiNamespace, data.IsTalk);
-
-                    if (article is null && group.Id != data.Title)
-                    {
-                        article = GetWikiItem(group.Id, data.WikiNamespace, noRedirect || data.NoRedirect);
-                        if (article is not null)
-                        {
-                            data.Title = article.Title;
-                        }
-                    }
-                }
-            }
-
-            return article;
-        }
-
-        private WikiRouteData GetWikiRouteData()
-        {
-            var data = new WikiRouteData(_wikiOptions, ControllerContext.RouteData, HttpContext.Request.Query);
-            if (data.IsCompact)
-            {
-                if (!WikiConfig.WikiLinkPrefix.EndsWith("/Compact"))
-                {
-                    WikiConfig.WikiLinkPrefix += "/Compact";
-                }
-            }
-            else if (WikiConfig.WikiLinkPrefix.EndsWith("/Compact"))
-            {
-                WikiConfig.WikiLinkPrefix = WikiConfig.WikiLinkPrefix[..^8];
-            }
-            ViewData[nameof(WikiRouteData)] = data;
-            ViewData["Title"] = Article.GetFullTitle(data.Title, data.WikiNamespace, data.IsTalk);
-            return data;
-        }
-
-        private async Task<IActionResult?> TryGettingSystemPage(WikiRouteData data, IWikiUser? user)
-        {
-            if (string.Equals(data.Title, "Search", StringComparison.OrdinalIgnoreCase))
-            {
-                return RedirectToAction("Search");
-            }
-            else if (string.Equals(data.Title, "Special", StringComparison.OrdinalIgnoreCase))
-            {
-                return View("Special");
-            }
-            else if (string.Equals(data.Title, "Upload", StringComparison.OrdinalIgnoreCase))
-            {
-                if (user is null)
-                {
-                    if (!string.IsNullOrEmpty(_wikiOptions.LoginPath))
-                    {
-                        var url = new StringBuilder(_wikiOptions.LoginPath)
-                            .Append(_wikiOptions.LoginPath.Contains('?') ? '&' : '?')
-                            .Append("returnUrl=")
-                            .Append(HttpContext.Request.GetEncodedUrl())
-                            .ToString();
-                        return LocalRedirect(url);
-                    }
-                    return View("NotAuthenticated");
-                }
-
-                if (user.IsDeleted || user.IsDisabled)
-                {
-                    return View("NotAuthorizedToUpload");
-                }
-
-                var limit = await _groupManager.UserMaxUploadLimit(user).ConfigureAwait(false);
-                if (limit == 0)
-                {
-                    return View("NotAuthorizedToUpload");
-                }
-
-                return View("Upload", new UploadViewModel(data));
-            }
-            else if (Enum.TryParse<SpecialListType>(data.Title, ignoreCase: true, out var type))
-            {
-                var pageNumber = HttpContext.Request.Query.TryGetValue("pageNumber", out var n)
-                    && n.Count >= 1
-                    && int.TryParse(n[0], out var pN)
-                    ? pN
-                    : 1;
-                var pageSize = HttpContext.Request.Query.TryGetValue("pageSize", out var p)
-                    && p.Count >= 1
-                    && int.TryParse(p[0], out var pS)
-                    ? pS
-                    : 50;
-                var sort = HttpContext.Request.Query.TryGetValue("sort", out var s)
-                    && s.Count >= 1
-                    ? s[0]
-                    : null;
-                var descending = HttpContext.Request.Query.TryGetValue("descending", out var d)
-                    && d.Count >= 1
-                    && bool.TryParse(d[0], out var ds)
-                    && ds;
-                var filter = HttpContext.Request.Query.TryGetValue("filter", out var f)
-                    && f.Count >= 1
-                    ? f[0]
-                    : null;
-                return await GetSpecialListAsync(
-                    type,
-                    pageNumber,
-                    pageSize,
-                    sort,
-                    descending,
-                    filter).ConfigureAwait(false);
-            }
-
-            return null;
         }
     }
 }

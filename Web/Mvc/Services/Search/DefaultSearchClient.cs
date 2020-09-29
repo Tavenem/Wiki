@@ -10,7 +10,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
 {
     /// <summary>
     /// <para>
-    /// The default search client performs a naive search of the <see cref="WikiConfig.DataStore"/>, looking
+    /// The default search client performs a naive search of the <see cref="_dataStore"/>, looking
     /// for exact string matches of the query in the title and markdown of each item.
     /// </para>
     /// <para>
@@ -21,13 +21,22 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
     /// </summary>
     public class DefaultSearchClient : ISearchClient
     {
+        private readonly IDataStore _dataStore;
         private readonly ILogger<DefaultSearchClient> _logger;
+        private readonly IWikiOptions _options;
 
         /// <summary>
         /// Initializes a new instance of <see cref="DefaultSearchClient"/>.
         /// </summary>
-        /// <param name="logger">An <see cref="ILogger"/> instance.</param>
-        public DefaultSearchClient(ILogger<DefaultSearchClient> logger) => _logger = logger;
+        public DefaultSearchClient(
+            IDataStore dataStore,
+            ILogger<DefaultSearchClient> logger,
+            IWikiOptions options)
+        {
+            _dataStore = dataStore;
+            _logger = logger;
+            _options = options;
+        }
 
         /// <summary>
         /// Search for wiki content which matches the given search criteria.
@@ -70,14 +79,14 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
 
             if (anyExcludedNamespaces
                 && includedNamespaces.Count == 1
-                && includedNamespaces[0] == WikiConfig.CategoryNamespace)
+                && includedNamespaces[0] == _options.CategoryNamespace)
             {
                 return await SearchCategoryAsync(request, user).ConfigureAwait(false);
             }
 
             if (anyExcludedNamespaces
                 && includedNamespaces.Count == 1
-                && includedNamespaces[0] == WikiConfig.FileNamespace)
+                && includedNamespaces[0] == _options.FileNamespace)
             {
                 return await SearchFilesAsync(request, user).ConfigureAwait(false);
             }
@@ -180,7 +189,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
 
             try
             {
-                var query = WikiConfig.DataStore.Query<Article>().Where(exp);
+                var query = _dataStore.Query<Article>().Where(exp);
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.OrderBy(x => x.TimestampTicks, request.Descending);
@@ -196,10 +205,11 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                     articles.Select(x => new SearchHit(
                         x.Title,
                         x.WikiNamespace,
+                        Article.GetFullTitle(_options, x.Title, x.WikiNamespace),
                         queryEmpty
-                            ? x.GetPlainText()
+                            ? x.GetPlainText(_options, _dataStore)
                             : Regex.Replace(
-                                x.GetPlainText(x.MarkdownContent[
+                                x.GetPlainText(_options, _dataStore, x.MarkdownContent[
                                     Math.Max(0, x.MarkdownContent.LastIndexOf(
                                         ' ',
                                         Math.Max(0, x.MarkdownContent.LastIndexOf(
@@ -329,7 +339,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
 
             try
             {
-                var query = WikiConfig.DataStore.Query<Category>().Where(exp);
+                var query = _dataStore.Query<Category>().Where(exp);
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.OrderBy(x => x.TimestampTicks, request.Descending);
@@ -345,10 +355,11 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                     articles.Select(x => new SearchHit(
                         x.Title,
                         x.WikiNamespace,
+                        Article.GetFullTitle(_options, x.Title, x.WikiNamespace),
                         queryEmpty
-                            ? x.GetPlainText()
+                            ? x.GetPlainText(_options, _dataStore)
                             : Regex.Replace(
-                                x.GetPlainText(x.MarkdownContent[
+                                x.GetPlainText(_options, _dataStore, x.MarkdownContent[
                                     Math.Max(0, x.MarkdownContent.LastIndexOf(
                                         ' ',
                                         Math.Max(0, x.MarkdownContent.LastIndexOf(
@@ -501,7 +512,7 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
 
             try
             {
-                var query = WikiConfig.DataStore.Query<WikiFile>().Where(exp);
+                var query = _dataStore.Query<WikiFile>().Where(exp);
                 if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
                 {
                     query = query.OrderBy(x => x.TimestampTicks, request.Descending);
@@ -517,10 +528,11 @@ namespace NeverFoundry.Wiki.Mvc.Services.Search
                     articles.Select(x => new SearchHit(
                         x.Title,
                         x.WikiNamespace,
+                        Article.GetFullTitle(_options, x.Title, x.WikiNamespace),
                         queryEmpty
-                            ? x.GetPlainText()
+                            ? x.GetPlainText(_options, _dataStore)
                             : Regex.Replace(
-                                x.GetPlainText(x.MarkdownContent[
+                                x.GetPlainText(_options, _dataStore, x.MarkdownContent[
                                     Math.Max(0, x.MarkdownContent.LastIndexOf(
                                         ' ',
                                         Math.Max(0, x.MarkdownContent.LastIndexOf(

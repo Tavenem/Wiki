@@ -1,4 +1,5 @@
-﻿using NeverFoundry.Wiki.Web;
+﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,7 +28,13 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// <summary>
         /// Get a new <see cref="GroupViewModel"/>.
         /// </summary>
-        public static async Task<GroupViewModel> NewAsync(IWikiGroupManager groupManager, WikiRouteData data, WikiItemViewModel vm)
+        public static async Task<GroupViewModel> NewAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
+            IWikiGroupManager groupManager,
+            WikiRouteData data,
+            WikiItemViewModel vm)
         {
             var users = new List<IWikiUser>();
             if (data.Group is not null)
@@ -39,7 +46,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 data,
                 vm.Html,
                 vm.IsDiff,
-                users.Select(x => new UserViewModel(x)));
+                users.Select(x => new UserViewModel(wikiOptions, wikiWebOptions, dataStore, x)));
         }
     }
 }

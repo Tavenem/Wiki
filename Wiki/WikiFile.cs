@@ -56,21 +56,9 @@ namespace NeverFoundry.Wiki
         public string FileType { get; private set; }
 
         /// <summary>
-        /// Gets the full title of this item (including namespace).
-        /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public override string FullTitle => $"{WikiConfig.FileNamespace}:{Title}";
-
-        /// <summary>
         /// The ID of the user who uploaded the file.
         /// </summary>
         public string Uploader { get; set; }
-
-        /// <summary>
-        /// The namespace to which this file belongs.
-        /// </summary>
-        public override string WikiNamespace => WikiConfig.FileNamespace;
 
         /// <summary>
         /// Initializes a new instance of <see cref="Category"/>.
@@ -98,6 +86,9 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="timestampTicks">
         /// The timestamp when this message was sent, in UTC Ticks.
+        /// </param>
+        /// <param name="wikiNamespace">
+        /// The namespace to which this article belongs.
         /// </param>
         /// <param name="isDeleted">
         /// Indicates that this article has been marked as deleted.
@@ -166,6 +157,7 @@ namespace NeverFoundry.Wiki
             string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
+            string wikiNamespace,
             bool isDeleted,
             string? owner,
             IReadOnlyCollection<string>? allowedEditors,
@@ -180,7 +172,7 @@ namespace NeverFoundry.Wiki
                 preview,
                 wikiLinks,
                 timestampTicks,
-                WikiConfig.FileNamespace,
+                wikiNamespace,
                 isDeleted,
                 owner,
                 allowedEditors,
@@ -206,8 +198,11 @@ namespace NeverFoundry.Wiki
             string fileType,
             string uploader,
             string? markdown,
+            string html,
+            string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
+            string wikiNamespace,
             bool isDeleted = false,
             string? owner = null,
             IEnumerable<string>? allowedEditors = null,
@@ -217,9 +212,11 @@ namespace NeverFoundry.Wiki
                 id,
                 title,
                 markdown,
+                html,
+                preview,
                 wikiLinks,
                 timestampTicks,
-                WikiConfig.FileNamespace,
+                wikiNamespace,
                 isDeleted,
                 owner,
                 allowedEditors,
@@ -247,6 +244,7 @@ namespace NeverFoundry.Wiki
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>))
                 ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()),
             (long?)info.GetValue(nameof(TimestampTicks), typeof(long)) ?? default,
+            (string?)info.GetValue(nameof(WikiNamespace), typeof(string)) ?? string.Empty,
             (bool?)info.GetValue(nameof(IsDeleted), typeof(bool)) ?? default,
             (string?)info.GetValue(nameof(Owner), typeof(string)),
             (IReadOnlyCollection<string>?)info.GetValue(nameof(AllowedEditors), typeof(IReadOnlyCollection<string>)),
@@ -259,25 +257,30 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets the latest revision for the file with the given title.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the file to retrieve.</param>
         /// <returns>The latest revision for the file with the given title; or <see
         /// langword="null"/> if no such file exists.</returns>
-        public static WikiFile? GetFile(string title)
+        public static WikiFile? GetFile(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string title)
         {
             WikiFile? file = null;
-            var reference = PageReference.GetPageReference(title, WikiConfig.FileNamespace);
+            var reference = PageReference.GetPageReference(dataStore, title, options.FileNamespace);
             if (reference is not null)
             {
-                file = WikiConfig.DataStore.GetItem<WikiFile>(reference.Reference);
+                file = dataStore.GetItem<WikiFile>(reference.Reference);
             }
             // If no exact match exists, ignore case if only one such match exists.
             if (file is null)
             {
-                var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(title, WikiConfig.FileNamespace);
+                var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, options.FileNamespace);
                 if (normalizedReference is not null
                     && normalizedReference.References.Count == 1)
                 {
-                    file = WikiConfig.DataStore.GetItem<WikiFile>(normalizedReference.References[0]);
+                    file = dataStore.GetItem<WikiFile>(normalizedReference.References[0]);
                 }
             }
 
@@ -287,6 +290,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets a new <see cref="WikiFile"/> instance.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the file. Must be unique and non-empty.</param>
         /// <param name="editor">
         /// The ID of the user who created this file.
@@ -335,6 +340,8 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </param>
         public static async Task<WikiFile> NewAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string title,
             string editor,
             string filePath,
@@ -352,19 +359,20 @@ namespace NeverFoundry.Wiki
             }
             title = title.ToWikiTitleCase();
 
-            var wikiId = WikiConfig.DataStore.CreateNewIdFor<WikiFile>();
+            var wikiId = dataStore.CreateNewIdFor<WikiFile>();
 
-            await CreatePageReferenceAsync(wikiId, title, WikiConfig.FileNamespace).ConfigureAwait(false);
+            await CreatePageReferenceAsync(dataStore, wikiId, title, options.FileNamespace)
+                .ConfigureAwait(false);
 
             var revision = new Revision(
                 wikiId,
                 editor,
                 title,
-                WikiConfig.FileNamespace,
+                options.FileNamespace,
                 null,
                 markdown,
                 revisionComment);
-            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             var md = markdown;
             List<Transclusion> transclusions;
@@ -375,15 +383,19 @@ namespace NeverFoundry.Wiki
             else
             {
                 md = TransclusionParser.Transclude(
+                    options,
+                    dataStore,
                     title,
-                    $"{WikiConfig.FileNamespace}:{title}",
+                    $"{options.FileNamespace}:{title}",
                     markdown,
                     out transclusions);
             }
 
-            var wikiLinks = GetWikiLinks(md, title, WikiConfig.FileNamespace);
+            var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace);
 
             var categories = await UpdateCategoriesAsync(
+                options,
+                dataStore,
                 wikiId,
                 editor,
                 owner,
@@ -400,23 +412,30 @@ namespace NeverFoundry.Wiki
                 editor,
                 type,
                 markdown,
+                RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, options.FileNamespace, markdown)),
+                RenderPreview(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, options.FileNamespace, markdown, true)),
                 new ReadOnlyCollection<WikiLink>(wikiLinks),
                 revision.TimestampTicks,
+                options.FileNamespace,
                 isDeleted: false,
                 owner,
                 allowedEditors,
                 allowedViewers,
                 categories,
                 transclusions);
-            await WikiConfig.DataStore.StoreItemAsync(file).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(file).ConfigureAwait(false);
 
-            await AddPageTransclusionsAsync(wikiId, transclusions).ConfigureAwait(false);
+            await AddPageTransclusionsAsync(dataStore, wikiId, transclusions)
+                .ConfigureAwait(false);
 
-            await AddPageLinksAsync(wikiId, wikiLinks).ConfigureAwait(false);
+            await AddPageLinksAsync(dataStore, wikiId, wikiLinks)
+                .ConfigureAwait(false);
 
             await UpdateReferencesAsync(
+                options,
+                dataStore,
                 title,
-                WikiConfig.FileNamespace,
+                options.FileNamespace,
                 false,
                 true,
                 null,
@@ -449,6 +468,7 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(Preview), Preview);
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TimestampTicks), TimestampTicks);
+            info.AddValue(nameof(WikiNamespace), WikiNamespace);
             info.AddValue(nameof(IsDeleted), IsDeleted);
             info.AddValue(nameof(Owner), Owner);
             info.AddValue(nameof(AllowedEditors), AllowedEditors);
@@ -460,6 +480,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Revises this <see cref="WikiFile"/> instance.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="editor">
         /// The ID of the user who made this revision.
         /// </param>
@@ -521,6 +543,8 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </param>
         public async Task ReviseAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string editor,
             string? title = null,
             string? path = null,
@@ -576,10 +600,12 @@ namespace NeverFoundry.Wiki
 
                     if (Transclusions is not null)
                     {
-                        await RemovePageTransclusionsAsync(Id, Transclusions).ConfigureAwait(false);
+                        await RemovePageTransclusionsAsync(dataStore, Id, Transclusions)
+                            .ConfigureAwait(false);
                     }
 
-                    await RemovePageLinksAsync(Id, WikiLinks).ConfigureAwait(false);
+                    await RemovePageLinksAsync(dataStore, Id, WikiLinks)
+                        .ConfigureAwait(false);
 
                     Transclusions = null;
                     WikiLinks = new List<WikiLink>().AsReadOnly();
@@ -592,11 +618,13 @@ namespace NeverFoundry.Wiki
 
             if (!sameTitle && !IsDeleted)
             {
-                await CreatePageReferenceAsync(Id, title, WikiConfig.FileNamespace).ConfigureAwait(false);
+                await CreatePageReferenceAsync(dataStore, Id, title, options.FileNamespace)
+                    .ConfigureAwait(false);
             }
             if (!sameTitle)
             {
-                await RemovePageReferenceAsync(Id, previousTitle, WikiConfig.FileNamespace).ConfigureAwait(false);
+                await RemovePageReferenceAsync(dataStore, Id, previousTitle, options.FileNamespace)
+                    .ConfigureAwait(false);
             }
 
             var changed = wasDeleted != IsDeleted
@@ -608,25 +636,33 @@ namespace NeverFoundry.Wiki
 
                 var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
                 var md = TransclusionParser.Transclude(
+                    options,
+                    dataStore,
                     title,
-                    $"{WikiConfig.FileNamespace}:{title}",
+                    $"{options.FileNamespace}:{title}",
                     markdown!,
                     out var transclusions);
                 Transclusions = transclusions.Count == 0
                     ? null
                     : transclusions.AsReadOnly();
-                await RemovePageTransclusionsAsync(Id, previousTransclusions.Except(transclusions)).ConfigureAwait(false);
-                await AddPageTransclusionsAsync(Id, transclusions.Except(previousTransclusions)).ConfigureAwait(false);
+                await RemovePageTransclusionsAsync(dataStore, Id, previousTransclusions.Except(transclusions))
+                    .ConfigureAwait(false);
+                await AddPageTransclusionsAsync(dataStore, Id, transclusions.Except(previousTransclusions))
+                    .ConfigureAwait(false);
 
                 var previousWikiLinks = WikiLinks.ToList();
-                WikiLinks = GetWikiLinks(md, title, WikiConfig.FileNamespace).AsReadOnly();
-                await RemovePageLinksAsync(Id, previousWikiLinks.Except(WikiLinks)).ConfigureAwait(false);
-                await AddPageLinksAsync(Id, WikiLinks.Except(previousWikiLinks)).ConfigureAwait(false);
+                WikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace).AsReadOnly();
+                await RemovePageLinksAsync(dataStore, Id, previousWikiLinks.Except(WikiLinks))
+                    .ConfigureAwait(false);
+                await AddPageLinksAsync(dataStore, Id, WikiLinks.Except(previousWikiLinks))
+                    .ConfigureAwait(false);
             }
 
             if (changed)
             {
                 Categories = (await UpdateCategoriesAsync(
+                    options,
+                    dataStore,
                     Id,
                     editor,
                     owner,
@@ -637,7 +673,7 @@ namespace NeverFoundry.Wiki
                     .ConfigureAwait(false))
                     .AsReadOnly();
 
-                Update();
+                Update(options, dataStore);
             }
 
             Owner = owner;
@@ -648,23 +684,25 @@ namespace NeverFoundry.Wiki
                 Id,
                 editor,
                 title,
-                WikiConfig.FileNamespace,
+                options.FileNamespace,
                 previousMarkdown,
                 MarkdownContent,
                 revisionComment);
-            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             TimestampTicks = revision.TimestampTicks;
 
-            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(this).ConfigureAwait(false);
 
             await UpdateReferencesAsync(
+                options,
+                dataStore,
                 title,
-                WikiConfig.FileNamespace,
+                options.FileNamespace,
                 IsDeleted,
                 sameTitle,
                 previousTitle,
-                WikiConfig.FileNamespace,
+                options.FileNamespace,
                 false,
                 false)
                 .ConfigureAwait(false);

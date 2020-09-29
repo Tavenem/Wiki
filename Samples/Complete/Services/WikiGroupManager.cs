@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Web;
 using System;
 using System.Collections.Generic;
@@ -14,6 +15,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
     /// </summary>
     public class WikiGroupManager<TUser> : IWikiGroupManager where TUser : IdentityUser, IWikiUser
     {
+        private readonly IDataStore _dataStore;
         private readonly UserManager<TUser> _userManager;
 
         /// <summary>
@@ -22,8 +24,13 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
         /// <param name="userManager">The <see
         /// cref="UserManager{TUser}"/> upon which this instance is
         /// based.</param>
-        public WikiGroupManager(UserManager<TUser> userManager)
-            => _userManager = userManager;
+        public WikiGroupManager(
+            IDataStore dataStore,
+            UserManager<TUser> userManager)
+        {
+            _dataStore = dataStore;
+            _userManager = userManager;
+        }
 
         /// <summary>
         /// Finds and returns a group, if any, which has the specified <paramref name="groupId" />.
@@ -34,7 +41,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
         /// group matching the specified <paramref name="groupId" /> if it exists.
         /// </returns>
         public async ValueTask<IWikiGroup?> FindByIdAsync(string? groupId)
-            => await WikiConfig.DataStore.GetItemAsync<WikiGroup>(groupId).ConfigureAwait(false);
+            => await _dataStore.GetItemAsync<WikiGroup>(groupId).ConfigureAwait(false);
 
         /// <summary>
         /// <para>
@@ -56,7 +63,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
             {
                 return null;
             }
-            var list = await WikiConfig.DataStore.Query<WikiGroup>()
+            var list = await _dataStore.Query<WikiGroup>()
                 .Where(x => x.GroupName == groupName)
                 .Take(2)
                 .ToListAsync()
@@ -191,13 +198,17 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
             {
                 return 0;
             }
+            var max = user.UploadLimit;
+            if (max < 0)
+            {
+                return max;
+            }
             var claims = await _userManager.GetClaimsAsync(user).ConfigureAwait(false);
-            var max = 0;
             foreach (var groupId in claims
                 .Where(x => x.Type == WikiClaims.Claim_WikiGroup)
                 .Select(x => x.Value))
             {
-                var group = await WikiConfig.DataStore.GetItemAsync<WikiGroup>(groupId).ConfigureAwait(false);
+                var group = await _dataStore.GetItemAsync<WikiGroup>(groupId).ConfigureAwait(false);
                 if (group is not null)
                 {
                     if (group.UploadLimit < 0)

@@ -12,16 +12,6 @@ namespace NeverFoundry.Wiki
     public class Transclusion : ISerializable, IEquatable<Transclusion>
     {
         /// <summary>
-        /// Gets the full title of this transclusion (including namespace if the namespace is not
-        /// <see cref="WikiConfig.DefaultNamespace"/>).
-        /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public virtual string FullTitle => string.CompareOrdinal(WikiNamespace, WikiConfig.DefaultNamespace) == 0
-            ? Title
-            : $"{WikiNamespace}:{Title}";
-
-        /// <summary>
         /// The title for the linked article.
         /// </summary>
         public string Title { get; }
@@ -38,10 +28,10 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiNamespace">The namespace for the linked article.</param>
         [System.Text.Json.Serialization.JsonConstructor]
         [Newtonsoft.Json.JsonConstructor]
-        public Transclusion(string title, string? wikiNamespace)
+        public Transclusion(string title, string wikiNamespace)
         {
             Title = title;
-            WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
+            WikiNamespace = wikiNamespace;
         }
 
         private Transclusion(SerializationInfo info, StreamingContext context) : this(

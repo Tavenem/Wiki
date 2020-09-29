@@ -19,19 +19,15 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
                     sourceSerializer: JsonNetSerializer.Default)
                 .DefaultIndex(defaultIndex)
                 .DefaultFieldNameInferrer(x => x)
-                .DefaultMappingFor<WikiLink>(m =>
-                    m.Ignore(i => i.FullTitle))
+                .DefaultMappingFor<WikiLink>(m => m)
                 .DefaultMappingFor<Article>(m =>
                     m.IndexName(defaultIndex)
-                    .Ignore(i => i.FullTitle)
                     .Ignore(i => i.Timestamp))
                 .DefaultMappingFor<Category>(m =>
                     m.IndexName(defaultIndex)
-                    .Ignore(i => i.FullTitle)
                     .Ignore(i => i.Timestamp))
                 .DefaultMappingFor<WikiFile>(m =>
                     m.IndexName(defaultIndex)
-                    .Ignore(i => i.FullTitle)
                     .Ignore(i => i.Timestamp));
 
             var client = new ElasticClient(settings);

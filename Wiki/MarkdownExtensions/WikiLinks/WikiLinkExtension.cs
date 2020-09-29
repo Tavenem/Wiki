@@ -2,6 +2,7 @@
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
 using Markdig.Renderers.Html.Inlines;
+using NeverFoundry.DataStorage;
 
 namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
 {
@@ -11,6 +12,25 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
     public class WikiLinkExtension : IMarkdownExtension
     {
         /// <summary>
+        /// The <see cref="IDataStore"/> used by this instance.
+        /// </summary>
+        public IDataStore DataStore { get; }
+
+        /// <summary>
+        /// The options for this instance.
+        /// </summary>
+        public IWikiOptions Options { get; }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiLinkExtension"/>.
+        /// </summary>
+        public WikiLinkExtension(IWikiOptions options, IDataStore dataStore)
+        {
+            Options = options;
+            DataStore = dataStore;
+        }
+
+        /// <summary>
         /// Setups this extension for the specified pipeline.
         /// </summary>
         /// <param name="pipeline">The pipeline.</param>
@@ -18,7 +38,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
         {
             if (!pipeline.InlineParsers.Contains<WikiLinkInlineParser>())
             {
-                pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new WikiLinkInlineParser());
+                pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new WikiLinkInlineParser(Options, DataStore));
             }
         }
 
@@ -32,7 +52,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             if (renderer is HtmlRenderer htmlRenderer
                 && !htmlRenderer.ObjectRenderers.Contains<WikiLinkInlineRenderer>())
             {
-                htmlRenderer.ObjectRenderers.InsertBefore<LinkInlineRenderer>(new WikiLinkInlineRenderer());
+                htmlRenderer.ObjectRenderers.InsertBefore<LinkInlineRenderer>(new WikiLinkInlineRenderer(Options));
             }
         }
     }

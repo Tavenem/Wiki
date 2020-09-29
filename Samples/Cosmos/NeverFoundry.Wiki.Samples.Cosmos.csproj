@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NeverFoundry.DataStore.Cosmos" Version="0.26.2" />
+    <PackageReference Include="NeverFoundry.DataStore.Cosmos" Version="0.27.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -94,25 +94,27 @@ namespace NeverFoundry.Wiki.Samples.Complete
             services.AddSingleton<IEmailConfiguration>(Configuration.GetSection("EmailConfiguration")?.Get<EmailConfiguration>() ?? new EmailConfiguration());
             services.AddTransient<IEmailService, EmailService>();
 
-            WikiWebConfig.ContactPageTitle = null;
-            WikiWebConfig.ContentsPageTitle = null;
-            WikiWebConfig.CopyrightPageTitle = null;
-            WikiWebConfig.PolicyPageTitle = null;
-            WikiWebConfig.MaxFileSize = 100000000; // 100 MB
             services.AddWiki(
                 typeof(WikiUserManager<WikiUser>),
                 typeof(WikiGroupManager<WikiUser>),
-                provider =>
+                new WikiOptions
                 {
-                    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
-                    return new WikiOptions
-                    {
-                        DataStore = provider.GetRequiredService<IDataStore>(),
-                        CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
-                        LoginPath = "/Account/Login",
-                        MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
-                        TenorAPIKey = "ZB1P1TN5PVFQ",
-                    };
+                    LinkTemplate = WikiMvcOptions.DefaultLinkTemplate,
+                },
+                new WikiWebOptions
+                {
+                    ContactPageTitle = null,
+                    ContentsPageTitle = null,
+                    CopyrightPageTitle = null,
+                    PolicyPageTitle = null,
+                },
+                new WikiMvcOptions
+                {
+                    CompactRoutePort = 5003,
+                    CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
+                    LoginPath = "/Account/Login",
+                    MainLayoutPath = "/Pages/Shared/_MainLayout.cshtml",
+                    TenorAPIKey = "ZB1P1TN5PVFQ",
                 },
                 searchClientType: typeof(ElasticSearchClient));
         }

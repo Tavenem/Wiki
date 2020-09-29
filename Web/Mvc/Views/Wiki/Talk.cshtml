@@ -1,4 +1,6 @@
 ﻿@model TalkViewModel
+@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
 
 <div class="wiki-talk-messages">
     <ul id="wiki-talk-message-list"></ul>
@@ -48,7 +50,7 @@ else
     <script src="~/_content/NeverFoundry.Wiki.Mvc/chat.js"></script>
     <script>
         window.addEventListener("load", function () {
-            window.wikimvcchat.init("@Model.TalkHubRoute", "@WikiConfig.WikiLinkPrefix", "@WikiWebConfig.UserNamespace", "@Model.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
+            window.wikimvcchat.init("@Model.TalkHubRoute", "@WikiOptions.WikiLinkPrefix", "@WikiWebOptions.UserNamespace", "@Model.TenorAPIKey", "@Model.TopicId", '@Html.Raw(
                 System.Text.Json.JsonSerializer.Serialize(
                     Model.Messages,
                     new System.Text.Json.JsonSerializerOptions

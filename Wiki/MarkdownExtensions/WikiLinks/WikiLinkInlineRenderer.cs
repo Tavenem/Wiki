@@ -11,6 +11,16 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
     public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
     {
         /// <summary>
+        /// The options for this instance.
+        /// </summary>
+        public IWikiOptions Options { get; }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="WikiLinkInlineRenderer"/>.
+        /// </summary>
+        public WikiLinkInlineRenderer(IWikiOptions options) => Options = options;
+
+        /// <summary>
         /// Writes the specified Markdown object to the renderer.
         /// </summary>
         /// <param name="renderer">The renderer.</param>
@@ -24,7 +34,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             var fullTitle = !link.IsCommons
                 && !link.IsWikipedia
                 && (link.Title.Length == 0 || link.Title[0] != '#')
-                ? Article.GetFullTitle(link.Title, link.WikiNamespace, link.IsTalk)
+                ? Article.GetFullTitle(Options, link.Title, link.WikiNamespace, link.IsTalk)
                 : link.Title;
 
             if (renderer.EnableHtmlForInline)
@@ -49,7 +59,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                     }
                     else
                     {
-                        renderer.Write($"<a href=\"/{WikiConfig.WikiLinkPrefix}/");
+                        renderer.Write($"<a href=\"/{Options.WikiLinkPrefix}/");
                     }
                     link.GetAttributes().AddClass(link.Missing ? "wiki-link-missing" : "wiki-link-exists");
                 }
@@ -60,10 +70,10 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 if (!link.IsWikipedia
                     && !link.IsCommons
                     && (link.Title.Length == 0 || link.Title[0] != '#')
-                    && !string.IsNullOrEmpty(WikiConfig.LinkTemplate))
+                    && !string.IsNullOrEmpty(Options.LinkTemplate))
                 {
                     renderer.Write(" ");
-                    renderer.Write(WikiConfig.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(fullTitle)));
+                    renderer.Write(Options.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(fullTitle)));
                 }
             }
             if (link.IsImage)
@@ -156,7 +166,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 else
                 {
                     if (!string.IsNullOrEmpty(link.WikiNamespace)
-                        && !string.Equals(link.WikiNamespace, WikiConfig.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
+                        && !string.Equals(link.WikiNamespace, Options.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
                     {
                         if (renderer.EnableHtmlForInline)
                         {

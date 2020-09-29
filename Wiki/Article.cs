@@ -89,16 +89,6 @@ namespace NeverFoundry.Wiki
         public IReadOnlyCollection<string> Categories { get; private protected set; } = new List<string>().AsReadOnly();
 
         /// <summary>
-        /// Gets the full title of this article (including namespace if the namespace is not
-        /// <see cref="WikiConfig.DefaultNamespace"/>).
-        /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public virtual string FullTitle => string.CompareOrdinal(WikiNamespace, WikiConfig.DefaultNamespace) == 0
-            ? Title
-            : $"{WikiNamespace}:{Title}";
-
-        /// <summary>
         /// <para>
         /// Indicates whether this is a redirect to a page which does not exist.
         /// </para>
@@ -279,13 +269,12 @@ namespace NeverFoundry.Wiki
             bool isBrokenRedirect,
             bool isDoubleRedirect,
             IReadOnlyCollection<string> categories,
-            IReadOnlyList<Transclusion>? transclusions) : base(id, html, markdownContent, preview, wikiLinks)
+            IReadOnlyList<Transclusion>? transclusions) : base(id, markdownContent, html, preview, wikiLinks)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
-            wikiNamespace ??= WikiConfig.DefaultNamespace;
 
             if (!string.IsNullOrEmpty(owner))
             {
@@ -309,9 +298,11 @@ namespace NeverFoundry.Wiki
             string id,
             string title,
             string? markdown,
+            string html,
+            string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
-            string? wikiNamespace = null,
+            string wikiNamespace,
             bool isDeleted = false,
             string? owner = null,
             IEnumerable<string>? allowedEditors = null,
@@ -321,13 +312,12 @@ namespace NeverFoundry.Wiki
             string? redirectNamespace = null,
             string? redirectTitle = null,
             bool isBrokenRedirect = false,
-            bool isDoubleRedirect = false) : base(id, markdown, wikiLinks)
+            bool isDoubleRedirect = false) : base(id, markdown, html, preview, wikiLinks)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
-            wikiNamespace ??= WikiConfig.DefaultNamespace;
 
             if (!string.IsNullOrEmpty(owner))
             {
@@ -347,7 +337,6 @@ namespace NeverFoundry.Wiki
                 ? null
                 : new ReadOnlyCollection<Transclusion>(transclusions);
             WikiNamespace = wikiNamespace;
-            Update();
         }
 
         private Article(SerializationInfo info, StreamingContext context) : this(
@@ -375,6 +364,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets the latest revision for the article with the given title.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the article to retrieve.</param>
         /// <param name="wikiNamespace">
         /// <para>
@@ -382,7 +373,7 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// <para>
         /// If left <see langword="null"/> the default namespace (<see
-        /// cref="WikiConfig.DefaultNamespace"/>) will be assumed.
+        /// cref="IWikiOptions.DefaultNamespace"/>) will be assumed.
         /// </para>
         /// </param>
         /// <param name="noRedirect">
@@ -391,14 +382,19 @@ namespace NeverFoundry.Wiki
         /// </param>
         /// <returns>The latest revision for the article with the given title; or <see
         /// langword="null"/> if no such article exists.</returns>
-        public static Article? GetArticle(string? title, string? wikiNamespace = null, bool noRedirect = false)
+        public static Article? GetArticle(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? title,
+            string? wikiNamespace = null,
+            bool noRedirect = false)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
                 return null;
             }
 
-            wikiNamespace ??= WikiConfig.DefaultNamespace;
+            wikiNamespace ??= options.DefaultNamespace;
             Article? article = null;
             var count = 0;
             var ids = new HashSet<string>();
@@ -407,19 +403,19 @@ namespace NeverFoundry.Wiki
             {
                 redirect = false;
 
-                var reference = PageReference.GetPageReference(title, wikiNamespace);
+                var reference = PageReference.GetPageReference(dataStore, title, wikiNamespace);
                 if (reference is not null)
                 {
-                    article = WikiConfig.DataStore.GetItem<Article>(reference.Reference);
+                    article = dataStore.GetItem<Article>(reference.Reference);
                 }
                 // If no exact match exists, ignore case if only one such match exists.
                 if (article is null)
                 {
-                    var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(title, wikiNamespace);
+                    var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, wikiNamespace);
                     if (normalizedReference is not null
                         && normalizedReference.References.Count == 1)
                     {
-                        article = WikiConfig.DataStore.GetItem<Article>(normalizedReference.References[0]);
+                        article = dataStore.GetItem<Article>(normalizedReference.References[0]);
                     }
                 }
 
@@ -432,7 +428,7 @@ namespace NeverFoundry.Wiki
                     }
                     ids.Add(article.Id);
                     title = article.RedirectTitle;
-                    wikiNamespace = article.RedirectNamespace ?? WikiConfig.DefaultNamespace;
+                    wikiNamespace = article.RedirectNamespace ?? options.DefaultNamespace;
                 }
 
                 count++;
@@ -442,22 +438,26 @@ namespace NeverFoundry.Wiki
 
         /// <summary>
         /// Gets the full title from the given parts (includes namespace if the namespace is not
-        /// <see cref="WikiConfig.DefaultNamespace"/>).
+        /// <see cref="IWikiOptions.DefaultNamespace"/>).
         /// </summary>
         /// <returns>The full title from the given parts.</returns>
-        public static string GetFullTitle(string title, string? wikiNamespace = null, bool talk = false)
+        public static string GetFullTitle(
+            IWikiOptions options,
+            string title,
+            string? wikiNamespace = null,
+            bool talk = false)
         {
             if (talk)
             {
                 return string.IsNullOrWhiteSpace(wikiNamespace)
-                    || string.CompareOrdinal(wikiNamespace, WikiConfig.DefaultNamespace) == 0
-                  ? $"{WikiConfig.TalkNamespace}:{title}"
-                  : $"{WikiConfig.TalkNamespace}:{wikiNamespace}:{title}";
+                    || string.CompareOrdinal(wikiNamespace, options.DefaultNamespace) == 0
+                  ? $"{options.TalkNamespace}:{title}"
+                  : $"{options.TalkNamespace}:{wikiNamespace}:{title}";
             }
             else
             {
                 return string.IsNullOrWhiteSpace(wikiNamespace)
-                    || string.CompareOrdinal(wikiNamespace, WikiConfig.DefaultNamespace) == 0
+                    || string.CompareOrdinal(wikiNamespace, options.DefaultNamespace) == 0
                   ? title
                   : $"{wikiNamespace}:{title}";
             }
@@ -466,27 +466,28 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Breaks the given title string into parts.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
         /// <param name="text">The full title string.</param>
         /// <returns>
         /// The namespace and title, and <see cref="bool"/> flags indicating whether the title
         /// indicates a discussion page, as well as whether the namespace was omitted.
         /// </returns>
-        public static (string wikiNamespace, string title, bool isTalk, bool defaultNamespace) GetTitleParts(string? text)
+        public static (string wikiNamespace, string title, bool isTalk, bool defaultNamespace) GetTitleParts(IWikiOptions options, string? text)
         {
             string wikiNamespace, title;
             var isTalk = false;
             var defaultNamespace = false;
             if (string.IsNullOrWhiteSpace(text))
             {
-                wikiNamespace = WikiConfig.DefaultNamespace;
-                title = WikiConfig.MainPageTitle;
+                wikiNamespace = options.DefaultNamespace;
+                title = options.MainPageTitle;
             }
             else
             {
                 var parts = text.Split(':', StringSplitOptions.RemoveEmptyEntries);
                 if (parts.Length > 2)
                 {
-                    if (string.CompareOrdinal(parts[0], WikiConfig.TalkNamespace) == 0)
+                    if (string.CompareOrdinal(parts[0], options.TalkNamespace) == 0)
                     {
                         isTalk = true;
                         wikiNamespace = parts[1].ToWikiTitleCase();
@@ -505,26 +506,26 @@ namespace NeverFoundry.Wiki
                 }
                 else
                 {
-                    wikiNamespace = WikiConfig.DefaultNamespace;
+                    wikiNamespace = options.DefaultNamespace;
                     defaultNamespace = true;
                     title = text.ToWikiTitleCase();
                 }
             }
-            if (!isTalk && string.CompareOrdinal(wikiNamespace, WikiConfig.TalkNamespace) == 0)
+            if (!isTalk && string.CompareOrdinal(wikiNamespace, options.TalkNamespace) == 0)
             {
                 isTalk = true;
-                wikiNamespace = WikiConfig.DefaultNamespace;
+                wikiNamespace = options.DefaultNamespace;
                 defaultNamespace = true;
             }
             if (string.IsNullOrWhiteSpace(title))
             {
-                title = WikiConfig.MainPageTitle;
-                defaultNamespace = string.CompareOrdinal(wikiNamespace, WikiConfig.DefaultNamespace) != 0;
-                wikiNamespace = WikiConfig.DefaultNamespace;
+                title = options.MainPageTitle;
+                defaultNamespace = string.CompareOrdinal(wikiNamespace, options.DefaultNamespace) != 0;
+                wikiNamespace = options.DefaultNamespace;
             }
             else if (string.IsNullOrWhiteSpace(wikiNamespace))
             {
-                wikiNamespace = WikiConfig.DefaultNamespace;
+                wikiNamespace = options.DefaultNamespace;
                 defaultNamespace = true;
             }
             return (wikiNamespace, title, isTalk, defaultNamespace);
@@ -533,6 +534,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets a new <see cref="Article"/> instance.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the article. Must be unique within its namespace, and
         /// non-empty.</param>
         /// <param name="editor">
@@ -544,8 +547,8 @@ namespace NeverFoundry.Wiki
         /// The namespace to which this article belongs.
         /// </para>
         /// <para>
-        /// If this is equal to <see cref="WikiConfig.CategoryNamespace"/>, the result will be a <see
-        /// cref="Category"/> rather than an <see cref="Article"/>.
+        /// If this is equal to <see cref="IWikiOptions.CategoryNamespace"/>, the result will be a
+        /// <see cref="Category"/> rather than an <see cref="Article"/>.
         /// </para>
         /// </param>
         /// <param name="owner">
@@ -583,6 +586,8 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </param>
         public static async Task<Article> NewAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string title,
             string editor,
             string? markdown = null,
@@ -596,24 +601,25 @@ namespace NeverFoundry.Wiki
                 throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
             }
             wikiNamespace = wikiNamespace?.ToWikiTitleCase();
-            if (string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase))
+            if (string.Equals(wikiNamespace, options.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase))
             {
-                return await Category.NewAsync(title, editor, markdown, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
+                return await Category.NewAsync(options, dataStore, title, editor, markdown, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
             }
-            if (WikiConfig.ReservedNamespaces.Any(x => string.Equals(wikiNamespace, x, StringComparison.CurrentCultureIgnoreCase)))
+            if (options.ReservedNamespaces.Any(x => string.Equals(wikiNamespace, x, StringComparison.CurrentCultureIgnoreCase)))
             {
                 throw new ArgumentException("Value for namespace was a reserved name", nameof(wikiNamespace));
             }
             if (string.IsNullOrWhiteSpace(wikiNamespace))
             {
-                wikiNamespace = WikiConfig.DefaultNamespace;
+                wikiNamespace = options.DefaultNamespace;
             }
 
             title = title.ToWikiTitleCase();
 
-            var wikiId = WikiConfig.DataStore.CreateNewIdFor<Article>();
+            var wikiId = dataStore.CreateNewIdFor<Article>();
 
-            await CreatePageReferenceAsync(wikiId, title, wikiNamespace).ConfigureAwait(false);
+            await CreatePageReferenceAsync(dataStore, wikiId, title, wikiNamespace)
+                .ConfigureAwait(false);
 
             var revision = new Revision(
                 wikiId,
@@ -622,14 +628,14 @@ namespace NeverFoundry.Wiki
                 wikiNamespace,
                 null,
                 markdown);
-            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             var (
                 redirectNamespace,
                 redirectTitle,
                 isRedirect,
                 isBrokenRedirect,
-                isDoubleRedirect) = await IdentifyRedirectAsync(wikiId, markdown).ConfigureAwait(false);
+                isDoubleRedirect) = await IdentifyRedirectAsync(options, dataStore, wikiId, markdown).ConfigureAwait(false);
 
             var md = markdown;
             List<Transclusion> transclusions;
@@ -640,17 +646,21 @@ namespace NeverFoundry.Wiki
             else
             {
                 md = TransclusionParser.Transclude(
+                    options,
+                    dataStore,
                     title,
-                    GetFullTitle(title, wikiNamespace),
+                    GetFullTitle(options, title, wikiNamespace),
                     markdown,
                     out transclusions);
             }
 
             var wikiLinks = isRedirect
                 ? new List<WikiLink>()
-                : GetWikiLinks(md, title, wikiNamespace);
+                : GetWikiLinks(options, dataStore, md, title, wikiNamespace);
 
             var categories = await UpdateCategoriesAsync(
+                options,
+                dataStore,
                 wikiId,
                 editor,
                 owner,
@@ -663,6 +673,8 @@ namespace NeverFoundry.Wiki
                 wikiId,
                 title,
                 markdown,
+                RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, wikiNamespace, markdown)),
+                RenderPreview(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, wikiNamespace, markdown, true)),
                 new ReadOnlyCollection<WikiLink>(wikiLinks),
                 revision.TimestampTicks,
                 wikiNamespace,
@@ -676,13 +688,15 @@ namespace NeverFoundry.Wiki
                 redirectTitle,
                 isBrokenRedirect,
                 isDoubleRedirect);
-            await WikiConfig.DataStore.StoreItemAsync(article).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(article).ConfigureAwait(false);
 
-            await AddPageTransclusionsAsync(wikiId, transclusions).ConfigureAwait(false);
+            await AddPageTransclusionsAsync(dataStore, wikiId, transclusions).ConfigureAwait(false);
 
-            await AddPageLinksAsync(wikiId, wikiLinks).ConfigureAwait(false);
+            await AddPageLinksAsync(dataStore, wikiId, wikiLinks).ConfigureAwait(false);
 
             await UpdateReferencesAsync(
+                options,
+                dataStore,
                 title,
                 wikiNamespace,
                 false,
@@ -696,30 +710,34 @@ namespace NeverFoundry.Wiki
             return article;
         }
 
-        private protected static async Task AddPageLinksAsync(string id, IEnumerable<WikiLink> wikiLinks)
+        private protected static async Task AddPageLinksAsync(
+            IDataStore dataStore,
+            string id,
+            IEnumerable<WikiLink> wikiLinks)
         {
             foreach (var link in wikiLinks.Where(x => !x.IsCategory))
             {
                 var linkReference = await PageLinks
-                    .GetPageLinksAsync(link.Title, link.WikiNamespace)
+                    .GetPageLinksAsync(dataStore, link.Title, link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (linkReference is null)
                 {
-                    await PageLinks.NewAsync(link.Title, link.WikiNamespace, id).ConfigureAwait(false);
+                    await PageLinks.NewAsync(dataStore, link.Title, link.WikiNamespace, id).ConfigureAwait(false);
                 }
                 else
                 {
-                    await linkReference.AddReferenceAsync(id).ConfigureAwait(false);
+                    await linkReference.AddReferenceAsync(dataStore, id).ConfigureAwait(false);
                 }
 
                 if (link.Missing)
                 {
                     var existing = await MissingPage
-                        .GetMissingPageAsync(link.Title, link.WikiNamespace)
+                        .GetMissingPageAsync(dataStore, link.Title, link.WikiNamespace)
                         .ConfigureAwait(false);
                     if (existing is null)
                     {
                         var missingPage = await MissingPage.NewAsync(
+                            dataStore,
                             link.Title,
                             link.WikiNamespace,
                             id)
@@ -727,38 +745,42 @@ namespace NeverFoundry.Wiki
                     }
                     else
                     {
-                        await existing.AddReferenceAsync(id).ConfigureAwait(false);
+                        await existing.AddReferenceAsync(dataStore, id).ConfigureAwait(false);
                     }
                 }
             }
         }
 
-        private protected static async Task AddPageTransclusionsAsync(string id, IEnumerable<Transclusion> transclusions)
+        private protected static async Task AddPageTransclusionsAsync(IDataStore dataStore, string id, IEnumerable<Transclusion> transclusions)
         {
             foreach (var transclusion in transclusions)
             {
                 var reference = await PageTransclusions
-                    .GetPageTransclusionsAsync(transclusion.Title, transclusion.WikiNamespace)
+                    .GetPageTransclusionsAsync(dataStore, transclusion.Title, transclusion.WikiNamespace)
                     .ConfigureAwait(false);
                 if (reference is null)
                 {
-                    await PageTransclusions.NewAsync(transclusion.Title, transclusion.WikiNamespace, id).ConfigureAwait(false);
+                    await PageTransclusions.NewAsync(dataStore, transclusion.Title, transclusion.WikiNamespace, id).ConfigureAwait(false);
                 }
                 else
                 {
-                    await reference.AddReferenceAsync(id).ConfigureAwait(false);
+                    await reference.AddReferenceAsync(dataStore, id).ConfigureAwait(false);
                 }
             }
         }
 
-        private protected static async Task CreatePageReferenceAsync(string id, string title, string wikiNamespace)
+        private protected static async Task CreatePageReferenceAsync(
+            IDataStore dataStore,
+            string id,
+            string title,
+            string wikiNamespace)
         {
             var existingPage = await PageReference
-                .GetPageReferenceAsync(title, wikiNamespace)
+                .GetPageReferenceAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingPage is null)
             {
-                await PageReference.NewAsync(id, title, wikiNamespace).ConfigureAwait(false);
+                await PageReference.NewAsync(dataStore, id, title, wikiNamespace).ConfigureAwait(false);
             }
             else if (existingPage.Reference != id)
             {
@@ -766,23 +788,23 @@ namespace NeverFoundry.Wiki
             }
 
             var existingNormalizedReference = await NormalizedPageReference
-                .GetNormalizedPageReferenceAsync(title, wikiNamespace)
+                .GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingNormalizedReference is null)
             {
-                await NormalizedPageReference.NewAsync(id, title, wikiNamespace).ConfigureAwait(false);
+                await NormalizedPageReference.NewAsync(dataStore, id, title, wikiNamespace).ConfigureAwait(false);
             }
             else
             {
-                await existingNormalizedReference.AddReferenceAsync(id).ConfigureAwait(false);
+                await existingNormalizedReference.AddReferenceAsync(dataStore, id).ConfigureAwait(false);
             }
 
             var missing = await MissingPage
-                .GetMissingPageAsync(title, wikiNamespace)
+                .GetMissingPageAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (missing is not null)
             {
-                await WikiConfig.DataStore.RemoveItemAsync(missing).ConfigureAwait(false);
+                await dataStore.RemoveItemAsync(missing).ConfigureAwait(false);
             }
         }
 
@@ -790,6 +812,7 @@ namespace NeverFoundry.Wiki
             HashSet<string> idsToUpdate,
             HashSet<string> idsToUpdateRecursively,
             HashSet<string> redirectsToUpdate)> GetIdsToUpdateAsync(
+            IDataStore dataStore,
             string title,
             string wikiNamespace,
             bool sameTitle,
@@ -806,7 +829,7 @@ namespace NeverFoundry.Wiki
                 if (!sameTitle)
                 {
                     var previousRedirectReference = await PageRedirects
-                        .GetPageRedirectsAsync(previousTitle!, previousNamespace)
+                        .GetPageRedirectsAsync(dataStore, previousTitle!, previousNamespace!)
                         .ConfigureAwait(false);
                     if (previousRedirectReference is not null)
                     {
@@ -820,7 +843,7 @@ namespace NeverFoundry.Wiki
                 }
 
                 var redirectReference = await PageRedirects
-                    .GetPageRedirectsAsync(title, wikiNamespace)
+                    .GetPageRedirectsAsync(dataStore, title, wikiNamespace)
                     .ConfigureAwait(false);
                 if (redirectReference is not null)
                 {
@@ -836,7 +859,7 @@ namespace NeverFoundry.Wiki
             if (!sameTitle)
             {
                 var previousPageTransclusions = await PageTransclusions
-                    .GetPageTransclusionsAsync(previousTitle!, previousNamespace)
+                    .GetPageTransclusionsAsync(dataStore, previousTitle!, previousNamespace!)
                     .ConfigureAwait(false);
                 if (previousPageTransclusions is not null)
                 {
@@ -848,7 +871,7 @@ namespace NeverFoundry.Wiki
                 }
 
                 var previousReferences = await PageLinks
-                    .GetPageLinksAsync(previousTitle!, previousNamespace)
+                    .GetPageLinksAsync(dataStore, previousTitle!, previousNamespace!)
                     .ConfigureAwait(false);
                 if (previousReferences is not null)
                 {
@@ -860,7 +883,7 @@ namespace NeverFoundry.Wiki
             }
 
             var pageTransclusions = await PageTransclusions
-                .GetPageTransclusionsAsync(title, wikiNamespace)
+                .GetPageTransclusionsAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (pageTransclusions is not null)
             {
@@ -872,7 +895,7 @@ namespace NeverFoundry.Wiki
             }
 
             var references = await PageLinks
-                .GetPageLinksAsync(title, wikiNamespace)
+                .GetPageLinksAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (references is not null)
             {
@@ -894,6 +917,8 @@ namespace NeverFoundry.Wiki
             bool isRedirect,
             bool isBrokenRedirect,
             bool isDoubleRedirect)> IdentifyRedirectAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string id,
             string? markdown)
         {
@@ -908,12 +933,12 @@ namespace NeverFoundry.Wiki
                     false);
             }
 
-            var (redirectNamespace, redirectTitle, _, defaultNamespace) = GetTitleParts(markdown[11..markdown.IndexOf("}}")]);
+            var (redirectNamespace, redirectTitle, _, defaultNamespace) = GetTitleParts(options, markdown[11..markdown.IndexOf("}}")]);
 
             // Redirect to a category or file from an article is not valid.
             if (!defaultNamespace
-                && (string.Equals(redirectNamespace, WikiConfig.CategoryNamespace, StringComparison.Ordinal)
-                || string.Equals(redirectNamespace, WikiConfig.FileNamespace, StringComparison.Ordinal)))
+                && (string.Equals(redirectNamespace, options.CategoryNamespace, StringComparison.Ordinal)
+                || string.Equals(redirectNamespace, options.FileNamespace, StringComparison.Ordinal)))
             {
                 return (
                     redirectNamespace,
@@ -927,7 +952,7 @@ namespace NeverFoundry.Wiki
             var isDoubleRedirect = false;
 
             var redirect = await PageReference
-                .GetPageReferenceAsync(redirectTitle, redirectNamespace)
+                .GetPageReferenceAsync(dataStore, redirectTitle, redirectNamespace)
                 .ConfigureAwait(false);
             if (redirect is null)
             {
@@ -935,7 +960,7 @@ namespace NeverFoundry.Wiki
             }
             else
             {
-                var redirectArticle = await WikiConfig.DataStore
+                var redirectArticle = await dataStore
                     .GetItemAsync<Article>(redirect.Reference)
                     .ConfigureAwait(false);
                 if (redirectArticle is null)
@@ -950,15 +975,15 @@ namespace NeverFoundry.Wiki
                     }
 
                     var existingRedirect = await PageRedirects
-                        .GetPageRedirectsAsync(redirectTitle, redirectNamespace)
+                        .GetPageRedirectsAsync(dataStore, redirectTitle, redirectNamespace)
                         .ConfigureAwait(false);
                     if (existingRedirect is null)
                     {
-                        await PageRedirects.NewAsync(redirectTitle!, redirectNamespace!, id).ConfigureAwait(false);
+                        await PageRedirects.NewAsync(dataStore, redirectTitle!, redirectNamespace!, id).ConfigureAwait(false);
                     }
                     else
                     {
-                        await existingRedirect.AddReferenceAsync(id).ConfigureAwait(false);
+                        await existingRedirect.AddReferenceAsync(dataStore, id).ConfigureAwait(false);
                     }
                 }
             }
@@ -971,76 +996,88 @@ namespace NeverFoundry.Wiki
                 isDoubleRedirect);
         }
 
-        private protected static async Task RemovePageLinksAsync(string id, IEnumerable<WikiLink> wikiLinks)
+        private protected static async Task RemovePageLinksAsync(
+            IDataStore dataStore,
+            string id,
+            IEnumerable<WikiLink> wikiLinks)
         {
             foreach (var link in wikiLinks.Where(x => !x.IsCategory))
             {
                 var linkReference = await PageLinks
-                    .GetPageLinksAsync(link.Title, link.WikiNamespace)
+                    .GetPageLinksAsync(dataStore, link.Title, link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (linkReference is not null)
                 {
-                    await linkReference.RemoveReferenceAsync(id).ConfigureAwait(false);
+                    await linkReference.RemoveReferenceAsync(dataStore, id).ConfigureAwait(false);
                 }
 
                 var missing = await MissingPage
-                    .GetMissingPageAsync(link.Title, link.WikiNamespace)
+                    .GetMissingPageAsync(dataStore, link.Title, link.WikiNamespace)
                     .ConfigureAwait(false);
                 if (missing is not null)
                 {
-                    await missing.RemoveReferenceAsync(id).ConfigureAwait(false);
+                    await missing.RemoveReferenceAsync(dataStore, id).ConfigureAwait(false);
                 }
             }
         }
 
-        private protected static async Task RemovePageReferenceAsync(string id, string title, string wikiNamespace)
+        private protected static async Task RemovePageReferenceAsync(
+            IDataStore dataStore,
+            string id,
+            string title,
+            string wikiNamespace)
         {
             var existingReference = await PageReference
-                .GetPageReferenceAsync(title, wikiNamespace)
+                .GetPageReferenceAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingReference is not null)
             {
-                await WikiConfig.DataStore.RemoveItemAsync(existingReference).ConfigureAwait(false);
+                await dataStore.RemoveItemAsync(existingReference).ConfigureAwait(false);
             }
 
             var existingNormalizedReference = await NormalizedPageReference
-                .GetNormalizedPageReferenceAsync(title, wikiNamespace)
+                .GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (existingNormalizedReference is not null)
             {
-                await existingNormalizedReference.RemoveReferenceAsync(id).ConfigureAwait(false);
+                await existingNormalizedReference.RemoveReferenceAsync(dataStore, id).ConfigureAwait(false);
             }
 
             var linkReference = await PageLinks
-                .GetPageLinksAsync(title, wikiNamespace)
+                .GetPageLinksAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
             if (linkReference is not null && linkReference.References.Count > 0)
             {
                 var missing = await MissingPage
-                    .GetMissingPageAsync(title, wikiNamespace)
+                    .GetMissingPageAsync(dataStore, title, wikiNamespace)
                     .ConfigureAwait(false);
                 if (missing is not null)
                 {
-                    await MissingPage.NewAsync(title, wikiNamespace, linkReference.References).ConfigureAwait(false);
+                    await MissingPage.NewAsync(dataStore, title, wikiNamespace, linkReference.References).ConfigureAwait(false);
                 }
             }
         }
 
-        private protected static async Task RemovePageTransclusionsAsync(string id, IEnumerable<Transclusion> transclusions)
+        private protected static async Task RemovePageTransclusionsAsync(
+            IDataStore dataStore,
+            string id,
+            IEnumerable<Transclusion> transclusions)
         {
             foreach (var transclusion in transclusions)
             {
                 var reference = await PageTransclusions
-                    .GetPageTransclusionsAsync(transclusion.Title, transclusion.WikiNamespace)
+                    .GetPageTransclusionsAsync(dataStore, transclusion.Title, transclusion.WikiNamespace)
                     .ConfigureAwait(false);
                 if (reference is not null)
                 {
-                    await reference.RemoveReferenceAsync(id).ConfigureAwait(false);
+                    await reference.RemoveReferenceAsync(dataStore, id).ConfigureAwait(false);
                 }
             }
         }
 
         private protected static async Task<List<string>> UpdateCategoriesAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string id,
             string editor,
             string? owner,
@@ -1059,11 +1096,11 @@ namespace NeverFoundry.Wiki
             var newCategories = new List<string>();
             foreach (var categoryTitle in currentCategories.Except(oldCategories))
             {
-                var category = Category.GetCategory(categoryTitle)
-                    ?? await Category.NewAsync(categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
+                var category = Category.GetCategory(options, dataStore, categoryTitle)
+                    ?? await Category.NewAsync(options, dataStore, categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
                 if (!category.ChildIds.Contains(id))
                 {
-                    await category.AddArticleAsync(id).ConfigureAwait(false);
+                    await category.AddArticleAsync(dataStore, id).ConfigureAwait(false);
                     newCategories.Add(category.Title);
                 }
             }
@@ -1073,10 +1110,10 @@ namespace NeverFoundry.Wiki
                 .ToList();
             foreach (var removedCategory in oldCategories.Except(currentCategories))
             {
-                var category = Category.GetCategory(removedCategory);
+                var category = Category.GetCategory(options, dataStore, removedCategory);
                 if (category is not null)
                 {
-                    await category.RemoveChildIdAsync(id).ConfigureAwait(false);
+                    await category.RemoveChildIdAsync(dataStore, id).ConfigureAwait(false);
                     retainedCategories.Remove(category.Title);
                 }
             }
@@ -1087,6 +1124,8 @@ namespace NeverFoundry.Wiki
         }
 
         private protected static async Task UpdateReferencesAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string title,
             string wikiNamespace,
             bool deleted,
@@ -1102,6 +1141,7 @@ namespace NeverFoundry.Wiki
             var (idsToUpdate,
                 idsToUpdateRecursively,
                 redirectsToUpdate) = await GetIdsToUpdateAsync(
+                    dataStore,
                     title,
                     wikiNamespace,
                     sameTitle,
@@ -1115,7 +1155,7 @@ namespace NeverFoundry.Wiki
                 var idToUpdate = idsToUpdate.First();
                 idsToUpdate.Remove(idToUpdate);
 
-                var referringArticle = await WikiConfig.DataStore.GetItemAsync<Article>(idToUpdate).ConfigureAwait(false);
+                var referringArticle = await dataStore.GetItemAsync<Article>(idToUpdate).ConfigureAwait(false);
                 if (referringArticle is null)
                 {
                     idsUpdated.Add(idToUpdate);
@@ -1132,8 +1172,8 @@ namespace NeverFoundry.Wiki
                         redirectsToUpdate.Remove(idToUpdate);
                     }
 
-                    referringArticle.Update();
-                    await WikiConfig.DataStore.StoreItemAsync(referringArticle).ConfigureAwait(false);
+                    referringArticle.Update(options, dataStore);
+                    await dataStore.StoreItemAsync(referringArticle).ConfigureAwait(false);
 
                     idsUpdated.Add(idToUpdate);
                 }
@@ -1146,6 +1186,7 @@ namespace NeverFoundry.Wiki
                     var (childIdsToUpdate,
                         childIdsToUpdateRecursively,
                         _) = await GetIdsToUpdateAsync(
+                            dataStore,
                             referringArticle.Title,
                             referringArticle.WikiNamespace,
                             true,
@@ -1171,6 +1212,8 @@ namespace NeverFoundry.Wiki
         /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
         /// rendered HTML.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="time">
         /// The time of the final revision.
         /// </param>
@@ -1215,16 +1258,22 @@ namespace NeverFoundry.Wiki
         /// The <paramref name="time"/> does not need to be exact. All revisions up to and including
         /// the given time will be included.
         /// </remarks>
-        public async Task<string> GetDiffAsync(DateTimeOffset time, string format = "md")
+        public async Task<string> GetDiffAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
+            DateTimeOffset time,
+            string format = "md")
         {
-            var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
+            var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
             if (revisions.Count == 0)
             {
                 return string.Empty;
             }
-            return RenderHtml(TransclusionParser.Transclude(
+            return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+                options,
+                dataStore,
                 revisions[revisions.Count - 1].Title,
-                revisions[revisions.Count - 1].FullTitle,
+                GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
                 Revision.GetDiff(revisions, format),
                 out _));
         }
@@ -1233,6 +1282,8 @@ namespace NeverFoundry.Wiki
         /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
         /// rendered HTML.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="time">
         /// The time of the final revision.
         /// </param>
@@ -1248,16 +1299,21 @@ namespace NeverFoundry.Wiki
         /// The <paramref name="time"/> does not need to be exact. All revisions up to and including
         /// the given time will be included.
         /// </remarks>
-        public async Task<string> GetDiffHtmlAsync(DateTimeOffset time)
+        public async Task<string> GetDiffHtmlAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
+            DateTimeOffset time)
         {
-            var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
+            var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
             if (revisions.Count == 0)
             {
                 return string.Empty;
             }
-            return RenderHtml(TransclusionParser.Transclude(
+            return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+                options,
+                dataStore,
                 revisions[revisions.Count - 1].Title,
-                revisions[revisions.Count - 1].FullTitle,
+                GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
                 Revision.GetDiff(revisions, "html"),
                 out _));
         }
@@ -1266,6 +1322,7 @@ namespace NeverFoundry.Wiki
         /// Gets a diff between the text at the given <paramref name="time"/> and the current
         /// version of the text.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="time">
         /// The time of the final revision.
         /// </param>
@@ -1307,9 +1364,12 @@ namespace NeverFoundry.Wiki
         /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
         /// order given.
         /// </exception>
-        public async Task<string> GetDiffWithCurrentAsync(DateTimeOffset time, string format = "md")
+        public async Task<string> GetDiffWithCurrentAsync(
+            IDataStore dataStore,
+            DateTimeOffset time,
+            string format = "md")
         {
-            var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
+            var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
             return Diff.GetWordDiff(Revision.GetText(revisions), MarkdownContent).ToString(format);
         }
 
@@ -1317,6 +1377,8 @@ namespace NeverFoundry.Wiki
         /// Gets a diff between the text at the given <paramref name="time"/> and the current
         /// version of the text, as rendered HTML.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="time">
         /// The time of the final revision.
         /// </param>
@@ -1329,13 +1391,18 @@ namespace NeverFoundry.Wiki
         /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
         /// order given.
         /// </exception>
-        public async Task<string> GetDiffWithCurrentHtmlAsync(DateTimeOffset time)
+        public async Task<string> GetDiffWithCurrentHtmlAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
+            DateTimeOffset time)
         {
-            var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
+            var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
             var diff = Diff.GetWordDiff(Revision.GetText(revisions), MarkdownContent).ToString("html");
-            return RenderHtml(TransclusionParser.Transclude(
+            return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+                options,
+                dataStore,
                 revisions[revisions.Count - 1].Title,
-                revisions[revisions.Count - 1].FullTitle,
+                GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
                 diff,
                 out _));
         }
@@ -1343,6 +1410,7 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets a diff between the text at two given times.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="firstTime">
         /// The first revision time to compare.
         /// </param>
@@ -1390,7 +1458,11 @@ namespace NeverFoundry.Wiki
         /// If <paramref name="secondTime"/> is before <paramref name="firstTime"/>, their values
         /// are swapped. In other words, the diff is always from an earlier version to a later version.
         /// </remarks>
-        public async Task<string> GetDiffWithOtherAsync(DateTimeOffset firstTime, DateTimeOffset secondTime, string format = "md")
+        public async Task<string> GetDiffWithOtherAsync(
+            IDataStore dataStore,
+            DateTimeOffset firstTime,
+            DateTimeOffset secondTime,
+            string format = "md")
         {
             if (secondTime < firstTime)
             {
@@ -1398,14 +1470,16 @@ namespace NeverFoundry.Wiki
                 secondTime = firstTime;
                 firstTime = tmp;
             }
-            var firstRevisions = await GetRevisionsUntilAsync(firstTime).ConfigureAwait(false);
-            var secondRevisions = await GetRevisionsUntilAsync(secondTime).ConfigureAwait(false);
+            var firstRevisions = await GetRevisionsUntilAsync(dataStore, firstTime).ConfigureAwait(false);
+            var secondRevisions = await GetRevisionsUntilAsync(dataStore, secondTime).ConfigureAwait(false);
             return Diff.GetWordDiff(Revision.GetText(firstRevisions), Revision.GetText(secondRevisions)).ToString(format);
         }
 
         /// <summary>
         /// Gets a diff between the text at two given times, as rendered HTML.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="firstTime">
         /// The first revision time to compare.
         /// </param>
@@ -1425,7 +1499,11 @@ namespace NeverFoundry.Wiki
         /// If <paramref name="secondTime"/> is before <paramref name="firstTime"/>, their values
         /// are swapped. In other words, the diff is always from an earlier version to a later version.
         /// </remarks>
-        public async Task<string> GetDiffWithOtherHtmlAsync(DateTimeOffset firstTime, DateTimeOffset secondTime)
+        public async Task<string> GetDiffWithOtherHtmlAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
+            DateTimeOffset firstTime,
+            DateTimeOffset secondTime)
         {
             if (secondTime < firstTime)
             {
@@ -1433,12 +1511,14 @@ namespace NeverFoundry.Wiki
                 secondTime = firstTime;
                 firstTime = tmp;
             }
-            var firstRevisions = await GetRevisionsUntilAsync(firstTime).ConfigureAwait(false);
-            var secondRevisions = await GetRevisionsUntilAsync(secondTime).ConfigureAwait(false);
+            var firstRevisions = await GetRevisionsUntilAsync(dataStore, firstTime).ConfigureAwait(false);
+            var secondRevisions = await GetRevisionsUntilAsync(dataStore, secondTime).ConfigureAwait(false);
             var diff = Diff.GetWordDiff(Revision.GetText(firstRevisions), Revision.GetText(secondRevisions)).ToString("html");
-            return RenderHtml(TransclusionParser.Transclude(
+            return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+                options,
+                dataStore,
                 secondRevisions[secondRevisions.Count - 1].Title,
-                secondRevisions[secondRevisions.Count - 1].FullTitle,
+                GetFullTitle(options, secondRevisions[secondRevisions.Count - 1].Title, secondRevisions[secondRevisions.Count - 1].WikiNamespace),
                 diff,
                 out _));
         }
@@ -1446,17 +1526,27 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets this item's content at the given <paramref name="time"/>, rendered as HTML.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+        /// <param name="time">
+        /// The time of the final revision.
+        /// </param>
         /// <returns>The rendered HTML.</returns>
-        public async Task<string> GetHtmlAsync(DateTimeOffset time)
+        public async Task<string> GetHtmlAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
+            DateTimeOffset time)
         {
-            var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
+            var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
             if (revisions.Count == 0)
             {
                 return string.Empty;
             }
-            return RenderHtml(TransclusionParser.Transclude(
+            return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+                options,
+                dataStore,
                 revisions[revisions.Count - 1].Title,
-                revisions[revisions.Count - 1].FullTitle,
+                GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
                 Revision.GetText(revisions),
                 out _));
         }
@@ -1465,6 +1555,7 @@ namespace NeverFoundry.Wiki
         /// Gets a subset of the revision history of this item, in reverse chronological order (most recent
         /// first).
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="pageNumber">The current page number.</param>
         /// <param name="pageSize">The page size.</param>
         /// <param name="start">The earliest <see cref="Timestamp"/> to retrieve.</param>
@@ -1473,6 +1564,7 @@ namespace NeverFoundry.Wiki
         /// <returns>An <see cref="IOrderedQueryable{T}"/> of <see cref="Article"/>
         /// instances.</returns>
         public async Task<IPagedList<Revision>> GetHistoryAsync(
+            IDataStore dataStore,
             int pageNumber,
             int pageSize,
             DateTimeOffset? start = null,
@@ -1489,7 +1581,7 @@ namespace NeverFoundry.Wiki
                 exp = exp.AndAlso(x => x.TimestampTicks <= end.Value.ToUniversalTime().Ticks);
             }
             exp = condition is null ? exp : exp.AndAlso(condition);
-            return await WikiConfig.DataStore.Query<Revision>()
+            return await dataStore.Query<Revision>()
                 .Where(exp)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .GetPageAsync(pageNumber, pageSize)
@@ -1499,10 +1591,14 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets this item's content at the given <paramref name="time"/>.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+        /// <param name="time">
+        /// The time of the final revision.
+        /// </param>
         /// <returns>The markdown as it was at the given <paramref name="time"/>.</returns>
-        public async Task<string> GetMarkdownAsync(DateTimeOffset time)
+        public async Task<string> GetMarkdownAsync(IDataStore dataStore, DateTimeOffset time)
         {
-            var revisions = await GetRevisionsUntilAsync(time).ConfigureAwait(false);
+            var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
             if (revisions.Count == 0)
             {
                 return string.Empty;
@@ -1543,6 +1639,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Revises this <see cref="Article"/> instance.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="editor">
         /// The ID of the user who made this revision.
         /// </param>
@@ -1610,6 +1708,8 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </param>
         public async Task ReviseAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string editor,
             string? title = null,
             string? markdown = null,
@@ -1654,10 +1754,10 @@ namespace NeverFoundry.Wiki
 
                     if (Transclusions is not null)
                     {
-                        await RemovePageTransclusionsAsync(Id, Transclusions).ConfigureAwait(false);
+                        await RemovePageTransclusionsAsync(dataStore, Id, Transclusions).ConfigureAwait(false);
                     }
 
-                    await RemovePageLinksAsync(Id, WikiLinks).ConfigureAwait(false);
+                    await RemovePageLinksAsync(dataStore, Id, WikiLinks).ConfigureAwait(false);
 
                     Transclusions = null;
                     WikiLinks = new List<WikiLink>().AsReadOnly();
@@ -1670,11 +1770,11 @@ namespace NeverFoundry.Wiki
 
             if (!sameTitle && !IsDeleted)
             {
-                await CreatePageReferenceAsync(Id, title, wikiNamespace).ConfigureAwait(false);
+                await CreatePageReferenceAsync(dataStore, Id, title, wikiNamespace).ConfigureAwait(false);
             }
             if (!sameTitle)
             {
-                await RemovePageReferenceAsync(Id, previousTitle, previousNamespace).ConfigureAwait(false);
+                await RemovePageReferenceAsync(dataStore, Id, previousTitle, previousNamespace).ConfigureAwait(false);
             }
 
             var changed = wasDeleted != IsDeleted
@@ -1691,7 +1791,7 @@ namespace NeverFoundry.Wiki
                     redirectTitle,
                     isRedirect,
                     _,
-                    _) = await IdentifyRedirectAsync(Id, markdown).ConfigureAwait(false);
+                    _) = await IdentifyRedirectAsync(options, dataStore, Id, markdown).ConfigureAwait(false);
                 if (isRedirect)
                 {
                     RedirectTitle = redirectTitle;
@@ -1708,28 +1808,36 @@ namespace NeverFoundry.Wiki
                 else
                 {
                     md = TransclusionParser.Transclude(
+                        options,
+                        dataStore,
                         title,
-                        GetFullTitle(title, wikiNamespace),
+                        GetFullTitle(options, title, wikiNamespace),
                         markdown!,
                         out transclusions);
                 }
                 Transclusions = transclusions.Count == 0
                     ? null
                     : transclusions.AsReadOnly();
-                await RemovePageTransclusionsAsync(Id, previousTransclusions.Except(transclusions)).ConfigureAwait(false);
-                await AddPageTransclusionsAsync(Id, transclusions.Except(previousTransclusions)).ConfigureAwait(false);
+                await RemovePageTransclusionsAsync(dataStore, Id, previousTransclusions.Except(transclusions))
+                    .ConfigureAwait(false);
+                await AddPageTransclusionsAsync(dataStore, Id, transclusions.Except(previousTransclusions))
+                    .ConfigureAwait(false);
 
                 var previousWikiLinks = WikiLinks.ToList();
                 WikiLinks = isRedirect
                     ? new List<WikiLink>()
-                    : GetWikiLinks(md, title, wikiNamespace).AsReadOnly();
-                await RemovePageLinksAsync(Id, previousWikiLinks.Except(WikiLinks)).ConfigureAwait(false);
-                await AddPageLinksAsync(Id, WikiLinks.Except(previousWikiLinks)).ConfigureAwait(false);
+                    : GetWikiLinks(options, dataStore, md, title, wikiNamespace).AsReadOnly();
+                await RemovePageLinksAsync(dataStore, Id, previousWikiLinks.Except(WikiLinks))
+                    .ConfigureAwait(false);
+                await AddPageLinksAsync(dataStore, Id, WikiLinks.Except(previousWikiLinks))
+                    .ConfigureAwait(false);
             }
 
             if (changed)
             {
                 Categories = (await UpdateCategoriesAsync(
+                    options,
+                    dataStore,
                     Id,
                     editor,
                     owner,
@@ -1740,7 +1848,7 @@ namespace NeverFoundry.Wiki
                     .ConfigureAwait(false))
                     .AsReadOnly();
 
-                Update();
+                Update(options, dataStore);
             }
 
             Owner = owner;
@@ -1755,13 +1863,15 @@ namespace NeverFoundry.Wiki
                 previousMarkdown,
                 MarkdownContent,
                 revisionComment);
-            await WikiConfig.DataStore.StoreItemAsync(revision).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
             TimestampTicks = revision.TimestampTicks;
 
-            await WikiConfig.DataStore.StoreItemAsync(this).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(this).ConfigureAwait(false);
 
             await UpdateReferencesAsync(
+                options,
+                dataStore,
                 title,
                 wikiNamespace,
                 IsDeleted,
@@ -1773,10 +1883,33 @@ namespace NeverFoundry.Wiki
                 .ConfigureAwait(false);
         }
 
-        private async Task<IReadOnlyList<Revision>> GetRevisionsUntilAsync(DateTimeOffset time)
+        private protected static string PostprocessArticleMarkdown(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string title,
+            string wikiNamespace,
+            string? markdown,
+            bool isPreview = false)
+        {
+            if (string.IsNullOrEmpty(markdown))
+            {
+                return string.Empty;
+            }
+
+            return TransclusionParser.Transclude(
+                options,
+                dataStore,
+                title,
+                GetFullTitle(options, title, wikiNamespace),
+                markdown,
+                out _,
+                isPreview: isPreview);
+        }
+
+        private async Task<IReadOnlyList<Revision>> GetRevisionsUntilAsync(IDataStore dataStore, DateTimeOffset time)
         {
             var ticks = time.ToUniversalTime().Ticks;
-            var lastMilestone = await WikiConfig.DataStore.Query<Revision>()
+            var lastMilestone = await dataStore.Query<Revision>()
                 .Where(x => x.WikiId == Id && x.TimestampTicks <= ticks && x.IsMilestone)
                 .OrderBy(x => x.TimestampTicks, descending: true)
                 .FirstOrDefaultAsync()
@@ -1785,26 +1918,23 @@ namespace NeverFoundry.Wiki
             {
                 return new List<Revision>();
             }
-            return await WikiConfig.DataStore.Query<Revision>()
+            return await dataStore.Query<Revision>()
                 .Where(x => x.WikiId == Id && x.TimestampTicks >= lastMilestone.TimestampTicks && x.TimestampTicks <= ticks)
                 .OrderBy(x => x.TimestampTicks)
                 .ToListAsync()
                 .ConfigureAwait(false);
         }
 
-        private protected override string PostprocessMarkdown(string? markdown, bool isPreview = false)
-        {
-            if (string.IsNullOrEmpty(markdown))
-            {
-                return string.Empty;
-            }
-
-            return TransclusionParser.Transclude(
-                  Title,
-                  FullTitle,
-                  markdown,
-                  out _,
-                  isPreview: isPreview);
-        }
+        private protected override string PostprocessMarkdown(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            bool isPreview = false) => PostprocessArticleMarkdown(
+                options,
+                dataStore,
+                Title,
+                WikiNamespace,
+                markdown,
+                isPreview);
     }
 }

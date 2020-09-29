@@ -12,9 +12,9 @@
 
         /// <summary>
         /// Gets the full title of this item (including namespace if the namespace is not
-        /// <see cref="WikiConfig.DefaultNamespace"/>).
+        /// <see cref="IWikiOptions.DefaultNamespace"/>).
         /// </summary>
-        public string FullTitle => Article.GetFullTitle(Title, WikiNamespace);
+        public string FullTitle { get; set; }
 
         /// <summary>
         /// The title of the matching wiki item.
@@ -35,12 +35,16 @@
         /// <param name="wikiNamespace">
         /// The namespace of the matching wiki item.
         /// </param>
+        /// <param name="fullTitle">
+        /// The full title of the matching wiki item.
+        /// </param>
         /// <param name="exceprt">
         /// An excerpt from the matching article (optional).
         /// </param>
-        public SearchHit(string title, string wikiNamespace, string? exceprt = null)
+        public SearchHit(string title, string wikiNamespace, string fullTitle, string? exceprt = null)
         {
             Excerpt = exceprt;
+            FullTitle = fullTitle;
             Title = title;
             WikiNamespace = wikiNamespace;
         }

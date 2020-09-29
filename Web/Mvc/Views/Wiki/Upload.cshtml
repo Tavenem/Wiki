@@ -1,5 +1,6 @@
 ﻿@model UploadViewModel
-
+@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
 @{
     ViewData["Title"] = "Upload";
 }
@@ -8,17 +9,17 @@
     <p>This form allows authorized users to upload files to the wiki.</p>
     <p>Images will be avilable for embedding in wiki articles. Many common audio/video files can also be embedded. Other file types will only be available as links to their wiki page, where the file can be either downloaded, or viewed in the browser when applicable.</p>
     <p>
-        @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))
+        @if (!string.IsNullOrWhiteSpace(WikiWebOptions.CopyrightPageTitle))
         {
-            <span>Please note that all files submitted to this wiki are implicitly made available under the terms of the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
-            @if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+            <span>Please note that all files submitted to this wiki are implicitly made available under the terms of the site's <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</span>
+            @if (!string.IsNullOrWhiteSpace(WikiWebOptions.PolicyPageTitle))
             {
-                <span>Other <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to content policies, may also apply.</span>
+                <span>Other <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to content policies, may also apply.</span>
             }
         }
-        else if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+        else if (!string.IsNullOrWhiteSpace(WikiWebOptions.PolicyPageTitle))
         {
-            <span>Please note that all files submitted to this wiki are subject to the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
+            <span>Please note that all files submitted to this wiki are subject to the site's <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</span>
         }
         else
         {
@@ -40,7 +41,7 @@
             @Html.Raw(Model.Preview)
         </div>
     }
-    <form class="dropzone wiki-upload-form" asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Upload">
+    <form class="dropzone wiki-upload-form" asp-controller="Wiki" asp-action="Upload">
         <div asp-validation-summary="ModelOnly" class="error-text"></div>
         <input id="wiki-upload-file" name="file" type="file" required />
         <div class="wiki-edit-file-properties">
@@ -72,25 +73,25 @@
                     <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
                 </div>
                 <div class="form-group wiki-edit-terms-notice">
-                    @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+                    @if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
                     {
-                        if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+                        if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
                         {
                             <div class="wiki-edit-terms-notice">
-                                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
                             </div>
                         }
                         else
                         {
                             <div class="wiki-edit-terms-notice">
-                                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+                                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
                             </div>
                         }
                     }
-                    else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+                    else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
                     {
                         <div class="wiki-edit-terms-notice">
-                            <p>Content submitted to this wiki is subject to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                            <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
                         </div>
                     }
                     else
@@ -105,7 +106,7 @@
         <div class="flex-wrap wiki-edit-submit-buttons">
             <button class="wiki-edit-submit-button btn btn-primary" type="submit" name="ShowPreview" value="false">Publish changes</button>
             <button class="btn btn-info wiki-edit-preview-button" type="submit" name="ShowPreview" value="true">Show full preview</button>
-            <a class="wiki-edit-cancel-button btn btn-secondary" href="@($"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.DefaultNamespace}:{WikiConfig.MainPageTitle}")">Cancel</a>
+            <a class="wiki-edit-cancel-button btn btn-secondary" href="@($"/{WikiOptions.WikiLinkPrefix}/{WikiOptions.DefaultNamespace}:{WikiOptions.MainPageTitle}")">Cancel</a>
         </div>
     </form>
 </div>
@@ -128,8 +129,8 @@
                 'video/*': 'video',
                 'application/pdf': 'PDF',
             },
-            maxFileSize: '@(WikiWebConfig.MaxFileSize)B',
-            labelMaxFileSize: 'Maximum file size is @(WikiWebConfig.MaxFileSizeString)',
+            maxFileSize: '@(WikiWebOptions.MaxFileSize)B',
+            labelMaxFileSize: 'Maximum file size is @(WikiWebOptions.MaxFileSizeString)',
             server: {
                 process: './api/fileupload',
                 revert: './api/fileupload',

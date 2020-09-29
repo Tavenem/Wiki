@@ -38,8 +38,8 @@ namespace NeverFoundry.Wiki
         /// </param>
         /// <remarks>
         /// Note: this constructor is most useful for deserializers. The static <see
-        /// cref="NewAsync(string, string, string)"/> method is expected to be used otherwise, as it
-        /// persists instances to the <see cref="WikiConfig.DataStore"/> and assigns the ID
+        /// cref="NewAsync(IDataStore, string, string, string)"/> method is expected to be used
+        /// otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns the ID
         /// dynamically.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
@@ -66,36 +66,39 @@ namespace NeverFoundry.Wiki
         /// <returns>
         /// The ID which should be used for a <see cref="PageReference"/> given the parameters.
         /// </returns>
-        public static string GetId(string title, string? wikiNamespace = null)
-            => $"{wikiNamespace ?? WikiConfig.DefaultNamespace}:{title}:reference";
+        public static string GetId(string title, string wikiNamespace)
+            => $"{wikiNamespace}:{title}:reference";
 
         /// <summary>
         /// Gets the <see cref="PageReference"/> that fits the given parameters.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the wiki page.</param>
         /// <param name="wikiNamespace">The namespace of the wiki page.</param>
         /// <returns>
         /// The <see cref="PageReference"/> that fits the given parameters; or <see
         /// langword="null"/>, if there is no such item.
         /// </returns>
-        public static PageReference? GetPageReference(string title, string? wikiNamespace = null)
-            => WikiConfig.DataStore.GetItem<PageReference>(GetId(title, wikiNamespace));
+        public static PageReference? GetPageReference(IDataStore dataStore, string title, string wikiNamespace)
+            => dataStore.GetItem<PageReference>(GetId(title, wikiNamespace));
 
         /// <summary>
         /// Gets the <see cref="PageReference"/> that fits the given parameters.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the wiki page.</param>
         /// <param name="wikiNamespace">The namespace of the wiki page.</param>
         /// <returns>
         /// The <see cref="PageReference"/> that fits the given parameters; or <see
         /// langword="null"/>, if there is no such item.
         /// </returns>
-        public static ValueTask<PageReference?> GetPageReferenceAsync(string title, string? wikiNamespace = null)
-            => WikiConfig.DataStore.GetItemAsync<PageReference>(GetId(title, wikiNamespace));
+        public static ValueTask<PageReference?> GetPageReferenceAsync(IDataStore dataStore, string title, string wikiNamespace)
+            => dataStore.GetItemAsync<PageReference>(GetId(title, wikiNamespace));
 
         /// <summary>
         /// Get a new instance of <see cref="PageReference"/>.
         /// </summary>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="id">
         /// The <see cref="IdItem.Id"/> of the wiki page which is currently assigned to the
         /// referenced full title.
@@ -106,13 +109,13 @@ namespace NeverFoundry.Wiki
         /// <param name="wikiNamespace">
         /// The namespace of the wiki page which is currently assigned to the referenced full title.
         /// </param>
-        public static async Task<PageReference> NewAsync(string id, string title, string wikiNamespace)
+        public static async Task<PageReference> NewAsync(IDataStore dataStore, string id, string title, string wikiNamespace)
         {
             var result = new PageReference(
                 GetId(title, wikiNamespace),
                 PageReferenceIdItemTypeName,
                 id);
-            await WikiConfig.DataStore.StoreItemAsync(result).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(result).ConfigureAwait(false);
             return result;
         }
 

@@ -12,9 +12,9 @@
 
         /// <summary>
         /// Gets the full title of this item (including namespace if the namespace is not
-        /// <see cref="WikiConfig.DefaultNamespace"/>).
+        /// <see cref="IWikiOptions.DefaultNamespace"/>).
         /// </summary>
-        public string FullTitle => Article.GetFullTitle(Title, WikiNamespace);
+        public string FullTitle { get; set; }
 
         /// <summary>
         /// The title of the matching wiki item.

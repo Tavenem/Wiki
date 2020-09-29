@@ -2,6 +2,7 @@
 
 /* Layout */
 .top-header {
+    align-items: baseline;
     display: flex;
     justify-content: flex-end;
     padding: 0.33em 0.75em;
@@ -101,7 +102,7 @@ footer.wiki-bottom-footer {
 
 /* Icons */
 .material-icons {
-    font-size: 1em;
+    font-size: 1rem;
     line-height: inherit;
     vertical-align: text-bottom;
 

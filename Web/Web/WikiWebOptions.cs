@@ -5,49 +5,10 @@ using System.Linq;
 namespace NeverFoundry.Wiki.Web
 {
     /// <summary>
-    /// Configures options for the wiki web client.
+    /// Options for the wiki web client.
     /// </summary>
-    public static class WikiWebConfig
+    public class WikiWebOptions : IWikiWebOptions
     {
-        private const string AdminGroupNameDefault = "Wiki Admins";
-        private static string _AdminGroupName = AdminGroupNameDefault;
-        /// <summary>
-        /// <para>
-        /// The name of the admin user group.
-        /// </para>
-        /// <para>
-        /// Default is "Wiki Admins"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
-        /// </para>
-        /// </summary>
-        [NotNull]
-        public static string? AdminGroupName
-        {
-            get => _AdminGroupName;
-            set
-            {
-                _AdminGroupName = string.IsNullOrWhiteSpace(value)
-                    ? AdminGroupNameDefault
-                    : value;
-            }
-        }
-
-        private static List<string>? _AdminNamespaces;
-        /// <summary>
-        /// <para>
-        /// An optional collection of namespaces which may not be assigned to pages by non-admin
-        /// users.
-        /// </para>
-        /// <para>
-        /// The namespace assigned to <see cref="SystemNamespace"/> is included automatically.
-        /// </para>
-        /// </summary>
-        public static IEnumerable<string> AdminNamespaces => (_AdminNamespaces ?? Enumerable.Empty<string>())
-            .Concat(new[] { SystemNamespace });
-
         /// <summary>
         /// <para>
         /// The title of the main about page.
@@ -60,7 +21,42 @@ namespace NeverFoundry.Wiki.Web
         /// the about page.
         /// </para>
         /// </summary>
-        public static string? AboutPageTitle { get; set; } = "About";
+        public string? AboutPageTitle { get; set; } = "About";
+
+        private const string AdminGroupNameDefault = "Wiki Admins";
+        private string _adminGroupName = AdminGroupNameDefault;
+        /// <summary>
+        /// <para>
+        /// The name of the admin user group.
+        /// </para>
+        /// <para>
+        /// If omitted "Wiki Admins" is used.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public string? AdminGroupName
+        {
+            get => _adminGroupName;
+            set
+            {
+                _adminGroupName = string.IsNullOrWhiteSpace(value)
+                    ? AdminGroupNameDefault
+                    : value;
+            }
+        }
+
+        private List<string>? _adminNamespaces;
+        /// <summary>
+        /// <para>
+        /// An optional collection of namespaces which may not be assigned to pages by non-admin
+        /// users.
+        /// </para>
+        /// <para>
+        /// The namespace assigned to <see cref="SystemNamespace"/> is included automatically.
+        /// </para>
+        /// </summary>
+        public IEnumerable<string> AdminNamespaces => (_adminNamespaces ?? Enumerable.Empty<string>())
+            .Concat(new[] { SystemNamespace });
 
         /// <summary>
         /// <para>
@@ -74,7 +70,7 @@ namespace NeverFoundry.Wiki.Web
         /// the contact page.
         /// </para>
         /// </summary>
-        public static string? ContactPageTitle { get; set; } = "Contact";
+        public string? ContactPageTitle { get; set; } = "Contact";
 
         /// <summary>
         /// <para>
@@ -88,7 +84,7 @@ namespace NeverFoundry.Wiki.Web
         /// the contents page.
         /// </para>
         /// </summary>
-        public static string? ContentsPageTitle { get; set; } = "Contents";
+        public string? ContentsPageTitle { get; set; } = "Contents";
 
         /// <summary>
         /// <para>
@@ -106,29 +102,25 @@ namespace NeverFoundry.Wiki.Web
         /// copyright notice on your wiki.
         /// </para>
         /// </summary>
-        public static string? CopyrightPageTitle { get; set; } = "Copyright";
+        public string? CopyrightPageTitle { get; set; } = "Copyright";
 
         private const string GroupNamespaceDefault = "Group";
-        private static string _GroupNamespace = GroupNamespaceDefault;
+        private string _groupNamespace = GroupNamespaceDefault;
         /// <summary>
         /// <para>
         /// The name of the user group namespace.
         /// </para>
         /// <para>
-        /// Default is "Group"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
+        /// If omitted "Group" is used.
         /// </para>
         /// </summary>
         [NotNull]
-        public static string? GroupNamespace
+        public string? GroupNamespace
         {
-            get => _GroupNamespace;
+            get => _groupNamespace;
             set
             {
-                _GroupNamespace = string.IsNullOrWhiteSpace(value)
+                _groupNamespace = string.IsNullOrWhiteSpace(value)
                     ? GroupNamespaceDefault
                     : value;
             }
@@ -146,7 +138,7 @@ namespace NeverFoundry.Wiki.Web
         /// the help page.
         /// </para>
         /// </summary>
-        public static string? HelpPageTitle { get; set; } = "Help";
+        public string? HelpPageTitle { get; set; } = "Help";
 
         /// <summary>
         /// <para>
@@ -156,13 +148,13 @@ namespace NeverFoundry.Wiki.Web
         /// Setting this to a value less than or equal to zero effectively prevents file uploads.
         /// </para>
         /// </summary>
-        public static int MaxFileSize { get; set; } = 5000000; // 5 MB
+        public int MaxFileSize { get; set; } = 5000000; // 5 MB
 
         /// <summary>
         /// Gets a string representing the <see cref="MaxFileSize"/> in a reasonable unit (GB for
         /// large sizes, down to bytes for small ones).
         /// </summary>
-        public static string MaxFileSizeString
+        public string MaxFileSizeString
         {
             get
             {
@@ -197,55 +189,47 @@ namespace NeverFoundry.Wiki.Web
         /// the policy page.
         /// </para>
         /// </summary>
-        public static string? PolicyPageTitle { get; set; } = "Policies";
+        public string? PolicyPageTitle { get; set; } = "Policies";
 
         private const string SystemNamespaceDefault = "System";
-        private static string _SystemNamespace = SystemNamespaceDefault;
+        private string _systemNamespace = SystemNamespaceDefault;
         /// <summary>
         /// <para>
         /// The name of the system namespace.
         /// </para>
         /// <para>
-        /// Default is "System"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
+        /// If omitted "System" is used.
         /// </para>
         /// </summary>
         [NotNull]
-        public static string? SystemNamespace
+        public string? SystemNamespace
         {
-            get => _SystemNamespace;
+            get => _systemNamespace;
             set
             {
-                _SystemNamespace = string.IsNullOrWhiteSpace(value)
+                _systemNamespace = string.IsNullOrWhiteSpace(value)
                     ? SystemNamespaceDefault
                     : value;
             }
         }
 
         private const string UserNamespaceDefault = "User";
-        private static string _UserNamespace = UserNamespaceDefault;
+        private string _userNamespace = UserNamespaceDefault;
         /// <summary>
         /// <para>
         /// The name of the user namespace.
         /// </para>
         /// <para>
-        /// Default is "User"
-        /// </para>
-        /// <para>
-        /// May not be <see langword="null"/> or empty <see cref="string"/>. Setting to an empty or
-        /// all whitespace value resets it to the default.
+        /// If omitted "User" is used.
         /// </para>
         /// </summary>
         [NotNull]
-        public static string? UserNamespace
+        public string? UserNamespace
         {
-            get => _UserNamespace;
+            get => _userNamespace;
             set
             {
-                _UserNamespace = string.IsNullOrWhiteSpace(value)
+                _userNamespace = string.IsNullOrWhiteSpace(value)
                     ? UserNamespaceDefault
                     : value;
             }
@@ -256,15 +240,17 @@ namespace NeverFoundry.Wiki.Web
         /// pages by non-admin users.
         /// </summary>
         /// <param name="namespaces"></param>
-        public static void AddAdminNamespace(params string[] namespaces)
+        /// <returns>This instance.</returns>
+        public WikiWebOptions AddAdminNamespace(params string[] namespaces)
         {
             for (var i = 0; i < namespaces.Length; i++)
             {
                 if (!string.IsNullOrWhiteSpace(namespaces[i]))
                 {
-                    (_AdminNamespaces ??= new List<string>()).Add(namespaces[i]);
+                    (_adminNamespaces ??= new List<string>()).Add(namespaces[i]);
                 }
             }
+            return this;
         }
     }
 }

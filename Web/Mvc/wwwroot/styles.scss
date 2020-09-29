@@ -81,6 +81,8 @@ $link-hover-decoration: underline !default;
 }
 
 body {
+    display: flex;
+    flex-flow: column;
     font-size: $font-size-base;
     font-weight: $font-weight-base;
     text-align: left;
@@ -336,7 +338,6 @@ blockquote {
     flex-grow: 1;
     flex-shrink: 0;
     font-family: $font-family-sans-serif;
-    min-height: 100%;
     width: 100%;
 
     @media screen and (min-width: 982px) {

@@ -26,18 +26,25 @@ namespace NeverFoundry.Wiki.Samples.Simple
 
             var dataStore = new InMemoryDataStore();
             services.AddSingleton<IDataStore>(dataStore);
-            WikiConfig.DataStore = dataStore;
 
-            WikiWebConfig.ContactPageTitle = null;
-            WikiWebConfig.ContentsPageTitle = null;
-            WikiWebConfig.CopyrightPageTitle = null;
-            WikiWebConfig.PolicyPageTitle = null;
-            WikiWebConfig.MaxFileSize = 0;
             services.AddWiki(
-                provider => new WikiUserManager(),
-                provider => new WikiGroupManager(),
-                provider => new WikiOptions
+                typeof(WikiUserManager),
+                typeof(WikiGroupManager),
+                new WikiOptions
                 {
+                    LinkTemplate = WikiMvcOptions.DefaultLinkTemplate,
+                },
+                new WikiWebOptions
+                {
+                    ContactPageTitle = null,
+                    ContentsPageTitle = null,
+                    CopyrightPageTitle = null,
+                    MaxFileSize = 0,
+                    PolicyPageTitle = null,
+                },
+                new WikiMvcOptions
+                {
+                    CompactRoutePort = 5003,
                     CompactLayoutPath = "/Pages/Shared/_Layout.cshtml",
                     LoginPath = "/",
                     MainLayoutPath = "/Pages/Shared/_Layout.cshtml",
@@ -47,7 +54,14 @@ namespace NeverFoundry.Wiki.Samples.Simple
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
-            Seed.AddDefaultWikiPagesAsync(WikiUserManager.UserId).GetAwaiter().GetResult();
+            var serviceProvider = app.ApplicationServices.CreateScope().ServiceProvider;
+            Seed.AddDefaultWikiPagesAsync(
+                serviceProvider.GetRequiredService<IWikiOptions>(),
+                serviceProvider.GetRequiredService<IWikiWebOptions>(),
+                serviceProvider.GetRequiredService<IDataStore>(),
+                WikiUserManager.UserId)
+                .GetAwaiter()
+                .GetResult();
 
             app.UseStatusCodePagesWithReExecute("/Error/{0}");
             if (env.IsDevelopment())

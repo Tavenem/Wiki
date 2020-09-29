@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.SignalR;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.Web;
 using NeverFoundry.Wiki.Web.SignalR;
 using System;
@@ -15,7 +16,10 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         internal const string PreviewNamespaceTemplate = "<span class=\"wiki-main-heading-namespace\">{0}</span><span class=\"wiki-main-heading-namespace-separator\">:</span>";
         internal const string PreviewTemplate = "<div class=\"wiki compact preview\"><div><main class=\"wiki-content\" role=\"main\"><div class=\"wiki-heading\" role=\"heading\"><h1 class=\"wiki-main-heading\">{0}<span class=\"wiki-main-heading-title\">{1}</span></h1></div><div class=\"wiki-body\"><div class=\"wiki-parser-output\">{2}</div></div></main></div></div>";
 
+        private readonly IDataStore _dataStore;
         private readonly IWikiUserManager _userManager;
+        private readonly IWikiOptions _wikiOptions;
+        private readonly IWikiWebOptions _wikiWebOptions;
 
         /// <summary>
         /// <para>
@@ -26,15 +30,17 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
         /// directly.
         /// </para>
         /// </summary>
-        /// <param name="userManager">
-        /// <para>
-        /// An <see cref="IWikiUserManager"/> instance.
-        /// </para>
-        /// <para>
-        /// Note: this is expected to be provided by dependency injection.
-        /// </para>
-        /// </param>
-        public WikiTalkHub(IWikiUserManager userManager) => _userManager = userManager;
+        public WikiTalkHub(
+            IDataStore dataStore,
+            IWikiUserManager userManager,
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions)
+        {
+            _dataStore = dataStore;
+            _userManager = userManager;
+            _wikiOptions = wikiOptions;
+            _wikiWebOptions = wikiWebOptions;
+        }
 
         /// <summary>
         /// Begin listening for messages sent to the given topic.
@@ -96,7 +102,15 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
             }
 
             var message = await Message
-                .ReplyAsync(reply.TopicId, user.Id, user.IsWikiAdmin, user.UserName, reply.Markdown, reply.MessageId)
+                .ReplyAsync(
+                    _wikiOptions,
+                    _dataStore,
+                    reply.TopicId,
+                    user.Id,
+                    user.IsWikiAdmin,
+                    user.UserName,
+                    reply.Markdown,
+                    reply.MessageId)
                 .ConfigureAwait(false);
             var html = string.Empty;
             var preview = false;
@@ -108,12 +122,12 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                     && !link.Missing
                     && !string.IsNullOrEmpty(link.WikiNamespace))
                 {
-                    var article = Article.GetArticle(link.Title, link.WikiNamespace);
+                    var article = Article.GetArticle(_wikiOptions, _dataStore, link.Title, link.WikiNamespace);
                     if (article is not null && !article.IsDeleted)
                     {
                         preview = true;
                         var previewHtml = article.Preview;
-                        var namespaceStr = article.WikiNamespace == WikiConfig.DefaultNamespace
+                        var namespaceStr = article.WikiNamespace == _wikiOptions.DefaultNamespace
                             ? string.Empty
                             : string.Format(PreviewNamespaceTemplate, article.WikiNamespace);
                         html = string.Format(PreviewTemplate, namespaceStr, article.Title, previewHtml);
@@ -127,13 +141,16 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
 
             if (!string.IsNullOrWhiteSpace(html))
             {
-                var senderPage = Article.GetArticle(user.Id, WikiWebConfig.UserNamespace);
+                var senderPage = Article.GetArticle(_wikiOptions, _dataStore, user.Id, _wikiWebOptions.UserNamespace);
 
-                await Clients.Group(reply.TopicId).Receive(new MessageResponse(message, html, true, senderPage is not null)).ConfigureAwait(false);
+                await Clients
+                    .Group(reply.TopicId)
+                    .Receive(new MessageResponse(message, html, true, senderPage is not null))
+                    .ConfigureAwait(false);
             }
         }
 
-        private static async ValueTask<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user)
+        private async ValueTask<bool> GetTopicPermissionAsync(string topicId, IWikiUser? user)
         {
             if (string.IsNullOrWhiteSpace(topicId)
                 || string.IsNullOrEmpty(topicId))
@@ -141,7 +158,7 @@ namespace NeverFoundry.Wiki.Mvc.Hubs
                 return false;
             }
 
-            var article = await WikiConfig.DataStore.GetItemAsync<Article>(topicId).ConfigureAwait(false);
+            var article = await _dataStore.GetItemAsync<Article>(topicId).ConfigureAwait(false);
             if (article is null)
             {
                 return false;

@@ -1,4 +1,5 @@
-﻿using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
+﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using System.ComponentModel.DataAnnotations;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
@@ -88,6 +89,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// Initialize a new instance of <see cref="UploadViewModel"/>.
         /// </summary>
         public UploadViewModel(
+            IWikiOptions options,
+            IDataStore dataStore,
             WikiRouteData data,
             string? markdown = null,
             string? previewTitle = null)
@@ -98,11 +101,11 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
             if (!string.IsNullOrWhiteSpace(previewTitle))
             {
-                var (wikiNamespace, title, _, _) = Article.GetTitleParts(previewTitle);
-                var fullTitle = Article.GetFullTitle(title, wikiNamespace);
+                var (wikiNamespace, title, _, _) = Article.GetTitleParts(options, previewTitle);
+                var fullTitle = Article.GetFullTitle(options, title, wikiNamespace);
                 Preview = string.IsNullOrWhiteSpace(markdown)
                     ? null
-                    : MarkdownItem.RenderHtml(TransclusionParser.Transclude(title, fullTitle, markdown, out _));
+                    : MarkdownItem.RenderHtml(options, dataStore, TransclusionParser.Transclude(options, dataStore, title, fullTitle, markdown, out _));
             }
 
             Title = previewTitle;

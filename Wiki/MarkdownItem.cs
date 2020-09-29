@@ -64,14 +64,14 @@ namespace NeverFoundry.Wiki
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-        /// <param name="html">The rendered HTML content.</param>
         /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="html">The rendered HTML content.</param>
         /// <param name="preview">A preview of this item's rendered HTML.</param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <remarks>
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
-        private protected MarkdownItem(string id, string html, string? markdownContent, string preview, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
+        private protected MarkdownItem(string id, string? markdownContent, string html, string preview, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
         {
             Html = html;
             MarkdownContent = markdownContent ?? string.Empty;
@@ -82,33 +82,26 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
         /// </summary>
-        /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-        /// <param name="markdownContent">The raw markdown.</param>
-        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-        /// <remarks>
-        /// Note: this constructor is most useful for deserializers.
-        /// </remarks>
-        private protected MarkdownItem(string id, string? markdownContent, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
-        {
-            MarkdownContent = markdownContent ?? string.Empty;
-            WikiLinks = wikiLinks;
-        }
-
-        /// <summary>
-        /// Initializes a new instance of <see cref="MarkdownItem"/>.
-        /// </summary>
         /// <param name="markdown">The raw markdown.</param>
-        private protected MarkdownItem(string? markdown)
+        /// <param name="html">
+        /// The rendered HTML content.
+        /// </param>
+        /// <param name="preview">
+        /// A preview of this item's rendered HTML.
+        /// </param>
+        /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+        private protected MarkdownItem(string? markdown, string? html, string? preview, IReadOnlyCollection<WikiLink> wikiLinks)
         {
             MarkdownContent = markdown ?? string.Empty;
-            WikiLinks = GetWikiLinks(markdown).AsReadOnly();
-            Update();
+            Html = html ?? string.Empty;
+            Preview = preview ?? string.Empty;
+            WikiLinks = wikiLinks;
         }
 
         private MarkdownItem(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
-            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)),
+            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()))
         { }
@@ -116,13 +109,20 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Gets the given markdown content as plain text (i.e. strips all formatting).
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="markdown">The markdown content.</param>
         /// <param name="characterLimit">The maximum number of characters to return.</param>
         /// <param name="singleParagraph">
         /// If true, stops after the first paragraph break, even still under the allowed character limit.
         /// </param>
         /// <returns>The plain text.</returns>
-        public static string FormatPlainText(string? markdown, int? characterLimit = 200, bool singleParagraph = true)
+        public static string FormatPlainText(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            int? characterLimit = 200,
+            bool singleParagraph = true)
         {
             if (string.IsNullOrEmpty(markdown))
             {
@@ -143,15 +143,15 @@ namespace NeverFoundry.Wiki
                 markdown = markdown.Substring(0, characterLimit.Value * 5);
             }
 
-            var html = Markdown.ToHtml(markdown, WikiConfig.MarkdownPipelinePlainText);
+            var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipelinePlainText(options, dataStore));
             if (string.IsNullOrWhiteSpace(html))
             {
                 return string.Empty;
             }
 
-            if (!(WikiConfig.Postprocessors is null))
+            if (options.Postprocessors is not null)
             {
-                foreach (var preprocessor in WikiConfig.Postprocessors)
+                foreach (var preprocessor in options.Postprocessors)
                 {
                     html = preprocessor.Process.Invoke(html);
                 }
@@ -184,25 +184,79 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Renders the given <paramref name="markdown"/> as HTML.
         /// </summary>
-        /// <param name="markdown">A markdown-formatted string.</param>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+        /// <param name="markdown">The markdown content.</param>
         /// <returns>The rendered HTML.</returns>
-        public static string RenderHtml(string markdown)
+        public static string RenderHtml(IWikiOptions options, IDataStore dataStore, string? markdown)
         {
-            var html = Markdown.ToHtml(markdown, WikiConfig.MarkdownPipeline);
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return string.Empty;
+            }
+
+            var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore));
             if (string.IsNullOrWhiteSpace(html))
             {
                 return string.Empty;
             }
 
-            if (!(WikiConfig.Postprocessors is null))
+            if (options.Postprocessors is not null)
             {
-                foreach (var preprocessor in WikiConfig.Postprocessors)
+                foreach (var preprocessor in options.Postprocessors)
                 {
                     html = preprocessor.Process.Invoke(html);
                 }
             }
 
-            return WikiConfig.HtmlSanitizer.Sanitize(html);
+            return WikiConfig.GetHtmlSanitizer(options).Sanitize(html);
+        }
+
+        /// <summary>
+        /// Gets a preview of the given markdown's rendered HTML.
+        /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+        /// <param name="markdown">The markdown content.</param>
+        /// <returns>A preview of the rendered HTML.</returns>
+        public static string RenderPreview(IWikiOptions options, IDataStore dataStore, string? markdown)
+        {
+            if (string.IsNullOrWhiteSpace(markdown))
+            {
+                return string.Empty;
+            }
+
+            var document = Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore));
+            if (AnyPreviews(document))
+            {
+                TrimNonPreview(document);
+            }
+            else
+            {
+                var minCharactersAvailable = PreviewCharacterMin;
+                var maxCharactersAvailable = PreviewCharacterMax;
+                Trim(document, ref minCharactersAvailable, ref maxCharactersAvailable);
+            }
+
+            string html;
+            using (var writer = new StringWriter())
+            {
+                var renderer = new HtmlRenderer(writer);
+                WikiConfig.GetMarkdownPipeline(options, dataStore).Setup(renderer);
+                renderer.Render(document);
+                html = writer.ToString();
+            }
+
+            if (!string.IsNullOrWhiteSpace(html)
+                && options.Postprocessors is not null)
+            {
+                foreach (var preprocessor in options.Postprocessors)
+                {
+                    html = preprocessor.Process.Invoke(html);
+                }
+            }
+
+            return WikiConfig.GetHtmlSanitizer(options).Sanitize(html) ?? string.Empty;
         }
 
         /// <summary>Populates a <see cref="SerializationInfo"></see> with the data needed to
@@ -266,88 +320,65 @@ namespace NeverFoundry.Wiki
         /// Gets a diff between the <see cref="MarkdownContent"/> of this item and the given one, as
         /// rendered HTML.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="other">The other <see cref="MarkdownItem"/> insteance.</param>
         /// <returns>
         /// A string representing the diff between this instance and the <paramref name="other"/>
         /// instance, as rendered HTML.
         /// </returns>
-        public string GetDiffHtml(MarkdownItem other)
-            => RenderHtml(PostprocessMarkdown(GetDiff(other, "html")));
+        public string GetDiffHtml(IWikiOptions options, IDataStore dataStore, MarkdownItem other)
+            => RenderHtml(options, dataStore, PostprocessMarkdown(options, dataStore, GetDiff(other, "html")));
 
         /// <summary>
         /// Gets this item's content rendered as HTML.
         /// </summary>
         /// <returns>The rendered HTML.</returns>
-        public string GetHtml() => RenderHtml(PostprocessMarkdown(MarkdownContent));
+        public string GetHtml(IWikiOptions options, IDataStore dataStore)
+            => RenderHtml(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent));
 
         /// <summary>
         /// Gets the given markdown content as plain text (i.e. strips all formatting).
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="markdown">The markdown content.</param>
         /// <param name="characterLimit">The maximum number of characters to return.</param>
         /// <param name="singleParagraph">
         /// If true, stops after the first paragraph break, even still under the allowed character limit.
         /// </param>
         /// <returns>The plain text.</returns>
-        public string GetPlainText(string? markdown, int? characterLimit = 200, bool singleParagraph = true)
-            => FormatPlainText(PostprocessMarkdown(markdown), characterLimit, singleParagraph);
+        public string GetPlainText(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            int? characterLimit = 200,
+            bool singleParagraph = true)
+            => FormatPlainText(options, dataStore, PostprocessMarkdown(options, dataStore, markdown), characterLimit, singleParagraph);
 
         /// <summary>
         /// Gets this item's content as plain text (i.e. strips all formatting).
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="characterLimit">The maximum number of characters to return.</param>
         /// <param name="singleParagraph">
         /// If true, stops after the first paragraph break, even still under the allowed character limit.
         /// </param>
         /// <returns>The plain text.</returns>
-        public string GetPlainText(int? characterLimit = 200, bool singleParagraph = true)
-            => FormatPlainText(PostprocessMarkdown(MarkdownContent), characterLimit, singleParagraph);
+        public string GetPlainText(
+            IWikiOptions options,
+            IDataStore dataStore,
+            int? characterLimit = 200,
+            bool singleParagraph = true)
+            => FormatPlainText(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent), characterLimit, singleParagraph);
 
         /// <summary>
         /// Gets a preview of this item's rendered HTML.
         /// </summary>
         /// <returns>A preview of this item's rendered HTML.</returns>
-        public string GetPreview()
-        {
-            var markdown = PostprocessMarkdown(MarkdownContent, isPreview: true);
-
-            if (string.IsNullOrWhiteSpace(markdown))
-            {
-                return string.Empty;
-            }
-
-            var document = Markdown.Parse(markdown, WikiConfig.MarkdownPipeline);
-            if (AnyPreviews(document))
-            {
-                TrimNonPreview(document);
-            }
-            else
-            {
-                var minCharactersAvailable = PreviewCharacterMin;
-                var maxCharactersAvailable = PreviewCharacterMax;
-                Trim(document, ref minCharactersAvailable, ref maxCharactersAvailable);
-            }
-
-            string html;
-            using (var writer = new StringWriter())
-            {
-                var renderer = new HtmlRenderer(writer);
-                WikiConfig.MarkdownPipeline.Setup(renderer);
-                renderer.Render(document);
-                html = writer.ToString();
-            }
-
-            if (!string.IsNullOrWhiteSpace(html)
-                && !(WikiConfig.Postprocessors is null))
-            {
-                foreach (var preprocessor in WikiConfig.Postprocessors)
-                {
-                    html = preprocessor.Process.Invoke(html);
-                }
-            }
-
-            return WikiConfig.HtmlSanitizer.Sanitize(html) ?? string.Empty;
-        }
+        public string GetPreview(IWikiOptions options, IDataStore dataStore)
+            => RenderPreview(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent, isPreview: true));
 
         private static bool AnyPreviews(MarkdownObject obj)
         {
@@ -391,10 +422,15 @@ namespace NeverFoundry.Wiki
             return false;
         }
 
-        private protected static List<WikiLink> GetWikiLinks(string? markdown, string? title = null, string? wikiNamespace = null)
+        private protected static List<WikiLink> GetWikiLinks(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            string? title = null,
+            string? wikiNamespace = null)
             => string.IsNullOrEmpty(markdown)
             ? new List<WikiLink>()
-            : Markdown.Parse(markdown, WikiConfig.MarkdownPipeline)
+            : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore))
             .Descendants<WikiLinkInline>()
             .Where(x => !x.IsWikipedia
                 && !x.IsCommons
@@ -417,7 +453,7 @@ namespace NeverFoundry.Wiki
                     x.IsNamespaceEscaped,
                     x.IsTalk,
                     anchorIndex == -1 ? x.Title : x.Title[..anchorIndex],
-                    x.WikiNamespace);
+                    x.WikiNamespace ?? options.DefaultNamespace);
             })
             .ToList();
 
@@ -669,12 +705,16 @@ namespace NeverFoundry.Wiki
         }
 
         [MemberNotNull(nameof(Html), nameof(Preview))]
-        internal void Update()
+        internal void Update(IWikiOptions options, IDataStore dataStore)
         {
-            Html = GetHtml();
-            Preview = GetPreview();
+            Html = GetHtml(options, dataStore);
+            Preview = GetPreview(options, dataStore);
         }
 
-        private protected virtual string PostprocessMarkdown(string? markdown, bool isPreview = false) => markdown ?? string.Empty;
+        private protected virtual string PostprocessMarkdown(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            bool isPreview = false) => markdown ?? string.Empty;
     }
 }

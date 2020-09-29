@@ -67,8 +67,8 @@ namespace NeverFoundry.Wiki
         /// </summary>
         /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
         /// <param name="idItemTypeName">The type discriminator.</param>
-        /// <param name="html">The rendered HTML content.</param>
         /// <param name="markdownContent">The raw markdown.</param>
+        /// <param name="html">The rendered HTML content.</param>
         /// <param name="preview">A preview of this item's rendered HTML.</param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
         /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
@@ -92,8 +92,8 @@ namespace NeverFoundry.Wiki
 #pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
             string idItemTypeName,
 #pragma warning restore IDE0060 // Remove unused parameter
-            string html,
             string markdownContent,
+            string html,
             string preview,
             IReadOnlyCollection<WikiLink> wikiLinks,
             string topicId,
@@ -101,7 +101,7 @@ namespace NeverFoundry.Wiki
             bool senderIsAdmin,
             string senderName,
             long timestampTicks,
-            string? replyMessageId = null) : base(id, html, markdownContent, preview, wikiLinks)
+            string? replyMessageId = null) : base(id, markdownContent, html, preview, wikiLinks)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
@@ -117,8 +117,11 @@ namespace NeverFoundry.Wiki
             bool senderIsAdmin,
             string senderName,
             string? markdown,
+            string? html,
+            string? preview,
+            IReadOnlyCollection<WikiLink> wikiLinks,
             long timestampTicks,
-            string? replyMessageId = null) : base(markdown)
+            string? replyMessageId = null) : base(markdown, html, preview, wikiLinks)
         {
             ReplyMessageId = replyMessageId;
             SenderId = senderId;
@@ -131,8 +134,8 @@ namespace NeverFoundry.Wiki
         private Message(SerializationInfo info, StreamingContext context) : this(
             (string?)info.GetValue(nameof(Id), typeof(string)) ?? string.Empty,
             MessageIdItemTypeName,
-            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(MarkdownContent), typeof(string)) ?? string.Empty,
+            (string?)info.GetValue(nameof(Html), typeof(string)) ?? string.Empty,
             (string?)info.GetValue(nameof(Preview), typeof(string)) ?? string.Empty,
             (IReadOnlyCollection<WikiLink>?)info.GetValue(nameof(WikiLinks), typeof(IReadOnlyCollection<WikiLink>)) ?? new ReadOnlyCollection<WikiLink>(Array.Empty<WikiLink>()),
             (string?)info.GetValue(nameof(TopicId), typeof(string)) ?? string.Empty,
@@ -146,6 +149,8 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// Creates a new reply.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
         /// <param name="senderId">The ID of the sender of this message.</param>
         /// <param name="senderIsAdmin">Whether the sender of this message is an admin.</param>
@@ -156,6 +161,8 @@ namespace NeverFoundry.Wiki
         /// messages addressed directly to a topic).
         /// </param>
         public static async Task<Message> ReplyAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             string topicId,
             string senderId,
             bool senderIsAdmin,
@@ -166,6 +173,8 @@ namespace NeverFoundry.Wiki
             if (!string.IsNullOrEmpty(markdown))
             {
                 markdown = TransclusionParser.Transclude(
+                    options,
+                    dataStore,
                     null,
                     null,
                     markdown,
@@ -178,9 +187,12 @@ namespace NeverFoundry.Wiki
                 senderIsAdmin,
                 senderName,
                 markdown,
+                RenderHtml(options, dataStore, markdown),
+                RenderPreview(options, dataStore, PostprocessMessageMarkdown(options, dataStore, markdown, true)),
+                new ReadOnlyCollection<WikiLink>(GetWikiLinks(options, dataStore, markdown)),
                 DateTimeOffset.UtcNow.Ticks,
                 replyMessageId);
-            await WikiConfig.DataStore.StoreItemAsync(message).ConfigureAwait(false);
+            await dataStore.StoreItemAsync(message).ConfigureAwait(false);
             return message;
         }
 
@@ -195,8 +207,8 @@ namespace NeverFoundry.Wiki
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(nameof(Id), Id);
-            info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(MarkdownContent), MarkdownContent);
+            info.AddValue(nameof(Html), Html);
             info.AddValue(nameof(Preview), Preview);
             info.AddValue(nameof(WikiLinks), WikiLinks);
             info.AddValue(nameof(TopicId), TopicId);
@@ -207,7 +219,11 @@ namespace NeverFoundry.Wiki
             info.AddValue(nameof(ReplyMessageId), ReplyMessageId);
         }
 
-        private protected override string PostprocessMarkdown(string? markdown, bool isPreview = false)
+        private static string PostprocessMessageMarkdown(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            bool isPreview = false)
         {
             if (string.IsNullOrEmpty(markdown))
             {
@@ -215,11 +231,23 @@ namespace NeverFoundry.Wiki
             }
 
             return TransclusionParser.Transclude(
-                  null,
-                  null,
-                  markdown,
-                  out _,
-                  isPreview: isPreview);
+                options,
+                dataStore,
+                null,
+                null,
+                markdown,
+                out _,
+                isPreview: isPreview);
         }
+
+        private protected override string PostprocessMarkdown(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            bool isPreview = false) => PostprocessMessageMarkdown(
+                options,
+                dataStore,
+                markdown,
+                isPreview);
     }
 }

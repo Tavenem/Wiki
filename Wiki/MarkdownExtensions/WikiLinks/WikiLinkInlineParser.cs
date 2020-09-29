@@ -2,6 +2,7 @@
 using Markdig.Parsers;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
+using NeverFoundry.DataStorage;
 using System;
 using System.Linq;
 using System.Text;
@@ -19,9 +20,24 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
         private const char SeparatorChar = '|';
 
         /// <summary>
+        /// The <see cref="IDataStore"/> used by this instance.
+        /// </summary>
+        public IDataStore DataStore { get; }
+
+        /// <summary>
+        /// The options for this instance.
+        /// </summary>
+        public IWikiOptions Options { get; }
+
+        /// <summary>
         /// Initializes a new instance of <see cref="WikiLinkInlineParser"/>.
         /// </summary>
-        public WikiLinkInlineParser() => OpeningCharacters = new[] { LinkOpenChar, LinkCloseChar, '!' };
+        public WikiLinkInlineParser(IWikiOptions options, IDataStore dataStore)
+        {
+            DataStore = dataStore;
+            OpeningCharacters = new[] { LinkOpenChar, LinkCloseChar, '!' };
+            Options = options;
+        }
 
         /// <summary>
         /// Tries to match the specified slice.
@@ -326,7 +342,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
             return isValid;
         }
 
-        private static bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
+        private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
         {
             var openParent = inlineState.Inline.FindParentOfType<WikiLinkDelimiterInline>().FirstOrDefault();
             if (openParent is null)
@@ -435,14 +451,14 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                         {
                             mainTitle = title[..anchorIndex];
                         }
-                        var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(mainTitle);
+                        var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(Options, mainTitle);
                         isTalk = wIsTalk;
                         wikiNamespace = wWikiNamespace;
-                        isCategory = string.Equals(wikiNamespace, WikiConfig.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
+                        isCategory = string.Equals(wikiNamespace, Options.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
                         if (isCategory)
                         {
                             isNamespaceEscaped = title.StartsWith(':');
-                            wikiNamespace = WikiConfig.CategoryNamespace; // normalize casing
+                            wikiNamespace = Options.CategoryNamespace; // normalize casing
                         }
                         mainTitle = wTitle;
 
@@ -455,14 +471,14 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.WikiLinks
                 var articleMissing = false;
                 if (!isCategory && !isWikipedia && !isCommons && !ignoreMissing)
                 {
-                    var reference = PageReference.GetPageReference(mainTitle, wikiNamespace);
+                    var reference = PageReference.GetPageReference(DataStore, mainTitle, wikiNamespace ?? Options.DefaultNamespace);
                     if (reference is null)
                     {
                         articleMissing = true;
                     }
                     else
                     {
-                        var article = WikiConfig.DataStore.GetItem<Article>(reference.Reference);
+                        var article = DataStore.GetItem<Article>(reference.Reference);
                         articleMissing = article?.IsDeleted == true;
                     }
                 }

@@ -1,11 +1,9 @@
-﻿using NeverFoundry.DataStorage;
-
-namespace NeverFoundry.Wiki.Mvc
+﻿namespace NeverFoundry.Wiki.Mvc
 {
     /// <summary>
     /// Options used to configure the wiki system.
     /// </summary>
-    public interface IWikiOptions
+    public interface IWikiMvcOptions
     {
         /// <summary>
         /// <para>
@@ -20,13 +18,39 @@ namespace NeverFoundry.Wiki.Mvc
 
         /// <summary>
         /// <para>
-        /// The <see cref="IDataStore"/> to be used by the wiki.
+        /// The host part which will be recognized as indicating a request for the compact version
+        /// of the wiki.
         /// </para>
         /// <para>
-        /// If omitted, the value already set in <see cref="WikiConfig.DataStore"/> will not be changed.
+        /// If left empty the compact view cannot be reached at a particular host path.
         /// </para>
         /// </summary>
-        IDataStore? DataStore { get; set; }
+        string? CompactRouteHostPart { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The position (zero-based) within the parts of the host string which will be examined to
+        /// determine a request for the compact version of the wiki.
+        /// </para>
+        /// <para>
+        /// If left <see langword="null"/> position zero will be assumed.
+        /// </para>
+        /// <para>
+        /// Only used when <see cref="CompactRouteHostPart"/> is non-empty.
+        /// </para>
+        /// </summary>
+        int? CompactRouteHostPosition { get; set; }
+
+        /// <summary>
+        /// <para>
+        /// The port which will be recognized as indicating a request for the compact version of the
+        /// wiki.
+        /// </para>
+        /// <para>
+        /// If left <see langword="null"/> the compact view cannot be reached at a particular port.
+        /// </para>
+        /// </summary>
+        int? CompactRoutePort { get; set; }
 
         /// <summary>
         /// <para>
@@ -87,5 +111,25 @@ namespace NeverFoundry.Wiki.Mvc
         /// </para>
         /// </summary>
         string? TenorAPIKey { get; set; }
+
+        /// <summary>
+        /// Gets the name or path of a partial view which should be displayed after the content of
+        /// the given wiki article (before the category list).
+        /// </summary>
+        /// <param name="article">A wiki article.</param>
+        /// <returns>
+        /// The name or path of a partial view.
+        /// </returns>
+        string? GetArticleEndMatter(Article article);
+
+        /// <summary>
+        /// Gets the name or path of a partial view which should be displayed before the content of
+        /// the given wiki article (after the subtitle).
+        /// </summary>
+        /// <param name="article">A wiki article.</param>
+        /// <returns>
+        /// The name or path of a partial view.
+        /// </returns>
+        string? GetArticleFrontMatter(Article article);
     }
 }

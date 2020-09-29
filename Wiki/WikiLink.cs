@@ -25,15 +25,6 @@ namespace NeverFoundry.Wiki
         public Article? Article { get; set; }
 
         /// <summary>
-        /// Gets the full title of the linked article (including namespace if the namespace is not
-        /// <see cref="WikiConfig.DefaultNamespace"/>, and the Talk pseudo-namespace if this is a
-        /// discussion link).
-        /// </summary>
-        [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public string FullTitle => Article.GetFullTitle(Title, WikiNamespace, IsTalk);
-
-        /// <summary>
         /// Whether this is a link to an existing page.
         /// </summary>
         public bool Missing { get; set; }
@@ -94,7 +85,7 @@ namespace NeverFoundry.Wiki
             bool isNamespaceEscaped,
             bool isTalk,
             string title,
-            string? wikiNamespace)
+            string wikiNamespace)
         {
             Article = article;
             Missing = missing;
@@ -102,7 +93,7 @@ namespace NeverFoundry.Wiki
             IsNamespaceEscaped = isNamespaceEscaped;
             IsTalk = isTalk;
             Title = title;
-            WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
+            WikiNamespace = wikiNamespace;
         }
 
         /// <summary>
@@ -134,14 +125,14 @@ namespace NeverFoundry.Wiki
             bool isTalk,
             bool missing,
             string title,
-            string? wikiNamespace)
+            string wikiNamespace)
         {
             IsCategory = isCategory;
             IsNamespaceEscaped = isNamespaceEscaped;
             IsTalk = isTalk;
             Missing = missing;
             Title = title;
-            WikiNamespace = wikiNamespace ?? WikiConfig.DefaultNamespace;
+            WikiNamespace = wikiNamespace;
         }
 
         private WikiLink(SerializationInfo info, StreamingContext context) : this(
@@ -216,8 +207,8 @@ namespace NeverFoundry.Wiki
             if (IsTalk)
             {
                 return string.IsNullOrEmpty(WikiNamespace)
-                    ? $"{WikiConfig.TalkNamespace}:{Title}"
-                    : $"{WikiConfig.TalkNamespace}:{WikiNamespace}:{Title}";
+                    ? $"Talk:{Title}"
+                    : $"Talk:{WikiNamespace}:{Title}";
             }
             if (IsNamespaceEscaped)
             {

@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.59.0-preview</Version>
+    <Version>0.64.1-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>
       An implementation of NeverFoundry.Wiki for Blazor.
@@ -31,7 +31,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components" Version="5.0.0-rc.1.20451.17" />
-    <PackageReference Include="NeverFoundry.Wiki" Version="0.59.0" />
+    <PackageReference Include="NeverFoundry.Wiki" Version="0.64.1" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">

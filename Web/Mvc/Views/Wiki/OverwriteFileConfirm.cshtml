@@ -14,7 +14,7 @@
     {
         <p>You do not have edit permissions for the existing file. You will need to choose a new title for this upload.</p>
     }
-    <form asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Upload">
+    <form asp-controller="Wiki" asp-action="Upload">
         <input asp-for="File" type="hidden" />
         <input asp-for="Title" type="hidden" />
         <input asp-for="Markdown" type="hidden" />

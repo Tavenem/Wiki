@@ -15,18 +15,24 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
     /// </summary>
     public class ElasticSearchClient : ISearchClient
     {
+        private readonly IDataStore _dataStore;
         private readonly IElasticClient _elasticClient;
         private readonly ILogger<ElasticSearchClient> _logger;
+        private readonly IWikiOptions _options;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ElasticSearchClient"/>.
         /// </summary>
         public ElasticSearchClient(
+            IDataStore dataStore,
             IElasticClient elasticClient,
-            ILogger<ElasticSearchClient> logger)
+            ILogger<ElasticSearchClient> logger,
+            IWikiOptions options)
         {
+            _dataStore = dataStore;
             _elasticClient = elasticClient;
             _logger = logger;
+            _options = options;
         }
 
         /// <summary>
@@ -268,7 +274,8 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
                     response.Hits.Select(x => new SearchHit(
                         x.Source.Title,
                         x.Source.WikiNamespace,
-                        x.Source.GetPlainText(x.Highlight.FirstOrDefault().Value?.FirstOrDefault())
+                        Article.GetFullTitle(_options, x.Source.Title, x.Source.WikiNamespace),
+                        x.Source.GetPlainText(_options, _dataStore, x.Highlight.FirstOrDefault().Value?.FirstOrDefault())
                         .Replace("#H#H#", "<strong class=\"wiki-search-hit\">")
                         .Replace("%H%H%", "</strong>"))),
                     request.PageNumber,

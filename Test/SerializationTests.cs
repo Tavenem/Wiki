@@ -1,4 +1,5 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NeverFoundry.DataStorage;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,6 +12,7 @@ namespace NeverFoundry.Wiki.Test
     {
         private static readonly Newtonsoft.Json.JsonSerializerSettings _JsonSerializerSettings
             = new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto };
+        private static readonly IWikiOptions _Options = new WikiOptions();
 
         [TestMethod]
         public void WikiRevisionTest()
@@ -76,7 +78,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
-            value = new WikiLink(true, false, false, false, "Test Title", WikiConfig.CategoryNamespace);
+            value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace);
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine();
@@ -92,7 +94,7 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
-            value = new WikiLink(true, true, false, false, "Test Title", WikiConfig.CategoryNamespace);
+            value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace);
 
             json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
             Console.WriteLine();
@@ -285,6 +287,7 @@ namespace NeverFoundry.Wiki.Test
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 new List<string> { "TEST_CHILD_ID" },
                 0,
+                _Options.CategoryNamespace,
                 false,
                 "TEST_OWNER_ID",
                 null,
@@ -316,11 +319,13 @@ namespace NeverFoundry.Wiki.Test
                 "Test/Path",
                 100,
                 "test/type",
+                "TEST_OWNER_ID",
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
                 new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                 0,
+                _Options.FileNamespace,
                 false,
                 "TEST_OWNER_ID",
                 null,
@@ -377,6 +382,7 @@ namespace NeverFoundry.Wiki.Test
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                     new List<string> { "TEST_CHILD_ID" },
                     0,
+                    _Options.CategoryNamespace,
                     false,
                     "TEST_OWNER_ID",
                     null,
@@ -390,11 +396,13 @@ namespace NeverFoundry.Wiki.Test
                     "Test/Path",
                     100,
                     "test/type",
+                    "TEST_OWNER_ID",
                     "Test markdown",
                     "Test markdown",
                     "Test markdown",
                     new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
                     0,
+                    _Options.FileNamespace,
                     false,
                     "TEST_OWNER_ID",
                     null,

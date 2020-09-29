@@ -18,17 +18,12 @@ namespace NeverFoundry.Wiki.Samples.Complete.Data
 
         public static async Task InitializeDatabasesAsync(IApplicationBuilder app)
         {
-            var factory = app.ApplicationServices.GetService<IServiceScopeFactory>();
-            if (factory is null)
-            {
-                throw new Exception();
-            }
-            using var serviceScope = factory.CreateScope();
-            serviceScope.ServiceProvider.GetRequiredService<IdentityDbContext>().Database.Migrate();
+            var serviceProvider = app.ApplicationServices.CreateScope().ServiceProvider;
+            serviceProvider.GetRequiredService<IdentityDbContext>().Database.Migrate();
 
-            await SeedUsersAsync(serviceScope).ConfigureAwait(false);
+            await SeedUsersAsync(serviceProvider).ConfigureAwait(false);
 
-            var userMgr = serviceScope.ServiceProvider.GetRequiredService<UserManager<WikiUser>>();
+            var userMgr = serviceProvider.GetRequiredService<UserManager<WikiUser>>();
             var admin = await userMgr.FindByNameAsync(AdminUsername).ConfigureAwait(false);
             var adminId = admin?.Id;
 
@@ -37,21 +32,23 @@ namespace NeverFoundry.Wiki.Samples.Complete.Data
                 throw new Exception("Admin not found");
             }
 
-            WikiConfig.DataStore = serviceScope.ServiceProvider.GetRequiredService<IDataStore>();
-
-            await SharedSeed.AddDefaultWikiPagesAsync(adminId).ConfigureAwait(false);
+            await SharedSeed.AddDefaultWikiPagesAsync(
+                serviceProvider.GetRequiredService<IWikiOptions>(),
+                serviceProvider.GetRequiredService<IWikiWebOptions>(),
+                serviceProvider.GetRequiredService<IDataStore>(),
+                adminId).ConfigureAwait(false);
         }
 
-        private static async Task SeedUsersAsync(IServiceScope scope)
+        private static async Task SeedUsersAsync(IServiceProvider serviceProvider)
         {
-            var context = scope.ServiceProvider.GetService<IdentityDbContext>();
+            var context = serviceProvider.GetService<IdentityDbContext>();
             if (context is null)
             {
                 throw new Exception();
             }
             context.Database.Migrate();
 
-            var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<WikiUser>>();
+            var userMgr = serviceProvider.GetRequiredService<UserManager<WikiUser>>();
             const string AdminEmail = "admin@neverfoundry.com";
             var admin = await userMgr.FindByEmailAsync(AdminEmail).ConfigureAwait(false);
             if (admin is null)
@@ -95,14 +92,16 @@ namespace NeverFoundry.Wiki.Samples.Complete.Data
                 }
             }
 
-            var adminGroup = await WikiConfig.DataStore
+            var wikiWebOptions = serviceProvider.GetRequiredService<IWikiWebOptions>();
+            var dataStore = serviceProvider.GetRequiredService<IDataStore>();
+            var adminGroup = await dataStore
                 .Query<WikiGroup>()
-                .FirstOrDefaultAsync(x => x.GroupName == WikiWebConfig.AdminGroupName)
+                .FirstOrDefaultAsync(x => x.GroupName == wikiWebOptions.AdminGroupName)
                 .ConfigureAwait(false);
             if (adminGroup is null)
             {
-                adminGroup = new WikiGroup(WikiWebConfig.AdminGroupName, admin.Id, -1);
-                await WikiConfig.DataStore.StoreItemAsync(adminGroup).ConfigureAwait(false);
+                adminGroup = new WikiGroup(wikiWebOptions.AdminGroupName, admin.Id, -1);
+                await dataStore.StoreItemAsync(adminGroup).ConfigureAwait(false);
             }
         }
     }

@@ -1,4 +1,6 @@
 ﻿@model WikiItemViewModel
+@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
 
 @if (Model.Data.WikiItem is WikiFile file)
 {
@@ -20,6 +22,6 @@ else
 {
     <div class="wiki-file-missing">
         <p>The file associated with "@Model.Data.Title" is missing.</p>
-        <p>You can <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:Upload" class="wiki-link wiki-link-exists">upload</a> a new file to replace it.</p>
+        <p>You can <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:Upload" class="wiki-link wiki-link-exists">upload</a> a new file to replace it.</p>
     </div>
 }

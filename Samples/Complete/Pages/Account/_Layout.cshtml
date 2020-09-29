@@ -1,11 +1,12 @@
-﻿@{
+﻿@inject IWikiOptions WikiOptions
+@{
     Layout = "/Pages/Shared/_Layout.cshtml";
 }
 
 <div class="wiki account-main">
     <nav>
         <div class="wiki-sidebar-logo" role="banner">
-            <a class="wiki-sidebar-logo-link" href="/Wiki/@WikiConfig.MainPageTitle" title="Visit the main page"></a>
+            <a class="wiki-sidebar-logo-link" href="/Wiki/@WikiOptions.MainPageTitle" title="Visit the main page"></a>
         </div>
     </nav>
     <div>

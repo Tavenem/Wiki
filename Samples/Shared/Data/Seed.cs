@@ -1,4 +1,5 @@
-﻿using NeverFoundry.Wiki.Web;
+﻿using NeverFoundry.DataStorage;
+using NeverFoundry.Wiki.Web;
 using System;
 using System.Threading.Tasks;
 
@@ -6,68 +7,78 @@ namespace NeverFoundry.Wiki.Samples.Data
 {
     public static class Seed
     {
-        public static async Task AddDefaultWikiPagesAsync(string adminId)
+        public static async Task AddDefaultWikiPagesAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
+            string adminId)
         {
             var welcomeReference = await PageReference
-                .GetPageReferenceAsync("Welcome", WikiConfig.TransclusionNamespace)
+                .GetPageReferenceAsync(dataStore, "Welcome", wikiOptions.TransclusionNamespace)
                 .ConfigureAwait(false);
             if (welcomeReference is null)
             {
-                _ = await GetDefaultWelcomeAsync(adminId).ConfigureAwait(false);
+                _ = await GetDefaultWelcomeAsync(wikiOptions, dataStore, adminId).ConfigureAwait(false);
             }
 
             var mainReference = await PageReference
-                .GetPageReferenceAsync(WikiConfig.MainPageTitle)
+                .GetPageReferenceAsync(dataStore, wikiOptions.MainPageTitle, wikiOptions.DefaultNamespace)
                 .ConfigureAwait(false);
             if (mainReference is null)
             {
-                _ = await GetDefaultMainAsync(adminId).ConfigureAwait(false);
+                _ = await GetDefaultMainAsync(wikiOptions, dataStore, adminId).ConfigureAwait(false);
             }
 
-            if (!string.IsNullOrEmpty(WikiWebConfig.AboutPageTitle))
+            if (!string.IsNullOrEmpty(wikiWebOptions.AboutPageTitle))
             {
                 var aboutReference = await PageReference
-                    .GetPageReferenceAsync(WikiWebConfig.AboutPageTitle, WikiWebConfig.SystemNamespace)
+                    .GetPageReferenceAsync(dataStore, wikiWebOptions.AboutPageTitle, wikiWebOptions.SystemNamespace)
                     .ConfigureAwait(false);
                 if (aboutReference is null)
                 {
-                    _ = await GetDefaultAboutAsync(adminId).ConfigureAwait(false);
+                    _ = await GetDefaultAboutAsync(wikiOptions, wikiWebOptions, dataStore, adminId).ConfigureAwait(false);
                 }
             }
 
-            if (!string.IsNullOrEmpty(WikiWebConfig.HelpPageTitle))
+            if (!string.IsNullOrEmpty(wikiWebOptions.HelpPageTitle))
             {
                 var helpReference = await PageReference
-                    .GetPageReferenceAsync(WikiWebConfig.HelpPageTitle, WikiWebConfig.SystemNamespace)
+                    .GetPageReferenceAsync(dataStore, wikiWebOptions.HelpPageTitle, wikiWebOptions.SystemNamespace)
                     .ConfigureAwait(false);
                 if (helpReference is null)
                 {
-                    _ = await GetDefaultHelpAsync(adminId).ConfigureAwait(false);
+                    _ = await GetDefaultHelpAsync(wikiOptions, wikiWebOptions, dataStore, adminId).ConfigureAwait(false);
                 }
             }
 
             var mvcReference = await PageReference
-                .GetPageReferenceAsync("MVC")
+                .GetPageReferenceAsync(dataStore, "MVC", wikiOptions.DefaultNamespace)
                 .ConfigureAwait(false);
             if (mvcReference is null)
             {
-                _ = await GetDefaultMVCAsync(adminId).ConfigureAwait(false);
+                _ = await GetDefaultMVCAsync(wikiOptions, dataStore, adminId).ConfigureAwait(false);
             }
 
-            var category = Category.GetCategory("System pages");
+            var category = Category.GetCategory(wikiOptions, dataStore, "System pages");
             if (category is null)
             {
                 throw new Exception("Failed to create category during article creation");
             }
             if (!category.MarkdownContent.StartsWith("These are system pages", StringComparison.Ordinal))
             {
-                await SetDefaultCategoryAsync(category, adminId).ConfigureAwait(false);
+                await SetDefaultCategoryAsync(wikiOptions, dataStore, category, adminId).ConfigureAwait(false);
             }
         }
 
-        private static Task<Article> GetDefaultAboutAsync(string adminId) => Article.NewAsync(
-            WikiWebConfig.AboutPageTitle ?? "About",
-            adminId,
+        private static Task<Article> GetDefaultAboutAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
+            string adminId) => Article.NewAsync(
+                wikiOptions,
+                dataStore,
+                wikiWebOptions.AboutPageTitle ?? "About",
+                adminId,
 @$"{{{{Welcome}}}}
 
 The [NeverFoundry](http://neverfoundry.com).Wiki package is a [.NET](https://dotnet.microsoft.com) [[w:Wiki||]] library.
@@ -80,14 +91,20 @@ The source code for `NeverFoundry.Wiki` is available online, and also includes a
 
 See the [[System:Help|]] page for usage information.
 
-[[{WikiConfig.CategoryNamespace}:System pages]]",
-            WikiWebConfig.SystemNamespace,
-            adminId,
-            new[] { adminId });
+[[{wikiOptions.CategoryNamespace}:System pages]]",
+                wikiWebOptions.SystemNamespace,
+                adminId,
+                new[] { adminId });
 
-        private static Task<Article> GetDefaultHelpAsync(string adminId) => Article.NewAsync(
-            WikiWebConfig.HelpPageTitle ?? "Help",
-            adminId,
+        private static Task<Article> GetDefaultHelpAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
+            string adminId) => Article.NewAsync(
+                wikiOptions,
+                dataStore,
+                wikiWebOptions.HelpPageTitle ?? "Help",
+                adminId,
 @"{{Welcome}}
 
 This page includes various information which will help you to get a [NeverFoundry](http://neverfoundry.com).Wiki instance up and running.
@@ -100,50 +117,71 @@ The NeverFoundry Wiki syntax is a custom flavor of markdown. It implements all t
 # MVC
 The `NeverFoundry.Wiki.Mvc` package contains a sample/default implementation of `NeverFoundry.Wiki` for use with an [ASP.NET Core MVC](https://docs.microsoft.com/en-us/aspnet/core/mvc/overview) site. This implementation can be used as-is, or you can use the source as the starting point to build your own implementation. See [[MVC|the MVC page]] for more information.
 
-[[" + WikiConfig.CategoryNamespace + @":System pages]]
-[[" + WikiConfig.CategoryNamespace + ":Help pages]]",
-            WikiWebConfig.SystemNamespace,
-            adminId,
-            new[] { adminId });
+[[" + wikiOptions.CategoryNamespace + @":System pages]]
+[[" + wikiOptions.CategoryNamespace + ":Help pages]]",
+                wikiWebOptions.SystemNamespace,
+                adminId,
+                new[] { adminId });
 
-        private static Task<Article> GetDefaultMainAsync(string adminId) => Article.NewAsync(
-            WikiConfig.MainPageTitle,
-            adminId,
+        private static Task<Article> GetDefaultMainAsync(
+            IWikiOptions wikiOptions,
+            IDataStore dataStore,
+            string adminId) => Article.NewAsync(
+                wikiOptions,
+                dataStore,
+                wikiOptions.MainPageTitle,
+                adminId,
 @$"{{{{Welcome}}}}
 
 See the [[System:About|]] page or the [[System:Help|]] page for more information.
 
-[[{WikiConfig.CategoryNamespace}:System pages]]",
-            WikiConfig.DefaultNamespace,
-            adminId,
-            new[] { adminId });
+[[{wikiOptions.CategoryNamespace}:System pages]]",
+                wikiOptions.DefaultNamespace,
+                adminId,
+                new[] { adminId });
 
-        private static Task<Article> GetDefaultMVCAsync(string adminId) => Article.NewAsync(
-            "MVC",
-            adminId,
+        private static Task<Article> GetDefaultMVCAsync(
+            IWikiOptions wikiOptions,
+            IDataStore dataStore,
+            string adminId) => Article.NewAsync(
+                wikiOptions,
+                dataStore,
+                "MVC",
+                adminId,
 @"{{Welcome}}
 
 The `NeverFoundry.Wiki.Mvc` package contains a sample/default implementation of `NeverFoundry.Wiki` for use with an [ASP.NET Core MVC](https://docs.microsoft.com/en-us/aspnet/core/mvc/overview) site. Note that this isn't a complete website, but rather a [Razor class library](https://docs.microsoft.com/en-us/aspnet/core/razor-pages/ui-class) which can be included in an [ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core) project to enable wiki functionality.
 
-[[" + WikiConfig.CategoryNamespace + ":Help pages]]",
-            WikiConfig.DefaultNamespace,
-            adminId,
-            new[] { adminId });
+[[" + wikiOptions.CategoryNamespace + ":Help pages]]",
+                wikiOptions.DefaultNamespace,
+                adminId,
+                new[] { adminId });
 
-        private static Task<Article> GetDefaultWelcomeAsync(string adminId) => Article.NewAsync(
-            "Welcome",
-            adminId,
+        private static Task<Article> GetDefaultWelcomeAsync(
+            IWikiOptions wikiOptions,
+            IDataStore dataStore,
+            string adminId) => Article.NewAsync(
+                wikiOptions,
+                dataStore,
+                "Welcome",
+                adminId,
 @$"Welcome to the [NeverFoundry](http://neverfoundry.com).Wiki sample.
 
-{{{{ifnottemplate|[[{WikiConfig.CategoryNamespace}:System pages]]}}}}",
-            WikiConfig.TransclusionNamespace,
-            adminId,
-            new[] { adminId });
+{{{{ifnottemplate|[[{wikiOptions.CategoryNamespace}:System pages]]}}}}",
+                wikiOptions.TransclusionNamespace,
+                adminId,
+                new[] { adminId });
 
-        private static Task SetDefaultCategoryAsync(Category category, string adminId) => category.ReviseAsync(
-            adminId,
-            markdown: "These are system pages in the [NeverFoundry](http://neverfoundry.com).Wiki sample [[w:Wiki||]].",
-            revisionComment: "Provide a description",
-            allowedEditors: new[] { adminId });
+        private static Task SetDefaultCategoryAsync(
+            IWikiOptions wikiOptions,
+            IDataStore dataStore,
+            Category category,
+            string adminId) => category.ReviseAsync(
+                wikiOptions,
+                dataStore,
+                adminId,
+                markdown: "These are system pages in the [NeverFoundry](http://neverfoundry.com).Wiki sample [[w:Wiki||]].",
+                revisionComment: "Provide a description",
+                allowedEditors: new[] { adminId });
     }
 }

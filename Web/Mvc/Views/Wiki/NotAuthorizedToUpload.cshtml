@@ -1,4 +1,6 @@
-﻿@{
+﻿@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
+@{
     ViewData["Title"] = "Not Authorized";
 }
 
@@ -8,10 +10,10 @@
     <p>
         You may need to sign in.
     </p>
-    @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+    @if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
     {
         <p>
-            Please check the <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policy page</a>
+            Please check the <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policy page</a>
             to find information about who is permitted to upload files to this wiki, and how permission is obtained.
         </p>
     }

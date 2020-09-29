@@ -1,6 +1,8 @@
 ﻿@model GroupViewModel
+@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
 
-<div class="wiki-site-subtitle">From @WikiConfig.SiteName</div>
+<div class="wiki-site-subtitle">From @WikiOptions.SiteName</div>
 @if (Model.IsDiff)
 {
     <div class="wiki-parser-output wiki-diff">@Html.Raw(Model.Html)</div>
@@ -18,9 +20,8 @@ else
         {
             <li>
                 <a class="wiki-username wiki-username-link @(user.PageExists ? string.Empty : "wiki-link-missing")"
-                   asp-route-isCompact="@Model.Data.IsCompact"
                    asp-route-title="@user.Id"
-                   asp-route-wikiNamespace="@WikiWebConfig.UserNamespace"
+                   asp-route-wikiNamespace="@WikiWebOptions.UserNamespace"
                    asp-action="Read"
                    title="Visit the user page for @(user.UserName)">@user.UserName</a>
             </li>

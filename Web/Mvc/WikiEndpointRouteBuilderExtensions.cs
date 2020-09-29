@@ -16,7 +16,6 @@ namespace Microsoft.Extensions.DependencyInjection
     /// </summary>
     public static class WikiEndpointRouteBuilderExtensions
     {
-        private const string LinkTemplate = "onmousemove=\"wikimvc.showPreview(event, '{LINK}');\" onmouseleave=\"wikimvc.hidePreview();\"";
         private const string WikiController = "Wiki";
 
         /// <summary>
@@ -25,8 +24,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
         /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
         /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-        /// <param name="options">
+        /// <param name="wikiOptions">
         /// The options used to configure the wiki system.
+        /// </param>
+        /// <param name="wikiWebOptions">
+        /// The options used to configure the wiki web system.
+        /// </param>
+        /// <param name="wikiMvcOptions">
+        /// The options used to configure the wiki MVC system.
         /// </param>
         /// <param name="fileManager">
         /// <para>
@@ -49,17 +54,35 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             IWikiUserManager userManager,
             IWikiGroupManager groupManager,
-            IWikiOptions? options = null,
+            IWikiOptions? wikiOptions = null,
+            IWikiWebOptions? wikiWebOptions = null,
+            IWikiMvcOptions? wikiMvcOptions = null,
             IFileManager? fileManager = null,
             ISearchClient? searchClient = null)
         {
-            if (options is not null)
+            if (wikiOptions is not null)
             {
-                services.AddScoped(_ => options);
+                services.AddScoped(_ => wikiOptions);
             }
             else
             {
-                services.AddScoped<IWikiOptions>(_ => new WikiOptions());
+                services.AddScoped<IWikiOptions>(_ => new WikiOptions { LinkTemplate = WikiMvcOptions.DefaultLinkTemplate });
+            }
+            if (wikiWebOptions is not null)
+            {
+                services.AddScoped(_ => wikiWebOptions);
+            }
+            else
+            {
+                services.AddScoped<IWikiWebOptions>(_ => new WikiWebOptions());
+            }
+            if (wikiMvcOptions is not null)
+            {
+                services.AddScoped(_ => wikiMvcOptions);
+            }
+            else
+            {
+                services.AddScoped<IWikiMvcOptions>(_ => new WikiMvcOptions());
             }
 
             services.AddScoped(_ => userManager);
@@ -86,12 +109,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 services.AddScoped(_ => searchClient);
             }
-
-            if (options?.DataStore is not null)
-            {
-                WikiConfig.DataStore = options.DataStore;
-            }
-            WikiConfig.LinkTemplate = LinkTemplate;
         }
 
         /// <summary>
@@ -104,8 +121,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="groupManagerType">
         /// The type of <see cref="IWikiGroupManager"/> to register.
         /// </param>
-        /// <param name="options">
+        /// <param name="wikiOptions">
         /// The options used to configure the wiki system.
+        /// </param>
+        /// <param name="wikiWebOptions">
+        /// The options used to configure the wiki web system.
+        /// </param>
+        /// <param name="wikiMvcOptions">
+        /// The options used to configure the wiki MVC system.
         /// </param>
         /// <param name="fileManagerType">
         /// <para>
@@ -128,17 +151,35 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             Type userManagerType,
             Type groupManagerType,
-            IWikiOptions? options = null,
+            IWikiOptions? wikiOptions = null,
+            IWikiWebOptions? wikiWebOptions = null,
+            IWikiMvcOptions? wikiMvcOptions = null,
             Type? fileManagerType = null,
             Type? searchClientType = null)
         {
-            if (options is not null)
+            if (wikiOptions is not null)
             {
-                services.AddScoped(_ => options);
+                services.AddScoped(_ => wikiOptions);
             }
             else
             {
-                services.AddScoped<IWikiOptions>(_ => new WikiOptions());
+                services.AddScoped<IWikiOptions>(_ => new WikiOptions { LinkTemplate = WikiMvcOptions.DefaultLinkTemplate });
+            }
+            if (wikiWebOptions is not null)
+            {
+                services.AddScoped(_ => wikiWebOptions);
+            }
+            else
+            {
+                services.AddScoped<IWikiWebOptions>(_ => new WikiWebOptions());
+            }
+            if (wikiMvcOptions is not null)
+            {
+                services.AddScoped(_ => wikiMvcOptions);
+            }
+            else
+            {
+                services.AddScoped<IWikiMvcOptions>(_ => new WikiMvcOptions());
             }
 
             services.AddScoped(typeof(IWikiUserManager), userManagerType);
@@ -162,12 +203,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 services.AddScoped(typeof(ISearchClient), searchClientType);
             }
-
-            if (options?.DataStore is not null)
-            {
-                WikiConfig.DataStore = options.DataStore;
-            }
-            WikiConfig.LinkTemplate = LinkTemplate;
         }
 
         /// <summary>
@@ -180,8 +215,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="groupManagerBuilder">
         /// A function which provides an <see cref="IWikiGroupManager"/> instance.
         /// </param>
-        /// <param name="options">
+        /// <param name="wikiOptions">
         /// The options used to configure the wiki system.
+        /// </param>
+        /// <param name="wikiWebOptions">
+        /// The options used to configure the wiki web system.
+        /// </param>
+        /// <param name="wikiMvcOptions">
+        /// The options used to configure the wiki MVC system.
         /// </param>
         /// <param name="fileManagerBuilder">
         /// <para>
@@ -204,17 +245,35 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             Func<IServiceProvider, IWikiUserManager> userManagerBuilder,
             Func<IServiceProvider, IWikiGroupManager> groupManagerBuilder,
-            IWikiOptions? options = null,
+            IWikiOptions? wikiOptions = null,
+            IWikiWebOptions? wikiWebOptions = null,
+            IWikiMvcOptions? wikiMvcOptions = null,
             Func<IServiceProvider, IFileManager>? fileManagerBuilder = null,
             Func<IServiceProvider, ISearchClient>? searchClientBuilder = null)
         {
-            if (options is not null)
+            if (wikiOptions is not null)
             {
-                services.AddScoped(_ => options);
+                services.AddScoped(_ => wikiOptions);
             }
             else
             {
-                services.AddScoped<IWikiOptions>(_ => new WikiOptions());
+                services.AddScoped<IWikiOptions>(_ => new WikiOptions { LinkTemplate = WikiMvcOptions.DefaultLinkTemplate });
+            }
+            if (wikiWebOptions is not null)
+            {
+                services.AddScoped(_ => wikiWebOptions);
+            }
+            else
+            {
+                services.AddScoped<IWikiWebOptions>(_ => new WikiWebOptions());
+            }
+            if (wikiMvcOptions is not null)
+            {
+                services.AddScoped(_ => wikiMvcOptions);
+            }
+            else
+            {
+                services.AddScoped<IWikiMvcOptions>(_ => new WikiMvcOptions());
             }
 
             services.AddScoped(userManagerBuilder);
@@ -238,12 +297,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 services.AddScoped(searchClientBuilder);
             }
-
-            if (options?.DataStore is not null)
-            {
-                WikiConfig.DataStore = options.DataStore;
-            }
-            WikiConfig.LinkTemplate = LinkTemplate;
         }
 
         /// <summary>
@@ -252,18 +305,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="services">An <see cref="IServiceCollection"/> instance.</param>
         /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
         /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-        /// <param name="optionsBuilder">
-        /// <para>
+        /// <param name="wikiOptionsBuilder">
         /// A function which provides the options used to configure the wiki system.
-        /// </para>
-        /// <para>
-        /// Note: this function is used to configure a scoped instance of <see
-        /// cref="IWikiOptions"/>, and this instance is then immediately retrieved to set the <see
-        /// cref="WikiConfig.DataStore"/>, if that option was configured. Ensure that <c>AddWiki</c>
-        /// is called <i>after</i> adding any service dependencies necessary for your <paramref
-        /// name="optionsBuilder"/> function to operate, or this property will remain at its
-        /// default.
-        /// </para>
+        /// </param>
+        /// <param name="wikiWebOptionsBuilder">
+        /// A function which provides the options used to configure the wiki web system.
+        /// </param>
+        /// <param name="wikiMvcOptionsBuilder">
+        /// A function which provides the options used to configure the wiki MVC system.
         /// </param>
         /// <param name="fileManager">
         /// <para>
@@ -286,11 +335,15 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             IWikiUserManager userManager,
             IWikiGroupManager groupManager,
-            Func<IServiceProvider, IWikiOptions> optionsBuilder,
+            Func<IServiceProvider, IWikiOptions> wikiOptionsBuilder,
+            Func<IServiceProvider, IWikiWebOptions> wikiWebOptionsBuilder,
+            Func<IServiceProvider, IWikiMvcOptions> wikiMvcOptionsBuilder,
             IFileManager? fileManager = null,
             ISearchClient? searchClient = null)
         {
-            services.AddScoped(optionsBuilder);
+            services.AddScoped(wikiOptionsBuilder);
+            services.AddScoped(wikiWebOptionsBuilder);
+            services.AddScoped(wikiMvcOptionsBuilder);
             services.AddScoped(_ => userManager);
             services.AddScoped(_ => groupManager);
 
@@ -315,13 +368,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 services.AddScoped(_ => searchClient);
             }
-
-            var options = services.BuildServiceProvider().GetRequiredService<IWikiOptions>();
-            if (options?.DataStore is not null)
-            {
-                WikiConfig.DataStore = options.DataStore;
-            }
-            WikiConfig.LinkTemplate = LinkTemplate;
         }
 
         /// <summary>
@@ -334,18 +380,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="groupManagerType">
         /// The type of <see cref="IWikiGroupManager"/> to register.
         /// </param>
-        /// <param name="optionsBuilder">
-        /// <para>
+        /// <param name="wikiOptionsBuilder">
         /// A function which provides the options used to configure the wiki system.
-        /// </para>
-        /// <para>
-        /// Note: this function is used to configure a scoped instance of <see
-        /// cref="IWikiOptions"/>, and this instance is then immediately retrieved to set the <see
-        /// cref="WikiConfig.DataStore"/>, if that option was configured. Ensure that <c>AddWiki</c>
-        /// is called <i>after</i> adding any service dependencies necessary for your <paramref
-        /// name="optionsBuilder"/> function to operate, or this property will remain at its
-        /// default.
-        /// </para>
+        /// </param>
+        /// <param name="wikiWebOptionsBuilder">
+        /// A function which provides the options used to configure the wiki web system.
+        /// </param>
+        /// <param name="wikiMvcOptionsBuilder">
+        /// A function which provides the options used to configure the wiki MVC system.
         /// </param>
         /// <param name="fileManagerType">
         /// <para>
@@ -368,11 +410,15 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             Type userManagerType,
             Type groupManagerType,
-            Func<IServiceProvider, IWikiOptions> optionsBuilder,
+            Func<IServiceProvider, IWikiOptions> wikiOptionsBuilder,
+            Func<IServiceProvider, IWikiWebOptions> wikiWebOptionsBuilder,
+            Func<IServiceProvider, IWikiMvcOptions> wikiMvcOptionsBuilder,
             Type? fileManagerType = null,
             Type? searchClientType = null)
         {
-            services.AddScoped(optionsBuilder);
+            services.AddScoped(wikiOptionsBuilder);
+            services.AddScoped(wikiWebOptionsBuilder);
+            services.AddScoped(wikiMvcOptionsBuilder);
             services.AddScoped(typeof(IWikiUserManager), userManagerType);
             services.AddScoped(typeof(IWikiGroupManager), groupManagerType);
 
@@ -394,13 +440,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 services.AddScoped(typeof(ISearchClient), searchClientType);
             }
-
-            var options = services.BuildServiceProvider().GetRequiredService<IWikiOptions>();
-            if (options?.DataStore is not null)
-            {
-                WikiConfig.DataStore = options.DataStore;
-            }
-            WikiConfig.LinkTemplate = LinkTemplate;
         }
 
         /// <summary>
@@ -413,18 +452,14 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="groupManagerBuilder">
         /// A function which provides an <see cref="IWikiGroupManager"/> instance.
         /// </param>
-        /// <param name="optionsBuilder">
-        /// <para>
+        /// <param name="wikiOptionsBuilder">
         /// A function which provides the options used to configure the wiki system.
-        /// </para>
-        /// <para>
-        /// Note: this function is used to configure a scoped instance of <see
-        /// cref="IWikiOptions"/>, and this instance is then immediately retrieved to set the <see
-        /// cref="WikiConfig.DataStore"/>, if that option was configured. Ensure that <c>AddWiki</c>
-        /// is called <i>after</i> adding any service dependencies necessary for your <paramref
-        /// name="optionsBuilder"/> function to operate, or this property will remain at its
-        /// default.
-        /// </para>
+        /// </param>
+        /// <param name="wikiWebOptionsBuilder">
+        /// A function which provides the options used to configure the wiki web system.
+        /// </param>
+        /// <param name="wikiMvcOptionsBuilder">
+        /// A function which provides the options used to configure the wiki MVC system.
         /// </param>
         /// <param name="fileManagerBuilder">
         /// <para>
@@ -447,11 +482,15 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             Func<IServiceProvider, IWikiUserManager> userManagerBuilder,
             Func<IServiceProvider, IWikiGroupManager> groupManagerBuilder,
-            Func<IServiceProvider, IWikiOptions> optionsBuilder,
+            Func<IServiceProvider, IWikiOptions> wikiOptionsBuilder,
+            Func<IServiceProvider, IWikiWebOptions> wikiWebOptionsBuilder,
+            Func<IServiceProvider, IWikiMvcOptions> wikiMvcOptionsBuilder,
             Func<IServiceProvider, IFileManager>? fileManagerBuilder = null,
             Func<IServiceProvider, ISearchClient>? searchClientBuilder = null)
         {
-            services.AddScoped(optionsBuilder);
+            services.AddScoped(wikiOptionsBuilder);
+            services.AddScoped(wikiWebOptionsBuilder);
+            services.AddScoped(wikiMvcOptionsBuilder);
             services.AddScoped(userManagerBuilder);
             services.AddScoped(groupManagerBuilder);
 
@@ -473,13 +512,6 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 services.AddScoped(searchClientBuilder);
             }
-
-            var options = services.BuildServiceProvider().GetRequiredService<IWikiOptions>();
-            if (options?.DataStore is not null)
-            {
-                WikiConfig.DataStore = options.DataStore;
-            }
-            WikiConfig.LinkTemplate = LinkTemplate;
         }
 
         /// <summary>
@@ -487,8 +519,8 @@ namespace Microsoft.Extensions.DependencyInjection
         /// Adds endpoints for the NeverFoundry.Wiki library.
         /// </para>
         /// <para>
-        /// Should be added after setting <see cref="WikiConfig.MainPageTitle"/>, if a custom value
-        /// is to be set.
+        /// Should be added after setting <see cref="IWikiOptions.MainPageTitle"/>, if a custom
+        /// value is to be set.
         /// </para>
         /// <para>
         /// Should be added before all other endpoint mapping to ensure that wiki patterns are
@@ -498,27 +530,20 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="endpoints">An <see cref="IEndpointRouteBuilder"/> instance.</param>
         public static void MapWiki(this IEndpointRouteBuilder endpoints)
         {
-            var options = endpoints.ServiceProvider.CreateScope().ServiceProvider.GetRequiredService<IWikiOptions>();
-            var talkHubRoute = options?.TalkHubRoute ?? WikiOptions.DefaultTalkHubRoute;
+            var provider = endpoints.ServiceProvider.CreateScope().ServiceProvider;
+            var options = provider.GetRequiredService<IWikiOptions>();
+            var mvcOptions = provider.GetRequiredService<IWikiMvcOptions>();
 
-            endpoints.MapHub<WikiTalkHub>(talkHubRoute);
+            endpoints.MapHub<WikiTalkHub>(mvcOptions?.TalkHubRoute ?? WikiMvcOptions.DefaultTalkHubRoute);
 
             endpoints.MapControllerRoute(
                 name: "wiki-ns",
-                pattern: $"{WikiConfig.WikiLinkPrefix}/{{wikiNamespace}}:{{title}}/{{action=Read}}",
-                defaults: new { controller = WikiController, isCompact = false });
+                pattern: $"{options.WikiLinkPrefix}/{{wikiNamespace}}:{{title}}/{{action=Read}}",
+                defaults: new { controller = WikiController });
             endpoints.MapControllerRoute(
                 name: "wiki",
-                pattern: $"{WikiConfig.WikiLinkPrefix}/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
-                defaults: new { controller = WikiController, isCompact = false, wikiNamespace = WikiConfig.DefaultNamespace });
-            endpoints.MapControllerRoute(
-                name: "wiki-ns-c",
-                pattern: $"Compact/{WikiConfig.WikiLinkPrefix}/{{wikiNamespace}}:{{title}}/{{action=Read}}",
-                defaults: new { controller = WikiController, isCompact = true });
-            endpoints.MapControllerRoute(
-                name: "wiki-c",
-                pattern: $"Compact/{WikiConfig.WikiLinkPrefix}/{{title={WikiConfig.MainPageTitle}}}/{{action=Read}}",
-                defaults: new { controller = WikiController, isCompact = true, wikiNamespace = WikiConfig.DefaultNamespace });
+                pattern: $"{options.WikiLinkPrefix}/{{title={options.MainPageTitle}}}/{{action=Read}}",
+                defaults: new { controller = WikiController, wikiNamespace = options.DefaultNamespace });
         }
     }
 }

@@ -1,4 +1,6 @@
-﻿@{
+﻿@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
+@{
     var data = ViewData[nameof(WikiRouteData)] as WikiRouteData
         ?? new WikiRouteData();
     Layout = data.LayoutPath;
@@ -13,34 +15,34 @@
             </div>
             <div class="wiki-sidebar-section">
                 <ul>
-                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.MainPageTitle" class="wiki-link wiki-link-exists" title="Visit the main page">@WikiConfig.MainPageTitle</a></li>
-                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.ContentsPageTitle))
+                    <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiOptions.MainPageTitle" class="wiki-link wiki-link-exists" title="Visit the main page">@WikiOptions.MainPageTitle</a></li>
+                    @if (!string.IsNullOrWhiteSpace(WikiWebOptions.ContentsPageTitle))
                     {
-                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContentsPageTitle" class="wiki-link wiki-link-exists" title="Visit the main contents page">@WikiWebConfig.ContentsPageTitle</a></li>
+                        <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.ContentsPageTitle" class="wiki-link wiki-link-exists" title="Visit the main contents page">@WikiWebOptions.ContentsPageTitle</a></li>
                     }
-                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.HelpPageTitle))
+                    @if (!string.IsNullOrWhiteSpace(WikiWebOptions.HelpPageTitle))
                     {
-                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.HelpPageTitle" class="wiki-link wiki-link-exists" title="Visit the main help page">@WikiWebConfig.HelpPageTitle</a></li>
+                        <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.HelpPageTitle" class="wiki-link wiki-link-exists" title="Visit the main help page">@WikiWebOptions.HelpPageTitle</a></li>
                     }
-                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.AboutPageTitle))
+                    @if (!string.IsNullOrWhiteSpace(WikiWebOptions.AboutPageTitle))
                     {
-                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.AboutPageTitle" class="wiki-link wiki-link-exists" title="Learn about this site">@WikiWebConfig.AboutPageTitle</a></li>
+                        <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.AboutPageTitle" class="wiki-link wiki-link-exists" title="Learn about this site">@WikiWebOptions.AboutPageTitle</a></li>
                     }
-                    @if (!string.IsNullOrWhiteSpace(WikiWebConfig.ContactPageTitle))
+                    @if (!string.IsNullOrWhiteSpace(WikiWebOptions.ContactPageTitle))
                     {
-                        <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.ContactPageTitle" class="wiki-link wiki-link-exists" title="Contact the site administrators">@WikiWebConfig.ContactPageTitle</a></li>
+                        <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.ContactPageTitle" class="wiki-link wiki-link-exists" title="Contact the site administrators">@WikiWebOptions.ContactPageTitle</a></li>
                     }
                 </ul>
             </div>
             <div class="wiki-sidebar-section">
                 <ul>
-                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:All_Pages?sort=timestamp&descending=true" class="wiki-link wiki-link-exists" title="A list of recent revisions">Recent changes</a></li>
+                    <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:All_Pages?sort=timestamp&descending=true" class="wiki-link wiki-link-exists" title="A list of recent revisions">Recent changes</a></li>
                     @if (!data.IsSystem)
                     {
                         <li><a href="@Url.Action("WhatLinksHere")" class="wiki-link wiki-link-exists" title="A list of articles with links to this one">What links here</a></li>
                     }
-                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:Upload" class="wiki-link wiki-link-exists">Upload files</a></li>
-                    <li><a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:Special" class="wiki-link wiki-link-exists" title="A list of all special pages">Special pages</a></li>
+                    <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:Upload" class="wiki-link wiki-link-exists">Upload files</a></li>
+                    <li><a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:Special" class="wiki-link wiki-link-exists" title="A list of all special pages">Special pages</a></li>
                 </ul>
             </div>
         </nav>
@@ -66,19 +68,19 @@
                         else if (data.IsSpecialList)
                         {
                             <li>
-                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                                <a href="@($"/{WikiOptions.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
                             </li>
                             <li>
-                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.TalkNamespace}:{data.WikiNamespace}:{data.Title}")" title="View discussion">@WikiConfig.TalkNamespace</a>
+                                <a href="@($"/{WikiOptions.WikiLinkPrefix}/{WikiOptions.TalkNamespace}:{data.WikiNamespace}:{data.Title}")" title="View discussion">@WikiOptions.TalkNamespace</a>
                             </li>
                         }
                         else if (data.IsTalk)
                         {
                             <li>
-                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
+                                <a href="@($"/{WikiOptions.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")" title="View article">@(data.IsCategory ? "Category" : "Article")</a>
                             </li>
                             <li class="is-active">
-                                <span title="View discussion">@WikiConfig.TalkNamespace</span>
+                                <span title="View discussion">@WikiOptions.TalkNamespace</span>
                             </li>
                         }
                         else
@@ -87,7 +89,7 @@
                                 <span title="View article">@(data.IsCategory ? "Category" : "Article")</span>
                             </li>
                             <li>
-                                <a href="@($"/{WikiConfig.WikiLinkPrefix}/{WikiConfig.TalkNamespace}:{data.WikiNamespace}:{data.Title}")" title="View discussion">@WikiConfig.TalkNamespace</a>
+                                <a href="@($"/{WikiOptions.WikiLinkPrefix}/{WikiOptions.TalkNamespace}:{data.WikiNamespace}:{data.Title}")" title="View discussion">@WikiOptions.TalkNamespace</a>
                             </li>
                         }
                     </ul>
@@ -100,7 +102,7 @@
                             @if (data.IsEdit || data.IsHistory || data.IsSpecialList)
                             {
                                 <li>
-                                    <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")">Read</a>
+                                    <a href="@($"/{WikiOptions.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}")">Read</a>
                                 </li>
                             }
                             else
@@ -120,7 +122,7 @@
                                 else
                                 {
                                     <li>
-                                        <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}/Edit")" title="Edit this page">Edit</a>
+                                        <a href="@($"/{WikiOptions.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}/Edit")" title="Edit this page">Edit</a>
                                     </li>
                                 }
                             }
@@ -133,14 +135,14 @@
                             else
                             {
                                 <li>
-                                    <a href="@($"/{WikiConfig.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}/History")" title="Past revisions of this page">View history</a>
+                                    <a href="@($"/{WikiOptions.WikiLinkPrefix}/{data.WikiNamespace}:{data.Title}/History")" title="Past revisions of this page">View history</a>
                                 </li>
                             }
                         </ul>
                     }
                     <div class="wiki-header-search">
                         <form method="get"
-                              action="@($"/{WikiConfig.WikiLinkPrefix}/{WikiWebConfig.SystemNamespace}:Search/Search")">
+                              action="@($"/{WikiOptions.WikiLinkPrefix}/{WikiWebOptions.SystemNamespace}:Search/Search")">
                             <input id="wiki-search-input"
                                    type="search"
                                    role="search"
@@ -180,7 +182,7 @@
                     {
                         if (data.IsTalk)
                         {
-                            <span class="wiki-main-heading-talk">@WikiConfig.TalkNamespace</span>
+                            <span class="wiki-main-heading-talk">@WikiOptions.TalkNamespace</span>
                             <span class="wiki-main-heading-namespace-separator">:</span>
                         }
                         else if (data.IsEdit)
@@ -207,7 +209,7 @@
                         }
                         else
                         {
-                            <a href="@Url.Action("Edit", new { isCompact = data.IsCompact })" class="wiki-link-missing" title="Create this page">
+                            <a href="@Url.Action("Edit")" class="wiki-link-missing" title="Create this page">
                                 @if (data.ShowNamespace)
                                 {
                                     <span class="wiki-main-heading-namespace">@data.DisplayNamespace</span>
@@ -225,7 +227,7 @@
                 </h1>
                 @if (data.IsCompact && data.CanEdit && !data.IsEdit)
                 {
-                    <a class="wiki-heading-edit btn btn-outline-primary" href="@Url.Action("Edit", new { isCompact = data.IsCompact })" title="Edit this page"></a>
+                    <a class="wiki-heading-edit btn btn-outline-primary" href="@Url.Action("Edit")" title="Edit this page"></a>
                 }
             </div>
             <div class="wiki-body">
@@ -237,13 +239,13 @@
                    && data.Categories?.Count > 0)
                 {
                     <section class="wiki-category-list-section">
-                        <a href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.CategoriesTitle" class="wiki-category-list-category-link">@WikiConfig.CategoriesTitle</a>
+                        <a href="/@WikiOptions.WikiLinkPrefix/@WikiOptions.CategoriesTitle" class="wiki-category-list-category-link">@WikiOptions.CategoriesTitle</a>
                         <ul>
                             @foreach (var category in data.Categories)
                             {
                                 <li>
-                                    <a href="/@WikiConfig.WikiLinkPrefix/@WikiConfig.CategoryNamespace:@category"
-                                       title="@WikiConfig.CategoryNamespace:@category">@category</a>
+                                    <a href="/@WikiOptions.WikiLinkPrefix/@WikiOptions.CategoryNamespace:@category"
+                                       title="@WikiOptions.CategoryNamespace:@category">@category</a>
                                 </li>
                             }
                         </ul>
@@ -262,17 +264,17 @@
                         {
                             <li class="wiki-footer-timestamp">This page was last edited <span class="wiki-timestamp">@tArticle.Timestamp.ToWikiDisplayString()</span> (UTC).</li>
                         }
-                        @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle)
-                           || !string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+                        @if (!string.IsNullOrWhiteSpace(WikiWebOptions.CopyrightPageTitle)
+                           || !string.IsNullOrWhiteSpace(WikiWebOptions.PolicyPageTitle))
                         {
                             <li class="wiki-footer-copyright">
-                                @if (!string.IsNullOrWhiteSpace(WikiWebConfig.CopyrightPageTitle))
+                                @if (!string.IsNullOrWhiteSpace(WikiWebOptions.CopyrightPageTitle))
                                 {
-                                    <span>The content of this page is available under the terms of the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</span>
+                                    <span>The content of this page is available under the terms of the site's <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</span>
                                 }
-                                @if (!string.IsNullOrWhiteSpace(WikiWebConfig.PolicyPageTitle))
+                                @if (!string.IsNullOrWhiteSpace(WikiWebOptions.PolicyPageTitle))
                                 {
-                                    <span>By using this site, you agree to the site's <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</span>
+                                    <span>By using this site, you agree to the site's <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</span>
                                 }
                             </li>
                         }
@@ -280,7 +282,7 @@
                 </div>
                 <div class="wiki-bottom-footer">
                     <span>Developed by <a href="//williamstead.com" target="_blank">William Stead</a></span>
-                    <span>ver 0.1.0 © 2020—@(DateTime.Now.Year) <a href="//neverfoundry.com" target="_blank">NeverFoundry</a></span>
+                    <span>ver 0.1.0 &copy; 2020&ndash;@(DateTime.Now.Year) <a href="//neverfoundry.com" target="_blank">NeverFoundry</a></span>
                 </div>
             </footer>
         }

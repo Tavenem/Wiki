@@ -1,4 +1,5 @@
 ﻿using Markdig.Helpers;
+using NeverFoundry.DataStorage;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -25,10 +26,12 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
         /// Replaces all the transclusions in the given <paramref name="markdown"/> with their
         /// contents.
         /// </summary>
+        /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the top-level article being generated.</param>
         /// <param name="fullTitle">
         /// The full title of the top-level article being generated (including namespace if the
-        /// namespace is not <see cref="WikiConfig.DefaultNamespace"/>).
+        /// namespace is not <see cref="IWikiOptions.DefaultNamespace"/>).
         /// </param>
         /// <param name="markdown">A markdown string.</param>
         /// <param name="transcludedArticles">
@@ -36,13 +39,16 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
         /// all articles referenced by the transclusions within the given <paramref
         /// name="markdown"/> (including nested transclusions).
         /// </param>
-        /// <param name="isTemplate">Whether the article is being rendered as a transclusion.</param>
+        /// <param name="isTemplate">Whether the article is being rendered as a
+        /// transclusion.</param>
         /// <param name="isPreview">Whether a preview is being rendered.</param>
         /// <param name="parameterValues">
         /// A collection of supplied parameter values, if the markdown is itself a transclusion.
         /// </param>
         /// <returns>The markdown with all transclusions substituted.</returns>
         public static string Transclude(
+            IWikiOptions options,
+            IDataStore dataStore,
             string? title,
             string? fullTitle,
             string markdown,
@@ -97,6 +103,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 for (var i = 0; i < lineTransclusions.Count; i++)
                 {
                     lineTransclusions[i].Content = GetContent(
+                        options,
+                        dataStore,
                         title,
                         fullTitle,
                         lineText.Text[lineTransclusions[i].Start..lineTransclusions[i].End],
@@ -119,6 +127,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
         }
 
         private static string GetContent(
+            IWikiOptions options,
+            IDataStore dataStore,
             string? title,
             string? fullTitle,
             string markdown,
@@ -169,6 +179,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 }
 
                 includedTransclusions[i].Content = GetContent(
+                    options,
+                    dataStore,
                     title,
                     fullTitle,
                     markdown[(includedTransclusions[i].Start - offset)..(includedTransclusions[i].End - offset)],
@@ -227,7 +239,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 {
                     return template;
                 }
-                return func.Invoke(parameterValues, title, fullTitle, isTemplate, isPreview);
+                return func.Invoke(options, parameterValues, title, fullTitle, isTemplate, isPreview);
             }
 
             if (depth >= TransclusionMaxDepth)
@@ -235,17 +247,17 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 return template;
             }
 
-            var (articleNamespace, articleTitle, isTalk, isDefault) = Article.GetTitleParts(reference);
+            var (articleNamespace, articleTitle, isTalk, isDefault) = Article.GetTitleParts(options, reference);
             if (isTalk)
             {
                 return template;
             }
-            if (isDefault && !string.IsNullOrWhiteSpace(WikiConfig.TransclusionNamespace))
+            if (isDefault && !string.IsNullOrWhiteSpace(options.TransclusionNamespace))
             {
-                articleNamespace = WikiConfig.TransclusionNamespace;
+                articleNamespace = options.TransclusionNamespace;
             }
 
-            var article = Article.GetArticle(articleTitle, articleNamespace);
+            var article = Article.GetArticle(options, dataStore, articleTitle, articleNamespace);
             if (article is null)
             {
                 transcludedArticles.Add(new Wiki.Transclusion(articleTitle, articleNamespace));
@@ -257,6 +269,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             parameterValues = ParseParameters(parameters);
 
             var articleContent = Transclude(
+                options,
+                dataStore,
                 title,
                 fullTitle,
                 article.MarkdownContent,

@@ -1,4 +1,5 @@
 ﻿using Markdig;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.MarkdownExtensions.TableOfContents;
 using NeverFoundry.Wiki.MarkdownExtensions.WikiLinks;
 
@@ -36,11 +37,10 @@ namespace NeverFoundry.Wiki.MarkdownExtensions
         /// <summary>
         /// Adds wiki links.
         /// </summary>
-        /// <param name="pipeline">The <see cref="MarkdownPipelineBuilder"/>.</param>
         /// <returns>The <see cref="MarkdownPipelineBuilder"/>.</returns>
-        internal static MarkdownPipelineBuilder UseWikiLinks(this MarkdownPipelineBuilder pipeline)
+        internal static MarkdownPipelineBuilder UseWikiLinks(this MarkdownPipelineBuilder pipeline, IWikiOptions options, IDataStore dataStore)
         {
-            pipeline.Extensions.ReplaceOrAdd<WikiLinkExtension>(new WikiLinkExtension());
+            pipeline.Extensions.ReplaceOrAdd<WikiLinkExtension>(new WikiLinkExtension(options, dataStore));
             return pipeline;
         }
     }

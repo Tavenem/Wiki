@@ -1,4 +1,6 @@
-﻿@{
+﻿@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
+@{
     ViewData["Title"] = "Not Authorized";
 }
 
@@ -9,10 +11,10 @@
         You may need to try uploading a smaller file. If you have reached your limit, you may try
         deleting files you previously uploaded which are no longer in use on the wiki.
     </p>
-    @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+    @if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
     {
         <p>
-            Please check the <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policy page</a>
+            Please check the <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policy page</a>
             to find information about upload limits on this wiki.
         </p>
     }

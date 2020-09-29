@@ -13,7 +13,7 @@ namespace NeverFoundry.Wiki.Mvc
     {
         internal const string RouteTitle = "title";
 
-        private const string RouteIsCompact = "isCompact";
+        private const string CompactRouteQuery = "compact";
         private const string RouteWikiNamespace = "wikiNamespace";
 
         /// <summary>
@@ -142,12 +142,12 @@ namespace NeverFoundry.Wiki.Mvc
         /// </para>
         /// <para>
         /// If omitted, the default layout will be used (as specified in <see
-        /// cref="WikiOptions.DefaultLayoutPath"/>).
+        /// cref="WikiMvcOptions.DefaultLayoutPath"/>).
         /// </para>
         /// </summary>
         public string MainLayoutPath
         {
-            get => _mainLayoutPath ?? WikiOptions.DefaultLayoutPath;
+            get => _mainLayoutPath ?? WikiMvcOptions.DefaultLayoutPath;
             set => _mainLayoutPath = value;
         }
 
@@ -208,14 +208,36 @@ namespace NeverFoundry.Wiki.Mvc
         /// <summary>
         /// Initializes a new instance of <see cref="WikiRouteData"/>.
         /// </summary>
-        public WikiRouteData(IWikiOptions wikiOptions, RouteData routeData, IQueryCollection query)
+        public WikiRouteData(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IWikiMvcOptions wikiMvcOptions,
+            RouteData routeData,
+            HttpRequest request)
         {
-            _compactLayoutPath = wikiOptions.CompactLayoutPath;
-            _mainLayoutPath = wikiOptions.MainLayoutPath;
+            _compactLayoutPath = wikiMvcOptions.CompactLayoutPath;
+            _mainLayoutPath = wikiMvcOptions.MainLayoutPath;
 
-            IsCompact = routeData.Values.TryGetValue(RouteIsCompact, out var c)
+            IsCompact = routeData.Values.TryGetValue(CompactRouteQuery, out var c)
                 && c is bool iC
                 && iC;
+            if (!IsCompact
+                && wikiMvcOptions.CompactRoutePort.HasValue
+                && request.Host.Port.HasValue
+                && request.Host.Port.Value == wikiMvcOptions.CompactRoutePort.Value)
+            {
+                IsCompact = true;
+            }
+            if (!IsCompact && !string.IsNullOrEmpty(wikiMvcOptions.CompactRouteHostPart))
+            {
+                var parts = request.Host.Host.Split('.');
+                var position = wikiMvcOptions.CompactRouteHostPosition ?? 0;
+                if (parts.Length > position
+                    && string.Equals(parts[position], wikiMvcOptions.CompactRouteHostPart, StringComparison.OrdinalIgnoreCase))
+                {
+                    IsCompact = true;
+                }
+            }
 
             string? wN = null;
             if (routeData.Values.TryGetValue(RouteWikiNamespace, out var n)
@@ -226,30 +248,30 @@ namespace NeverFoundry.Wiki.Mvc
 
             var separatorIndex = wN?.IndexOf(':') ?? -1;
             if (separatorIndex != -1
-                && wN!.Substring(0, separatorIndex).Equals(WikiConfig.TalkNamespace, StringComparison.OrdinalIgnoreCase))
+                && wN!.Substring(0, separatorIndex).Equals(wikiOptions.TalkNamespace, StringComparison.OrdinalIgnoreCase))
             {
                 wN = wN[(separatorIndex + 1)..];
                 IsTalk = true;
             }
 
             var haveNamespace = !string.IsNullOrWhiteSpace(wN);
-            var defaultNamespace = !haveNamespace || string.Equals(wN, WikiConfig.DefaultNamespace, StringComparison.OrdinalIgnoreCase);
-            WikiNamespace = defaultNamespace ? WikiConfig.DefaultNamespace : wN!;
+            var defaultNamespace = !haveNamespace || string.Equals(wN, wikiOptions.DefaultNamespace, StringComparison.OrdinalIgnoreCase);
+            WikiNamespace = defaultNamespace ? wikiOptions.DefaultNamespace : wN!;
             ShowNamespace = !defaultNamespace;
 
             Title = routeData.Values.TryGetValue(RouteTitle, out var t)
                 && t is string wT
                 && !string.IsNullOrWhiteSpace(wT)
                 ? wT
-                : WikiConfig.MainPageTitle;
+                : wikiOptions.MainPageTitle;
 
-            IsCategory = !defaultNamespace && string.Equals(WikiNamespace, WikiConfig.CategoryNamespace, StringComparison.OrdinalIgnoreCase);
-            IsSystem = !defaultNamespace && !IsCategory && string.Equals(WikiNamespace, WikiWebConfig.SystemNamespace, StringComparison.OrdinalIgnoreCase);
-            IsFile = !defaultNamespace && !IsCategory && !IsSystem && string.Equals(WikiNamespace, WikiConfig.FileNamespace, StringComparison.OrdinalIgnoreCase);
-            IsUserPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && string.Equals(WikiNamespace, WikiWebConfig.UserNamespace, StringComparison.OrdinalIgnoreCase);
-            IsGroupPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && !IsUserPage && string.Equals(WikiNamespace, WikiWebConfig.GroupNamespace, StringComparison.OrdinalIgnoreCase);
+            IsCategory = !defaultNamespace && string.Equals(WikiNamespace, wikiOptions.CategoryNamespace, StringComparison.OrdinalIgnoreCase);
+            IsSystem = !defaultNamespace && !IsCategory && string.Equals(WikiNamespace, wikiWebOptions.SystemNamespace, StringComparison.OrdinalIgnoreCase);
+            IsFile = !defaultNamespace && !IsCategory && !IsSystem && string.Equals(WikiNamespace, wikiOptions.FileNamespace, StringComparison.OrdinalIgnoreCase);
+            IsUserPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && string.Equals(WikiNamespace, wikiWebOptions.UserNamespace, StringComparison.OrdinalIgnoreCase);
+            IsGroupPage = !defaultNamespace && !IsCategory && !IsSystem && !IsFile && !IsUserPage && string.Equals(WikiNamespace, wikiWebOptions.GroupNamespace, StringComparison.OrdinalIgnoreCase);
 
-            if (query.TryGetValue("rev", out var rev)
+            if (request.Query.TryGetValue("rev", out var rev)
                 && rev.Count >= 1)
             {
                 if (DateTimeOffset.TryParse(rev[0], out var timestamp))
@@ -261,7 +283,7 @@ namespace NeverFoundry.Wiki.Mvc
                     RequestedTimestamp = new DateTimeOffset(ticks, TimeSpan.Zero);
                 }
             }
-            if (query.TryGetValue("diff", out var diff)
+            if (request.Query.TryGetValue("diff", out var diff)
                 && diff.Count >= 1)
             {
                 if (string.Equals(diff[0], "prev", StringComparison.OrdinalIgnoreCase))
@@ -277,7 +299,7 @@ namespace NeverFoundry.Wiki.Mvc
                     RequestedDiffTimestamp = diffTimestamp;
                 }
             }
-            if (query.TryGetValue("noredirect", out var nr)
+            if (request.Query.TryGetValue("noredirect", out var nr)
                 && nr.Count >= 1)
             {
                 if (bool.TryParse(nr[0], out var noRedirect))

@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
 using NeverFoundry.Wiki.Mvc.Controllers;
 using NeverFoundry.Wiki.Web;
@@ -48,33 +49,39 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// Initialize a new instance of <see cref="EditViewModel"/>.
         /// </summary>
         public EditViewModel(
-                WikiRouteData data,
-                IWikiUser user,
-                string markdown,
-                string? previewTitle = null,
-                string? preview = null,
-                bool isOutdated = false,
-                string? allowedEditors = null,
-                string? allowedViewers = null) : this(
-                    allowedEditors,
-                    allowedViewers,
-                    data,
-                    isOutdated,
-                    markdown,
-                    data.WikiItem?.Owner,
-                    string.Equals(data.WikiItem?.Owner, user.Id, System.StringComparison.Ordinal),
-                    preview,
-                    previewTitle
-                        ?? data.WikiItem?.FullTitle
-                        ?? (string.IsNullOrEmpty(data.Title)
-                            ? null
-                            : Article.GetFullTitle(data.Title, data.WikiNamespace)))
+            IWikiOptions options,
+            WikiRouteData data,
+            IWikiUser user,
+            string markdown,
+            string? previewTitle = null,
+            string? preview = null,
+            bool isOutdated = false,
+            string? allowedEditors = null,
+            string? allowedViewers = null) : this(
+                allowedEditors,
+                allowedViewers,
+                data,
+                isOutdated,
+                markdown,
+                data.WikiItem?.Owner,
+                string.Equals(data.WikiItem?.Owner, user.Id, System.StringComparison.Ordinal),
+                preview,
+                previewTitle
+#pragma warning disable RCS1238 // Avoid nested ?: operators: required for expression.
+                    ?? (data.WikiItem is not null
+                    ? Article.GetFullTitle(options, data.WikiItem.Title, data.WikiItem.WikiNamespace)
+                    : string.IsNullOrEmpty(data.Title)
+                        ? null
+                        : Article.GetFullTitle(options, data.Title, data.WikiNamespace)))
+#pragma warning restore RCS1238 // Avoid nested ?: operators.
         { }
 
         /// <summary>
         /// Get a new <see cref="EditViewModel"/>.
         /// </summary>
         public static async Task<EditViewModel> NewAsync(
+            IWikiOptions options,
+            IDataStore dataStore,
             IWikiUserManager userManager,
             IWikiGroupManager groupManager,
             WikiRouteData data,
@@ -90,7 +97,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     && string.IsNullOrWhiteSpace(previewTitle))
                 {
                     markdown = data.RequestedTimestamp.HasValue
-                        ? await data.WikiItem.GetMarkdownAsync(data.RequestedTimestamp.Value).ConfigureAwait(false)
+                        ? await data.WikiItem.GetMarkdownAsync(dataStore, data.RequestedTimestamp.Value).ConfigureAwait(false)
                         : data.WikiItem.MarkdownContent;
                 }
             }
@@ -98,11 +105,14 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             string? preview = null;
             if (!string.IsNullOrWhiteSpace(previewTitle))
             {
-                var (wikiNamespace, title, _, _) = Article.GetTitleParts(previewTitle);
-                var fullTitle = Article.GetFullTitle(title, wikiNamespace);
+                var (wikiNamespace, title, _, _) = Article.GetTitleParts(options, previewTitle);
+                var fullTitle = Article.GetFullTitle(options, title, wikiNamespace);
                 preview = string.IsNullOrWhiteSpace(markdown)
                     ? null
-                    : MarkdownItem.RenderHtml(TransclusionParser.Transclude(title, fullTitle, markdown, out _));
+                    : MarkdownItem.RenderHtml(
+                        options,
+                        dataStore,
+                        TransclusionParser.Transclude(options, dataStore, title, fullTitle, markdown, out _));
             }
 
             string? allowedEditors = null;
@@ -174,6 +184,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             }
 
             return new EditViewModel(
+                options,
                 data,
                 user,
                 markdown ?? string.Empty,

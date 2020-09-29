@@ -1,24 +1,26 @@
 ﻿@model EditViewModel
+@inject IWikiOptions WikiOptions
+@inject IWikiWebOptions WikiWebOptions
 
-@if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+@if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
 {
-    if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+    if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
     {
         <div class="wiki-edit-terms-notice">
-            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
         </div>
     }
     else
     {
         <div class="wiki-edit-terms-notice">
-            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
         </div>
     }
 }
-else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
 {
     <div class="wiki-edit-terms-notice">
-        <p>Content submitted to this wiki is subject to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+        <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
     </div>
 }
 else
@@ -31,7 +33,7 @@ else
 @if (Model.IsOutdated)
 {
     <div class="wiki-edit-outdatedwarning alert alert-warning" role="alert">
-        Warning: this version of the page is outdated. You may wish to <a asp-action="Edit" asp-route-isCompact="@Model.Data.IsCompact" asp-route-rev="">begin your edit from the most recent version of the page</a> instead.
+        Warning: this version of the page is outdated. You may wish to <a asp-action="Edit" asp-route-rev="">begin your edit from the most recent version of the page</a> instead.
     </div>
 }
 
@@ -41,7 +43,7 @@ else
         @Html.Raw(Model.Preview)
     </div>
 }
-<form class="wiki-edit-editor" asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="Edit">
+<form class="wiki-edit-editor" asp-controller="Wiki" asp-action="Edit">
     <div asp-validation-summary="ModelOnly" class="error-text"></div>
     <input asp-for="Id" />
     <div class="form-group wiki-edit-titleinputgroup">
@@ -76,25 +78,25 @@ else
             <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
         </div>
         <div class="form-group wiki-edit-terms-notice">
-            @if (!string.IsNullOrEmpty(WikiWebConfig.PolicyPageTitle))
+            @if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
             {
-                if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+                if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
                 {
                     <div class="wiki-edit-terms-notice">
-                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
                     </div>
                 }
                 else
                 {
                     <div class="wiki-edit-terms-notice">
-                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.PolicyPageTitle">policies</a>.</p>
+                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
                     </div>
                 }
             }
-            else if (!string.IsNullOrEmpty(WikiWebConfig.CopyrightPageTitle))
+            else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
             {
                 <div class="wiki-edit-terms-notice">
-                    <p>Content submitted to this wiki is subject to its <a href="/@WikiConfig.WikiLinkPrefix/@WikiWebConfig.SystemNamespace:@WikiWebConfig.CopyrightPageTitle">copyright policy</a>.</p>
+                    <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
                 </div>
             }
             else
@@ -107,7 +109,7 @@ else
         <div class="flex-wrap wiki-edit-submit-buttons">
             <button class="wiki-edit-submit-button btn btn-primary" type="submit">Publish changes</button>
             <button class="wiki-edit-preview-button btn btn-info" type="submit" name="ShowPreview" value="true">Show full preview</button>
-            <a class="wiki-edit-cancel-button btn btn-secondary" asp-action="Read" asp-route-isCompact="@Model.Data.IsCompact">Cancel</a>
+            <a class="wiki-edit-cancel-button btn btn-secondary" asp-action="Read">Cancel</a>
             <button id="wiki-edit-delete-button"
                     class="btn btn-danger"
                     type="button"
@@ -139,7 +141,8 @@ else
             <ul>
                 @foreach (var transclusion in Model.Data.WikiItem!.Transclusions!)
                 {
-                    <li><a href="/@(WikiConfig.WikiLinkPrefix)/@(transclusion.FullTitle)">@(transclusion.FullTitle)</a></li>
+                    var fullTitle = Article.GetFullTitle(WikiOptions, transclusion.Title, transclusion.WikiNamespace);
+                    <li><a href="/@WikiOptions.WikiLinkPrefix/@fullTitle">@fullTitle</a></li>
                 }
             </ul>
         </div>

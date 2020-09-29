@@ -1,4 +1,5 @@
 ﻿@model SpecialListViewModel
+@inject IWikiOptions WikiOptions
 
 <p>@Model.Description</p>
 @if (!string.IsNullOrEmpty(Model.SecondaryDescription))
@@ -6,7 +7,7 @@
     <p>@Html.Raw(Model.SecondaryDescription)</p>
 }
 <div class="wiki-list-controls">
-    <form asp-controller="Wiki" asp-route-isCompact="@Model.Data.IsCompact" asp-action="GetSpecialList" asp-route-pageNumber="" method="get">
+    <form asp-controller="Wiki" asp-action="GetSpecialList" asp-route-pageNumber="" method="get">
         <input type="hidden" name="type" value="@Model.Type.ToString()" />
         <div>
             <label for="wiki-list-sort">Sort by</label>
@@ -195,8 +196,8 @@
                 foreach (var item in Model.Items)
                 {
                     <li>
-                        <a href="@($"/{WikiConfig.WikiLinkPrefix}/{item.WikiNamespace}:{item.Title}")" class="wiki-link wiki-link-exists">
-                            @if (!string.Equals(item.WikiNamespace, WikiConfig.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
+                        <a href="@($"/{WikiOptions.WikiLinkPrefix}/{item.WikiNamespace}:{item.Title}")" class="wiki-link wiki-link-exists">
+                            @if (!string.Equals(item.WikiNamespace, WikiOptions.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
                             {
                                 <span class="wiki-link-namespace">@item.WikiNamespace</span>
                             }
@@ -218,8 +219,8 @@
                 foreach (var item in Model.MissingItems)
                 {
                     <li>
-                        <a href="@($"/{WikiConfig.WikiLinkPrefix}/{item.WikiNamespace}:{item.Title}")" class="wiki-link wiki-link-missing">
-                            @if (!string.Equals(item.WikiNamespace, WikiConfig.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
+                        <a href="@($"/{WikiOptions.WikiLinkPrefix}/{item.WikiNamespace}:{item.Title}")" class="wiki-link wiki-link-missing">
+                            @if (!string.Equals(item.WikiNamespace, WikiOptions.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
                             {
                                 <span class="wiki-link-namespace">@item.WikiNamespace</span>
                             }

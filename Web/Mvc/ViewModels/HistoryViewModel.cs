@@ -16,6 +16,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// Get a new <see cref="HistoryViewModel"/>.
         /// </summary>
         public static async Task<HistoryViewModel> NewAsync(
+            IWikiOptions wikiOptions,
+            IWikiWebOptions wikiWebOptions,
+            IDataStore dataStore,
             IWikiUserManager userManager,
             WikiRouteData data,
             int pageNumber = 1,
@@ -32,6 +35,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
             var history = await data.WikiItem
                 .GetHistoryAsync(
+                    dataStore,
                     pageNumber,
                     pageSize,
                     start,
@@ -43,7 +47,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             var list = new List<RevisionViewModel>();
             foreach (var item in history)
             {
-                list.Add(await RevisionViewModel.NewAsync(userManager, item).ConfigureAwait(false));
+                list.Add(await RevisionViewModel
+                    .NewAsync(wikiOptions, wikiWebOptions, dataStore, userManager, item)
+                    .ConfigureAwait(false));
             }
             return new HistoryViewModel(
                 data,
