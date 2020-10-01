@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
-using NeverFoundry.MathAndScience;
 using NeverFoundry.Wiki.MarkdownExtensions.TableOfContents;
 using System;
 using System.Collections.Generic;
@@ -273,7 +272,13 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             else if (double.TryParse(first, out var firstFloatValue)
                 && double.TryParse(second, out var secondFloatValue))
             {
-                return firstFloatValue.IsNearlyEqualTo(secondFloatValue)
+                if (firstFloatValue == secondFloatValue)
+                {
+                    return ifValue;
+                }
+
+                var diff = Math.Abs(firstFloatValue - secondFloatValue);
+                return diff < firstFloatValue * 1e-15
                     ? ifValue
                     : elseValue;
             }
