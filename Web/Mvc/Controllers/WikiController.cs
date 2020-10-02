@@ -197,20 +197,12 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     return View("NotAuthorized", data);
                 }
             }
-            else if (wikiItem.Owner is not null)
+            else if (wikiItem?.Owner is not null
+                && user.Id != wikiItem.Owner
+                && (model.OwnerSelf
+                || (owner != wikiItem.Owner)))
             {
-                if (model.OwnerSelf)
-                {
-                    if (user.Id != wikiItem.Owner
-                        && user.Groups?.Contains(wikiItem.Owner) != true)
-                    {
-                        return View("NotAuthorized", data);
-                    }
-                }
-                else if (owner is not null && owner != wikiItem.Owner)
-                {
-                    return View("NotAuthorized", data);
-                }
+                return View("NotAuthorized", data);
             }
             if (!model.OwnerSelf && owner is not null)
             {
@@ -250,8 +242,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("Edit", vm);
             }
 
-            List<string>? allowedEditors = null;
-            if (model.AllowedEditors is not null
+            var allowedEditors = model.EditorSelf ? new List<string>() : null;
+            if (!model.EditorSelf
+                && model.AllowedEditors is not null
                 && !data.IsUserPage
                 && !data.IsGroupPage
                 && (model.OwnerSelf || owner is not null))
@@ -291,8 +284,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     }
                 }
             }
-            List<string>? allowedViewers = null;
-            if (model.AllowedViewers is not null
+            var allowedViewers = model.ViewerSelf ? new List<string>() : null;
+            if (!model.ViewerSelf
+                && model.AllowedViewers is not null
                 && (model.OwnerSelf || owner is not null))
             {
                 foreach (var name in model.AllowedViewers.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -624,7 +618,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     && !_wikiOptions.ReservedNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase))
                     && (user.IsWikiAdmin
                     || !_wikiWebOptions.AdminNamespaces.Any(x => string.Equals(x, data.WikiNamespace, StringComparison.CurrentCultureIgnoreCase)));
-                return View("NoContent", data);
+                if (!data.IsCategory)
+                {
+                    return View("NoContent", data);
+                }
             }
 
             data.WikiItem = wikiItem;

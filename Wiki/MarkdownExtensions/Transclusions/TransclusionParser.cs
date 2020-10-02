@@ -472,6 +472,10 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 parameters[name.Trim().ToLower()] = value.Trim().ToString();
             }
             while (separatorIndex != -1 && separatorIndex < span.Length - 1);
+            if (separatorIndex == span.Length - 1)
+            {
+                parameters[index.ToString()] = string.Empty;
+            }
 
             return parameters;
         }

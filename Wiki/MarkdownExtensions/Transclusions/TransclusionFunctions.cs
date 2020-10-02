@@ -1,9 +1,11 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
 using NeverFoundry.Wiki.MarkdownExtensions.TableOfContents;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -39,11 +41,23 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 ["toupper"] = (_, parameters, _, __, ___, ____) => parameters.TryGetValue("1", out var value) ? value.ToUpper() : string.Empty,
             };
 
+        private static readonly SemaphoreSlim _ScriptLock = new SemaphoreSlim(1);
+        private static ScriptState<object>? _BaseScriptState;
+
         private static string Exec(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
         {
             if (parameters.Count == 0)
             {
                 return string.Empty;
+            }
+
+            if (_BaseScriptState is null)
+            {
+                _ScriptLock.Wait();
+                _BaseScriptState ??= Task.Run(() => CSharpScript.RunAsync("", ScriptOptions.Default
+                    .AddReferences(typeof(Enumerable).Assembly)
+                    .WithImports("System", "System.Collections.Generic", "System.Linq", "System.Text"))).GetAwaiter().GetResult();
+                _ScriptLock.Release();
             }
 
             var numberedParameters = parameters.Where(x => int.TryParse(x.Key, out var _)).ToList();
@@ -67,71 +81,74 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 code = numberedParameters[^1].Value;
                 numberedParameters.RemoveAt(numberedParameters.Count - 1);
             }
+            var scriptCode = new StringBuilder();
 
-            var state = Task.Run(() => CSharpScript.RunAsync("", Microsoft.CodeAnalysis.Scripting.ScriptOptions.Default.WithImports("System", "System.Globalization"))).GetAwaiter().GetResult();
             foreach (var (name, value) in numberedParameters)
             {
-                try
+                scriptCode.Append("var _")
+                    .Append(name)
+                    .Append(" = ");
+                if (double.TryParse(value, out var _))
                 {
-                    if (double.TryParse(value, out var _))
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var _{name} = {value};")).GetAwaiter().GetResult();
-                    }
-                    else if (bool.TryParse(value, out var _))
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var _{name} = {value.ToLowerInvariant()};")).GetAwaiter().GetResult();
-                    }
-                    else if (DateTimeOffset.TryParse(value, out var _))
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var _{name} = DateTimeOffset.Parse({value});")).GetAwaiter().GetResult();
-                    }
-                    else
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var _{name} = \"{value}\";")).GetAwaiter().GetResult();
-                    }
+                    scriptCode.Append(value);
                 }
-                catch
+                else if (bool.TryParse(value, out var b))
                 {
-                    return string.Empty;
+                    scriptCode.Append(b);
                 }
+                else if (DateTimeOffset.TryParse(value, out var _))
+                {
+                    scriptCode.Append("DateTimeOffset.Parse(")
+                        .Append(value)
+                        .Append(')');
+                }
+                else
+                {
+                    scriptCode.Append('"')
+                        .Append(value)
+                        .Append('"');
+                }
+                scriptCode.AppendLine(";");
             }
             foreach (var (name, value) in namedParameters)
             {
-                try
+                scriptCode.Append("var ")
+                    .Append(name)
+                    .Append(" = ");
+                if (double.TryParse(value, out var _))
                 {
-                    if (double.TryParse(value, out var _))
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var {name} = {value};")).GetAwaiter().GetResult();
-                    }
-                    else if (bool.TryParse(value, out var _))
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var {name} = {value.ToLowerInvariant()};")).GetAwaiter().GetResult();
-                    }
-                    else if (DateTimeOffset.TryParse(value, out var _))
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var {name} = DateTimeOffset.Parse({value});")).GetAwaiter().GetResult();
-                    }
-                    else
-                    {
-                        state = Task.Run(() => state.ContinueWithAsync($"var {name} = \"{value}\";")).GetAwaiter().GetResult();
-                    }
+                    scriptCode.Append(value);
                 }
-                catch
+                else if (bool.TryParse(value, out var b))
                 {
-                    return string.Empty;
+                    scriptCode.Append(b);
                 }
+                else if (DateTimeOffset.TryParse(value, out var _))
+                {
+                    scriptCode.Append("DateTimeOffset.Parse(")
+                        .Append(value)
+                        .Append(')');
+                }
+                else
+                {
+                    scriptCode.Append('"')
+                        .Append(value)
+                        .Append('"');
+                }
+                scriptCode.AppendLine(";");
             }
 
+            scriptCode.Append(code);
             try
             {
                 var cts = new CancellationTokenSource(ScriptExecutionTimeoutInMilliseconds);
-                state = Task.Run(() => state.ContinueWithAsync(code, cancellationToken: cts.Token)).GetAwaiter().GetResult();
+                var state = Task.Run(() => _BaseScriptState.ContinueWithAsync(scriptCode.ToString(), cancellationToken: cts.Token)).GetAwaiter().GetResult();
+                return state.ReturnValue?.ToString() ?? string.Empty;
             }
             catch
             {
                 return string.Empty;
             }
-            return state.ReturnValue?.ToString() ?? string.Empty;
         }
 
         private static string Format(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)

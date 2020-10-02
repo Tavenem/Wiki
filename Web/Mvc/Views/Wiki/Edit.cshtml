@@ -71,11 +71,19 @@ else
         </div>
         <div>
             <label asp-for="AllowedEditors" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included.">Allowed editors (optional)</label>
-            <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
+            <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." readonly="@(Model.EditorSelf ? "readonly" : null)" />
+        </div>
+        <div class="form-group form-check">
+            <input asp-for="EditorSelf" class="form-check-input" onclick="wikiToggleEditorSelf(event);" onkeydown="wikiToggleEditorSelf(event);" />
+            <label asp-for="EditorSelf" onclick="wikiToggleEditorSelf(event);" onkeydown="wikiToggleEditorSelf(event);">Make me the only editor</label>
         </div>
         <div>
             <label asp-for="AllowedViewers" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included.">Allowed viewers (optional)</label>
-            <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." />
+            <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." readonly="@(Model.ViewerSelf ? "readonly" : null)" />
+        </div>
+        <div class="form-group form-check">
+            <input asp-for="ViewerSelf" class="form-check-input" onclick="wikiToggleViewerSelf(event);" onkeydown="wikiToggleViewerSelf(event);" />
+            <label asp-for="ViewerSelf" onclick="wikiToggleViewerSelf(event);" onkeydown="wikiToggleViewerSelf(event);">Make me the only viewer</label>
         </div>
         <div class="form-group wiki-edit-terms-notice">
             @if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
@@ -198,7 +206,45 @@ else
             if (c.checked) {
                 i.value = "";
             }
-            i.readonly = c.checked;
+            i.readOnly = c.checked;
+        }
+
+        function wikiToggleEditorSelf(e) {
+            e = e || window.event;
+            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
+                return;
+            }
+            const i = document.getElementById('AllowedEditors');
+            if (!i) {
+                return;
+            }
+            const c = document.getElementById('EditorSelf');
+            if (!c) {
+                return;
+            }
+            if (c.checked) {
+                i.value = "";
+            }
+            i.readOnly = c.checked;
+        }
+
+        function wikiToggleViewerSelf(e) {
+            e = e || window.event;
+            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
+                return;
+            }
+            const i = document.getElementById('AllowedViewers');
+            if (!i) {
+                return;
+            }
+            const c = document.getElementById('ViewerSelf');
+            if (!c) {
+                return;
+            }
+            if (c.checked) {
+                i.value = "";
+            }
+            i.readOnly = c.checked;
         }
 
         function wikiToggleTransclusions(e) {

@@ -54,6 +54,18 @@ namespace NeverFoundry.Wiki.Mvc.Models
         public bool OwnerSelf { get; set; }
 
         /// <summary>
+        /// Whether to make the owner the only allowed editor.
+        /// </summary>
+        [Display(Name = "Make me the only editor")]
+        public bool EditorSelf { get; set; }
+
+        /// <summary>
+        /// Whether to make the owner the only allowed viewer.
+        /// </summary>
+        [Display(Name = "Make me the only viewer")]
+        public bool ViewerSelf { get; set; }
+
+        /// <summary>
         /// Whether to automatically create a redirect for a renamed article.
         /// </summary>
         [Display(Name = "Leave a redirect behind")]

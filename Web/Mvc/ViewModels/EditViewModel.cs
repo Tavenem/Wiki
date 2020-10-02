@@ -5,6 +5,7 @@ using NeverFoundry.Wiki.Mvc.Controllers;
 using NeverFoundry.Wiki.Web;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels
@@ -27,6 +28,12 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
 
         [Display(Name = "Make me the owner")]
         bool OwnerSelf,
+
+        [Display(Name = "Make me the only editor")]
+        bool EditorSelf,
+
+        [Display(Name = "Make me the only viewer")]
+        bool ViewerSelf,
 
         string? Preview,
 
@@ -65,6 +72,8 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                 markdown,
                 data.WikiItem?.Owner,
                 string.Equals(data.WikiItem?.Owner, user.Id, System.StringComparison.Ordinal),
+                allowedEditors is not null && allowedEditors.Length == 0,
+                allowedViewers is not null && allowedViewers.Length == 0,
                 preview,
                 previewTitle
 #pragma warning disable RCS1238 // Avoid nested ?: operators: required for expression.

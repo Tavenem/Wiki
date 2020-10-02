@@ -119,8 +119,8 @@ namespace NeverFoundry.Wiki
         /// An optional collection of namespaces which may not be assigned to pages by users.
         /// </para>
         /// <para>
-        /// The namespaces assigned to <see cref="CategoryNamespace"/>, <see cref="FileNamespace"/>,
-        /// and <see cref="TalkNamespace"/> are included automatically.
+        /// The namespaces assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/>
+        /// are included automatically.
         /// </para>
         /// </summary>
         IEnumerable<string> ReservedNamespaces { get; }

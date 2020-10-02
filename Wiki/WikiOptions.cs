@@ -194,12 +194,12 @@ namespace NeverFoundry.Wiki
         /// An optional collection of namespaces which may not be assigned to pages by users.
         /// </para>
         /// <para>
-        /// The namespaces assigned to <see cref="CategoryNamespace"/>, <see cref="FileNamespace"/>,
-        /// and <see cref="TalkNamespace"/> are included automatically.
+        /// The namespaces assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/>
+        /// are included automatically.
         /// </para>
         /// </summary>
         public IEnumerable<string> ReservedNamespaces => (_reservedNamespaces ?? Enumerable.Empty<string>())
-            .Concat(new[] { CategoryNamespace, FileNamespace, TalkNamespace });
+            .Concat(new[] { FileNamespace, TalkNamespace });
 
         private const string SiteNameDefault = "a NeverFoundry wiki";
         private string _siteName = SiteNameDefault;

@@ -9,6 +9,7 @@ namespace NeverFoundry.Wiki.Test
     public class WikiFunctionTests
     {
         private const string Editor = "Tester";
+        private const string InnerNestedTitle = "InnerNested";
         private const string NestedTitle = "Nested";
         private const string Title = "Title";
 
@@ -38,6 +39,7 @@ Fourth section text";
         private static readonly IDataStore _DataStore = new InMemoryDataStore();
 
         private static Article? _Article;
+        private static Article? _InnerNestedArticle;
         private static Article? _NestedArticle;
 
         [TestMethod]
@@ -311,27 +313,74 @@ Fourth section text";
         [TestMethod]
         public void ComplexTest()
         {
+            const string InnerTemplate =
+@"var p = new List<string>();
+if (!string.IsNullOrEmpty(_1))
+{
+    p.Add(_1);
+}
+if (!string.IsNullOrEmpty(_2))
+{
+    p.Add(_2);
+}
+if (!string.IsNullOrEmpty(_3))
+{
+    p.Add(_3);
+}
+if (!string.IsNullOrEmpty(_4))
+{
+    p.Add(_4);
+}
+if (p.Count == 0)
+{
+    return string.Empty;
+}
+var s = new StringBuilder();
+for (var i = 0; i < p.Count - 1; i++)
+{
+  if (i > 0)
+  {
+    s.Append("", "");
+  }
+  s.Append(""[["").Append(p[i]).Append(""]]"");
+}
+if (p.Count > 2)
+{
+  s.Append(',');
+}
+if (p.Count > 1)
+{
+    s.Append("" and "");
+}
+s.Append(""[["").Append(p[p.Count - 1]).Append(""]]"");
+return s.ToString();";
+            _ = GetInnerNestedArticle(InnerTemplate);
+
             const string Template =
-@":::wiki-main-article-ref
-{{ifcategory|The main article for this category is|Main article:}} {{if|((2))|[[{{if|((1))|((1))|Wiki:{{pagename}}}}|((2))]]|{{if|((1))|[[((1))|]]|[[Wiki:{{pagename}}]]}}}}
+@":::wiki-article-ref
+For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}|((2))|((3))|((4))|((5))}}|[[{{fullpagename}} (disambiguation)|]]}}|other uses, see [[{{fullpagename}} (disambiguation)|]]}}
 :::";
             _ = GetNestedArticle(Template);
 
             TestTemplate(
-                $"{{{{{NestedTitle}|Title}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Title</a></p>\n</div>\n",
-                false);
-            TestTemplate(
-                $"{{{{{NestedTitle}|Title#Anchor}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title#anchor\" class=\"wiki-link-exists\">Title § Anchor</a></p>\n</div>\n",
-                false);
-            TestTemplate(
                 $"{{{{{NestedTitle}}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
+                "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
                 false);
             TestTemplate(
-                $"{{{{{NestedTitle}|Title|Display}}}}",
-                "<div class=\"wiki-main-article-ref\"><p>Main article: <a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Display</a></p>\n</div>\n",
+                $"{{{{{NestedTitle}|stuff}}}}",
+                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
+                false);
+            TestTemplate(
+                $"{{{{{NestedTitle}|stuff|Title}}}}",
+                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
+                false);
+            TestTemplate(
+                $"{{{{{NestedTitle}|stuff|Title|Other}}}}",
+                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>\n",
+                false);
+            TestTemplate(
+                $"{{{{{NestedTitle}|stuff|Title|Other|Misc}}}}",
+                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"/Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>\n",
                 false);
         }
 
@@ -353,6 +402,27 @@ Fourth section text";
                 _Article.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
             }
             return _Article;
+        }
+
+        private static Article GetInnerNestedArticle(string markdown)
+        {
+            if (_InnerNestedArticle is null)
+            {
+                _InnerNestedArticle = Article.NewAsync(
+                    _Options,
+                    _DataStore,
+                    InnerNestedTitle,
+                    Editor,
+                    markdown,
+                    _Options.TransclusionNamespace)
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            else
+            {
+                _InnerNestedArticle.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
+            }
+            return _InnerNestedArticle;
         }
 
         private static Article GetNestedArticle(string markdown)
