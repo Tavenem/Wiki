@@ -6,49 +6,49 @@
 {
     if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
     {
-        <div class="wiki-edit-terms-notice">
-            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-        </div>
+<div class="wiki-edit-terms-notice">
+    <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+</div>
     }
     else
     {
-        <div class="wiki-edit-terms-notice">
-            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
-        </div>
+<div class="wiki-edit-terms-notice">
+    <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
+</div>
     }
 }
 else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
 {
-    <div class="wiki-edit-terms-notice">
-        <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-    </div>
+<div class="wiki-edit-terms-notice">
+    <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+</div>
 }
 else
 {
-    <div class="wiki-edit-terms-notice">
-        <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
-    </div>
+<div class="wiki-edit-terms-notice">
+    <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
+</div>
 }
 
 @if (Model.IsOutdated)
 {
-    <div class="wiki-edit-outdatedwarning alert alert-warning" role="alert">
-        Warning: this version of the page is outdated. You may wish to <a asp-action="Edit" asp-route-rev="">begin your edit from the most recent version of the page</a> instead.
-    </div>
+<div class="wiki-edit-outdatedwarning alert alert-warning" role="alert">
+    Warning: this version of the page is outdated. You may wish to <a asp-action="Edit" asp-route-rev="">begin your edit from the most recent version of the page</a> instead.
+</div>
 }
 
 @if (!string.IsNullOrEmpty(Model.Preview))
 {
-    <div class="wiki-edit-preview">
-        @Html.Raw(Model.Preview)
-    </div>
+<div class="wiki-edit-preview">
+    @Html.Raw(Model.Preview)
+</div>
 }
 <form class="wiki-edit-editor" asp-controller="Wiki" asp-action="Edit">
     <div asp-validation-summary="ModelOnly" class="error-text"></div>
     <input asp-for="Id" />
     <div class="form-group wiki-edit-titleinputgroup">
         <label asp-for="Title"></label>
-        <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" title="Move this article by changing its title" oninput="wikiRedirectCheck();" />
+        <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" title="Move this article by changing its title" oninput="window.wikimvceditor.redirectCheck();" />
         <span asp-validation-for="Title" class="error-text"></span>
     </div>
     <div id="wiki-edit-redirect" class="form-group form-check" style="display: none;">
@@ -66,52 +66,52 @@ else
             <input asp-for="Owner" class="form-control" title="Should be a username or user ID. Can be left blank to make the article community-owned." readonly="@(Model.OwnerSelf ? "readonly" : null)" />
         </div>
         <div class="form-group form-check">
-            <input asp-for="OwnerSelf" class="form-check-input" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);" />
-            <label asp-for="OwnerSelf" onclick="wikiToggleOwnerSelf(event);" onkeydown="wikiToggleOwnerSelf(event);">Make me the owner</label>
+            <input asp-for="OwnerSelf" class="form-check-input" onclick="window.wikimvceditor.toggleOwnerSelf(event);" onkeydown="window.wikimvceditor.toggleOwnerSelf(event);" />
+            <label asp-for="OwnerSelf" onclick="window.wikimvceditor.toggleOwnerSelf(event);" onkeydown="window.wikimvceditor.toggleOwnerSelf(event);">Make me the owner</label>
         </div>
         <div>
             <label asp-for="AllowedEditors" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included.">Allowed editors (optional)</label>
             <input asp-for="AllowedEditors" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." readonly="@(Model.EditorSelf ? "readonly" : null)" />
         </div>
         <div class="form-group form-check">
-            <input asp-for="EditorSelf" class="form-check-input" onclick="wikiToggleEditorSelf(event);" onkeydown="wikiToggleEditorSelf(event);" />
-            <label asp-for="EditorSelf" onclick="wikiToggleEditorSelf(event);" onkeydown="wikiToggleEditorSelf(event);">Make me the only editor</label>
+            <input asp-for="EditorSelf" class="form-check-input" onclick="window.wikimvceditor.toggleEditorSelf(event);" onkeydown="window.wikimvceditor.toggleEditorSelf(event);" />
+            <label asp-for="EditorSelf" onclick="window.wikimvceditor.toggleEditorSelf(event);" onkeydown="window.wikimvceditor.toggleEditorSelf(event);">Make me the only editor</label>
         </div>
         <div>
             <label asp-for="AllowedViewers" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included.">Allowed viewers (optional)</label>
             <input asp-for="AllowedViewers" class="form-control" title="Should be a list of usernames or user IDs, each separated by a semicolon (;). The owner is automatically included." readonly="@(Model.ViewerSelf ? "readonly" : null)" />
         </div>
         <div class="form-group form-check">
-            <input asp-for="ViewerSelf" class="form-check-input" onclick="wikiToggleViewerSelf(event);" onkeydown="wikiToggleViewerSelf(event);" />
-            <label asp-for="ViewerSelf" onclick="wikiToggleViewerSelf(event);" onkeydown="wikiToggleViewerSelf(event);">Make me the only viewer</label>
+            <input asp-for="ViewerSelf" class="form-check-input" onclick="window.wikimvceditor.toggleViewerSelf(event);" onkeydown="window.wikimvceditor.toggleViewerSelf(event);" />
+            <label asp-for="ViewerSelf" onclick="window.wikimvceditor.toggleViewerSelf(event);" onkeydown="window.wikimvceditor.toggleViewerSelf(event);">Make me the only viewer</label>
         </div>
         <div class="form-group wiki-edit-terms-notice">
             @if (!string.IsNullOrEmpty(WikiWebOptions.PolicyPageTitle))
             {
                 if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
                 {
-                    <div class="wiki-edit-terms-notice">
-                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-                    </div>
+            <div class="wiki-edit-terms-notice">
+                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+            </div>
                 }
                 else
                 {
-                    <div class="wiki-edit-terms-notice">
-                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
-                    </div>
+            <div class="wiki-edit-terms-notice">
+                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
+            </div>
                 }
             }
             else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
             {
-                <div class="wiki-edit-terms-notice">
-                    <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-                </div>
+            <div class="wiki-edit-terms-notice">
+                <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+            </div>
             }
             else
             {
-                <div class="wiki-edit-terms-notice">
-                    <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
-                </div>
+            <div class="wiki-edit-terms-notice">
+                <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
+            </div>
             }
         </div>
         <div class="flex-wrap wiki-edit-submit-buttons">
@@ -121,8 +121,8 @@ else
             <button id="wiki-edit-delete-button"
                     class="btn btn-danger"
                     type="button"
-                    onclick="wikiEditDelete(event);"
-                    onkeydown="wikiEditDelete(event);">
+                    onclick="window.wikimvceditor.delete(event);"
+                    onkeydown="window.wikimvceditor.delete(event);">
                 Delete
             </button>
             <button id="wiki-edit-confirmed-delete-button"
@@ -138,152 +138,30 @@ else
 </form>
 @if ((Model.Data.WikiItem?.Transclusions?.Count ?? 0) > 0)
 {
-    <div class="wiki-edit-transclusions">
-        <div id="wiki-edit-transclusions-toggler" onclick="wikiToggleTransclusions(event);" onkeydown="wikiToggleTransclusions(event);">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
-                <path d="M4 1.533v9.671l4.752-4.871z" />
-            </svg>
-            <span>Pages transcluded in the current version of this one:</span>
-        </div>
-        <div id="wiki-edit-transclusionlist" style="display: none;">
-            <ul>
-                @foreach (var transclusion in Model.Data.WikiItem!.Transclusions!)
+<div class="wiki-edit-transclusions">
+    <div id="wiki-edit-transclusions-toggler" onclick="window.wikimvceditor.toggleTransclusions(event);" onkeydown="window.wikimvceditor.toggleTransclusions(event);">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
+            <path d="M4 1.533v9.671l4.752-4.871z" />
+        </svg>
+        <span>Pages transcluded in the current version of this one:</span>
+    </div>
+    <div id="wiki-edit-transclusionlist" style="display: none;">
+        <ul>
+            @foreach (var transclusion in Model.Data.WikiItem!.Transclusions!)
                 {
                     var fullTitle = Article.GetFullTitle(WikiOptions, transclusion.Title, transclusion.WikiNamespace);
-                    <li><a href="/@WikiOptions.WikiLinkPrefix/@fullTitle">@fullTitle</a></li>
+            <li><a href="/@WikiOptions.WikiLinkPrefix/@fullTitle">@fullTitle</a></li>
                 }
-            </ul>
-        </div>
+        </ul>
     </div>
+</div>
 }
 
 @section Scripts {
-    <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>
-    <script>
-        const easyMDE = new EasyMDE({
-            autosave: {
-                enabled: true,
-                uniqueId: 'wiki-editor-@(Model.Id ?? "newitem")',
-            },
-            element: document.getElementById('Markdown'),
-            indentWithTabs: false,
-            initialValue: "@Html.Raw(Model.Markdown.Replace(@"\", @"\\").Replace(@"""", @"\""").Replace(Environment.NewLine, @"\r\n"))",
-            placeholder: "Enter your content here, in markdown format.",
-            tabSize: 4,
-            toolbar: ['bold', 'italic', '|', 'heading-1', 'heading-2', 'heading-3', '|', 'unordered-list', 'ordered-list', '|', 'link', 'image']
-        });
-
-        function wikiRedirectCheck() {
-            const r = document.getElementById('wiki-edit-redirect');
-            if (!r) {
-                return;
-            }
-            const t = document.getElementById('Title');
-            if (!t) {
-                return;
-            }
-            if (t.dataset.original
-                && t.value != t.dataset.original) {
-                r.style.display = 'block';
-            } else {
-                r.style.display = 'none';
-            }
-        }
-
-        function wikiToggleOwnerSelf(e) {
-            e = e || window.event;
-            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
-                return;
-            }
-            const i = document.getElementById('Owner');
-            if (!i) {
-                return;
-            }
-            const c = document.getElementById('OwnerSelf');
-            if (!c) {
-                return;
-            }
-            if (c.checked) {
-                i.value = "";
-            }
-            i.readOnly = c.checked;
-        }
-
-        function wikiToggleEditorSelf(e) {
-            e = e || window.event;
-            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
-                return;
-            }
-            const i = document.getElementById('AllowedEditors');
-            if (!i) {
-                return;
-            }
-            const c = document.getElementById('EditorSelf');
-            if (!c) {
-                return;
-            }
-            if (c.checked) {
-                i.value = "";
-            }
-            i.readOnly = c.checked;
-        }
-
-        function wikiToggleViewerSelf(e) {
-            e = e || window.event;
-            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
-                return;
-            }
-            const i = document.getElementById('AllowedViewers');
-            if (!i) {
-                return;
-            }
-            const c = document.getElementById('ViewerSelf');
-            if (!c) {
-                return;
-            }
-            if (c.checked) {
-                i.value = "";
-            }
-            i.readOnly = c.checked;
-        }
-
-        function wikiToggleTransclusions(e) {
-            e = e || window.event;
-            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
-                return;
-            }
-            const l = document.getElementById('wiki-edit-transclusionlist');
-            if (!l) {
-                return;
-            }
-            const t = document.getElementById('wiki-edit-transclusions-toggler');
-            if (!t) {
-                return;
-            }
-            window.wikimvc.editTransclusionsShown = !window.wikimvc.editTransclusionsShown;
-            t.classList.toggle("is-active");
-            if (window.wikimvc.editTransclusionsShown) {
-                l.style.display = 'block';
-            } else {
-                l.style.display = 'none';
-            }
-        }
-
-        function wikiEditDelete(e) {
-            e = e || window.event;
-            if (e.isComposing || e.keyCode === 229 || (e.key && e.key !== "Enter")) {
-                return;
-            }
-            const d = document.getElementById('wiki-edit-confirmed-delete-button');
-            if (!d) {
-                return;
-            }
-            const b = document.getElementById('wiki-edit-delete-button');
-            if (!b) {
-                return;
-            }
-            b.style.display = 'none';
-            d.style.display = 'inline-block';
-        }
+    <script type="text/javascript">
+        let initialWikiEditValue = "@Html.Raw(Model.Markdown.Replace(@"\", @"\\").Replace(@"""", @"\""").Replace(Environment.NewLine, @"\r\n"))";
+        let wikiItemId = "@(Model.Id ?? "newitem")";
     </script>
+    <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>
+    <script src="~/_content/NeverFoundry.Wiki.Mvc/edit.js"></script>
 }

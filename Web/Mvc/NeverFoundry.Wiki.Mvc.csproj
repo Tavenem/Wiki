@@ -13,7 +13,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Version>0.67.1-preview</Version>
+    <Version>0.68.0-preview</Version>
     <Authors>Wil Stead</Authors>
     <Description>An implementation of NeverFoundry.Wiki for ASP.NET MVC.</Description>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -57,7 +57,7 @@
   </Target>
 
   <!-- npm build -->
-  <Target Name="NpmBuild" BeforeTargets="Build" Inputs="package.json;package-lock.json;postcss.config.js;content\script.js;content\chat.js;wwwroot\styles.scss" Outputs="wwwroot\script.js;wwwroot\chat.js;wwwroot\styles.css">
+  <Target Name="NpmBuild" BeforeTargets="Build" Inputs="package.json;package-lock.json;postcss.config.js;content\script.js;content\edit.js;content\chat.js;wwwroot\styles.scss" Outputs="wwwroot\script.js;wwwroot\edit.js;wwwroot\chat.js;wwwroot\styles.css">
     <!-- Ensure Node.js is installed -->
     <Exec Command="node --version" ContinueOnError="true">
       <Output TaskParameter="ExitCode" PropertyName="ErrorCode" />

@@ -233,10 +233,10 @@
             <div class="wiki-body">
                 @RenderBody()
                 @if (!data.IsCompact
-                   && !data.IsSystem
-                   && !data.IsTalk
-                   && !data.IsHistory
-                   && data.Categories?.Count > 0)
+                 && !data.IsSystem
+                 && !data.IsTalk
+                 && !data.IsHistory
+                 && data.Categories?.Count > 0)
                 {
                     <section class="wiki-category-list-section">
                         <a href="/@WikiOptions.WikiLinkPrefix/@WikiOptions.CategoriesTitle" class="wiki-category-list-category-link">@WikiOptions.CategoriesTitle</a>
@@ -259,13 +259,13 @@
                 <div class="wiki-top-footer" role="contentinfo">
                     <ul>
                         @if (!data.IsSystem
-                           && !data.IsTalk
-                           && data.WikiItem is Article tArticle)
+                         && !data.IsTalk
+                         && data.WikiItem is Article tArticle)
                         {
                             <li class="wiki-footer-timestamp">This page was last edited <span class="wiki-timestamp">@tArticle.Timestamp.ToWikiDisplayString()</span> (UTC).</li>
                         }
                         @if (!string.IsNullOrWhiteSpace(WikiWebOptions.CopyrightPageTitle)
-                           || !string.IsNullOrWhiteSpace(WikiWebOptions.PolicyPageTitle))
+                         || !string.IsNullOrWhiteSpace(WikiWebOptions.PolicyPageTitle))
                         {
                             <li class="wiki-footer-copyright">
                                 @if (!string.IsNullOrWhiteSpace(WikiWebOptions.CopyrightPageTitle))
@@ -290,5 +290,6 @@
 </div>
 
 @section Scripts {
+    <script src="~/_content/NeverFoundry.Wiki.Mvc/script.js"></script>
     @RenderSection("Scripts", required: false)
 }

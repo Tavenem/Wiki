@@ -32,6 +32,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// </summary>
         public WikiRouteData Data { get; }
 
+        [Display(Name = "Make me the only editor")]
+        public bool EditorSelf { get; set; }
+
         /// <summary>
         /// The file ID.
         /// </summary>
@@ -79,6 +82,9 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
         /// </summary>
         [Required]
         public string? Title { get; set; }
+
+        [Display(Name = "Make me the only viewer")]
+        public bool ViewerSelf { get; set; }
 
         /// <summary>
         /// Initialize a new instance of <see cref="UploadViewModel"/>.

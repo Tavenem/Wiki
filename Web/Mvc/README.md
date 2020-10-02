@@ -51,6 +51,9 @@ In order to use it in a project, the following steps should be taken:
      within this layout.
    
      If omitted, the path will be set to "/Views/Wiki/_DefaultWikiMainLayout.cshtml".
+
+     Note: your layout **must** define a "Scripts" section, as the wiki views add required scripts
+     to this section.
    * `TalkHubRoute`: The relative path to the
      [SignalR](https://docs.microsoft.com/en-us/aspnet/core/signalr/introduction)
      [Hub](https://docs.microsoft.com/en-us/aspnet/core/signalr/hubs) used for discussion pages. If
@@ -92,9 +95,3 @@ In order to use it in a project, the following steps should be taken:
    (Optionally, you may import the [Sass](https://sass-lang.com) stylesheet "`styles.scss`" located in the `wwwroot`
    folder in your own `scss` file if you prefer to extend or bundle the main stylesheet. You must
    still include the "`libstyles.css`" file, however.)
-1. Add references to the Razor class library's scripts at the bottom of the `<body>` tag of your
-   main layout:
-   ```html
-   <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>
-   <script src="~/_content/NeverFoundry.Wiki.Mvc/script.js"></script>
-   ```
