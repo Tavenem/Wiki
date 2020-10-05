@@ -127,6 +127,16 @@ namespace NeverFoundry.Wiki
 
         /// <summary>
         /// <para>
+        /// The name of the script namespace.
+        /// </para>
+        /// <para>
+        /// If omitted "Script" will be used.
+        /// </para>
+        /// </summary>
+        string ScriptNamespace { get; }
+
+        /// <summary>
+        /// <para>
         /// The name of the wiki. Displayed as a subheading below each article title.
         /// </para>
         /// <para>

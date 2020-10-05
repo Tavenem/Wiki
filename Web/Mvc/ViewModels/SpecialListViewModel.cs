@@ -189,18 +189,12 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
             string? filter = null,
             Expression<Func<T, bool>>? condition = null) where T : Article
         {
-            var pageCondition = condition;
+            var pageCondition = condition is null
+                ? (T x) => !x.IsDeleted
+                : condition.AndAlso(x => !x.IsDeleted);
             if (!string.IsNullOrEmpty(filter))
             {
-                if (condition is null)
-                {
-                    pageCondition = (T x) => x.Title.Contains(filter);
-                }
-                else
-                {
-                    Expression<Func<T, bool>> baseExp = x => x.Title.Contains(filter);
-                    pageCondition = baseExp.AndAlso(condition);
-                }
+                pageCondition = pageCondition.AndAlso(x => x.Title.Contains(filter));
             }
 
             var query = dataStore.Query<T>();

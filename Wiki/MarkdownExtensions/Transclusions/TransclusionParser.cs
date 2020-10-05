@@ -115,7 +115,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                         isPreview,
                         lineTransclusions,
                         lineParameters,
-                        out var lineArticles);
+                        out var lineArticles,
+                        parameterValues);
                     transcludedArticles = transcludedArticles.Union(lineArticles).ToList();
                 }
 
@@ -139,7 +140,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             bool isPreview,
             List<Transclusion> transclusions,
             List<Transclusion> parameterInclusions,
-            out List<Wiki.Transclusion> transcludedArticles)
+            out List<Wiki.Transclusion> transcludedArticles,
+            Dictionary<string, string>? passedParameterValues = null)
         {
             transcludedArticles = new List<Wiki.Transclusion>();
 
@@ -191,7 +193,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                     isPreview,
                     includedTransclusions,
                     includedParameters,
-                    out var nestedArticles);
+                    out var nestedArticles,
+                    passedParameterValues);
                 transcludedArticles = transcludedArticles.Union(nestedArticles).ToList();
             }
 
@@ -226,7 +229,8 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             var reference = referenceSpan.Trim().ToString();
 
             Dictionary<string, string> parameterValues;
-            if (TransclusionFunctions._Functions.TryGetValue(reference.ToLowerInvariant(), out var func))
+            var invariantReference = reference.ToLowerInvariant();
+            if (TransclusionFunctions._Functions.TryGetValue(invariantReference, out var func))
             {
                 // If the function uses any parameters, return it as-is so that it can be invoked
                 // with those parameters at a higher level.
@@ -238,6 +242,53 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                     && x.Value[^2] == ParameterCloseChar))
                 {
                     return template;
+                }
+                if (passedParameterValues is not null
+                    && (invariantReference == "eval"
+                    || invariantReference == "exec"))
+                {
+                    var index = 1;
+                    foreach (var (key, value) in passedParameterValues)
+                    {
+                        if (!parameterValues.ContainsKey(key))
+                        {
+                            parameterValues.Add(key, value);
+                        }
+                        else if (int.TryParse(key, out var i))
+                        {
+                            while (parameterValues.ContainsKey(index.ToString()))
+                            {
+                                index++;
+                            }
+                            parameterValues.Add(index.ToString(), value);
+                        }
+                    }
+                }
+                if (invariantReference == "exec")
+                {
+                    string? script = null;
+                    if (!parameterValues.TryGetValue("code", out var code)
+                        && parameterValues.TryGetValue("1", out code))
+                    {
+                        parameterValues.Remove("1");
+                    }
+                    parameterValues.Remove("code");
+                    if (!string.IsNullOrWhiteSpace(code))
+                    {
+                        var (codeNamespace, codeTitle, _, codeIsDefault) = Article.GetTitleParts(options, code);
+                        var scriptArticle = Article.GetArticle(
+                            options,
+                            dataStore,
+                            codeTitle,
+                            codeIsDefault
+                                ? options.ScriptNamespace
+                                : codeNamespace);
+                        script = scriptArticle?.MarkdownContent;
+                    }
+                    if (!string.IsNullOrWhiteSpace(script))
+                    {
+                        parameterValues["code"] = script;
+                    }
                 }
                 return func.Invoke(options, parameterValues, title, fullTitle, isTemplate, isPreview);
             }

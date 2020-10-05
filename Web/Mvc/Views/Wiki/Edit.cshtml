@@ -6,46 +6,47 @@
 {
     if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
     {
-<div class="wiki-edit-terms-notice">
-    <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-</div>
+        <div class="wiki-edit-terms-notice">
+            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+        </div>
     }
     else
     {
-<div class="wiki-edit-terms-notice">
-    <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
-</div>
+        <div class="wiki-edit-terms-notice">
+            <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
+        </div>
     }
 }
 else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
 {
-<div class="wiki-edit-terms-notice">
-    <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-</div>
+    <div class="wiki-edit-terms-notice">
+        <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+    </div>
 }
 else
 {
-<div class="wiki-edit-terms-notice">
-    <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
-</div>
+    <div class="wiki-edit-terms-notice">
+        <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
+    </div>
 }
 
 @if (Model.IsOutdated)
 {
-<div class="wiki-edit-outdatedwarning alert alert-warning" role="alert">
-    Warning: this version of the page is outdated. You may wish to <a asp-action="Edit" asp-route-rev="">begin your edit from the most recent version of the page</a> instead.
-</div>
+    <div class="wiki-edit-outdatedwarning alert alert-warning" role="alert">
+        Warning: this version of the page is outdated. You may wish to <a asp-action="Edit" asp-route-rev="">begin your edit from the most recent version of the page</a> instead.
+    </div>
 }
 
 @if (!string.IsNullOrEmpty(Model.Preview))
 {
-<div class="wiki-edit-preview">
-    @Html.Raw(Model.Preview)
-</div>
+    <div class="wiki-edit-preview">
+        @Html.Raw(Model.Preview)
+    </div>
 }
 <form class="wiki-edit-editor" asp-controller="Wiki" asp-action="Edit">
     <div asp-validation-summary="ModelOnly" class="error-text"></div>
     <input asp-for="Id" />
+    <input hidden="hidden" value="@Model.Title" name="OriginalTitle" />
     <div class="form-group wiki-edit-titleinputgroup">
         <label asp-for="Title"></label>
         <input asp-for="Title" data-original="@Model.Title" class="form-control" placeholder="Title" title="Move this article by changing its title" oninput="window.wikimvceditor.redirectCheck();" />
@@ -90,28 +91,28 @@ else
             {
                 if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
                 {
-            <div class="wiki-edit-terms-notice">
-                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-            </div>
+                    <div class="wiki-edit-terms-notice">
+                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>, including but not limited to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+                    </div>
                 }
                 else
                 {
-            <div class="wiki-edit-terms-notice">
-                <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
-            </div>
+                    <div class="wiki-edit-terms-notice">
+                        <p>Content submitted to this wiki is subject to each of its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.PolicyPageTitle">policies</a>.</p>
+                    </div>
                 }
             }
             else if (!string.IsNullOrEmpty(WikiWebOptions.CopyrightPageTitle))
             {
-            <div class="wiki-edit-terms-notice">
-                <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
-            </div>
+                <div class="wiki-edit-terms-notice">
+                    <p>Content submitted to this wiki is subject to its <a href="/@WikiOptions.WikiLinkPrefix/@WikiWebOptions.SystemNamespace:@WikiWebOptions.CopyrightPageTitle">copyright policy</a>.</p>
+                </div>
             }
             else
             {
-            <div class="wiki-edit-terms-notice">
-                <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
-            </div>
+                <div class="wiki-edit-terms-notice">
+                    <p>Content submitted to this wiki is subject to each of its policies, including but not limited to its copyright policy.</p>
+                </div>
             }
         </div>
         <div class="flex-wrap wiki-edit-submit-buttons">
@@ -138,28 +139,29 @@ else
 </form>
 @if ((Model.Data.WikiItem?.Transclusions?.Count ?? 0) > 0)
 {
-<div class="wiki-edit-transclusions">
-    <div id="wiki-edit-transclusions-toggler" onclick="window.wikimvceditor.toggleTransclusions(event);" onkeydown="window.wikimvceditor.toggleTransclusions(event);">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
-            <path d="M4 1.533v9.671l4.752-4.871z" />
-        </svg>
-        <span>Pages transcluded in the current version of this one:</span>
-    </div>
-    <div id="wiki-edit-transclusionlist" style="display: none;">
-        <ul>
-            @foreach (var transclusion in Model.Data.WikiItem!.Transclusions!)
+    <div class="wiki-edit-transclusions">
+        <div id="wiki-edit-transclusions-toggler" onclick="window.wikimvceditor.toggleTransclusions(event);" onkeydown="window.wikimvceditor.toggleTransclusions(event);">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12">
+                <path d="M4 1.533v9.671l4.752-4.871z" />
+            </svg>
+            <span>Pages transcluded in the current version of this one:</span>
+        </div>
+        <div id="wiki-edit-transclusionlist" style="display: none;">
+            <ul>
+                @foreach (var transclusion in Model.Data.WikiItem!.Transclusions!)
                 {
                     var fullTitle = Article.GetFullTitle(WikiOptions, transclusion.Title, transclusion.WikiNamespace);
-            <li><a href="/@WikiOptions.WikiLinkPrefix/@fullTitle">@fullTitle</a></li>
+                    <li><a href="/@WikiOptions.WikiLinkPrefix/@fullTitle">@fullTitle</a></li>
                 }
-        </ul>
+            </ul>
+        </div>
     </div>
-</div>
 }
 
 @section Scripts {
     <script type="text/javascript">
         let initialWikiEditValue = "@Html.Raw(Model.Markdown.Replace(@"\", @"\\").Replace(@"""", @"\""").Replace(Environment.NewLine, @"\r\n"))";
+        let initialWikiEditMode = "@(Article.GetTitleParts(WikiOptions, Model.Title).wikiNamespace == WikiOptions.ScriptNamespace ? "script" : "")";
         let wikiItemId = "@(Model.Id ?? "newitem")";
     </script>
     <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>

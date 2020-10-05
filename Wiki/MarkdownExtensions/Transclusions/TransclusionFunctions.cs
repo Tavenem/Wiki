@@ -1,5 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
-using Microsoft.CodeAnalysis.Scripting;
+﻿using Jint;
 using NeverFoundry.Wiki.MarkdownExtensions.TableOfContents;
 using System;
 using System.Collections.Generic;
@@ -15,11 +14,15 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
     {
         internal const string PreviewClass = "wiki-preview";
 
-        private const int ScriptExecutionTimeoutInMilliseconds = 5000;
+        private const int ScriptExecutionTimeoutInSeconds = 5;
+        private const int ScriptMemoryLimitInBytes = 10_000_000;
+        private const int ScriptRecursionLimit = 100;
+        private const int ScriptStatementLimit = 10000;
 
         internal static readonly Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>> _Functions
             = new Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>>
             {
+                ["eval"] = Eval,
                 ["exec"] = Exec,
                 ["format"] = Format,
                 ["fullpagename"] = (_, _, _, fullTitle, _, _) => fullTitle ?? string.Empty,
@@ -38,117 +41,50 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 ["toc"] = TableOfContents,
                 ["tolower"] = (_, parameters, _, _, _, _) => parameters.TryGetValue("1", out var value) ? value.ToLower() : string.Empty,
                 ["totitlecase"] = TitleCase,
-                ["toupper"] = (_, parameters, _, __, ___, ____) => parameters.TryGetValue("1", out var value) ? value.ToUpper() : string.Empty,
+                ["toupper"] = (_, parameters, _, _, _, _) => parameters.TryGetValue("1", out var value) ? value.ToUpper() : string.Empty,
             };
 
-        private static readonly SemaphoreSlim _ScriptLock = new SemaphoreSlim(1);
-        private static ScriptState<object>? _BaseScriptState;
-
-        private static string Exec(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+        private static string Eval(
+            IWikiOptions options,
+            Dictionary<string, string> parameters,
+            string? title,
+            string? fullTitle,
+            bool isTemplate,
+            bool isPreview)
         {
             if (parameters.Count == 0)
             {
                 return string.Empty;
             }
-
-            if (_BaseScriptState is null)
+            if (!parameters.TryGetValue("code", out var code)
+                && parameters.TryGetValue("1", out code))
             {
-                _ScriptLock.Wait();
-                _BaseScriptState ??= Task.Run(() => CSharpScript.RunAsync("", ScriptOptions.Default
-                    .AddReferences(typeof(Enumerable).Assembly)
-                    .WithImports("System", "System.Collections.Generic", "System.Linq", "System.Text"))).GetAwaiter().GetResult();
-                _ScriptLock.Release();
+                parameters.Remove("1");
             }
-
-            var numberedParameters = parameters.Where(x => int.TryParse(x.Key, out var _)).ToList();
-            List<KeyValuePair<string, string>> namedParameters;
-            if (parameters.TryGetValue("code", out var code))
-            {
-                namedParameters = parameters
-                    .Where(x => x.Key != "code")
-                    .Except(numberedParameters)
-                    .ToList();
-            }
-            else
-            {
-                if (numberedParameters.Count == 0)
-                {
-                    return string.Empty;
-                }
-                namedParameters = parameters
-                    .Except(numberedParameters)
-                    .ToList();
-                code = numberedParameters[^1].Value;
-                numberedParameters.RemoveAt(numberedParameters.Count - 1);
-            }
-            var scriptCode = new StringBuilder();
-
-            foreach (var (name, value) in numberedParameters)
-            {
-                scriptCode.Append("var _")
-                    .Append(name)
-                    .Append(" = ");
-                if (double.TryParse(value, out var _))
-                {
-                    scriptCode.Append(value);
-                }
-                else if (bool.TryParse(value, out var b))
-                {
-                    scriptCode.Append(b);
-                }
-                else if (DateTimeOffset.TryParse(value, out var _))
-                {
-                    scriptCode.Append("DateTimeOffset.Parse(")
-                        .Append(value)
-                        .Append(')');
-                }
-                else
-                {
-                    scriptCode.Append('"')
-                        .Append(value)
-                        .Append('"');
-                }
-                scriptCode.AppendLine(";");
-            }
-            foreach (var (name, value) in namedParameters)
-            {
-                scriptCode.Append("var ")
-                    .Append(name)
-                    .Append(" = ");
-                if (double.TryParse(value, out var _))
-                {
-                    scriptCode.Append(value);
-                }
-                else if (bool.TryParse(value, out var b))
-                {
-                    scriptCode.Append(b);
-                }
-                else if (DateTimeOffset.TryParse(value, out var _))
-                {
-                    scriptCode.Append("DateTimeOffset.Parse(")
-                        .Append(value)
-                        .Append(')');
-                }
-                else
-                {
-                    scriptCode.Append('"')
-                        .Append(value)
-                        .Append('"');
-                }
-                scriptCode.AppendLine(";");
-            }
-
-            scriptCode.Append(code);
-            try
-            {
-                var cts = new CancellationTokenSource(ScriptExecutionTimeoutInMilliseconds);
-                var state = Task.Run(() => _BaseScriptState.ContinueWithAsync(scriptCode.ToString(), cancellationToken: cts.Token)).GetAwaiter().GetResult();
-                return state.ReturnValue?.ToString() ?? string.Empty;
-            }
-            catch
+            if (string.IsNullOrEmpty(code))
             {
                 return string.Empty;
             }
+            parameters.Remove("code");
+            return GetScriptResult(options, code, true, parameters, title, fullTitle, isTemplate, isPreview);
+        }
+
+        private static string Exec(
+            IWikiOptions options,
+            Dictionary<string, string> parameters,
+            string? title,
+            string? fullTitle,
+            bool isTemplate,
+            bool isPreview)
+        {
+            if (parameters.Count == 0
+                || !parameters.TryGetValue("code", out var code)
+                || string.IsNullOrEmpty(code))
+            {
+                return string.Empty;
+            }
+            parameters.Remove("code");
+            return GetScriptResult(options, code, false, parameters, title, fullTitle, isTemplate, isPreview);
         }
 
         private static string Format(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
@@ -210,6 +146,115 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
                 result = first;
             }
             return result;
+        }
+
+        private static Engine GetEngine() => new Engine(options =>
+        {
+            options.LimitMemory(ScriptMemoryLimitInBytes);
+            options.LimitRecursion(ScriptRecursionLimit);
+            options.MaxStatements(ScriptStatementLimit);
+            options.TimeoutInterval(TimeSpan.FromSeconds(ScriptExecutionTimeoutInSeconds));
+        });
+
+        private static string GetScriptResult(
+            IWikiOptions options,
+            string code,
+            bool autoReturn,
+            Dictionary<string, string> parameters,
+            string? title,
+            string? fullTitle,
+            bool isTemplate,
+            bool isPreview)
+        {
+            var scriptCode = new StringBuilder("(function(){")
+                .AppendLine();
+            if (!string.IsNullOrEmpty(title))
+            {
+                scriptCode.Append("const title = \"")
+                    .Append(title)
+                    .AppendLine("\";");
+            }
+            if (!string.IsNullOrEmpty(fullTitle))
+            {
+                scriptCode.Append("const namespace = \"")
+                    .Append(Article.GetTitleParts(options, fullTitle).wikiNamespace)
+                    .AppendLine("\";");
+                scriptCode.Append("const fullTitle = \"")
+                    .Append(fullTitle)
+                    .AppendLine("\";");
+            }
+            if (isTemplate)
+            {
+                scriptCode.AppendLine("const isTemplate = true;");
+            }
+            if (isPreview)
+            {
+                scriptCode.AppendLine("const isPreview = true;");
+            }
+            scriptCode.AppendLine("let args = [];");
+            var index = 0;
+            if (parameters.Count > 0)
+            {
+                foreach (var (name, value) in parameters)
+                {
+                    if (int.TryParse(name, out var _))
+                    {
+                        scriptCode.Append("args['")
+                            .Append(index++)
+                            .Append("']");
+                    }
+                    else
+                    {
+                        scriptCode.Append("const ")
+                            .Append(name);
+                    }
+                    scriptCode.Append(" = ");
+                    if (double.TryParse(value, out var _))
+                    {
+                        scriptCode.Append(value);
+                    }
+                    else if (bool.TryParse(value, out var _))
+                    {
+                        scriptCode.Append(value.ToLowerInvariant());
+                    }
+                    else if (DateTimeOffset.TryParse(value, out var d))
+                    {
+                        scriptCode.Append("new Date(")
+                            .Append(d.ToString())
+                            .Append(')');
+                    }
+                    else
+                    {
+                        scriptCode.Append('"')
+                            .Append(value)
+                            .Append('"');
+                    }
+                    scriptCode.AppendLine(";");
+                }
+            }
+
+            if (autoReturn)
+            {
+                scriptCode.Append("return ");
+            }
+            scriptCode.AppendLine(code);
+            if (autoReturn)
+            {
+                scriptCode.AppendLine(";");
+            }
+            scriptCode.AppendLine("})();");
+            try
+            {
+                return GetEngine()
+                    .Execute(scriptCode.ToString())
+                    .GetCompletionValue()
+                    .ToObject()
+                    .ToString() ?? string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
         }
 
         private static string If(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)

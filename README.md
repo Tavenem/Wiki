@@ -16,13 +16,16 @@ also includes multiple sample implementations, one of which is a reasonably comp
 MVC application, complete with database and search client.
 
 ## Configuration
-The `WikiConfig` static class includes a number of settable properties which control the behavior of
-the wiki.
+The `WikiOptions` class is used to control the behavior of the wiki. It is expected as a parameter
+to various methods, and in most implementations is expected to be provided by dependency injection
+after being configured during initialization.
+
+Most of the properties of this class are not expected to change once a wiki has gone into operation.
+Doing so can cause existing wiki pages to become inaccessible, or to be formatted incorrectly.
+
 * `CategoriesTitle`: The name of the article on categories in the main wiki. Default is
-  "Categories"* .
+  "Categories".
 * `CategoryNamespace`: The name of the categories namespace. Default is "Category".
-* `DataStore`*: The `IDataStore` to be used by the wiki (see NeverFoundry.DataStore). If omitted, the
-  static`DataStore.Instance` will be used.
 * `DefaultNamespace`: The name of the default namespace. Default is "Wiki".
 * `DefaultTableOfContentsDepth`: The default number of levels of nesting shown in an article's table
   of contents. Can be overridden by specifying the level for a given article. Default is 3.
@@ -44,15 +47,13 @@ the wiki.
   included automatically.
 
   Read-only. Values can be added with the `AddReservedNamespace` method.
+* `ScriptNamespace`: The name of the script namespace. Default is "Script".
 * `SiteName`: The name of the wiki. Displayed as a subheading below each article title. Default is
   "a NeverFoundry wiki".
 * `TalkNamespace`: The name of the talk pseudo-namespace. Default is "Talk".
 * `TransclusionNamespace`: The name of the transclusion namespace. Default is "Transclusion".
 * `WikiLinkPrefix`: The prefix added before wiki links (to distinguish them from other pages on the
   same server). Default is "Wiki".
-
-**Note that when using `NeverFoundry.Wiki.Mvc`, this property can be set via `IWikiOptions` in the
-`AddWiki` extension method.*
 
 ## Building the Samples
 

@@ -43,6 +43,12 @@ namespace NeverFoundry.Wiki.Mvc.Models
         public string? Markdown { get; set; }
 
         /// <summary>
+        /// The original title of this item.
+        /// </summary>
+        [HiddenInput]
+        public string? OriginalTitle { get; set; }
+
+        /// <summary>
         /// The ID of the owner.
         /// </summary>
         public string? Owner { get; set; }

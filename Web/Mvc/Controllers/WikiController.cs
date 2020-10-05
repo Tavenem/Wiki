@@ -151,7 +151,25 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
             data.Title = title;
             data.WikiNamespace = wikiNamespace;
 
-            var wikiItem = await GetWikiItemAsync(data).ConfigureAwait(false);
+            Article? wikiItem = null;
+            var (originalNamespace, originalTitle, _, _) = Article.GetTitleParts(_wikiOptions, model.OriginalTitle);
+            if (!string.Equals(wikiNamespace, originalNamespace, StringComparison.Ordinal)
+                && (string.Equals(originalNamespace, _wikiOptions.CategoryNamespace, StringComparison.Ordinal)
+                || string.Equals(originalNamespace, _wikiOptions.FileNamespace, StringComparison.Ordinal)))
+            {
+                ModelState.AddModelError("Model", "You cannot move this page out of its namespace.");
+                var vm = await EditViewModel
+                    .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
+                    .ConfigureAwait(false);
+                return View("Edit", vm);
+            }
+            if (!string.IsNullOrEmpty(model.Id))
+            {
+                wikiItem = await _dataStore
+                    .GetItemAsync<Article>(model.Id)
+                    .ConfigureAwait(false);
+            }
+            wikiItem ??= GetWikiItem(originalTitle, originalNamespace, true);
             data.WikiItem = wikiItem;
             data.CanEdit = VerifyPermission(data, user, edit: true);
 
@@ -399,17 +417,15 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
             }
 
-            var oldTitle = wikiItem.Title;
             var newTitle = title.ToWikiTitleCase();
-            var titleMatches = string.Equals(newTitle, wikiItem.Title, StringComparison.CurrentCulture);
+            var titleMatches = string.Equals(newTitle, originalTitle, StringComparison.CurrentCulture);
             if (titleMatches)
             {
                 newTitle = null;
             }
 
-            var oldNamespace = wikiItem.WikiNamespace;
             var newNamespace = wikiNamespace.ToWikiTitleCase();
-            var namespaceMatches = string.Equals(newNamespace, wikiItem.WikiNamespace, StringComparison.CurrentCulture);
+            var namespaceMatches = string.Equals(newNamespace, originalNamespace, StringComparison.CurrentCulture);
             if (namespaceMatches)
             {
                 newNamespace = null;
@@ -448,10 +464,10 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                     await Article.NewAsync(
                         _wikiOptions,
                         _dataStore,
-                        oldTitle,
+                        originalTitle,
                         user.Id,
-                        $"{{{{redirect|{Article.GetFullTitle(_wikiOptions, newTitle ?? oldTitle, newNamespace ?? oldNamespace)}}}}}",
-                        oldNamespace,
+                        $"{{{{redirect|{Article.GetFullTitle(_wikiOptions, newTitle ?? originalTitle, newNamespace ?? originalNamespace)}}}}}",
+                        originalNamespace,
                         owner,
                         allowedEditors,
                         allowedViewers)
@@ -459,7 +475,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to add redirect to wiki item with ID {Id}, title {Title}, and namespace {WikiNamespace} for user with ID {UserId}.", wikiItem.Id, newTitle ?? oldTitle, newNamespace ?? oldNamespace, user.Id);
+                    _logger.LogError(ex, "Failed to add redirect to wiki item with ID {Id}, title {Title}, and namespace {WikiNamespace} for user with ID {UserId}.", wikiItem.Id, newTitle ?? originalTitle, newNamespace ?? originalNamespace, user.Id);
                     ModelState.AddModelError("Model", "The redirect could not be created automatically.");
                     var vm = await EditViewModel
                         .NewAsync(_wikiOptions, _dataStore, _userManager, _groupManager, data, user, model.Markdown)
@@ -468,7 +484,7 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 }
             }
 
-            return RedirectToAction("Read", new { title = newTitle ?? wikiItem.Title, wikiNamespace = newNamespace ?? wikiItem.WikiNamespace });
+            return RedirectToAction("Read", new { title = newTitle ?? originalTitle, wikiNamespace = newNamespace ?? originalNamespace });
         }
 
         /// <summary>

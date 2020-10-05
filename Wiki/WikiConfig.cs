@@ -18,7 +18,7 @@ namespace NeverFoundry.Wiki
     /// you must implement thread-safe operations around those properties yourself.
     /// </para>
     /// </summary>
-    public static class WikiConfig
+    internal static class WikiConfig
     {
         private static IHtmlSanitizer? _HtmlSanitizerNoTemplate;
 

@@ -201,6 +201,28 @@ namespace NeverFoundry.Wiki
         public IEnumerable<string> ReservedNamespaces => (_reservedNamespaces ?? Enumerable.Empty<string>())
             .Concat(new[] { FileNamespace, TalkNamespace });
 
+        private const string ScriptNamespaceDefault = "Script";
+        private string _scriptNamespace = ScriptNamespaceDefault;
+        /// <summary>
+        /// <para>
+        /// The name of the script namespace.
+        /// </para>
+        /// <para>
+        /// If omitted "Script" will be used.
+        /// </para>
+        /// </summary>
+        [NotNull]
+        public string ScriptNamespace
+        {
+            get => _scriptNamespace;
+            set
+            {
+                _scriptNamespace = string.IsNullOrWhiteSpace(value)
+                    ? ScriptNamespaceDefault
+                    : value;
+            }
+        }
+
         private const string SiteNameDefault = "a NeverFoundry wiki";
         private string _siteName = SiteNameDefault;
         /// <summary>

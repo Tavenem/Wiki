@@ -393,7 +393,7 @@ span.CodeMirror-selectedtext { background: none; }
 .cm-s-vscode-dark span.cm-string {color: #ce9178}
 .cm-s-vscode-dark span.cm-string-2 {color: #6A8759}
 .cm-s-vscode-dark span.cm-comment {color: #6A9955}
-.cm-s-vscode-dark span.cm-link {color: #287BDE}
+.cm-s-vscode-dark span.cm-link {color: #287BDE; text-decoration: none;}
 .cm-s-vscode-dark span.cm-atom {color: #569cd6}
 .cm-s-vscode-dark span.cm-error {color: #BC3F3C}
 .cm-s-vscode-dark span.cm-tag {color: #569cd6}

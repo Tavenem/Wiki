@@ -43,7 +43,14 @@ Fourth section text";
         private static Article? _NestedArticle;
 
         [TestMethod]
-        public void ExecTest() => TestTemplate("{{exec|Math.Pow(x, 3)|x=2}}", "8");
+        public void EvalTest() => TestTemplate("{{eval|Math.pow(x, 3)|x=2}}", "8");
+
+        [TestMethod]
+        public void ExecTest()
+        {
+            _ = GetNestedArticle("return Math.pow(x, 3);", _Options.ScriptNamespace);
+            TestTemplate($"{{{{exec|{NestedTitle}|x=2}}}}", "8");
+        }
 
         [TestMethod]
         public void AnchorLinkTest()
@@ -314,51 +321,40 @@ Fourth section text";
         public void ComplexTest()
         {
             const string InnerTemplate =
-@"var p = new List<string>();
-if (!string.IsNullOrEmpty(_1))
-{
-    p.Add(_1);
+@"let s;
+if (args.length && args[0] && args[0].length) {
+    s = args[0] + ', ';
+} else {
+    s = 'For other uses, ';
 }
-if (!string.IsNullOrEmpty(_2))
-{
-    p.Add(_2);
+if (args.length <= 1) {
+    if (fullTitle == null) {
+        return s + 'try searching for this topic.';
+    } else {
+        return s + 'see [[' + fullTitle + ' (disambiguation)|]]';
+    }
+} else {
+    s += 'see ';
 }
-if (!string.IsNullOrEmpty(_3))
-{
-    p.Add(_3);
-}
-if (!string.IsNullOrEmpty(_4))
-{
-    p.Add(_4);
-}
-if (p.Count == 0)
-{
-    return string.Empty;
-}
-var s = new StringBuilder();
-for (var i = 0; i < p.Count - 1; i++)
-{
-  if (i > 0)
-  {
-    s.Append("", "");
+for (let i = 1; i < args.length - 1; i++) {
+  if (i > 1) {
+    s += ', ';
   }
-  s.Append(""[["").Append(p[i]).Append(""]]"");
+  s += '[[' + args[i] + ']]';
 }
-if (p.Count > 2)
-{
-  s.Append(',');
+if (args.length > 3) {
+  s += ',';
 }
-if (p.Count > 1)
-{
-    s.Append("" and "");
+if (args.length > 2) {
+    s += ' and ';
 }
-s.Append(""[["").Append(p[p.Count - 1]).Append(""]]"");
-return s.ToString();";
-            _ = GetInnerNestedArticle(InnerTemplate);
+s += '[[' + args[args.length - 1] + ']]';
+return s;";
+            _ = GetInnerNestedArticle(InnerTemplate, _Options.ScriptNamespace);
 
             const string Template =
 @":::wiki-article-ref
-For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}|((2))|((3))|((4))|((5))}}|[[{{fullpagename}} (disambiguation)|]]}}|other uses, see [[{{fullpagename}} (disambiguation)|]]}}
+{{iftemplate|{{exec|" + InnerNestedTitle + @"}}}}{{ifnottemplate|This is the ""For"" template}}
 :::";
             _ = GetNestedArticle(Template);
 
@@ -367,20 +363,20 @@ For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}
                 "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
                 false);
             TestTemplate(
-                $"{{{{{NestedTitle}|stuff}}}}",
+                $"{{{{{NestedTitle}|For stuff}}}}",
                 "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
                 false);
             TestTemplate(
-                $"{{{{{NestedTitle}|stuff|Title}}}}",
-                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
+                $"{{{{{NestedTitle}||Title}}}}",
+                "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
                 false);
             TestTemplate(
-                $"{{{{{NestedTitle}|stuff|Title|Other}}}}",
-                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>\n",
+                $"{{{{{NestedTitle}||Title|Other}}}}",
+                "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>\n",
                 false);
             TestTemplate(
-                $"{{{{{NestedTitle}|stuff|Title|Other|Misc}}}}",
-                "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"/Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>\n",
+                $"{{{{{NestedTitle}||Title|Other|Misc}}}}",
+                "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"/Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>\n",
                 false);
         }
 
@@ -404,7 +400,7 @@ For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}
             return _Article;
         }
 
-        private static Article GetInnerNestedArticle(string markdown)
+        private static Article GetInnerNestedArticle(string markdown, string? wikiNamespace = null)
         {
             if (_InnerNestedArticle is null)
             {
@@ -414,7 +410,7 @@ For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}
                     InnerNestedTitle,
                     Editor,
                     markdown,
-                    _Options.TransclusionNamespace)
+                    wikiNamespace ?? _Options.TransclusionNamespace)
                     .GetAwaiter()
                     .GetResult();
             }
@@ -425,7 +421,7 @@ For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}
             return _InnerNestedArticle;
         }
 
-        private static Article GetNestedArticle(string markdown)
+        private static Article GetNestedArticle(string markdown, string? wikiNamespace = null)
         {
             if (_NestedArticle is null)
             {
@@ -435,7 +431,7 @@ For {{if|((1))|((1)), see {{if|((2))|{{exec|code = {{" + InnerNestedTitle + @"}}
                     NestedTitle,
                     Editor,
                     markdown,
-                    _Options.TransclusionNamespace)
+                    wikiNamespace ?? _Options.TransclusionNamespace)
                     .GetAwaiter()
                     .GetResult();
             }

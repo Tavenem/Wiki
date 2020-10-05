@@ -613,6 +613,7 @@ namespace NeverFoundry.Wiki
             {
                 wikiNamespace = options.DefaultNamespace;
             }
+            var isScript = wikiNamespace.Equals(options.ScriptNamespace, StringComparison.Ordinal);
 
             title = title.ToWikiTitleCase();
 
@@ -639,7 +640,7 @@ namespace NeverFoundry.Wiki
 
             var md = markdown;
             List<Transclusion> transclusions;
-            if (isRedirect || string.IsNullOrEmpty(markdown))
+            if (isRedirect || isScript || string.IsNullOrEmpty(markdown))
             {
                 transclusions = new List<Transclusion>();
             }
@@ -654,7 +655,7 @@ namespace NeverFoundry.Wiki
                     out transclusions);
             }
 
-            var wikiLinks = isRedirect
+            var wikiLinks = isRedirect || isScript
                 ? new List<WikiLink>()
                 : GetWikiLinks(options, dataStore, md, title, wikiNamespace);
 
@@ -673,8 +674,21 @@ namespace NeverFoundry.Wiki
                 wikiId,
                 title,
                 markdown,
-                RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, wikiNamespace, markdown)),
-                RenderPreview(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, wikiNamespace, markdown, true)),
+                isScript
+                    ? markdown ?? string.Empty
+                    : RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, wikiNamespace, markdown)),
+                isScript
+                    ? GetScriptPreview(markdown)
+                    : RenderPreview(
+                        options,
+                        dataStore,
+                        PostprocessArticleMarkdown(
+                            options,
+                            dataStore,
+                            title,
+                            wikiNamespace,
+                            markdown,
+                            true)),
                 new ReadOnlyCollection<WikiLink>(wikiLinks),
                 revision.TimestampTicks,
                 wikiNamespace,
@@ -1726,6 +1740,7 @@ namespace NeverFoundry.Wiki
                 wikiNamespace = WikiNamespace;
             }
             wikiNamespace ??= wikiNamespace?.ToWikiTitleCase() ?? WikiNamespace;
+            var isScript = wikiNamespace.Equals(options.ScriptNamespace, StringComparison.Ordinal);
 
             var previousTitle = Title;
             var previousNamespace = WikiNamespace;
@@ -1801,7 +1816,7 @@ namespace NeverFoundry.Wiki
                 var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
                 List<Transclusion> transclusions;
                 var md = markdown ?? string.Empty;
-                if (isRedirect)
+                if (isRedirect || isScript)
                 {
                     transclusions = new List<Transclusion>();
                 }
@@ -1824,7 +1839,7 @@ namespace NeverFoundry.Wiki
                     .ConfigureAwait(false);
 
                 var previousWikiLinks = WikiLinks.ToList();
-                WikiLinks = isRedirect
+                WikiLinks = isRedirect || isScript
                     ? new List<WikiLink>()
                     : GetWikiLinks(options, dataStore, md, title, wikiNamespace).AsReadOnly();
                 await RemovePageLinksAsync(dataStore, Id, previousWikiLinks.Except(WikiLinks))
@@ -1848,7 +1863,15 @@ namespace NeverFoundry.Wiki
                     .ConfigureAwait(false))
                     .AsReadOnly();
 
-                Update(options, dataStore);
+                if (isScript)
+                {
+                    Html = MarkdownContent;
+                    Preview = GetScriptPreview(MarkdownContent);
+                }
+                else
+                {
+                    Update(options, dataStore);
+                }
             }
 
             Owner = owner;
@@ -1881,6 +1904,22 @@ namespace NeverFoundry.Wiki
                 true,
                 isRedirect)
                 .ConfigureAwait(false);
+        }
+
+        private static string GetScriptPreview(string? markdown)
+        {
+            if (string.IsNullOrEmpty(markdown))
+            {
+                return string.Empty;
+            }
+            if (markdown.Length <= 100)
+            {
+                return markdown;
+            }
+            var newline = markdown.IndexOf(Environment.NewLine, 100);
+            return newline == -1
+                ? markdown[Math.Min(markdown.Length, 500)..]
+                : markdown[newline..];
         }
 
         private protected static string PostprocessArticleMarkdown(
