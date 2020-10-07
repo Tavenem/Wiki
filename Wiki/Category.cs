@@ -205,12 +205,20 @@ namespace NeverFoundry.Wiki
         /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
         /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
         /// <param name="title">The title of the article to retrieve.</param>
-        /// <returns>The latest revision for the article with the given title; or <see
-        /// langword="null"/> if no such article exists.</returns>
+        /// <param name="allowCaseInsenstive">
+        /// If <see langword="true"/> a case-insensitive match will be returned if no exact match is
+        /// found, but only if there is only one such match. If there is more than one possible
+        /// match when disregarding case, no result is returned.
+        /// </param>
+        /// <returns>
+        /// The latest revision for the article with the given title; or <see langword="null"/> if
+        /// no such article exists.
+        /// </returns>
         public static Category? GetCategory(
             IWikiOptions options,
             IDataStore dataStore,
-            string? title)
+            string? title,
+            bool allowCaseInsenstive = true)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -224,7 +232,7 @@ namespace NeverFoundry.Wiki
                 category = dataStore.GetItem<Category>(reference.Reference);
             }
             // If no exact match exists, ignore case if only one such match exists.
-            if (category is null)
+            if (category is null && allowCaseInsenstive)
             {
                 var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, options.CategoryNamespace);
                 if (normalizedReference is not null

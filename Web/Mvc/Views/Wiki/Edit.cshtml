@@ -161,7 +161,7 @@ else
 @section Scripts {
     <script type="text/javascript">
         let initialWikiEditValue = "@Html.Raw(Model.Markdown.Replace(@"\", @"\\").Replace(@"""", @"\""").Replace(Environment.NewLine, @"\r\n"))";
-        let initialWikiEditMode = "@(Article.GetTitleParts(WikiOptions, Model.Title).wikiNamespace == WikiOptions.ScriptNamespace ? "script" : "")";
+        let initialWikiEditMode = "@(Article.GetTitleParts(WikiOptions, Model.Title).wikiNamespace == WikiOptions.ScriptNamespace ? "script" : "md")";
         let wikiItemId = "@(Model.Id ?? "newitem")";
     </script>
     <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>

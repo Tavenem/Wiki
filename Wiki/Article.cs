@@ -1110,7 +1110,7 @@ namespace NeverFoundry.Wiki
             var newCategories = new List<string>();
             foreach (var categoryTitle in currentCategories.Except(oldCategories))
             {
-                var category = Category.GetCategory(options, dataStore, categoryTitle)
+                var category = Category.GetCategory(options, dataStore, categoryTitle, false)
                     ?? await Category.NewAsync(options, dataStore, categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
                 if (!category.ChildIds.Contains(id))
                 {
@@ -1124,7 +1124,7 @@ namespace NeverFoundry.Wiki
                 .ToList();
             foreach (var removedCategory in oldCategories.Except(currentCategories))
             {
-                var category = Category.GetCategory(options, dataStore, removedCategory);
+                var category = Category.GetCategory(options, dataStore, removedCategory, false);
                 if (category is not null)
                 {
                     await category.RemoveChildIdAsync(dataStore, id).ConfigureAwait(false);

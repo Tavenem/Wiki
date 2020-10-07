@@ -122,6 +122,7 @@
 @section Scripts {
     <script type="text/javascript">
         let initialWikiEditValue = "@Html.Raw(Model.Markdown?.Replace(@"\", @"\\").Replace(@"""", @"\""").Replace(Environment.NewLine, @"\r\n") ?? string.Empty)";
+        let initialWikiEditMode = "md";
         let wikiItemId = "newitem";
     </script>
     <script src="~/_content/NeverFoundry.Wiki.Mvc/libs.js"></script>

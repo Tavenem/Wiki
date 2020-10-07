@@ -108,6 +108,7 @@ namespace NeverFoundry.Wiki.Mvc.ViewModels
                     filter,
                     x => x.IdItemTypeName == Article.ArticleIdItemTypeName
                         && x.RedirectTitle == null
+                        && x.WikiNamespace != wikiOptions.ScriptNamespace
                         && (x.Categories == null || x.Categories.Count() == 0))
                 .ConfigureAwait(false),
 
