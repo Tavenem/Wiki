@@ -26,9 +26,7 @@ namespace NeverFoundry.Wiki
     /// delivery, etc.
     /// </para>
     /// </remarks>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
-    [Newtonsoft.Json.JsonConverter(typeof(Converters.NewtonsoftJson.NoConverter))]
     public sealed class WikiFile : Article
     {
         /// <summary>
@@ -143,7 +141,6 @@ namespace NeverFoundry.Wiki
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public WikiFile(
             string id,
             string idItemTypeName,

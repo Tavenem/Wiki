@@ -11,7 +11,6 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A message sent from a user to an audience.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class Message : MarkdownItem
     {
@@ -49,8 +48,7 @@ namespace NeverFoundry.Wiki
         /// The timestamp when this message was sent, in UTC.
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public DateTimeOffset Timestamp => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
+        public DateTimeOffset Timestamp => new(TimestampTicks, TimeSpan.Zero);
 
         /// <summary>
         /// The timestamp when this message was sent, in UTC Ticks.
@@ -86,7 +84,6 @@ namespace NeverFoundry.Wiki
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public Message(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.

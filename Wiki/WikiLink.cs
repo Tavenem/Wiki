@@ -8,7 +8,6 @@ namespace NeverFoundry.Wiki
     /// Represents an intra-wiki link.
     /// </summary>
     [Serializable]
-    [Newtonsoft.Json.JsonObject]
     public class WikiLink : ISerializable, IEquatable<WikiLink>
     {
         /// <summary>
@@ -21,7 +20,6 @@ namespace NeverFoundry.Wiki
         /// </para>
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
         public Article? Article { get; set; }
 
         /// <summary>
@@ -118,7 +116,6 @@ namespace NeverFoundry.Wiki
         /// The namespace for the linked article.
         /// </param>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public WikiLink(
             bool isCategory,
             bool isNamespaceEscaped,

@@ -11,7 +11,6 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// Represents the collection of other wiki pages which redirect to a given wiki page.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class PageRedirects : IdItem, ISerializable
     {
@@ -29,7 +28,6 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The IDs of other wiki pages which redirect to the primary wiki page.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyList<string> References { get; } = new List<string>().AsReadOnly();
 
         /// <summary>
@@ -47,7 +45,6 @@ namespace NeverFoundry.Wiki
         /// reference list dynamically.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public PageRedirects(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.

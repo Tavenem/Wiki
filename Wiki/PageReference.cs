@@ -8,7 +8,6 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A reference from a full wiki page title to the current page ID assigned to that title.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class PageReference : IdItem, ISerializable
     {
@@ -43,7 +42,6 @@ namespace NeverFoundry.Wiki
         /// dynamically.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public PageReference(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.

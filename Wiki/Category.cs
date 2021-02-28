@@ -12,9 +12,7 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A wiki category revision.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
-    [Newtonsoft.Json.JsonConverter(typeof(Converters.NewtonsoftJson.NoConverter))]
     public sealed class Category : Article
     {
         /// <summary>
@@ -33,7 +31,6 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Updates to this cache do not count as a revision.
         /// </remarks>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public ICollection<string> ChildIds { get; } = new List<string>();
 
         /// <summary>
@@ -111,7 +108,6 @@ namespace NeverFoundry.Wiki
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public Category(
             string id,
             string idItemTypeName,

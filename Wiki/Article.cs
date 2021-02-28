@@ -14,10 +14,8 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A wiki article revision.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     [System.Text.Json.Serialization.JsonConverter(typeof(Converters.ArticleConverter))]
-    [Newtonsoft.Json.JsonConverter(typeof(Converters.NewtonsoftJson.ArticleConverter))]
     public class Article : MarkdownItem
     {
         /// <summary>
@@ -45,7 +43,6 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
         /// </remarks>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<string>? AllowedEditors { get; private protected set; }
 
         /// <summary>
@@ -70,7 +67,6 @@ namespace NeverFoundry.Wiki
         /// exists (to avoid confusion about creating a new article with that title).
         /// </para>
         /// </remarks>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<string>? AllowedViewers { get; private protected set; }
 
         /// <summary>
@@ -85,7 +81,6 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Updates to this list (due to changes in transcluded articles) do not count as revisions.
         /// </remarks>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<string> Categories { get; private protected set; } = new List<string>().AsReadOnly();
 
         /// <summary>
@@ -137,10 +132,9 @@ namespace NeverFoundry.Wiki
         /// The timestamp of the latest revision to this item, in UTC.
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
         public DateTimeOffset Timestamp
         {
-            get => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
+            get => new(TimestampTicks, TimeSpan.Zero);
             set => TimestampTicks = value.ToUniversalTime().Ticks;
         }
 
@@ -157,7 +151,6 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The transclusions within this article.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyList<Transclusion>? Transclusions { get; private protected set; }
 
         /// <summary>
@@ -247,7 +240,6 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
-        [Newtonsoft.Json.JsonConstructor]
         public Article(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.

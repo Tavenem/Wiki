@@ -229,17 +229,7 @@ Fourth section text";
         }
 
         [TestMethod]
-        public void SerializeNewtonsoftTest()
-        {
-            var article = GetArticle("Content with a [[WikiLink]].");
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(article, new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto });
-            Console.WriteLine(json);
-            var result = Newtonsoft.Json.JsonConvert.DeserializeObject<Article>(json);
-            Assert.AreEqual(article.MarkdownContent, result.MarkdownContent);
-        }
-
-        [TestMethod]
-        public void SerializeSystemTextJsonTest()
+        public void SerializeTest()
         {
             var article = GetArticle("Content with a [[WikiLink]].");
             var json = System.Text.Json.JsonSerializer.Serialize(article);

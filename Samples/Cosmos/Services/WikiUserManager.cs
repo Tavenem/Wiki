@@ -11,7 +11,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
     public class WikiUserManager : IWikiUserManager
     {
         public const string UserId = "A478AF94-44AF-4F21-AD65-71B77B9A569A";
-        private static readonly WikiUser _User = new WikiUser("User")
+        private static readonly WikiUser _User = new("User")
         {
             Email = "example@example.com",
             EmailConfirmed = true,
@@ -28,7 +28,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// matching the specified <paramref name="userId"/> if it exists.
         /// </returns>
         public ValueTask<IWikiUser?> FindByIdAsync(string? userId)
-            => new ValueTask<IWikiUser?>(string.IsNullOrEmpty(userId) ? null : _User);
+            => new(string.IsNullOrEmpty(userId) ? null : _User);
 
         /// <summary>
         /// Finds and returns a user, if any, who has the specified user name.
@@ -39,7 +39,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// matching the specified <paramref name="userName"/> if it exists.
         /// </returns>
         public ValueTask<IWikiUser?> FindByNameAsync(string? userName)
-            => new ValueTask<IWikiUser?>(string.IsNullOrEmpty(userName) ? null : _User);
+            => new(string.IsNullOrEmpty(userName) ? null : _User);
 
         /// <summary>
         /// Returns the user corresponding to the IdentityOptions.ClaimsIdentity.UserIdClaimType
@@ -51,7 +51,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// the <paramref name="principal"/> or <see langword="null"/>
         /// </returns>
         public ValueTask<IWikiUser?> GetUserAsync(ClaimsPrincipal? principal)
-            => new ValueTask<IWikiUser?>(_User);
+            => new(_User);
 
         /// <summary>
         /// Returns a list of all wiki admin users.
@@ -62,6 +62,6 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// <see langword="true" />.
         /// </returns>
         public ValueTask<IList<IWikiUser>> GetWikiAdminUsersAsync()
-            => new ValueTask<IList<IWikiUser>>(new List<IWikiUser> { _User });
+            => new(new List<IWikiUser> { _User });
     }
 }

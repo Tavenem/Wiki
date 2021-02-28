@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using NeverFoundry.DataStorage;
 using NeverFoundry.Wiki.MarkdownExtensions.Transclusions;
-using NeverFoundry.Wiki.Mvc.Controllers;
 using NeverFoundry.Wiki.Web;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.Mvc.ViewModels

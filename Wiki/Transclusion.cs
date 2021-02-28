@@ -8,7 +8,6 @@ namespace NeverFoundry.Wiki
     /// A transclusion of one page within another page.
     /// </summary>
     [Serializable]
-    [Newtonsoft.Json.JsonObject]
     public class Transclusion : ISerializable, IEquatable<Transclusion>
     {
         /// <summary>
@@ -27,7 +26,6 @@ namespace NeverFoundry.Wiki
         /// <param name="title">The title for the linked article.</param>
         /// <param name="wikiNamespace">The namespace for the linked article.</param>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public Transclusion(string title, string wikiNamespace)
         {
             Title = title;

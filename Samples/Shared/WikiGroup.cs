@@ -130,7 +130,6 @@ namespace NeverFoundry.Wiki
         /// <remarks>
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
-        [Newtonsoft.Json.JsonConstructor]
         [System.Text.Json.Serialization.JsonConstructor]
         public WikiGroup(
             string id,

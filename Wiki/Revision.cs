@@ -10,7 +10,6 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// A particular revision of a wiki item.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class Revision : IdItem, ISerializable
     {
@@ -74,8 +73,7 @@ namespace NeverFoundry.Wiki
         /// The timestamp of this revision, in UTC.
         /// </summary>
         [System.Text.Json.Serialization.JsonIgnore]
-        [Newtonsoft.Json.JsonIgnore]
-        public DateTimeOffset Timestamp => new DateTimeOffset(TimestampTicks, TimeSpan.Zero);
+        public DateTimeOffset Timestamp => new(TimestampTicks, TimeSpan.Zero);
 
         /// <summary>
         /// The timestamp of this revision, in UTC Ticks.
@@ -231,7 +229,6 @@ namespace NeverFoundry.Wiki
         /// suited to creating a new instance, as they will automatically generate an appropriate ID.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public Revision(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: Serialization

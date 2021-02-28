@@ -160,7 +160,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
         /// not belong to the group.
         /// </returns>
         public ValueTask<bool> UserIsInGroup(string? groupId, IWikiUser? user)
-            => new ValueTask<bool>(!string.IsNullOrEmpty(groupId) && user?.Groups?.Contains(groupId) == true);
+            => new(!string.IsNullOrEmpty(groupId) && user?.Groups?.Contains(groupId) == true);
 
         /// <summary>
         /// Determines if the given <paramref name="user" /> is in the given <paramref name="group"
@@ -175,7 +175,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
         /// user does not belong to the group.
         /// </returns>
         public ValueTask<bool> UserIsInGroup(IWikiGroup? group, IWikiUser? user)
-            => new ValueTask<bool>(group is not null && user?.Groups?.Contains(group.Id) == true);
+            => new(group is not null && user?.Groups?.Contains(group.Id) == true);
 
         /// <summary>
         /// Determines the maximum upload limit of a user with the given ID.

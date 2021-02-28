@@ -12,7 +12,6 @@ namespace NeverFoundry.Wiki
     /// A persisted reference to a missing page on the wiki. Used for efficient enumeration of
     /// broken links.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public class MissingPage : IdItem, ISerializable
     {
@@ -30,7 +29,6 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The IDs of pages which reference this missing page.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyList<string> References { get; } = new List<string>().AsReadOnly();
 
         /// <summary>
@@ -64,7 +62,6 @@ namespace NeverFoundry.Wiki
         /// reference list dynamically.
         /// </remarks>
         [System.Text.Json.Serialization.JsonConstructor]
-        [Newtonsoft.Json.JsonConstructor]
         public MissingPage(
             string id,
 #pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.

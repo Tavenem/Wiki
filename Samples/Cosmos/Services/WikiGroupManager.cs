@@ -18,7 +18,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// group matching the specified <paramref name="groupId" /> if it exists.
         /// </returns>
         public ValueTask<IWikiGroup?> FindByIdAsync(string? groupId)
-            => new ValueTask<IWikiGroup?>((IWikiGroup?)null);
+            => new((IWikiGroup?)null);
 
         /// <summary>
         /// <para>
@@ -35,7 +35,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// group matching the specified <paramref name="groupName" /> if it exists.
         /// </returns>
         public ValueTask<IWikiGroup?> FindByNameAsync(string? groupName)
-            => new ValueTask<IWikiGroup?>((IWikiGroup?)null);
+            => new((IWikiGroup?)null);
 
         /// <summary>
         /// Returns a list of all wiki users in the group with the given ID.
@@ -46,7 +46,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// the given ID.
         /// </returns>
         public ValueTask<IList<IWikiUser>> GetUsersInGroupAsync(string? groupId)
-            => new ValueTask<IList<IWikiUser>>(new List<IWikiUser>());
+            => new(new List<IWikiUser>());
 
         /// <summary>
         /// Returns a list of all wiki users in the given <paramref name="group" />.
@@ -57,7 +57,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// the given <paramref name="group" />'s ID.
         /// </returns>
         public ValueTask<IList<IWikiUser>> GetUsersInGroupAsync(IWikiGroup? group)
-            => new ValueTask<IList<IWikiUser>>(new List<IWikiUser>());
+            => new(new List<IWikiUser>());
 
         /// <summary>
         /// Determines if a user with the given ID is in the group with the given ID.
@@ -71,7 +71,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// to the group.
         /// </returns>
         public ValueTask<bool> UserIsInGroup(string? groupId, string? userId)
-            => new ValueTask<bool>(false);
+            => new(false);
 
         /// <summary>
         /// Determines if a user with the given ID is in the given <paramref name="group" />.
@@ -85,7 +85,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// not belong to the group.
         /// </returns>
         public ValueTask<bool> UserIsInGroup(IWikiGroup? group, string? userId)
-            => new ValueTask<bool>(false);
+            => new(false);
 
         /// <summary>
         /// Determines if the given <paramref name="user" /> is in the group with the given ID.
@@ -99,7 +99,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// not belong to the group.
         /// </returns>
         public ValueTask<bool> UserIsInGroup(string? groupId, IWikiUser? user)
-            => new ValueTask<bool>(false);
+            => new(false);
 
         /// <summary>
         /// Determines if the given <paramref name="user" /> is in the given <paramref name="group"
@@ -114,7 +114,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// user does not belong to the group.
         /// </returns>
         public ValueTask<bool> UserIsInGroup(IWikiGroup? group, IWikiUser? user)
-            => new ValueTask<bool>(false);
+            => new(false);
 
         /// <summary>
         /// Determines the maximum upload limit of a user with the given ID.
@@ -126,7 +126,7 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// "greater" than any positive value, since it indicates no limit). Returns zero if no such
         /// user exists.
         /// </returns>
-        public ValueTask<int> UserMaxUploadLimit(string? userId) => new ValueTask<int>(0);
+        public ValueTask<int> UserMaxUploadLimit(string? userId) => new(0);
 
         /// <summary>
         /// Determines if the given <paramref name="user"/> is in any group with upload permission.
@@ -138,6 +138,6 @@ namespace NeverFoundry.Wiki.Samples.Cosmos.Services
         /// is "greater" than any positive value, since it indicates no limit). Returns zero if no
         /// such user exists.
         /// </returns>
-        public ValueTask<int> UserMaxUploadLimit(IWikiUser? user) => new ValueTask<int>(0);
+        public ValueTask<int> UserMaxUploadLimit(IWikiUser? user) => new(0);
     }
 }

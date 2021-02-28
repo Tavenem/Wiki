@@ -23,7 +23,6 @@ namespace NeverFoundry.Wiki
     /// <summary>
     /// An item which contains markdown.
     /// </summary>
-    [Newtonsoft.Json.JsonObject]
     [Serializable]
     public abstract class MarkdownItem : IdItem, ISerializable
     {
@@ -57,7 +56,6 @@ namespace NeverFoundry.Wiki
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
-        [Newtonsoft.Json.JsonProperty(TypeNameHandling = Newtonsoft.Json.TypeNameHandling.None)]
         public IReadOnlyCollection<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
 
         /// <summary>

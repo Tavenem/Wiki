@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeverFoundry.DataStorage;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -10,8 +9,6 @@ namespace NeverFoundry.Wiki.Test
     [TestClass]
     public class SerializationTests
     {
-        private static readonly Newtonsoft.Json.JsonSerializerSettings _JsonSerializerSettings
-            = new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.Auto };
         private static readonly IWikiOptions _Options = new WikiOptions();
 
         [TestMethod]
@@ -30,16 +27,10 @@ namespace NeverFoundry.Wiki.Test
                 "Test comment",
                 0);
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Revision>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<Revision>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<Revision>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -49,27 +40,14 @@ namespace NeverFoundry.Wiki.Test
         {
             var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace");
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiLink>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<WikiLink>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<WikiLink>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
             value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace");
-
-            json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine();
-            Console.WriteLine(json);
-            deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiLink>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
 
             json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
@@ -80,13 +58,6 @@ namespace NeverFoundry.Wiki.Test
 
             value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace);
 
-            json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine();
-            Console.WriteLine(json);
-            deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiLink>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
             json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
@@ -96,13 +67,6 @@ namespace NeverFoundry.Wiki.Test
 
             value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace);
 
-            json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine();
-            Console.WriteLine(json);
-            deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiLink>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
             json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
@@ -111,13 +75,6 @@ namespace NeverFoundry.Wiki.Test
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
             value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace");
-
-            json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine();
-            Console.WriteLine(json);
-            deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiLink>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
 
             json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
@@ -132,16 +89,10 @@ namespace NeverFoundry.Wiki.Test
         {
             var value = new Transclusion("Test Title", "Test Namespace");
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Transclusion>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<Transclusion>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<Transclusion>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -156,16 +107,10 @@ namespace NeverFoundry.Wiki.Test
                 "Test Namespace",
                 new List<string> { "Test_ID_2" }.AsReadOnly());
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<MissingPage>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<MissingPage>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<MissingPage>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -187,16 +132,10 @@ namespace NeverFoundry.Wiki.Test
                 0,
                 null);
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Message>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<Message>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<Message>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -225,16 +164,10 @@ namespace NeverFoundry.Wiki.Test
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Article>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<Article>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<Article>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
 
@@ -258,13 +191,6 @@ namespace NeverFoundry.Wiki.Test
                 false,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
-
-            json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine();
-            Console.WriteLine(json);
-            deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Article>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
 
             json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
@@ -295,16 +221,10 @@ namespace NeverFoundry.Wiki.Test
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<Category>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<Category>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<Category>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -333,16 +253,10 @@ namespace NeverFoundry.Wiki.Test
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
                 null);
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value, _JsonSerializerSettings);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<WikiFile>(json);
-            Assert.AreEqual(value, deserialized);
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized, _JsonSerializerSettings));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<WikiFile>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<WikiFile>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
@@ -411,17 +325,10 @@ namespace NeverFoundry.Wiki.Test
                     null),
         };
 
-            var json = Newtonsoft.Json.JsonConvert.SerializeObject(value);
-            Console.WriteLine(json);
-            var deserialized = Newtonsoft.Json.JsonConvert.DeserializeObject<List<Article>>(json);
-            Assert.IsNotNull(deserialized);
-            Assert.IsTrue(value.OrderBy(x => x.Id).SequenceEqual(deserialized.OrderBy(x => x.Id)));
-            Assert.AreEqual(json, Newtonsoft.Json.JsonConvert.SerializeObject(deserialized));
-
-            json = System.Text.Json.JsonSerializer.Serialize(value);
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
             Console.WriteLine();
             Console.WriteLine(json);
-            deserialized = System.Text.Json.JsonSerializer.Deserialize<List<Article>>(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<List<Article>>(json);
             Assert.IsNotNull(deserialized);
             Assert.IsTrue(value.OrderBy(x => x.Id).SequenceEqual(deserialized!.OrderBy(x => x.Id)));
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));

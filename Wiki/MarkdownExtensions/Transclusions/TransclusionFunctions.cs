@@ -3,10 +3,7 @@ using NeverFoundry.Wiki.MarkdownExtensions.TableOfContents;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
 {
@@ -20,7 +17,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
         private const int ScriptStatementLimit = 10000;
 
         internal static readonly Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>> _Functions
-            = new Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>>
+            = new()
             {
                 ["eval"] = Eval,
                 ["exec"] = Exec,
@@ -148,7 +145,7 @@ namespace NeverFoundry.Wiki.MarkdownExtensions.Transclusions
             return result;
         }
 
-        private static Engine GetEngine() => new Engine(options =>
+        private static Engine GetEngine() => new(options =>
         {
             options.LimitMemory(ScriptMemoryLimitInBytes);
             options.LimitRecursion(ScriptRecursionLimit);
