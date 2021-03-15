@@ -222,7 +222,7 @@ namespace NeverFoundry.Wiki.Samples.Complete.Services
         }
 
         /// <summary>
-        /// Determines if the given <paramref name="user"/> is in any group with upload permission.
+        /// Determines the maximum upload limit of the given <paramref name="user"/>.
         /// </summary>
         /// <param name="user">The user to check.</param>
         /// <returns>

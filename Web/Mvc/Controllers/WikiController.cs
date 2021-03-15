@@ -1150,26 +1150,9 @@ namespace NeverFoundry.Wiki.Mvc.Controllers
                 return View("NotAuthorizedForUploadSize");
             }
 
-            if (limit > 0)
+            if (limit > 0 && !await _fileManager.HasFreeSpaceAsync(user, size).ConfigureAwait(false))
             {
-                var nextPage = false;
-                var totalSize = size;
-                do
-                {
-                    var result = await _searchClient.SearchAsync(new SearchRequest
-                    {
-                        WikiNamespace = _wikiOptions.FileNamespace,
-                        Uploader = user.Id,
-                    }, null).ConfigureAwait(false);
-
-                    totalSize += result.SearchHits.OfType<WikiFile>().Sum(x => (long)(x.FileSize / 1000));
-
-                    nextPage = result.SearchHits.HasNextPage;
-                } while (nextPage && totalSize < limit);
-                if (totalSize > limit)
-                {
-                    return View("NotAuthorizedForUploadSize");
-                }
+                return View("NotAuthorizedForUploadSize");
             }
 
             var fileName = fileInfo.Name;
