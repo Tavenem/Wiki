@@ -1,9 +1,9 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NeverFoundry.DataStorage;
 using System;
 using System.Threading.Tasks;
+using Tavenem.DataStorage;
 
-namespace NeverFoundry.Wiki.Test
+namespace Tavenem.Wiki.Test
 {
     [TestClass]
     public class WikiFunctionTests
@@ -48,8 +48,16 @@ Fourth section text";
         [TestMethod]
         public void ExecTest()
         {
-            _ = GetNestedArticle("return Math.pow(x, 3);", _Options.ScriptNamespace);
-            TestTemplate($"{{{{exec|{NestedTitle}|x=2}}}}", "8");
+            _ = Article.NewAsync(
+                _Options,
+                _DataStore,
+                "NestedExec",
+                Editor,
+                "return Math.pow(x, 3);",
+                _Options.ScriptNamespace)
+                .GetAwaiter()
+                .GetResult();
+            TestTemplate($"{{{{exec|NestedExec|x=2}}}}", "8");
         }
 
         [TestMethod]
