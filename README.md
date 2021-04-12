@@ -59,6 +59,12 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 - `WikiLinkPrefix`: The prefix added before wiki links (to distinguish them from other pages on the
   same server). Default is "Wiki".
 
+## Markup
+The Tavenem Wiki syntax is a custom flavor of markdown. It implements all the features of
+[CommonMark](http://commonmark.org), as well as many others. The implementation uses
+[Markdig](https://github.com/lunet-io/markdig), and details of most extensions to standard
+CommonMark can be found on [its GitHub page](https://github.com/lunet-io/markdig).
+
 ## Roadmap
 
 Tavenem.Wiki is currently in a **prerelease** state. Development is ongoing, and breaking changes
