@@ -20,9 +20,9 @@ a wiki.
 Tavenem.Wiki is available as a [NuGet package](https://www.nuget.org/packages/Tavenem.Wiki/).
 
 ## Configuration
-The `WikiOptions` class is used to control the behavior of the wiki. It is expected as a parameter
-to various methods, and in most implementations is expected to be provided by dependency injection
-after being configured during initialization.
+The `IWikiOptions` interface is used to control the behavior of the wiki. It is expected as a
+parameter to various methods, and in most implementations is expected to be provided by dependency
+injection after being configured during initialization.
 
 Most of the properties of this class are not expected to change once a wiki has gone into operation.
 Doing so can cause existing wiki pages to become inaccessible, or to be formatted incorrectly.
