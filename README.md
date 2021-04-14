@@ -42,6 +42,19 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 - `MinimumTableOfContentsHeadings`: The minimum number of headings required in an article to display
   a table of contents by default. Can be overridden by specifying the location of a table of
   contents explicitly for a given article. Default is 3.
+- `OnCreated`: An optional callback invoked when a new article (including categories and files) is
+  created.
+  
+  Receives the new article as a parameter.
+- `OnDeleted`: An optional callback invoked when an article (including categories and files) is
+  deleted.
+  
+  Receives the deleted article, the original owner, and the new owner as parameters.
+- `OnEdited`: An optional callback invoked when an article (including categories and files) is
+  edited (not including deletion if `OnDeleted` is provided).
+  
+  Receives the deleted article, the revision which was applied, the original owner, and the new
+  owner as parameters.
 - `Postprocessors`: A collection of preprocessors which transform the HTML of an article *after* it
   is parsed from markdown but *before* it is sanitized.
 

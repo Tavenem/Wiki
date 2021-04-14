@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading.Tasks;
 using Tavenem.Wiki.MarkdownExtensions;
 
 namespace Tavenem.Wiki
@@ -155,6 +157,43 @@ namespace Tavenem.Wiki
         /// </para>
         /// </summary>
         public int MinimumTableOfContentsHeadings { get; set; } = 3;
+
+        /// <summary>
+        /// <para>
+        /// An optional callback invoked when a new <see cref="Article"/> (including <see
+        /// cref="Category"/> and <see cref="WikiFile"/>) is created.
+        /// </para>
+        /// <para>
+        /// Receives the new <see cref="Article"/> as a parameter.
+        /// </para>
+        /// </summary>
+        public OnCreatedFunc? OnCreated { get; }
+
+        /// <summary>
+        /// <para>
+        /// An optional callback invoked when a new <see cref="Article"/> (including <see
+        /// cref="Category"/> and <see cref="WikiFile"/>) is deleted.
+        /// </para>
+        /// <para>
+        /// Receives the deleted <see cref="Article"/>, the original <see cref="Article.Owner"/>,
+        /// and the new <see cref="Article.Owner"/> as parameters.
+        /// </para>
+        /// </summary>
+        public OnDeletedFunc? OnDeleted { get; }
+
+        /// <summary>
+        /// <para>
+        /// An optional callback invoked when a new <see cref="Article"/> (including <see
+        /// cref="Category"/> and <see cref="WikiFile"/>) is edited (not including deletion if <see
+        /// cref="OnDeleted"/> is provided).
+        /// </para>
+        /// <para>
+        /// Receives the edited <see cref="Article"/>, the <see cref="Revision"/> which was applied,
+        /// the original <see cref="Article.Owner"/>, and the new <see cref="Article.Owner"/> as
+        /// parameters.
+        /// </para>
+        /// </summary>
+        public OnEditedFunc? OnEdited { get; }
 
         /// <summary>
         /// A collection of preprocessors which transform the HTML of an article

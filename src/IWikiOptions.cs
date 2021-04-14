@@ -1,8 +1,34 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Tavenem.Wiki.MarkdownExtensions;
 
 namespace Tavenem.Wiki
 {
+#pragma warning disable RCS1060 // Declare each type in separate file.
+    /// <summary>
+    /// The delegate signature used by <see cref="IWikiOptions.OnCreated"/>.
+    /// </summary>
+    /// <param name="article">The new article.</param>
+    public delegate ValueTask OnCreatedFunc(Article article);
+
+    /// <summary>
+    /// The delegate signature used by <see cref="IWikiOptions.OnDeleted"/>.
+    /// </summary>
+    /// <param name="article">The deleted article.</param>
+    /// <param name="oldOwner">The original <see cref="Article.Owner"/>.</param>
+    /// <param name="newOwner">The new <see cref="Article.Owner"/>.</param>
+    public delegate ValueTask OnDeletedFunc(Article article, string? oldOwner, string? newOwner);
+
+    /// <summary>
+    /// The delegate signature used by <see cref="IWikiOptions.OnEdited"/>.
+    /// </summary>
+    /// <param name="article">The edited article.</param>
+    /// <param name="revision">The revision applied.</param>
+    /// <param name="oldOwner">The original <see cref="Article.Owner"/>.</param>
+    /// <param name="newOwner">The new <see cref="Article.Owner"/>.</param>
+    public delegate ValueTask OnEditedFunc(Article article, Revision revision, string? oldOwner, string? newOwner);
+
     /// <summary>
     /// Various customization and configuration options for the wiki system.
     /// </summary>
@@ -101,6 +127,43 @@ namespace Tavenem.Wiki
         int MinimumTableOfContentsHeadings { get; }
 
         /// <summary>
+        /// <para>
+        /// An optional callback invoked when a new <see cref="Article"/> (including <see
+        /// cref="Category"/> and <see cref="WikiFile"/>) is created.
+        /// </para>
+        /// <para>
+        /// Receives the new <see cref="Article"/> as a parameter.
+        /// </para>
+        /// </summary>
+        OnCreatedFunc? OnCreated { get; }
+
+        /// <summary>
+        /// <para>
+        /// An optional callback invoked when a new <see cref="Article"/> (including <see
+        /// cref="Category"/> and <see cref="WikiFile"/>) is deleted.
+        /// </para>
+        /// <para>
+        /// Receives the deleted <see cref="Article"/>, the original <see cref="Article.Owner"/>,
+        /// and the new <see cref="Article.Owner"/> as parameters.
+        /// </para>
+        /// </summary>
+        OnDeletedFunc? OnDeleted { get; }
+
+        /// <summary>
+        /// <para>
+        /// An optional callback invoked when a new <see cref="Article"/> (including <see
+        /// cref="Category"/> and <see cref="WikiFile"/>) is edited (not including deletion if <see
+        /// cref="OnDeleted"/> is provided).
+        /// </para>
+        /// <para>
+        /// Receives the edited <see cref="Article"/>, the <see cref="Revision"/> which was applied,
+        /// the original <see cref="Article.Owner"/>, and the new <see cref="Article.Owner"/> as
+        /// parameters.
+        /// </para>
+        /// </summary>
+        OnEditedFunc? OnEdited { get; }
+
+        /// <summary>
         /// A collection of preprocessors which transform the HTML of an article
         /// <i>after</i> it is parsed from markdown but <i>before</i> it is sanitized.
         /// </summary>
@@ -176,4 +239,5 @@ namespace Tavenem.Wiki
         /// </summary>
         string WikiLinkPrefix { get; }
     }
+#pragma warning restore RCS1060 // Declare each type in separate file.
 }

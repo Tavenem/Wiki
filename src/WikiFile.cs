@@ -441,6 +441,11 @@ namespace Tavenem.Wiki
                 false)
                 .ConfigureAwait(false);
 
+            if (options.OnCreated is not null)
+            {
+                await options.OnCreated.Invoke(file).ConfigureAwait(false);
+            }
+
             return file;
         }
 
@@ -673,6 +678,7 @@ namespace Tavenem.Wiki
                 Update(options, dataStore);
             }
 
+            var oldOwner = Owner;
             Owner = owner;
             AllowedEditors = allowedEditors?.ToList().AsReadOnly();
             AllowedViewers = allowedViewers?.ToList().AsReadOnly();
@@ -703,6 +709,22 @@ namespace Tavenem.Wiki
                 false,
                 false)
                 .ConfigureAwait(false);
+
+            if (isDeleted && !wasDeleted)
+            {
+                if (options.OnDeleted is not null)
+                {
+                    await options.OnDeleted(this, oldOwner, Owner).ConfigureAwait(false);
+                }
+                else if (options.OnEdited is not null)
+                {
+                    await options.OnEdited(this, revision, oldOwner, Owner).ConfigureAwait(false);
+                }
+            }
+            else if (options.OnEdited is not null)
+            {
+                await options.OnEdited(this, revision, oldOwner, Owner).ConfigureAwait(false);
+            }
         }
 
         /// <summary>

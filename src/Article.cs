@@ -242,9 +242,7 @@ namespace Tavenem.Wiki
         /// </remarks>
         public Article(
             string id,
-#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
             string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string html,
             string markdownContent,
@@ -712,6 +710,11 @@ namespace Tavenem.Wiki
                 true,
                 isRedirect)
                 .ConfigureAwait(false);
+
+            if (options.OnCreated is not null)
+            {
+                await options.OnCreated.Invoke(article).ConfigureAwait(false);
+            }
 
             return article;
         }
@@ -1866,6 +1869,7 @@ namespace Tavenem.Wiki
                 }
             }
 
+            var oldOwner = Owner;
             Owner = owner;
             AllowedEditors = allowedEditors?.ToList().AsReadOnly();
             AllowedViewers = allowedViewers?.ToList().AsReadOnly();
@@ -1896,6 +1900,22 @@ namespace Tavenem.Wiki
                 true,
                 isRedirect)
                 .ConfigureAwait(false);
+
+            if (isDeleted && !wasDeleted)
+            {
+                if (options.OnDeleted is not null)
+                {
+                    await options.OnDeleted(this, oldOwner, Owner).ConfigureAwait(false);
+                }
+                else if (options.OnEdited is not null)
+                {
+                    await options.OnEdited(this, revision, oldOwner, Owner).ConfigureAwait(false);
+                }
+            }
+            else if (options.OnEdited is not null)
+            {
+                await options.OnEdited(this, revision, oldOwner, Owner).ConfigureAwait(false);
+            }
         }
 
         private static string GetScriptPreview(string? markdown)
