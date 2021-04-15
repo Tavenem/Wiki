@@ -167,7 +167,7 @@ namespace Tavenem.Wiki
         /// Receives the new <see cref="Article"/> as a parameter.
         /// </para>
         /// </summary>
-        public OnCreatedFunc? OnCreated { get; }
+        public OnCreatedFunc? OnCreated { get; set; }
 
         /// <summary>
         /// <para>
@@ -179,7 +179,7 @@ namespace Tavenem.Wiki
         /// and the new <see cref="Article.Owner"/> as parameters.
         /// </para>
         /// </summary>
-        public OnDeletedFunc? OnDeleted { get; }
+        public OnDeletedFunc? OnDeleted { get; set; }
 
         /// <summary>
         /// <para>
@@ -193,7 +193,7 @@ namespace Tavenem.Wiki
         /// parameters.
         /// </para>
         /// </summary>
-        public OnEditedFunc? OnEdited { get; }
+        public OnEditedFunc? OnEdited { get; set; }
 
         /// <summary>
         /// A collection of preprocessors which transform the HTML of an article
