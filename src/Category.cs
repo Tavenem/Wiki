@@ -382,7 +382,7 @@ namespace Tavenem.Wiki
 
             if (options.OnCreated is not null)
             {
-                await options.OnCreated.Invoke(category).ConfigureAwait(false);
+                await options.OnCreated.Invoke(category, editor).ConfigureAwait(false);
             }
 
             return category;

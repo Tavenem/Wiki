@@ -713,7 +713,7 @@ namespace Tavenem.Wiki
 
             if (options.OnCreated is not null)
             {
-                await options.OnCreated.Invoke(article).ConfigureAwait(false);
+                await options.OnCreated.Invoke(article, editor).ConfigureAwait(false);
             }
 
             return article;

@@ -443,7 +443,7 @@ namespace Tavenem.Wiki
 
             if (options.OnCreated is not null)
             {
-                await options.OnCreated.Invoke(file).ConfigureAwait(false);
+                await options.OnCreated.Invoke(file, editor).ConfigureAwait(false);
             }
 
             return file;
