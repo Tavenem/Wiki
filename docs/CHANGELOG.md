@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.3-preview
+### Fixed
+- Fixed editor parameter signature in creation callback.
+
 ## 0.2.2-preview
 ### Added
 - Add editor to creation callback.

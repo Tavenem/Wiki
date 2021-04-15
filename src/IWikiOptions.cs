@@ -11,7 +11,7 @@ namespace Tavenem.Wiki
     /// </summary>
     /// <param name="article">The new article.</param>
     /// <param name="editor">The ID of the editor who created the article.</param>
-    public delegate ValueTask OnCreatedFunc(Article article, string? editor);
+    public delegate ValueTask OnCreatedFunc(Article article, string editor);
 
     /// <summary>
     /// The delegate signature used by <see cref="IWikiOptions.OnDeleted"/>.
