@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1-preview
+### Changed
+- Change MarkdownItem property setter visibility to facilitate subclassing
+
 ## 0.3.0-preview
 ### Changed
 - Changed MarkdownItem constructor, method visibility and property attributes to facilitate

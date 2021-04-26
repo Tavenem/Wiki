@@ -43,25 +43,25 @@ namespace Tavenem.Wiki
         /// The rendered HTML content.
         /// </summary>
         [JsonInclude]
-        public string Html { get; private protected set; }
+        public string Html { get; protected set; }
 
         /// <summary>
         /// The markdown content.
         /// </summary>
         [JsonInclude]
-        public string MarkdownContent { get; private protected set; }
+        public string MarkdownContent { get; protected set; }
 
         /// <summary>
         /// A preview of this item's rendered HTML.
         /// </summary>
         [JsonInclude]
-        public string Preview { get; private protected set; }
+        public string Preview { get; protected set; }
 
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
         [JsonInclude]
-        public IReadOnlyCollection<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
+        public IReadOnlyCollection<WikiLink> WikiLinks { get; protected set; } = new List<WikiLink>().AsReadOnly();
 
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
