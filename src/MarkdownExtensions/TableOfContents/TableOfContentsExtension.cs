@@ -2,6 +2,7 @@
 using Markdig.Parsers;
 using Markdig.Renderers;
 using Markdig.Syntax;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Tavenem.Wiki.MarkdownExtensions.TableOfContents
@@ -130,19 +131,23 @@ namespace Tavenem.Wiki.MarkdownExtensions.TableOfContents
 
             foreach (var toC in toCs.Where(x => !x.IsNoToc))
             {
-                var levelOffset = toC.Parent.Descendants<HeadingBlock>()
-                    .Where(x => x.Line < toC.Line)
-                    .OrderByDescending(x => x.Line)
-                    .FirstOrDefault()?.Level ?? 0;
+                var levelOffset = toC.Parent is null
+                    ? 0
+                    : toC.Parent.Descendants<HeadingBlock>()
+                        .Where(x => x.Line < toC.Line)
+                        .OrderByDescending(x => x.Line)
+                        .FirstOrDefault()?.Level ?? 0;
                 toC.LevelOffset = levelOffset;
 
-                var headings = toC.Parent.Descendants<HeadingBlock>()
-                    .Where(x => x.Line > toC.Line)
-                    .OrderBy(x => x.Line)
-                    .TakeWhile(x => x.Level > levelOffset)
-                    .Where(x => x.Level >= levelOffset + toC.StartingLevel
-                        && x.Level < levelOffset + toC.StartingLevel + toC.Depth)
-                    .ToList();
+                var headings = toC.Parent is null
+                    ? new List<HeadingBlock>()
+                    : toC.Parent.Descendants<HeadingBlock>()
+                        .Where(x => x.Line > toC.Line)
+                        .OrderBy(x => x.Line)
+                        .TakeWhile(x => x.Level > levelOffset)
+                        .Where(x => x.Level >= levelOffset + toC.StartingLevel
+                            && x.Level < levelOffset + toC.StartingLevel + toC.Depth)
+                        .ToList();
 
                 if (!toC.IsDefault || headings.Count >= Options.MinimumTopLevel)
                 {

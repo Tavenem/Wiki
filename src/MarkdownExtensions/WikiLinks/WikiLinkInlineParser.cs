@@ -347,7 +347,7 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks
 
         private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
         {
-            var openParent = inlineState.Inline.FindParentOfType<WikiLinkDelimiterInline>().FirstOrDefault();
+            var openParent = inlineState.Inline?.FindParentOfType<WikiLinkDelimiterInline>().FirstOrDefault();
             if (openParent is null)
             {
                 return false;

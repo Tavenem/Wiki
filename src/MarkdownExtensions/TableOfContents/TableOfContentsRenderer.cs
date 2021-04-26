@@ -101,10 +101,15 @@ namespace Tavenem.Wiki.MarkdownExtensions.TableOfContents
                 }
 
                 string headingText;
-                using (var sw = new StringWriter())
+                if (headings[i].Inline is null)
                 {
+                    headingText = string.Empty;
+                }
+                else
+                {
+                    using var sw = new StringWriter();
                     var stripRenderer = new HtmlRenderer(sw);
-                    stripRenderer.Render(headings[i].Inline);
+                    stripRenderer.Render(headings[i].Inline!);
                     headingText = stripRenderer.Writer.ToString() ?? string.Empty;
                 }
 

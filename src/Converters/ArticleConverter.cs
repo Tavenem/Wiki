@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
@@ -17,8 +16,7 @@ namespace Tavenem.Wiki.Converters
         /// <param name="typeToConvert">The type to convert.</param>
         /// <param name="options">An object that specifies serialization options to use.</param>
         /// <returns>The converted value.</returns>
-        [return: MaybeNull]
-        public override Article Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+        public override Article? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             var initialReader = reader;
 

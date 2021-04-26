@@ -12,6 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
 using Tavenem.Wiki.MarkdownExtensions.TableOfContents;
@@ -41,22 +42,54 @@ namespace Tavenem.Wiki
         /// <summary>
         /// The rendered HTML content.
         /// </summary>
-        public string Html { get; private protected set; } = null!; // Always initialized during ctor, but in one instance by the subclass.
+        [JsonInclude]
+        public string Html { get; private protected set; }
 
         /// <summary>
         /// The markdown content.
         /// </summary>
+        [JsonInclude]
         public string MarkdownContent { get; private protected set; }
 
         /// <summary>
         /// A preview of this item's rendered HTML.
         /// </summary>
-        public string Preview { get; private protected set; } = null!; // Always initialized during ctor, but in one instance by the subclass.
+        [JsonInclude]
+        public string Preview { get; private protected set; }
 
         /// <summary>
         /// The wiki links within this content.
         /// </summary>
+        [JsonInclude]
         public IReadOnlyCollection<WikiLink> WikiLinks { get; private protected set; } = new List<WikiLink>().AsReadOnly();
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="MarkdownItem"/>.
+        /// </summary>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        protected MarkdownItem()
+        {
+            Html = string.Empty;
+            MarkdownContent = string.Empty;
+            Preview = string.Empty;
+            WikiLinks = new List<WikiLink>().AsReadOnly();
+        }
+
+        /// <summary>
+        /// Initializes a new instance of <see cref="MarkdownItem"/>.
+        /// </summary>
+        /// <remarks>
+        /// Note: this constructor is most useful for deserializers.
+        /// </remarks>
+        protected MarkdownItem(string id) : base(id)
+        {
+            Html = string.Empty;
+            MarkdownContent = string.Empty;
+            Preview = string.Empty;
+            WikiLinks = new List<WikiLink>().AsReadOnly();
+        }
 
         /// <summary>
         /// Initializes a new instance of <see cref="MarkdownItem"/>.
@@ -69,7 +102,7 @@ namespace Tavenem.Wiki
         /// <remarks>
         /// Note: this constructor is most useful for deserializers.
         /// </remarks>
-        private protected MarkdownItem(string id, string? markdownContent, string html, string preview, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
+        protected MarkdownItem(string id, string? markdownContent, string html, string preview, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
         {
             Html = html;
             MarkdownContent = markdownContent ?? string.Empty;
@@ -88,7 +121,7 @@ namespace Tavenem.Wiki
         /// A preview of this item's rendered HTML.
         /// </param>
         /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-        private protected MarkdownItem(string? markdown, string? html, string? preview, IReadOnlyCollection<WikiLink> wikiLinks)
+        protected MarkdownItem(string? markdown, string? html, string? preview, IReadOnlyCollection<WikiLink> wikiLinks)
         {
             MarkdownContent = markdown ?? string.Empty;
             Html = html ?? string.Empty;
@@ -378,6 +411,53 @@ namespace Tavenem.Wiki
         public string GetPreview(IWikiOptions options, IDataStore dataStore)
             => RenderPreview(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent, isPreview: true));
 
+        /// <summary>
+        /// Identifies the <see cref="WikiLink"/>s in the given <paramref name="markdown"/>.
+        /// </summary>
+        /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+        /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+        /// <param name="markdown">The markdown.</param>
+        /// <param name="title">The title of the item.</param>
+        /// <param name="wikiNamespace">The namespace of the item.</param>
+        /// <returns>
+        /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
+        /// </returns>
+        protected static List<WikiLink> GetWikiLinks(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? markdown,
+            string? title = null,
+            string? wikiNamespace = null)
+            => string.IsNullOrEmpty(markdown)
+            ? new List<WikiLink>()
+            : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore))
+            .Descendants<WikiLinkInline>()
+            .Where(x => !x.IsWikipedia
+                && !x.IsCommons
+                && (string.IsNullOrEmpty(x.Title)
+                || x.Title.Length < 5
+                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
+                || x.Title[1] != TransclusionParser.TransclusionOpenChar
+                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
+                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
+                && (x.Title[0] != TransclusionParser.ParameterOpenChar
+                || x.Title[1] != TransclusionParser.ParameterOpenChar
+                || x.Title[^1] != TransclusionParser.ParameterCloseChar
+                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
+            .Select(x =>
+            {
+                var anchorIndex = x.Title?.LastIndexOf('#') ?? -1;
+                return new WikiLink(
+                    x.Article,
+                    x.Missing && (x.Title != title || x.WikiNamespace != wikiNamespace),
+                    x.IsCategory,
+                    x.IsNamespaceEscaped,
+                    x.IsTalk,
+                    anchorIndex == -1 ? x.Title ?? string.Empty : x.Title![..anchorIndex],
+                    x.WikiNamespace ?? options.DefaultNamespace);
+            })
+            .ToList();
+
         private static bool AnyPreviews(MarkdownObject obj)
         {
             if (obj is ContainerBlock containerBlock)
@@ -419,41 +499,6 @@ namespace Tavenem.Wiki
             }
             return false;
         }
-
-        private protected static List<WikiLink> GetWikiLinks(
-            IWikiOptions options,
-            IDataStore dataStore,
-            string? markdown,
-            string? title = null,
-            string? wikiNamespace = null)
-            => string.IsNullOrEmpty(markdown)
-            ? new List<WikiLink>()
-            : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore))
-            .Descendants<WikiLinkInline>()
-            .Where(x => !x.IsWikipedia
-                && !x.IsCommons
-                && (x.Title.Length < 5
-                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
-                || x.Title[1] != TransclusionParser.TransclusionOpenChar
-                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
-                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
-                && (x.Title[0] != TransclusionParser.ParameterOpenChar
-                || x.Title[1] != TransclusionParser.ParameterOpenChar
-                || x.Title[^1] != TransclusionParser.ParameterCloseChar
-                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
-            .Select(x =>
-            {
-                var anchorIndex = x.Title.LastIndexOf('#');
-                return new WikiLink(
-                    x.Article,
-                    x.Missing && (x.Title != title || x.WikiNamespace != wikiNamespace),
-                    x.IsCategory,
-                    x.IsNamespaceEscaped,
-                    x.IsTalk,
-                    anchorIndex == -1 ? x.Title : x.Title[..anchorIndex],
-                    x.WikiNamespace ?? options.DefaultNamespace);
-            })
-            .ToList();
 
         private static void Trim(MarkdownObject obj, ref int minCharactersAvailable, ref int maxCharactersAvailable)
         {

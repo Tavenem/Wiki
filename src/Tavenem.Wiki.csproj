@@ -13,7 +13,7 @@
 
   <PropertyGroup>
     <PackageId>Tavenem.Wiki</PackageId>
-    <Version>0.1.0-preview</Version>
+    <Version>1.0.0</Version>
     <Authors>Wil Stead</Authors>
     <Description>A .NET wiki library.</Description>
     <Copyright>Copyright © 2019-2021 Wil Stead</Copyright>
@@ -35,9 +35,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="HtmlSanitizer" Version="5.0.376" />
+    <PackageReference Include="HtmlSanitizer" Version="5.0.404" />
     <PackageReference Include="Jint" Version="3.0.0-beta-2031" />
-    <PackageReference Include="Markdig" Version="0.23.0" />
+    <PackageReference Include="Markdig" Version="0.24.0" />
     <PackageReference Include="Tavenem.DataStore" Version="0.29.1-preview" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>

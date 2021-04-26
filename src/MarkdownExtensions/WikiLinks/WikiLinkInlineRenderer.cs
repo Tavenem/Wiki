@@ -33,8 +33,8 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks
             }
             var fullTitle = !link.IsCommons
                 && !link.IsWikipedia
-                && (link.Title.Length == 0 || link.Title[0] != '#')
-                ? Article.GetFullTitle(Options, link.Title, link.WikiNamespace, link.IsTalk)
+                && (string.IsNullOrEmpty(link.Title) || link.Title[0] != '#')
+                ? Article.GetFullTitle(Options, link.Title ?? string.Empty, link.WikiNamespace, link.IsTalk)
                 : link.Title;
 
             if (renderer.EnableHtmlForInline)
@@ -53,7 +53,7 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks
                     {
                         renderer.Write("<img src=\"/");
                     }
-                    else if (link.Title.Length > 0 && link.Title[0] == '#')
+                    else if (!string.IsNullOrEmpty(link.Title) && link.Title[0] == '#')
                     {
                         renderer.Write("<a href=\"");
                     }
@@ -69,7 +69,7 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks
 
                 if (!link.IsWikipedia
                     && !link.IsCommons
-                    && (link.Title.Length == 0 || link.Title[0] != '#')
+                    && (string.IsNullOrEmpty(link.Title) || link.Title[0] != '#')
                     && !string.IsNullOrEmpty(Options.LinkTemplate))
                 {
                     renderer.Write(" ");
@@ -110,16 +110,17 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks
                     renderer.Write("\"");
                 }
 
-                var heightIndex = link.GetAttributes()?.Properties?.FindIndex(x => x.Key.Equals("height", StringComparison.OrdinalIgnoreCase)) ?? -1;
+                var properties = link.GetAttributes()?.Properties;
+                var heightIndex = properties?.FindIndex(x => x.Key.Equals("height", StringComparison.OrdinalIgnoreCase)) ?? -1;
                 if (heightIndex != -1)
                 {
-                    if (int.TryParse(link.GetAttributes().Properties[heightIndex].Value, out var heightInt))
+                    if (int.TryParse(properties![heightIndex].Value, out var heightInt))
                     {
                         renderer.Write("height=\"");
                         renderer.Write(heightInt.ToString());
                         renderer.Write("\"");
                     }
-                    else if (double.TryParse(link.GetAttributes().Properties[heightIndex].Value, out var heightFloat))
+                    else if (double.TryParse(properties[heightIndex].Value, out var heightFloat))
                     {
                         renderer.Write("height=\"");
                         renderer.Write(heightFloat.ToString());
@@ -127,16 +128,16 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks
                     }
                 }
 
-                var widthIndex = link.GetAttributes()?.Properties?.FindIndex(x => x.Key.Equals("width", StringComparison.OrdinalIgnoreCase)) ?? -1;
+                var widthIndex = properties?.FindIndex(x => x.Key.Equals("width", StringComparison.OrdinalIgnoreCase)) ?? -1;
                 if (widthIndex != -1)
                 {
-                    if (int.TryParse(link.GetAttributes().Properties[widthIndex].Value, out var widthInt))
+                    if (int.TryParse(properties![widthIndex].Value, out var widthInt))
                     {
                         renderer.Write("width=\"");
                         renderer.Write(widthInt.ToString());
                         renderer.Write("\"");
                     }
-                    else if (double.TryParse(link.GetAttributes().Properties[widthIndex].Value, out var widthFloat))
+                    else if (double.TryParse(properties[widthIndex].Value, out var widthFloat))
                     {
                         renderer.Write("width=\"");
                         renderer.Write(widthFloat.ToString());

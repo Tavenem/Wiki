@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0-preview
+### Changed
+- Changed MarkdownItem constructor, method visibility and property attributes to facilitate
+  subclassing.
+### Updated
+- Updated Markdig dependency.
+
 ## 0.2.3-preview
 ### Fixed
 - Fixed editor parameter signature in creation callback.

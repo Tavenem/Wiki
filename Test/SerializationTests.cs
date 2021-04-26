@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Tavenem.DataStorage;
 
 namespace Tavenem.Wiki.Test
 {
@@ -96,6 +97,32 @@ namespace Tavenem.Wiki.Test
             Console.WriteLine();
             Console.WriteLine(json);
             var deserialized = System.Text.Json.JsonSerializer.Deserialize<Category>(json);
+            Assert.AreEqual(value, deserialized);
+            Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
+        }
+
+        [TestMethod]
+        public void MarkdownItemTest()
+        {
+            var value = new MarkdownItemTestSubclass(
+                "Test markdown",
+                "Test markdown",
+                "Test markdown",
+                new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }));
+
+            var json = System.Text.Json.JsonSerializer.Serialize(value);
+            Console.WriteLine();
+            Console.WriteLine(json);
+            var deserialized = System.Text.Json.JsonSerializer.Deserialize<MarkdownItemTestSubclass>(json);
+            Assert.AreEqual(value, deserialized);
+            Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
+
+            value = MarkdownItemTestSubclass.New(_Options, new InMemoryDataStore(), "Test markdown");
+
+            json = System.Text.Json.JsonSerializer.Serialize(value);
+            Console.WriteLine();
+            Console.WriteLine(json);
+            deserialized = System.Text.Json.JsonSerializer.Deserialize<MarkdownItemTestSubclass>(json);
             Assert.AreEqual(value, deserialized);
             Assert.AreEqual(json, System.Text.Json.JsonSerializer.Serialize(deserialized));
         }
