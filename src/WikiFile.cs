@@ -274,8 +274,7 @@ namespace Tavenem.Wiki
             if (file is null)
             {
                 var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, options.FileNamespace);
-                if (normalizedReference is not null
-                    && normalizedReference.References.Count == 1)
+                if (normalizedReference?.References.Count == 1)
                 {
                     file = dataStore.GetItem<WikiFile>(normalizedReference.References[0]);
                 }

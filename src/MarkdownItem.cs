@@ -754,6 +754,16 @@ namespace Tavenem.Wiki
             Preview = GetPreview(options, dataStore);
         }
 
+        internal void UpdateWithLinks(
+            IWikiOptions options,
+            IDataStore dataStore,
+            string? title = null,
+            string? wikiNamespace = null)
+        {
+            WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title, wikiNamespace).AsReadOnly();
+            Update(options, dataStore);
+        }
+
         private protected virtual string PostprocessMarkdown(
             IWikiOptions options,
             IDataStore dataStore,

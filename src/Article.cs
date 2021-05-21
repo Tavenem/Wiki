@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Markdig;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -242,7 +243,9 @@ namespace Tavenem.Wiki
         /// </remarks>
         public Article(
             string id,
+#pragma warning disable IDE0060 // Remove unused parameter; used for polymorphic deserialization
             string idItemTypeName,
+#pragma warning restore IDE0060 // Remove unused parameter
             string title,
             string html,
             string markdownContent,
@@ -402,8 +405,7 @@ namespace Tavenem.Wiki
                 if (article is null)
                 {
                     var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, wikiNamespace);
-                    if (normalizedReference is not null
-                        && normalizedReference.References.Count == 1)
+                    if (normalizedReference?.References.Count == 1)
                     {
                         article = dataStore.GetItem<Article>(normalizedReference.References[0]);
                     }
@@ -1055,7 +1057,7 @@ namespace Tavenem.Wiki
             var linkReference = await PageLinks
                 .GetPageLinksAsync(dataStore, title, wikiNamespace)
                 .ConfigureAwait(false);
-            if (linkReference is not null && linkReference.References.Count > 0)
+            if (linkReference?.References.Count > 0)
             {
                 var missing = await MissingPage
                     .GetMissingPageAsync(dataStore, title, wikiNamespace)
@@ -1181,7 +1183,16 @@ namespace Tavenem.Wiki
                         redirectsToUpdate.Remove(idToUpdate);
                     }
 
-                    referringArticle.Update(options, dataStore);
+                    var isReferringArticleScript = referringArticle.WikiNamespace.Equals(options.ScriptNamespace, StringComparison.Ordinal);
+                    var isReferringArticleRedirect = !string.IsNullOrEmpty(referringArticle.RedirectTitle);
+                    if (isReferringArticleScript || isReferringArticleRedirect)
+                    {
+                        referringArticle.Update(options, dataStore);
+                    }
+                    else
+                    {
+                        referringArticle.UpdateWithLinks(options, dataStore, referringArticle.Title, referringArticle.WikiNamespace);
+                    }
                     await dataStore.StoreItemAsync(referringArticle).ConfigureAwait(false);
 
                     idsUpdated.Add(idToUpdate);

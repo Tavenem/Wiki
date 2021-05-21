@@ -1,4 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Tavenem.DataStorage;
 
@@ -23,13 +25,27 @@ namespace Tavenem.Wiki.Test
             var welcome = GetDefaultWelcomeAsync(options, dataStore, AdminId).GetAwaiter().GetResult();
             Assert.AreEqual(ExpectedWelcome, welcome.Html, ignoreCase: false);
 
-            GetDefaultMainAsync(options, dataStore, AdminId).GetAwaiter().GetResult();
-
-            var about = GetDefaultAboutAsync(options, dataStore, AdminId).GetAwaiter().GetResult();
+            var main = GetDefaultMainAsync(options, dataStore, AdminId).GetAwaiter().GetResult();
+            var missing = main.WikiLinks.FirstOrDefault(x => x.Missing);
+            Assert.IsNotNull(missing);
 
             var category = Category.GetCategory(options, dataStore, "System pages");
             Assert.IsNotNull(category);
             SetDefaultCategoryAsync(options, dataStore, category!, AdminId).GetAwaiter().GetResult();
+            missing = category.WikiLinks.FirstOrDefault(x => x.Missing);
+            Assert.IsNotNull(missing);
+
+            var about = GetDefaultAboutAsync(options, dataStore, AdminId).GetAwaiter().GetResult();
+
+            main = dataStore.GetItem<Article>(main.Id, TimeSpan.Zero);
+            Assert.IsNotNull(main);
+            missing = main.WikiLinks.FirstOrDefault(x => x.Missing);
+            Assert.IsNull(missing);
+
+            category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
+            Assert.IsNotNull(main);
+            missing = main.WikiLinks.FirstOrDefault(x => x.Missing);
+            Assert.IsNull(missing);
 
             Assert.AreEqual(_ExpectedAbout, about.Html, ignoreCase: false);
         }
@@ -82,7 +98,7 @@ See the [[System:About|]] page for more information.
             options,
             dataStore,
             adminId,
-            markdown: "These are system pages in the [Tavenem.Wiki](https://github.com/Tavenem/Wiki) sample [[w:Wiki||]].",
+            markdown: "These are system pages in the [Tavenem.Wiki](https://github.com/Tavenem/Wiki) sample [[w:Wiki||]]. [[System:About|]]",
             revisionComment: "Provide a description",
             allowedEditors: new[] { adminId });
     }

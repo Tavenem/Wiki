@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.2-preview
+### Fixed
+- Fix broken link update on article add/revise
+
 ## 0.3.1-preview
 ### Changed
 - Change MarkdownItem property setter visibility to facilitate subclassing

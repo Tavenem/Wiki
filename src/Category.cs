@@ -231,8 +231,7 @@ namespace Tavenem.Wiki
             if (category is null && allowCaseInsenstive)
             {
                 var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, options.CategoryNamespace);
-                if (normalizedReference is not null
-                    && normalizedReference.References.Count == 1)
+                if (normalizedReference?.References.Count == 1)
                 {
                     category = dataStore.GetItem<Category>(normalizedReference.References[0]);
                 }
