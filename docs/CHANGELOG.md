@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0-preview
+### Changed
+- Update to .NET 6 preview
+- Update to C# 10 preview
+### Removed
+- Support for non-JSON serialization
+
 ## 0.3.2-preview
 ### Fixed
 - Fix broken link update on article add/revise

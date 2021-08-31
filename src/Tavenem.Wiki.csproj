@@ -1,8 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
-    <LangVersion>Latest</LangVersion>
+	<TargetFramework>net6.0</TargetFramework>
+	<LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
@@ -35,10 +35,10 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="HtmlSanitizer" Version="5.0.404" />
-    <PackageReference Include="Jint" Version="3.0.0-beta-2031" />
-    <PackageReference Include="Markdig" Version="0.24.0" />
-    <PackageReference Include="Tavenem.DataStore" Version="0.29.1-preview" />
+    <PackageReference Include="HtmlSanitizer" Version="6.0.441" />
+    <PackageReference Include="Jint" Version="3.0.0-beta-2034" />
+    <PackageReference Include="Markdig" Version="0.26.0" />
+    <PackageReference Include="Tavenem.DataStore" Version="0.30.0-preview" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>
 
