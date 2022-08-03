@@ -1,9 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<TargetFramework>net6.0</TargetFramework>
-	<LangVersion>preview</LangVersion>
+    <TargetFramework>net7.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -16,7 +17,7 @@
     <Version>1.0.0</Version>
     <Authors>Wil Stead</Authors>
     <Description>A .NET wiki library.</Description>
-    <Copyright>Copyright © 2019-2021 Wil Stead</Copyright>
+    <Copyright>Copyright © 2019-2022 Wil Stead</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Tavenem/Wiki</PackageProjectUrl>
     <PackageIcon>tavenem_128.png</PackageIcon>
@@ -31,14 +32,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0">
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="HtmlSanitizer" Version="6.0.441" />
-    <PackageReference Include="Jint" Version="3.0.0-beta-2034" />
-    <PackageReference Include="Markdig" Version="0.26.0" />
-    <PackageReference Include="Tavenem.DataStore" Version="0.30.0-preview" />
+    <PackageReference Include="HtmlSanitizer" Version="7.1.542" />
+    <PackageReference Include="Jint" Version="3.0.0-beta-2039" />
+    <PackageReference Include="Markdig" Version="0.30.2" />
+    <PackageReference Include="Tavenem.DataStore" Version="0.34.0-preview" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>
 

@@ -10,7 +10,9 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// A wiki article revision.
 /// </summary>
-[JsonConverter(typeof(Converters.ArticleConverter))]
+[JsonDerivedType(typeof(Article), ArticleIdItemTypeName)]
+[JsonDerivedType(typeof(Category), Category.CategoryIdItemTypeName)]
+[JsonDerivedType(typeof(WikiFile), WikiFile.WikiFileIdItemTypeName)]
 public class Article : MarkdownItem
 {
     /// <summary>
@@ -20,8 +22,8 @@ public class Article : MarkdownItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-    [JsonPropertyOrder(-1)]
-    public virtual string IdItemTypeName => ArticleIdItemTypeName;
+    [JsonIgnore]
+    public override string IdItemTypeName => ArticleIdItemTypeName;
 
     /// <summary>
     /// <para>
@@ -158,7 +160,6 @@ public class Article : MarkdownItem
     /// Initializes a new instance of <see cref="Article"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="title">
     /// The title of this article. Must be unique within its namespace, and non-empty.
     /// </param>
@@ -238,9 +239,6 @@ public class Article : MarkdownItem
     /// </remarks>
     public Article(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter; used for polymorphic deserialization
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         string title,
         string html,
         string markdownContent,
@@ -1459,9 +1457,7 @@ public class Article : MarkdownItem
     {
         if (secondTime < firstTime)
         {
-            var tmp = secondTime;
-            secondTime = firstTime;
-            firstTime = tmp;
+            (firstTime, secondTime) = (secondTime, firstTime);
         }
         var firstRevisions = await GetRevisionsUntilAsync(dataStore, firstTime).ConfigureAwait(false);
         var secondRevisions = await GetRevisionsUntilAsync(dataStore, secondTime).ConfigureAwait(false);
@@ -1500,9 +1496,7 @@ public class Article : MarkdownItem
     {
         if (secondTime < firstTime)
         {
-            var tmp = secondTime;
-            secondTime = firstTime;
-            firstTime = tmp;
+            (firstTime, secondTime) = (secondTime, firstTime);
         }
         var firstRevisions = await GetRevisionsUntilAsync(dataStore, firstTime).ConfigureAwait(false);
         var secondRevisions = await GetRevisionsUntilAsync(dataStore, secondTime).ConfigureAwait(false);

@@ -5,7 +5,6 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
@@ -19,6 +18,10 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// An item which contains markdown.
 /// </summary>
+[JsonDerivedType(typeof(Article), Article.ArticleIdItemTypeName)]
+[JsonDerivedType(typeof(Category), Category.CategoryIdItemTypeName)]
+[JsonDerivedType(typeof(WikiFile), WikiFile.WikiFileIdItemTypeName)]
+[JsonDerivedType(typeof(Message), Message.MessageIdItemTypeName)]
 public abstract class MarkdownItem : IdItem
 {
     /// <summary>
@@ -151,13 +154,13 @@ public abstract class MarkdownItem : IdItem
             var paraIndex = markdown.IndexOf(Environment.NewLine + Environment.NewLine, 1);
             if (paraIndex > 0)
             {
-                markdown = markdown.Substring(0, paraIndex);
+                markdown = markdown[..paraIndex];
             }
         }
 
         if (characterLimit.HasValue && markdown.Length > characterLimit.Value * 5)
         {
-            markdown = markdown.Substring(0, characterLimit.Value * 5);
+            markdown = markdown[..(characterLimit.Value * 5)];
         }
 
         var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipelinePlainText(options, dataStore));
@@ -177,7 +180,7 @@ public abstract class MarkdownItem : IdItem
         var sanitized = WikiConfig.HtmlSanitizerFull.Sanitize(html);
         if (characterLimit.HasValue && sanitized.Length > characterLimit)
         {
-            var substring = sanitized.Substring(0, characterLimit.Value);
+            var substring = sanitized[..characterLimit.Value];
             var i = substring.Length - 1;
             var whitespace = false;
             for (; i > 0; i--)
@@ -192,7 +195,7 @@ public abstract class MarkdownItem : IdItem
                 }
             }
             sanitized = whitespace
-                ? substring.Substring(0, i + 1)
+                ? substring[..(i + 1)]
                 : substring;
         }
         return sanitized;
@@ -678,7 +681,7 @@ public abstract class MarkdownItem : IdItem
                 charactersAvailable = 0;
             }
         }
-        return span.Slice(0, i);
+        return span[..i];
     }
 
     private static string TrimString(string text, ref int charactersAvailable)

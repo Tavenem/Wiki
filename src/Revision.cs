@@ -1,4 +1,5 @@
-﻿using Tavenem.DataStorage;
+﻿using System.Text.Json.Serialization;
+using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
 
 namespace Tavenem.Wiki;
@@ -36,9 +37,8 @@ public class Revision : IdItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-#pragma warning disable CA1822 // Mark members as static: Serialized
-    public string IdItemTypeName => RevisionIdItemTypeName;
-#pragma warning restore CA1822 // Mark members as static
+    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
+    public override string IdItemTypeName => RevisionIdItemTypeName;
 
     /// <summary>
     /// Whether the item was marked as deleted by this revision.

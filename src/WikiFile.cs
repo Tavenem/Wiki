@@ -31,7 +31,7 @@ public sealed class WikiFile : Article
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-    [JsonPropertyOrder(-1)]
+    [JsonIgnore]
     public override string IdItemTypeName => WikiFileIdItemTypeName;
 
     /// <summary>
@@ -58,7 +58,6 @@ public sealed class WikiFile : Article
     /// Initializes a new instance of <see cref="Category"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="title">
     /// The title of this article. Must be unique within its namespace, and non-empty.
     /// </param>
@@ -139,7 +138,6 @@ public sealed class WikiFile : Article
     [JsonConstructor]
     public WikiFile(
         string id,
-        string idItemTypeName,
         string title,
         string filePath,
         int fileSize,
@@ -158,7 +156,6 @@ public sealed class WikiFile : Article
         IReadOnlyCollection<string> categories,
         IReadOnlyList<Transclusion>? transclusions) : base(
             id,
-            idItemTypeName,
             title,
             html,
             markdownContent,

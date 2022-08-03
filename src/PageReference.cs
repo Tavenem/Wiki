@@ -15,10 +15,8 @@ public class PageReference : IdItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-#pragma warning disable CA1822 // Mark members as static: used for polymorphic (de)serialization
-    [JsonPropertyOrder(-1)]
-    public string IdItemTypeName => PageReferenceIdItemTypeName;
-#pragma warning restore CA1822 // Mark members as static
+    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
+    public override string IdItemTypeName => PageReferenceIdItemTypeName;
 
     /// <summary>
     /// The ID of the wiki page which is currently assigned to the referenced full title.

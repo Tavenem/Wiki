@@ -17,8 +17,8 @@ public class Message : MarkdownItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-    [JsonPropertyOrder(-1)]
-    public virtual string IdItemTypeName => MessageIdItemTypeName;
+    [JsonIgnore]
+    public override string IdItemTypeName => MessageIdItemTypeName;
 
     /// <summary>
     /// The ID of the message to which this reply is addressed (<see langword="null"/> for
@@ -61,7 +61,6 @@ public class Message : MarkdownItem
     /// Initializes a new instance of <see cref="Message"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="markdownContent">The raw markdown.</param>
     /// <param name="html">The rendered HTML content.</param>
     /// <param name="preview">A preview of this item's rendered HTML.</param>
@@ -83,9 +82,6 @@ public class Message : MarkdownItem
     [JsonConstructor]
     public Message(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: Used by deserializers.
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         string markdownContent,
         string html,
         string preview,

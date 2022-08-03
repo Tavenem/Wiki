@@ -15,12 +15,11 @@ public class SerializationTests
     {
         var value = new Article(
             "TEST_ID",
-            Article.ArticleIdItemTypeName,
             "Test title",
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
             0,
             "Test Namespace",
             false,
@@ -43,7 +42,6 @@ public class SerializationTests
 
         value = new Article(
             "TEST_ID",
-            Article.ArticleIdItemTypeName,
             "Test title",
             "Test markdown",
             "Test markdown",
@@ -75,12 +73,11 @@ public class SerializationTests
     {
         var value = new Category(
             "TEST_ID",
-            Category.CategoryIdItemTypeName,
             "Test title",
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
             new List<string> { "TEST_CHILD_ID" },
             0,
             _Options.CategoryNamespace,
@@ -130,11 +127,10 @@ public class SerializationTests
     {
         var value = new Message(
             "TEST_ID",
-            Message.MessageIdItemTypeName,
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
             "TEST_TOPIC_ID",
             "TEST_SENDER_ID",
             false,
@@ -175,7 +171,6 @@ public class SerializationTests
         {
             new Article(
                 "TEST_ID",
-                Article.ArticleIdItemTypeName,
                 "Test title",
                 "Test markdown",
                 "Test markdown",
@@ -195,7 +190,6 @@ public class SerializationTests
                 null),
             new Category(
                 "TEST_ID",
-                Category.CategoryIdItemTypeName,
                 "Test title",
                 "Test markdown",
                 "Test markdown",
@@ -212,7 +206,6 @@ public class SerializationTests
                 null),
             new WikiFile(
                 "TEST_ID",
-                WikiFile.WikiFileIdItemTypeName,
                 "Test title",
                 "Test/Path",
                 100,
@@ -259,7 +252,6 @@ public class SerializationTests
     {
         var value = new WikiFile(
             "TEST_ID",
-            WikiFile.WikiFileIdItemTypeName,
             "Test title",
             "Test/Path",
             100,
@@ -268,7 +260,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
             0,
             _Options.FileNamespace,
             false,

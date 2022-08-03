@@ -16,10 +16,8 @@ public class PageLinks : IdItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-#pragma warning disable CA1822 // Mark members as static: used for polymorphic (de)serialization
-    [JsonPropertyOrder(-1)]
-    public string IdItemTypeName => PageLinksIdItemTypeName;
-#pragma warning restore CA1822 // Mark members as static
+    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
+    public override string IdItemTypeName => PageLinksIdItemTypeName;
 
     /// <summary>
     /// <para>

@@ -17,7 +17,7 @@ public sealed class Category : Article
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-    [JsonPropertyOrder(-1)]
+    [JsonIgnore]
     public override string IdItemTypeName => CategoryIdItemTypeName;
 
     /// <summary>
@@ -33,7 +33,6 @@ public sealed class Category : Article
     /// Initializes a new instance of <see cref="Category"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="title">
     /// The title of this article. Must be unique within its namespace, and non-empty.
     /// </param>
@@ -106,7 +105,6 @@ public sealed class Category : Article
     [JsonConstructor]
     public Category(
         string id,
-        string idItemTypeName,
         string title,
         string html,
         string markdownContent,
@@ -122,7 +120,6 @@ public sealed class Category : Article
         IReadOnlyCollection<string> categories,
         IReadOnlyList<Transclusion>? transclusions) : base(
             id,
-            idItemTypeName,
             title,
             html,
             markdownContent,
