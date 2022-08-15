@@ -37,7 +37,7 @@ public class Transclusion : IEquatable<Transclusion>
     /// <see langword="true" /> if the current object is equal to the <paramref name="other" />
     /// parameter; otherwise, <see langword="false" />.
     /// </returns>
-    public bool Equals(Transclusion? other) => !(other is null)
+    public bool Equals(Transclusion? other) => other is not null
         && Title == other.Title
         && WikiNamespace == other.WikiNamespace;
 

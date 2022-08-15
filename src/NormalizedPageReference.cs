@@ -5,6 +5,12 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.NormalizedPageReference"/>.
+/// </summary>
+[JsonSerializable(typeof(NormalizedPageReference))]
+public partial class NormalizedPageReferenceContext : JsonSerializerContext { }
+
+/// <summary>
 /// A reference from a normalized (case-insensitive) full wiki page title to the current page
 /// IDs assigned to that title.
 /// </summary>
@@ -15,10 +21,19 @@ public class NormalizedPageReference : IdItem
     /// </summary>
     public const string NormalizedPageReferenceIdItemTypeName = ":NormalizedPageReference:";
     /// <summary>
+    /// <para>
     /// A built-in, read-only type discriminator.
+    /// </para>
+    /// <para>
+    /// The set accessor performs no function.
+    /// </para>
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => NormalizedPageReferenceIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => NormalizedPageReferenceIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// The IDs of the wiki pages which are currently assigned to the referenced full title.
@@ -29,7 +44,6 @@ public class NormalizedPageReference : IdItem
     /// Initializes a new instance of <see cref="NormalizedPageReference"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="references">
     /// The IDs of the wiki pages which are currently assigned to the referenced full title.
     /// </param>
@@ -39,12 +53,8 @@ public class NormalizedPageReference : IdItem
     /// otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns the ID
     /// dynamically.
     /// </remarks>
-    [JsonConstructor]
     public NormalizedPageReference(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         IReadOnlyList<string> references) : base(id)
         => References = references;
 
@@ -104,7 +114,6 @@ public class NormalizedPageReference : IdItem
     {
         var result = new NormalizedPageReference(
             GetId(title, wikiNamespace),
-            NormalizedPageReferenceIdItemTypeName,
             new List<string> { id }.AsReadOnly());
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;
@@ -127,7 +136,6 @@ public class NormalizedPageReference : IdItem
 
         var result = new NormalizedPageReference(
             Id,
-            NormalizedPageReferenceIdItemTypeName,
             References.ToImmutableList().Add(id));
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
     }
@@ -155,7 +163,6 @@ public class NormalizedPageReference : IdItem
         {
             var result = new NormalizedPageReference(
                 Id,
-                NormalizedPageReferenceIdItemTypeName,
                 References.ToImmutableList().Remove(id));
             await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         }

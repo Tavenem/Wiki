@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.0-preview
+### Changed
+- Enable library trimming
+- Add source generated serializer contexts.
+### Fixed
+- Indicate default namespace when entire title string is empty
+
 ## 0.5.0-preview
 ### Changed
 - Update to .NET 7 preview

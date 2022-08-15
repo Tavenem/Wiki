@@ -5,6 +5,12 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.PageTransclusions"/>.
+/// </summary>
+[JsonSerializable(typeof(PageTransclusions))]
+public partial class PageTransclusionsContext : JsonSerializerContext { }
+
+/// <summary>
 /// Represents the collection of other wiki pages which transclude a given wiki page.
 /// </summary>
 public class PageTransclusions : IdItem
@@ -14,10 +20,19 @@ public class PageTransclusions : IdItem
     /// </summary>
     public const string PageTransclusionsIdItemTypeName = ":PageTransclusions:";
     /// <summary>
+    /// <para>
     /// A built-in, read-only type discriminator.
+    /// </para>
+    /// <para>
+    /// The set accessor performs no function.
+    /// </para>
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => PageTransclusionsIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => PageTransclusionsIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// <para>
@@ -33,7 +48,6 @@ public class PageTransclusions : IdItem
     /// Initializes a new instance of <see cref="PageTransclusions"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="references">
     /// The IDs of other wiki pages which transclude the primary wiki page.
     /// </param>
@@ -46,9 +60,6 @@ public class PageTransclusions : IdItem
     [JsonConstructor]
     public PageTransclusions(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         IReadOnlyList<string> references) : base(id)
         => References = references;
 
@@ -106,7 +117,6 @@ public class PageTransclusions : IdItem
     {
         var result = new PageTransclusions(
             GetId(title, wikiNamespace),
-            PageTransclusionsIdItemTypeName,
             new List<string> { referenceId }.AsReadOnly());
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;
@@ -128,7 +138,6 @@ public class PageTransclusions : IdItem
 
         var result = new PageTransclusions(
             Id,
-            PageTransclusionsIdItemTypeName,
             References.ToImmutableList().Add(id));
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
     }
@@ -156,7 +165,6 @@ public class PageTransclusions : IdItem
         {
             var result = new PageTransclusions(
                 Id,
-                PageTransclusionsIdItemTypeName,
                 References.ToImmutableList().Remove(id));
             await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         }

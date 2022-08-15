@@ -5,6 +5,12 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.PageLinks"/>.
+/// </summary>
+[JsonSerializable(typeof(PageLinks))]
+public partial class PageLinksContext : JsonSerializerContext { }
+
+/// <summary>
 /// Represents the collection of other wiki pages which link to a given wiki page.
 /// </summary>
 public class PageLinks : IdItem
@@ -14,10 +20,19 @@ public class PageLinks : IdItem
     /// </summary>
     public const string PageLinksIdItemTypeName = ":PageLinks:";
     /// <summary>
+    /// <para>
     /// A built-in, read-only type discriminator.
+    /// </para>
+    /// <para>
+    /// The set accessor performs no function.
+    /// </para>
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => PageLinksIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => PageLinksIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// <para>
@@ -33,7 +48,6 @@ public class PageLinks : IdItem
     /// Initializes a new instance of <see cref="PageLinks"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="references">
     /// The IDs of other wiki pages which link to the primary wiki page.
     /// </param>
@@ -43,12 +57,8 @@ public class PageLinks : IdItem
     /// otherwise, as it persists instances to the <see cref="IDataStore"/> and builds the
     /// reference list dynamically.
     /// </remarks>
-    [JsonConstructor]
     public PageLinks(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         IReadOnlyList<string> references) : base(id)
         => References = references;
 
@@ -106,7 +116,6 @@ public class PageLinks : IdItem
     {
         var result = new PageLinks(
             GetId(title, wikiNamespace),
-            PageLinksIdItemTypeName,
             new List<string> { referenceId }.AsReadOnly());
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;
@@ -128,7 +137,6 @@ public class PageLinks : IdItem
 
         var result = new PageLinks(
             Id,
-            PageLinksIdItemTypeName,
             References.ToImmutableList().Add(id));
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
     }
@@ -156,7 +164,6 @@ public class PageLinks : IdItem
         {
             var result = new PageLinks(
                 Id,
-                PageLinksIdItemTypeName,
                 References.ToImmutableList().Remove(id));
             await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         }

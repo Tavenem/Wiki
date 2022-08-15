@@ -1,7 +1,23 @@
-﻿using Tavenem.DataStorage;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
+using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
 
 namespace Tavenem.Wiki.Test;
+
+public class MarkdownItemPolymorphicTypeResolver : DefaultJsonTypeInfoResolver
+{
+    public override JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
+    {
+        var jsonTypeInfo = base.GetTypeInfo(type, options);
+        if (jsonTypeInfo.Type == typeof(MarkdownItem))
+        {
+            jsonTypeInfo.PolymorphismOptions!.DerivedTypes.Add(
+                new(typeof(MarkdownItemTestSubclass), ":TestSubclass:"));
+        }
+        return jsonTypeInfo;
+    }
+}
 
 /// <summary>
 /// Test subclass of <see cref="MarkdownItem"/>.

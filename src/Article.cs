@@ -443,6 +443,7 @@ public class Article : MarkdownItem
         if (string.IsNullOrWhiteSpace(text))
         {
             wikiNamespace = options.DefaultNamespace;
+            defaultNamespace = true;
             title = options.MainPageTitle;
         }
         else

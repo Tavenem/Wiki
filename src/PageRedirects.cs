@@ -5,6 +5,12 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.PageRedirects"/>.
+/// </summary>
+[JsonSerializable(typeof(PageRedirects))]
+public partial class PageRedirectsContext : JsonSerializerContext { }
+
+/// <summary>
 /// Represents the collection of other wiki pages which redirect to a given wiki page.
 /// </summary>
 public class PageRedirects : IdItem
@@ -14,10 +20,19 @@ public class PageRedirects : IdItem
     /// </summary>
     public const string PageRedirectsIdItemTypeName = ":PageRedirects:";
     /// <summary>
+    /// <para>
     /// A built-in, read-only type discriminator.
+    /// </para>
+    /// <para>
+    /// The set accessor performs no function.
+    /// </para>
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => PageRedirectsIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => PageRedirectsIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// The IDs of other wiki pages which redirect to the primary wiki page.
@@ -28,7 +43,6 @@ public class PageRedirects : IdItem
     /// Initializes a new instance of <see cref="PageRedirects"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="references">
     /// The IDs of other wiki pages which redirect to the primary wiki page.
     /// </param>
@@ -41,9 +55,6 @@ public class PageRedirects : IdItem
     [JsonConstructor]
     public PageRedirects(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         IReadOnlyList<string> references) : base(id)
         => References = references;
 
@@ -101,7 +112,6 @@ public class PageRedirects : IdItem
     {
         var result = new PageRedirects(
             GetId(title, wikiNamespace),
-            PageRedirectsIdItemTypeName,
             new List<string> { referenceId }.AsReadOnly());
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;
@@ -123,7 +133,6 @@ public class PageRedirects : IdItem
 
         var result = new PageLinks(
             Id,
-            PageRedirectsIdItemTypeName,
             References.ToImmutableList().Add(id));
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
     }
@@ -151,7 +160,6 @@ public class PageRedirects : IdItem
         {
             var result = new PageRedirects(
                 Id,
-                PageRedirectsIdItemTypeName,
                 References.ToImmutableList().Remove(id));
             await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         }

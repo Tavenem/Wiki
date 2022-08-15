@@ -137,7 +137,7 @@ public class WikiLink : IEquatable<WikiLink>
     /// <see langword="true" /> if the current object is equal to the <paramref name="other" />
     /// parameter; otherwise, <see langword="false" />.
     /// </returns>
-    public bool Equals(WikiLink? other) => !(other is null)
+    public bool Equals(WikiLink? other) => other is not null
         && Missing == other.Missing
         && IsNamespaceEscaped == other.IsNamespaceEscaped
         && IsTalk == other.IsTalk

@@ -4,6 +4,12 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.PageReference"/>.
+/// </summary>
+[JsonSerializable(typeof(PageReference))]
+public partial class PageReferenceContext : JsonSerializerContext { }
+
+/// <summary>
 /// A reference from a full wiki page title to the current page ID assigned to that title.
 /// </summary>
 public class PageReference : IdItem
@@ -15,8 +21,12 @@ public class PageReference : IdItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => PageReferenceIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => PageReferenceIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// The ID of the wiki page which is currently assigned to the referenced full title.
@@ -27,7 +37,6 @@ public class PageReference : IdItem
     /// Initializes a new instance of <see cref="PageReference"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="reference">
     /// The ID of the wiki page which is currently assigned to the referenced full title.
     /// </param>
@@ -40,9 +49,6 @@ public class PageReference : IdItem
     [JsonConstructor]
     public PageReference(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         string reference) : base(id)
         => Reference = reference;
 
@@ -101,7 +107,6 @@ public class PageReference : IdItem
     {
         var result = new PageReference(
             GetId(title, wikiNamespace),
-            PageReferenceIdItemTypeName,
             id);
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;

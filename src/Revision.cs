@@ -5,6 +5,12 @@ using Tavenem.DiffPatchMerge;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.Revision"/>.
+/// </summary>
+[JsonSerializable(typeof(Revision))]
+public partial class RevisionContext : JsonSerializerContext { }
+
+/// <summary>
 /// A particular revision of a wiki item.
 /// </summary>
 public class Revision : IdItem
@@ -35,10 +41,19 @@ public class Revision : IdItem
     /// </summary>
     public const string RevisionIdItemTypeName = ":Revision:";
     /// <summary>
+    /// <para>
     /// A built-in, read-only type discriminator.
+    /// </para>
+    /// <para>
+    /// The set accessor performs no function.
+    /// </para>
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => RevisionIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => RevisionIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// Whether the item was marked as deleted by this revision.
@@ -67,7 +82,7 @@ public class Revision : IdItem
     /// <summary>
     /// The timestamp of this revision, in UTC.
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public DateTimeOffset Timestamp => new(TimestampTicks, TimeSpan.Zero);
 
     /// <summary>
@@ -181,9 +196,6 @@ public class Revision : IdItem
     /// <param name="id">
     /// The unique ID of this revision.
     /// </param>
-    /// <param name="idItemTypeName">
-    /// The type discriminator.
-    /// </param>
     /// <param name="wikiId">
     /// A unique ID that identifies this wiki item across revisions.
     /// </param>
@@ -223,12 +235,9 @@ public class Revision : IdItem
     /// Note: this constructor is most useful for deserializers. The other constructors are more
     /// suited to creating a new instance, as they will automatically generate an appropriate ID.
     /// </remarks>
-    [System.Text.Json.Serialization.JsonConstructor]
+    [JsonConstructor]
     public Revision(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: used for polymorphic deserialization
-        string idItemTypeName,
-#pragma warning restore IDE0060 // Remove unused parameter
         string wikiId,
         string editor,
         string title,

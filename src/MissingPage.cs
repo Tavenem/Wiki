@@ -5,6 +5,12 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Wiki.MissingPage"/>.
+/// </summary>
+[JsonSerializable(typeof(MissingPage))]
+public partial class MissingPageContext : JsonSerializerContext { }
+
+/// <summary>
 /// A persisted reference to a missing page on the wiki. Used for efficient enumeration of
 /// broken links.
 /// </summary>
@@ -15,10 +21,19 @@ public class MissingPage : IdItem
     /// </summary>
     public const string MissingPageIdItemTypeName = ":MissingPage:";
     /// <summary>
+    /// <para>
     /// A built-in, read-only type discriminator.
+    /// </para>
+    /// <para>
+    /// The set accessor performs no function.
+    /// </para>
     /// </summary>
-    [JsonPropertyName("$type"), JsonInclude, JsonPropertyOrder(-2)]
-    public override string IdItemTypeName => MissingPageIdItemTypeName;
+    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
+    public override string IdItemTypeName
+    {
+        get => MissingPageIdItemTypeName;
+        set { }
+    }
 
     /// <summary>
     /// The IDs of pages which reference this missing page.
@@ -36,10 +51,9 @@ public class MissingPage : IdItem
     public string WikiNamespace { get; }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="Revision"/>.
+    /// Initializes a new instance of <see cref="MissingPage"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="idItemTypeName">The type discriminator.</param>
     /// <param name="title">
     /// The title of this missing page. Must be unique within its namespace, and non-empty.
     /// </param>
@@ -55,14 +69,10 @@ public class MissingPage : IdItem
     /// otherwise, as it persists instances to the <see cref="IDataStore"/> and builds the
     /// reference list dynamically.
     /// </remarks>
-    [JsonConstructor]
     public MissingPage(
         string id,
-#pragma warning disable IDE0060 // Remove unused parameter: required for deserializers.
-        string idItemTypeName,
         string title,
         string wikiNamespace,
-#pragma warning restore IDE0060 // Remove unused parameter
         IReadOnlyList<string> references) : base(id)
     {
         Title = title;
@@ -136,7 +146,6 @@ public class MissingPage : IdItem
         }
         var result = new MissingPage(
             GetId(title, wikiNamespace),
-            MissingPageIdItemTypeName,
             title,
             wikiNamespace,
             referenceIds);
@@ -178,7 +187,6 @@ public class MissingPage : IdItem
 
         var result = new MissingPage(
             Id,
-            MissingPageIdItemTypeName,
             Title,
             WikiNamespace,
             References.ToImmutableList().Add(id));
@@ -208,7 +216,6 @@ public class MissingPage : IdItem
         {
             var result = new MissingPage(
                 Id,
-                MissingPageIdItemTypeName,
                 Title,
                 WikiNamespace,
                 References.ToImmutableList().Remove(id));

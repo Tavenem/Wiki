@@ -5,6 +5,7 @@
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <IsTrimmable>true</IsTrimmable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
@@ -38,8 +39,8 @@
     </PackageReference>
     <PackageReference Include="HtmlSanitizer" Version="7.1.542" />
     <PackageReference Include="Jint" Version="3.0.0-beta-2039" />
-    <PackageReference Include="Markdig" Version="0.30.2" />
-    <PackageReference Include="Tavenem.DataStore" Version="0.34.0-preview" />
+    <PackageReference Include="Markdig" Version="0.30.3" />
+    <PackageReference Include="Tavenem.DataStore" Version="0.36.0-preview" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>
 

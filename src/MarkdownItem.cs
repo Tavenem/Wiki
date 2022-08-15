@@ -16,8 +16,20 @@ using Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// A source gererated serializer context for <see cref="Tavenem.Wiki.MarkdownItem"/> and derived types.
+/// </summary>
+[JsonSerializable(typeof(MarkdownItem))]
+[JsonSerializable(typeof(List<MarkdownItem>))]
+[JsonSerializable(typeof(List<Article>))]
+[JsonSerializable(typeof(List<Category>))]
+[JsonSerializable(typeof(List<WikiFile>))]
+[JsonSerializable(typeof(List<Message>))]
+public partial class MarkdownItemContext : JsonSerializerContext { }
+
+/// <summary>
 /// An item which contains markdown.
 /// </summary>
+[JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
 [JsonDerivedType(typeof(Article), Article.ArticleIdItemTypeName)]
 [JsonDerivedType(typeof(Category), Category.CategoryIdItemTypeName)]
 [JsonDerivedType(typeof(WikiFile), WikiFile.WikiFileIdItemTypeName)]
@@ -40,25 +52,25 @@ public abstract class MarkdownItem : IdItem
     /// The rendered HTML content.
     /// </summary>
     [JsonInclude]
-    public string Html { get; protected set; }
+    public string Html { get; internal set; }
 
     /// <summary>
     /// The markdown content.
     /// </summary>
     [JsonInclude]
-    public string MarkdownContent { get; protected set; }
+    public string MarkdownContent { get; internal set; }
 
     /// <summary>
     /// A preview of this item's rendered HTML.
     /// </summary>
     [JsonInclude]
-    public string Preview { get; protected set; }
+    public string Preview { get; internal set; }
 
     /// <summary>
     /// The wiki links within this content.
     /// </summary>
     [JsonInclude]
-    public IReadOnlyCollection<WikiLink> WikiLinks { get; protected set; } = new List<WikiLink>().AsReadOnly();
+    public IReadOnlyCollection<WikiLink> WikiLinks { get; internal set; } = new List<WikiLink>().AsReadOnly();
 
     /// <summary>
     /// Initializes a new instance of <see cref="MarkdownItem"/>.
