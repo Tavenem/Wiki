@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0-preview
+### Added
+- Simplify project structure by moving `IWikiGroup`, `IWikiGroupManager`, `IWikiUser`, `IWikiUserManager` from the `Tavenem.Wiki.Web` project into this one.
+### Changed
+- Simplify configuration process by merging `IWikiWebOptions` from the `Tavenem.Wiki.Web` project into the main `IWikiOptions` object.
+
 ## 0.6.1-preview
 ### Updated
 - Update dependencies
