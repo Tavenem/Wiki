@@ -49,28 +49,48 @@ public abstract class MarkdownItem : IdItem
     private const int NewLineWeight = 4;
 
     /// <summary>
+    /// <para>
     /// The rendered HTML content.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </summary>
-    [JsonInclude]
-    public string Html { get; internal set; }
+    public string Html { get; set; }
 
     /// <summary>
+    /// <para>
     /// The markdown content.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </summary>
-    [JsonInclude]
-    public string MarkdownContent { get; internal set; }
+    public string MarkdownContent { get; set; }
 
     /// <summary>
+    /// <para>
     /// A preview of this item's rendered HTML.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </summary>
-    [JsonInclude]
-    public string Preview { get; internal set; }
+    public string Preview { get; set; }
 
     /// <summary>
+    /// <para>
     /// The wiki links within this content.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </summary>
-    [JsonInclude]
-    public IReadOnlyCollection<WikiLink> WikiLinks { get; internal set; } = new List<WikiLink>().AsReadOnly();
+    public IReadOnlyCollection<WikiLink> WikiLinks { get; set; } = new List<WikiLink>().AsReadOnly();
 
     /// <summary>
     /// Initializes a new instance of <see cref="MarkdownItem"/>.

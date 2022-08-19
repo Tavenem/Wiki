@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1-preview
+### Changed
+- Make property setters in `MarkdownItem` public for serialization support outside this library.
+
 ## 0.7.0-preview
 ### Added
 - Simplify project structure by moving `IWikiGroup`, `IWikiGroupManager`, `IWikiUser`, `IWikiUserManager` from the `Tavenem.Wiki.Web` project into this one.
