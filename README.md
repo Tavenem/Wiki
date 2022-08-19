@@ -27,18 +27,34 @@ injection after being configured during initialization.
 Most of the properties of this class are not expected to change once a wiki has gone into operation.
 Doing so can cause existing wiki pages to become inaccessible, or to be formatted incorrectly.
 
+- `AboutPageTitle`*: The title of the main about page. Default is "About".
+- `AdminGroupName`: The name of the admin user group. Default is "Wiki Admins".
+- `AdminNamespaces`: An optional collection of namespaces which may not be assigned to pages by
+  non-admin users. The namespace assigned to `SystemNamespace` is included automatically.
+
+  Read-only. items can be added with the `AddAdminNamespace` method.
 - `CategoriesTitle`: The name of the article on categories in the main wiki. Default is
   "Categories".
 - `CategoryNamespace`: The name of the categories namespace. Default is "Category".
+- `ContactPageTitle`*: The title of the main contact page. Default is "Contact".
+- `ContentsPageTitle`*: The title of the main contents page. Default is "Contents".
+- `CopyrightPageTitle`*: The title of the main copyright page. Default is "Copyright".
 - `DefaultNamespace`: The name of the default namespace. Default is "Wiki".
 - `DefaultTableOfContentsDepth`: The default number of levels of nesting shown in an article's table
   of contents. Can be overridden by specifying the level for a given article. Default is 3.
 - `DefaultTableOfContentsTitle`: The default title of tables of contents. Default is "Contents".
 - `FileNamespace`: The name of the file namespace. Default is "File".
+- `GroupNamespace`: The name of the user group namespace. Default is "Group".
+- `HelpPageTitle`*: The title of the main help page. Default is "Help".
 - `LinkTemplate`: A string added to all wiki links, if non-empty. The string '\{LINK\}', if included,
   will be replaced by the full article title being linked.
 - `MainPageTitle`: The title of the main page (shown when no article title is given). Default is
   "Main".
+- `MaxFileSize`: The maximum size (in bytes) of uploaded files. Default is 5,000,000 (5 MB).
+
+  Setting this to a value less than or equal to zero effectively prevents file uploads.
+- `MaxFileSizeString`: Read-only. Gets a string representing the `MaxFileSize` in a reasonable unit
+  (GB for large sizes, down to bytes for small ones).
 - `MinimumTableOfContentsHeadings`: The minimum number of headings required in an article to display
   a table of contents by default. Can be overridden by specifying the location of a table of
   contents explicitly for a given article. Default is 3.
@@ -55,6 +71,7 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
   
   Receives the deleted article, the revision which was applied, the original owner, and the new
   owner as parameters.
+- `PolicyPageTitle`*: The title of the main policy page. Default is "Policies".
 - `Postprocessors`: A collection of preprocessors which transform the HTML of an article *after* it
   is parsed from markdown but *before* it is sanitized.
 
@@ -67,10 +84,14 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 - `ScriptNamespace`: The name of the script namespace. Default is "Script".
 - `SiteName`: The name of the wiki. Displayed as a subheading below each article title. Default is
   "a NeverFoundry wiki".
+- `SystemNamespace`: The name of the system namespace. Default is "System".
 - `TalkNamespace`: The name of the talk pseudo-namespace. Default is "Talk".
 - `TransclusionNamespace`: The name of the transclusion namespace. Default is "Transclusion".
+- `UserNamespace`: The name of the user namespace. Default is "User".
 - `WikiLinkPrefix`: The prefix added before wiki links (to distinguish them from other pages on the
   same server). Default is "Wiki".
+
+**This property may be set to `null` or an empty `string` to disable the associated wiki page.*
 
 ## Markup
 The Tavenem Wiki syntax is a custom flavor of markdown. It implements all the features of
