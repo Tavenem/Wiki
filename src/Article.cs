@@ -1544,7 +1544,7 @@ public class Article : MarkdownItem
     /// first).
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="pageNumber">The current page number.</param>
+    /// <param name="pageNumber">The current page number. The first page is 1.</param>
     /// <param name="pageSize">The page size.</param>
     /// <param name="start">The earliest <see cref="Timestamp"/> to retrieve.</param>
     /// <param name="end">The most recent <see cref="Timestamp"/> to retrieve.</param>
@@ -1553,8 +1553,8 @@ public class Article : MarkdownItem
     /// instances.</returns>
     public async Task<IPagedList<Revision>> GetHistoryAsync(
         IDataStore dataStore,
-        int pageNumber,
-        int pageSize,
+        int pageNumber = 1,
+        int pageSize = 50,
         DateTimeOffset? start = null,
         DateTimeOffset? end = null,
         Expression<Func<Revision, bool>>? condition = null)

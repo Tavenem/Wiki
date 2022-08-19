@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.1-preview
+### Updated
+- Update dependencies
+
 ## 0.6.0-preview
 ### Changed
 - Enable library trimming
