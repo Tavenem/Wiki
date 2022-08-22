@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.2-preview
+### Updated
+- Update dependencies
+
 ## 0.7.1-preview
 ### Changed
 - Make property setters in `MarkdownItem` public for serialization support outside this library.
