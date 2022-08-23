@@ -12,12 +12,12 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
     /// <summary>
     /// The options for this instance.
     /// </summary>
-    public IWikiOptions Options { get; }
+    public WikiOptions Options { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="WikiLinkInlineRenderer"/>.
     /// </summary>
-    public WikiLinkInlineRenderer(IWikiOptions options) => Options = options;
+    public WikiLinkInlineRenderer(WikiOptions options) => Options = options;
 
     /// <summary>
     /// Writes the specified Markdown object to the renderer.

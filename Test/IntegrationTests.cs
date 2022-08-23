@@ -47,7 +47,7 @@ public class IntegrationTests
         Assert.AreEqual(_ExpectedAbout, about.Html, ignoreCase: false);
     }
 
-    private static Task<Article> GetDefaultAboutAsync(IWikiOptions options, IDataStore dataStore, string adminId) => Article.NewAsync(
+    private static Task<Article> GetDefaultAboutAsync(WikiOptions options, IDataStore dataStore, string adminId) => Article.NewAsync(
         options,
         dataStore,
         "About",
@@ -65,7 +65,7 @@ See the [[System:Help|]] page for usage information.
         adminId,
         new[] { adminId });
 
-    private static Task<Article> GetDefaultMainAsync(IWikiOptions options, IDataStore dataStore, string adminId) => Article.NewAsync(
+    private static Task<Article> GetDefaultMainAsync(WikiOptions options, IDataStore dataStore, string adminId) => Article.NewAsync(
         options,
         dataStore,
         options.MainPageTitle,
@@ -79,7 +79,7 @@ See the [[System:About|]] page for more information.
         adminId,
         new[] { adminId });
 
-    private static Task<Article> GetDefaultWelcomeAsync(IWikiOptions options, IDataStore dataStore, string adminId) => Article.NewAsync(
+    private static Task<Article> GetDefaultWelcomeAsync(WikiOptions options, IDataStore dataStore, string adminId) => Article.NewAsync(
         options,
         dataStore,
         "Welcome",
@@ -91,7 +91,7 @@ See the [[System:About|]] page for more information.
         adminId,
         new[] { adminId });
 
-    private static Task SetDefaultCategoryAsync(IWikiOptions options, IDataStore dataStore, Category category, string adminId) => category.ReviseAsync(
+    private static Task SetDefaultCategoryAsync(WikiOptions options, IDataStore dataStore, Category category, string adminId) => category.ReviseAsync(
         options,
         dataStore,
         adminId,

@@ -172,7 +172,7 @@ public sealed class Category : Article
     /// <summary>
     /// Gets the latest revision for the article with the given title.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article to retrieve.</param>
     /// <param name="allowCaseInsenstive">
@@ -185,7 +185,7 @@ public sealed class Category : Article
     /// no such article exists.
     /// </returns>
     public static Category? GetCategory(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? title,
         bool allowCaseInsenstive = true)
@@ -217,7 +217,7 @@ public sealed class Category : Article
     /// <summary>
     /// Gets a new <see cref="Category"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the category. Must be unique within its namespace, and
     /// non-empty.</param>
@@ -260,7 +260,7 @@ public sealed class Category : Article
     /// </para>
     /// </param>
     public static async Task<Category> NewAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string title,
         string editor,
@@ -364,7 +364,7 @@ public sealed class Category : Article
     /// <summary>
     /// Revises this <see cref="Category"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
@@ -424,7 +424,7 @@ public sealed class Category : Article
     /// </para>
     /// </param>
     public async Task ReviseAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string editor,
         string? title = null,

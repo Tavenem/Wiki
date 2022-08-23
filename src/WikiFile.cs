@@ -223,13 +223,13 @@ public sealed class WikiFile : Article
     /// <summary>
     /// Gets the latest revision for the file with the given title.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the file to retrieve.</param>
     /// <returns>The latest revision for the file with the given title; or <see
     /// langword="null"/> if no such file exists.</returns>
     public static WikiFile? GetFile(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string title)
     {
@@ -255,7 +255,7 @@ public sealed class WikiFile : Article
     /// <summary>
     /// Gets a new <see cref="WikiFile"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the file. Must be unique and non-empty.</param>
     /// <param name="editor">
@@ -305,7 +305,7 @@ public sealed class WikiFile : Article
     /// </para>
     /// </param>
     public static async Task<WikiFile> NewAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string title,
         string editor,
@@ -420,7 +420,7 @@ public sealed class WikiFile : Article
     /// <summary>
     /// Revises this <see cref="WikiFile"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
@@ -483,7 +483,7 @@ public sealed class WikiFile : Article
     /// </para>
     /// </param>
     public async Task ReviseAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string editor,
         string? title = null,

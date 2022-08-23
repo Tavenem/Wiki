@@ -328,7 +328,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets the latest revision for the article with the given title.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article to retrieve.</param>
     /// <param name="wikiNamespace">
@@ -337,7 +337,7 @@ public class Article : MarkdownItem
     /// </para>
     /// <para>
     /// If left <see langword="null"/> the default namespace (<see
-    /// cref="IWikiOptions.DefaultNamespace"/>) will be assumed.
+    /// cref="WikiOptions.DefaultNamespace"/>) will be assumed.
     /// </para>
     /// </param>
     /// <param name="noRedirect">
@@ -347,7 +347,7 @@ public class Article : MarkdownItem
     /// <returns>The latest revision for the article with the given title; or <see
     /// langword="null"/> if no such article exists.</returns>
     public static Article? GetArticle(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? title,
         string? wikiNamespace = null,
@@ -401,11 +401,11 @@ public class Article : MarkdownItem
 
     /// <summary>
     /// Gets the full title from the given parts (includes namespace if the namespace is not
-    /// <see cref="IWikiOptions.DefaultNamespace"/>).
+    /// <see cref="WikiOptions.DefaultNamespace"/>).
     /// </summary>
     /// <returns>The full title from the given parts.</returns>
     public static string GetFullTitle(
-        IWikiOptions options,
+        WikiOptions options,
         string title,
         string? wikiNamespace = null,
         bool talk = false)
@@ -429,13 +429,13 @@ public class Article : MarkdownItem
     /// <summary>
     /// Breaks the given title string into parts.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="text">The full title string.</param>
     /// <returns>
     /// The namespace and title, and <see cref="bool"/> flags indicating whether the title
     /// indicates a discussion page, as well as whether the namespace was omitted.
     /// </returns>
-    public static (string wikiNamespace, string title, bool isTalk, bool defaultNamespace) GetTitleParts(IWikiOptions options, string? text)
+    public static (string wikiNamespace, string title, bool isTalk, bool defaultNamespace) GetTitleParts(WikiOptions options, string? text)
     {
         string wikiNamespace, title;
         var isTalk = false;
@@ -498,7 +498,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets a new <see cref="Article"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article. Must be unique within its namespace, and
     /// non-empty.</param>
@@ -511,7 +511,7 @@ public class Article : MarkdownItem
     /// The namespace to which this article belongs.
     /// </para>
     /// <para>
-    /// If this is equal to <see cref="IWikiOptions.CategoryNamespace"/>, the result will be a
+    /// If this is equal to <see cref="WikiOptions.CategoryNamespace"/>, the result will be a
     /// <see cref="Category"/> rather than an <see cref="Article"/>.
     /// </para>
     /// </param>
@@ -550,7 +550,7 @@ public class Article : MarkdownItem
     /// </para>
     /// </param>
     public static async Task<Article> NewAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string title,
         string editor,
@@ -900,7 +900,7 @@ public class Article : MarkdownItem
         bool isRedirect,
         bool isBrokenRedirect,
         bool isDoubleRedirect)> IdentifyRedirectAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string id,
         string? markdown)
@@ -1059,7 +1059,7 @@ public class Article : MarkdownItem
     }
 
     private protected static async Task<List<string>> UpdateCategoriesAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string id,
         string editor,
@@ -1107,7 +1107,7 @@ public class Article : MarkdownItem
     }
 
     private protected static async Task UpdateReferencesAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string title,
         string wikiNamespace,
@@ -1204,7 +1204,7 @@ public class Article : MarkdownItem
     /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
     /// rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1251,7 +1251,7 @@ public class Article : MarkdownItem
     /// the given time will be included.
     /// </remarks>
     public async Task<string> GetDiffAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         DateTimeOffset time,
         string format = "md")
@@ -1274,7 +1274,7 @@ public class Article : MarkdownItem
     /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
     /// rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1292,7 +1292,7 @@ public class Article : MarkdownItem
     /// the given time will be included.
     /// </remarks>
     public async Task<string> GetDiffHtmlAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         DateTimeOffset time)
     {
@@ -1369,7 +1369,7 @@ public class Article : MarkdownItem
     /// Gets a diff between the text at the given <paramref name="time"/> and the current
     /// version of the text, as rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1384,7 +1384,7 @@ public class Article : MarkdownItem
     /// order given.
     /// </exception>
     public async Task<string> GetDiffWithCurrentHtmlAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         DateTimeOffset time)
     {
@@ -1468,7 +1468,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets a diff between the text at two given times, as rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="firstTime">
     /// The first revision time to compare.
@@ -1490,7 +1490,7 @@ public class Article : MarkdownItem
     /// are swapped. In other words, the diff is always from an earlier version to a later version.
     /// </remarks>
     public async Task<string> GetDiffWithOtherHtmlAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         DateTimeOffset firstTime,
         DateTimeOffset secondTime)
@@ -1514,14 +1514,14 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets this item's content at the given <paramref name="time"/>, rendered as HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
     /// </param>
     /// <returns>The rendered HTML.</returns>
     public async Task<string> GetHtmlAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         DateTimeOffset time)
     {
@@ -1597,7 +1597,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Revises this <see cref="Article"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
@@ -1666,7 +1666,7 @@ public class Article : MarkdownItem
     /// </para>
     /// </param>
     public async Task ReviseAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string editor,
         string? title = null,
@@ -1884,7 +1884,7 @@ public class Article : MarkdownItem
     }
 
     private protected static string PostprocessArticleMarkdown(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string title,
         string wikiNamespace,
@@ -1926,7 +1926,7 @@ public class Article : MarkdownItem
     }
 
     private protected override string PostprocessMarkdown(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         bool isPreview = false) => PostprocessArticleMarkdown(

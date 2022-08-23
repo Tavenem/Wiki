@@ -124,7 +124,7 @@ public class Message : MarkdownItem
     /// <summary>
     /// Creates a new reply.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
     /// <param name="senderId">The ID of the sender of this message.</param>
@@ -136,7 +136,7 @@ public class Message : MarkdownItem
     /// messages addressed directly to a topic).
     /// </param>
     public static async Task<Message> ReplyAsync(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string topicId,
         string senderId,
@@ -172,7 +172,7 @@ public class Message : MarkdownItem
     }
 
     private static string PostprocessMessageMarkdown(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         bool isPreview = false)
@@ -193,7 +193,7 @@ public class Message : MarkdownItem
     }
 
     private protected override string PostprocessMarkdown(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         bool isPreview = false) => PostprocessMessageMarkdown(

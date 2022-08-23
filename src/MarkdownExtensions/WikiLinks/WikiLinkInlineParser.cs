@@ -25,12 +25,12 @@ public class WikiLinkInlineParser : InlineParser
     /// <summary>
     /// The options for this instance.
     /// </summary>
-    public IWikiOptions Options { get; }
+    public WikiOptions Options { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="WikiLinkInlineParser"/>.
     /// </summary>
-    public WikiLinkInlineParser(IWikiOptions options, IDataStore dataStore)
+    public WikiLinkInlineParser(WikiOptions options, IDataStore dataStore)
     {
         DataStore = dataStore;
         OpeningCharacters = new[] { LinkOpenChar, LinkCloseChar, '!' };

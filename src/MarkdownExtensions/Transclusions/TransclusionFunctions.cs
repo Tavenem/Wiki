@@ -14,7 +14,7 @@ internal static class TransclusionFunctions
     private const int ScriptRecursionLimit = 100;
     private const int ScriptStatementLimit = 10000;
 
-    internal static readonly Dictionary<string, Func<IWikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>> _Functions
+    internal static readonly Dictionary<string, Func<WikiOptions, Dictionary<string, string>, string?, string?, bool, bool, string>> _Functions
         = new()
         {
             ["eval"] = Eval,
@@ -40,7 +40,7 @@ internal static class TransclusionFunctions
         };
 
     private static string Eval(
-        IWikiOptions options,
+        WikiOptions options,
         Dictionary<string, string> parameters,
         string? title,
         string? fullTitle,
@@ -65,7 +65,7 @@ internal static class TransclusionFunctions
     }
 
     private static string Exec(
-        IWikiOptions options,
+        WikiOptions options,
         Dictionary<string, string> parameters,
         string? title,
         string? fullTitle,
@@ -82,7 +82,7 @@ internal static class TransclusionFunctions
         return GetScriptResult(options, code, false, parameters, title, fullTitle, isTemplate, isPreview);
     }
 
-    private static string Format(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string Format(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         if (!parameters.TryGetValue("1", out var first))
         {
@@ -152,7 +152,7 @@ internal static class TransclusionFunctions
     });
 
     private static string GetScriptResult(
-        IWikiOptions options,
+        WikiOptions options,
         string code,
         bool autoReturn,
         Dictionary<string, string> parameters,
@@ -252,7 +252,7 @@ internal static class TransclusionFunctions
         }
     }
 
-    private static string If(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string If(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         if (!parameters.TryGetValue("2", out var second))
         {
@@ -285,7 +285,7 @@ internal static class TransclusionFunctions
         }
     }
 
-    private static string IfCategory(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
+    private static string IfCategory(WikiOptions options, Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
     {
         if (Article.GetTitleParts(options, fullTitle).wikiNamespace != options.CategoryNamespace)
         {
@@ -294,7 +294,7 @@ internal static class TransclusionFunctions
         return parameters.TryGetValue("1", out var first) ? first : string.Empty;
     }
 
-    private static string IfEq(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string IfEq(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         if (!parameters.TryGetValue("1", out var first))
         {
@@ -345,7 +345,7 @@ internal static class TransclusionFunctions
         }
     }
 
-    private static string IfNotTemplate(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
+    private static string IfNotTemplate(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
     {
         if (isTemplate)
         {
@@ -354,7 +354,7 @@ internal static class TransclusionFunctions
         return parameters.TryGetValue("1", out var first) ? first : string.Empty;
     }
 
-    private static string IfTalk(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
+    private static string IfTalk(WikiOptions options, Dictionary<string, string> parameters, string? _, string? fullTitle, bool __, bool ___)
     {
         if (Article.GetTitleParts(options, fullTitle).isTalk)
         {
@@ -363,7 +363,7 @@ internal static class TransclusionFunctions
         return parameters.TryGetValue("2", out var second) ? second : string.Empty;
     }
 
-    private static string IfTemplate(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
+    private static string IfTemplate(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool isTemplate, bool ___)
     {
         if (!isTemplate)
         {
@@ -372,7 +372,7 @@ internal static class TransclusionFunctions
         return parameters.TryGetValue("1", out var first) ? first : string.Empty;
     }
 
-    private static string PadLeft(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string PadLeft(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         if (!parameters.TryGetValue("1", out var value))
         {
@@ -392,7 +392,7 @@ internal static class TransclusionFunctions
         return value.PadLeft(totalWidth, paddingChar);
     }
 
-    private static string PadRight(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string PadRight(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         if (!parameters.TryGetValue("1", out var value))
         {
@@ -412,7 +412,7 @@ internal static class TransclusionFunctions
         return value.PadRight(totalWidth, paddingChar);
     }
 
-    private static string Preview(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool isPreview)
+    private static string Preview(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool isPreview)
     {
         if (!isPreview)
         {
@@ -423,7 +423,7 @@ internal static class TransclusionFunctions
             : string.Empty;
     }
 
-    private static string TableOfContents(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string TableOfContents(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         string depth;
         if (!parameters.TryGetValue("1", out var first)
@@ -462,7 +462,7 @@ internal static class TransclusionFunctions
         return string.Format(TableOfContentsExtension.ToCFormat, depth, startingLevel, title);
     }
 
-    private static string TitleCase(IWikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
+    private static string TitleCase(WikiOptions options, Dictionary<string, string> parameters, string? _, string? __, bool ___, bool ____)
     {
         if (!parameters.TryGetValue("1", out var value))
         {

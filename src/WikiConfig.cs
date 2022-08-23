@@ -25,7 +25,7 @@ internal static class WikiConfig
             KeepChildNodes = true
         };
 
-    internal static IHtmlSanitizer GetHtmlSanitizer(IWikiOptions options)
+    internal static IHtmlSanitizer GetHtmlSanitizer(WikiOptions options)
     {
         if (string.IsNullOrEmpty(options.LinkTemplate)
             && _HtmlSanitizerNoTemplate is not null)
@@ -55,7 +55,7 @@ internal static class WikiConfig
         return htmlSanitizer;
     }
 
-    internal static MarkdownPipeline GetMarkdownPipeline(IWikiOptions options, IDataStore dataStore) =>
+    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options, IDataStore dataStore) =>
         new MarkdownPipelineBuilder()
         .UseWikiLinks(options, dataStore)
         .UseAbbreviations()
@@ -84,7 +84,7 @@ internal static class WikiConfig
         .UseSmartyPants()
         .Build();
 
-    internal static MarkdownPipeline GetMarkdownPipelinePlainText(IWikiOptions options, IDataStore dataStore) =>
+    internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore) =>
         new MarkdownPipelineBuilder()
         .UseWikiLinks(options, dataStore)
         .UseAbbreviations()

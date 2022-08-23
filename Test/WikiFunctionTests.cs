@@ -33,7 +33,7 @@ Third section text
 Fourth section text";
     private const string LongArticleExpected = "<p>First paragraph text</p>\n{0}<p>Second paragraph text</p>\n<h1 id=\"first-heading\">First heading</h1>\n<p>Second section text</p>\n<h2 id=\"nested-heading\">Nested heading</h2>\n<p>Nested section text</p>\n<h1 id=\"second-heading\">Second heading</h1>\n<p>Third section text</p>\n<h1 id=\"third-heading\">Third heading</h1>\n<p>Fourth section text</p>\n";
 
-    private static readonly IWikiOptions _Options = new WikiOptions();
+    private static readonly WikiOptions _Options = new WikiOptions();
     private static readonly IDataStore _DataStore = new InMemoryDataStore();
 
     private static Article? _Article;

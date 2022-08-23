@@ -23,12 +23,12 @@ public static class TransclusionParser
     /// Replaces all the transclusions in the given <paramref name="markdown"/> with their
     /// contents.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the top-level article being generated.</param>
     /// <param name="fullTitle">
     /// The full title of the top-level article being generated (including namespace if the
-    /// namespace is not <see cref="IWikiOptions.DefaultNamespace"/>).
+    /// namespace is not <see cref="WikiOptions.DefaultNamespace"/>).
     /// </param>
     /// <param name="markdown">A markdown string.</param>
     /// <param name="transcludedArticles">
@@ -44,7 +44,7 @@ public static class TransclusionParser
     /// </param>
     /// <returns>The markdown with all transclusions substituted.</returns>
     public static string Transclude(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? title,
         string? fullTitle,
@@ -125,7 +125,7 @@ public static class TransclusionParser
     }
 
     private static string GetContent(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? title,
         string? fullTitle,

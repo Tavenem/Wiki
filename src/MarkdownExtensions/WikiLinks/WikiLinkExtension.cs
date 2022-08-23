@@ -19,12 +19,12 @@ public class WikiLinkExtension : IMarkdownExtension
     /// <summary>
     /// The options for this instance.
     /// </summary>
-    public IWikiOptions Options { get; }
+    public WikiOptions Options { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="WikiLinkExtension"/>.
     /// </summary>
-    public WikiLinkExtension(IWikiOptions options, IDataStore dataStore)
+    public WikiLinkExtension(WikiOptions options, IDataStore dataStore)
     {
         Options = options;
         DataStore = dataStore;

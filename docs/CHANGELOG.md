@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.8.0-preview
+### Changed
+- WikiOptions refactored to better support ASP.NET Options binding pattern.
+### Removed
+- IWikiOptions interface removed (WikiOptions class is used directly).
+
 ## 0.7.2-preview
 ### Updated
 - Update dependencies
@@ -12,7 +18,7 @@
 ### Added
 - Simplify project structure by moving `IWikiGroup`, `IWikiGroupManager`, `IWikiUser`, `IWikiUserManager` from the `Tavenem.Wiki.Web` project into this one.
 ### Changed
-- Simplify configuration process by merging `IWikiWebOptions` from the `Tavenem.Wiki.Web` project into the main `IWikiOptions` object.
+- Simplify configuration process by merging `IWikiWebOptions` from the `Tavenem.Wiki.Web` project into the main `WikiOptions` object.
 
 ## 0.6.1-preview
 ### Updated

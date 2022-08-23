@@ -38,7 +38,7 @@ internal static class PipelineExtensions
     /// Adds wiki links.
     /// </summary>
     /// <returns>The <see cref="MarkdownPipelineBuilder"/>.</returns>
-    internal static MarkdownPipelineBuilder UseWikiLinks(this MarkdownPipelineBuilder pipeline, IWikiOptions options, IDataStore dataStore)
+    internal static MarkdownPipelineBuilder UseWikiLinks(this MarkdownPipelineBuilder pipeline, WikiOptions options, IDataStore dataStore)
     {
         pipeline.Extensions.ReplaceOrAdd<WikiLinkExtension>(new WikiLinkExtension(options, dataStore));
         return pipeline;

@@ -161,7 +161,7 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Gets the given markdown content as plain text (i.e. strips all formatting).
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
@@ -170,7 +170,7 @@ public abstract class MarkdownItem : IdItem
     /// </param>
     /// <returns>The plain text.</returns>
     public static string FormatPlainText(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         int? characterLimit = 200,
@@ -236,11 +236,11 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Renders the given <paramref name="markdown"/> as HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <returns>The rendered HTML.</returns>
-    public static string RenderHtml(IWikiOptions options, IDataStore dataStore, string? markdown)
+    public static string RenderHtml(WikiOptions options, IDataStore dataStore, string? markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -267,11 +267,11 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Gets a preview of the given markdown's rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <returns>A preview of the rendered HTML.</returns>
-    public static string RenderPreview(IWikiOptions options, IDataStore dataStore, string? markdown)
+    public static string RenderPreview(WikiOptions options, IDataStore dataStore, string? markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -355,27 +355,27 @@ public abstract class MarkdownItem : IdItem
     /// Gets a diff between the <see cref="MarkdownContent"/> of this item and the given one, as
     /// rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="other">The other <see cref="MarkdownItem"/> insteance.</param>
     /// <returns>
     /// A string representing the diff between this instance and the <paramref name="other"/>
     /// instance, as rendered HTML.
     /// </returns>
-    public string GetDiffHtml(IWikiOptions options, IDataStore dataStore, MarkdownItem other)
+    public string GetDiffHtml(WikiOptions options, IDataStore dataStore, MarkdownItem other)
         => RenderHtml(options, dataStore, PostprocessMarkdown(options, dataStore, GetDiff(other, "html")));
 
     /// <summary>
     /// Gets this item's content rendered as HTML.
     /// </summary>
     /// <returns>The rendered HTML.</returns>
-    public string GetHtml(IWikiOptions options, IDataStore dataStore)
+    public string GetHtml(WikiOptions options, IDataStore dataStore)
         => RenderHtml(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent));
 
     /// <summary>
     /// Gets the given markdown content as plain text (i.e. strips all formatting).
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
@@ -384,7 +384,7 @@ public abstract class MarkdownItem : IdItem
     /// </param>
     /// <returns>The plain text.</returns>
     public string GetPlainText(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         int? characterLimit = 200,
@@ -394,7 +394,7 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Gets this item's content as plain text (i.e. strips all formatting).
     /// </summary>
-    /// <param name="options">An <see cref="IWikiOptions"/> instance.</param>
+    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
     /// <param name="singleParagraph">
@@ -402,7 +402,7 @@ public abstract class MarkdownItem : IdItem
     /// </param>
     /// <returns>The plain text.</returns>
     public string GetPlainText(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         int? characterLimit = 200,
         bool singleParagraph = true)
@@ -412,7 +412,7 @@ public abstract class MarkdownItem : IdItem
     /// Gets a preview of this item's rendered HTML.
     /// </summary>
     /// <returns>A preview of this item's rendered HTML.</returns>
-    public string GetPreview(IWikiOptions options, IDataStore dataStore)
+    public string GetPreview(WikiOptions options, IDataStore dataStore)
         => RenderPreview(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent, isPreview: true));
 
     /// <summary>
@@ -427,7 +427,7 @@ public abstract class MarkdownItem : IdItem
     /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
     /// </returns>
     protected static List<WikiLink> GetWikiLinks(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         string? title = null,
@@ -752,14 +752,14 @@ public abstract class MarkdownItem : IdItem
     }
 
     [MemberNotNull(nameof(Html), nameof(Preview))]
-    internal void Update(IWikiOptions options, IDataStore dataStore)
+    internal void Update(WikiOptions options, IDataStore dataStore)
     {
         Html = GetHtml(options, dataStore);
         Preview = GetPreview(options, dataStore);
     }
 
     internal void UpdateWithLinks(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? title = null,
         string? wikiNamespace = null)
@@ -769,7 +769,7 @@ public abstract class MarkdownItem : IdItem
     }
 
     private protected virtual string PostprocessMarkdown(
-        IWikiOptions options,
+        WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         bool isPreview = false) => markdown ?? string.Empty;

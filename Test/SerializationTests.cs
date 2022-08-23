@@ -8,7 +8,7 @@ namespace Tavenem.Wiki.Test;
 [TestClass]
 public class SerializationTests
 {
-    private static readonly IWikiOptions _Options = new WikiOptions();
+    private static readonly WikiOptions _Options = new WikiOptions();
 
     [TestMethod]
     public void ArticleTest()

@@ -64,7 +64,7 @@ public class MarkdownItemTestSubclass : MarkdownItem
         : base(markdown, html, preview, wikiLinks)
     { }
 
-    public static MarkdownItemTestSubclass New(IWikiOptions options, IDataStore dataStore, string? markdown)
+    public static MarkdownItemTestSubclass New(WikiOptions options, IDataStore dataStore, string? markdown)
     {
         var md = string.IsNullOrEmpty(markdown)
             ? null
