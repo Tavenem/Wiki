@@ -84,19 +84,6 @@ public class PageTransclusions : IdItem
     /// The <see cref="PageTransclusions"/> that fits the given parameters; or <see
     /// langword="null"/>, if there is no such item.
     /// </returns>
-    public static PageTransclusions? GetPageTransclusions(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItem<PageTransclusions>(GetId(title, wikiNamespace));
-
-    /// <summary>
-    /// Gets the <see cref="PageTransclusions"/> that fits the given parameters.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <returns>
-    /// The <see cref="PageTransclusions"/> that fits the given parameters; or <see
-    /// langword="null"/>, if there is no such item.
-    /// </returns>
     public static ValueTask<PageTransclusions?> GetPageTransclusionsAsync(IDataStore dataStore, string title, string wikiNamespace)
         => dataStore.GetItemAsync<PageTransclusions>(GetId(title, wikiNamespace));
 

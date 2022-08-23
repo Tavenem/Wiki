@@ -3,6 +3,7 @@
 ## 0.8.0-preview
 ### Changed
 - WikiOptions refactored to better support ASP.NET Options binding pattern.
+- Replaced various synchronous APIs with async.
 ### Removed
 - IWikiOptions interface removed (WikiOptions class is used directly).
 

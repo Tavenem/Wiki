@@ -5,7 +5,6 @@ using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
@@ -161,7 +160,7 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Gets the given markdown content as plain text (i.e. strips all formatting).
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
@@ -236,7 +235,7 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Renders the given <paramref name="markdown"/> as HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <returns>The rendered HTML.</returns>
@@ -267,7 +266,7 @@ public abstract class MarkdownItem : IdItem
     /// <summary>
     /// Gets a preview of the given markdown's rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <returns>A preview of the rendered HTML.</returns>
@@ -355,27 +354,27 @@ public abstract class MarkdownItem : IdItem
     /// Gets a diff between the <see cref="MarkdownContent"/> of this item and the given one, as
     /// rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="other">The other <see cref="MarkdownItem"/> insteance.</param>
     /// <returns>
     /// A string representing the diff between this instance and the <paramref name="other"/>
     /// instance, as rendered HTML.
     /// </returns>
-    public string GetDiffHtml(WikiOptions options, IDataStore dataStore, MarkdownItem other)
-        => RenderHtml(options, dataStore, PostprocessMarkdown(options, dataStore, GetDiff(other, "html")));
+    public async ValueTask<string> GetDiffHtmlAsync(WikiOptions options, IDataStore dataStore, MarkdownItem other)
+        => RenderHtml(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, GetDiff(other, "html")));
 
     /// <summary>
     /// Gets this item's content rendered as HTML.
     /// </summary>
     /// <returns>The rendered HTML.</returns>
-    public string GetHtml(WikiOptions options, IDataStore dataStore)
-        => RenderHtml(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent));
+    public async ValueTask<string> GetHtmlAsync(WikiOptions options, IDataStore dataStore)
+        => RenderHtml(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent));
 
     /// <summary>
     /// Gets the given markdown content as plain text (i.e. strips all formatting).
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
@@ -383,42 +382,42 @@ public abstract class MarkdownItem : IdItem
     /// If true, stops after the first paragraph break, even still under the allowed character limit.
     /// </param>
     /// <returns>The plain text.</returns>
-    public string GetPlainText(
+    public async ValueTask<string> GetPlainTextAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         int? characterLimit = 200,
         bool singleParagraph = true)
-        => FormatPlainText(options, dataStore, PostprocessMarkdown(options, dataStore, markdown), characterLimit, singleParagraph);
+        => FormatPlainText(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, markdown), characterLimit, singleParagraph);
 
     /// <summary>
     /// Gets this item's content as plain text (i.e. strips all formatting).
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
     /// <param name="singleParagraph">
     /// If true, stops after the first paragraph break, even still under the allowed character limit.
     /// </param>
     /// <returns>The plain text.</returns>
-    public string GetPlainText(
+    public async ValueTask<string> GetPlainTextAsync(
         WikiOptions options,
         IDataStore dataStore,
         int? characterLimit = 200,
         bool singleParagraph = true)
-        => FormatPlainText(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent), characterLimit, singleParagraph);
+        => FormatPlainText(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent), characterLimit, singleParagraph);
 
     /// <summary>
     /// Gets a preview of this item's rendered HTML.
     /// </summary>
     /// <returns>A preview of this item's rendered HTML.</returns>
-    public string GetPreview(WikiOptions options, IDataStore dataStore)
-        => RenderPreview(options, dataStore, PostprocessMarkdown(options, dataStore, MarkdownContent, isPreview: true));
+    public async ValueTask<string> GetPreviewAsync(WikiOptions options, IDataStore dataStore)
+        => RenderPreview(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent, isPreview: true));
 
     /// <summary>
     /// Identifies the <see cref="WikiLink"/>s in the given <paramref name="markdown"/>.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown.</param>
     /// <param name="title">The title of the item.</param>
@@ -431,36 +430,34 @@ public abstract class MarkdownItem : IdItem
         IDataStore dataStore,
         string? markdown,
         string? title = null,
-        string? wikiNamespace = null)
-        => string.IsNullOrEmpty(markdown)
+        string? wikiNamespace = null) => string.IsNullOrEmpty(markdown)
         ? new List<WikiLink>()
         : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore))
-        .Descendants<WikiLinkInline>()
-        .Where(x => !x.IsWikipedia
-            && !x.IsCommons
-            && (string.IsNullOrEmpty(x.Title)
-            || x.Title.Length < 5
-            || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
-            || x.Title[1] != TransclusionParser.TransclusionOpenChar
-            || x.Title[^1] != TransclusionParser.TransclusionCloseChar
-            || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
-            && (x.Title[0] != TransclusionParser.ParameterOpenChar
-            || x.Title[1] != TransclusionParser.ParameterOpenChar
-            || x.Title[^1] != TransclusionParser.ParameterCloseChar
-            || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
-        .Select(x =>
-        {
-            var anchorIndex = x.Title?.LastIndexOf('#') ?? -1;
-            return new WikiLink(
-                x.Article,
-                x.Missing && (x.Title != title || x.WikiNamespace != wikiNamespace),
-                x.IsCategory,
-                x.IsNamespaceEscaped,
-                x.IsTalk,
-                anchorIndex == -1 ? x.Title ?? string.Empty : x.Title![..anchorIndex],
-                x.WikiNamespace ?? options.DefaultNamespace);
-        })
-        .ToList();
+            .Descendants<WikiLinkInline>()
+            .Where(x => !x.IsWikipedia
+                && !x.IsCommons
+                && (string.IsNullOrEmpty(x.Title)
+                || x.Title.Length < 5
+                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
+                || x.Title[1] != TransclusionParser.TransclusionOpenChar
+                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
+                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
+                && (x.Title[0] != TransclusionParser.ParameterOpenChar
+                || x.Title[1] != TransclusionParser.ParameterOpenChar
+                || x.Title[^1] != TransclusionParser.ParameterCloseChar
+                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
+            .Select(x =>
+            {
+                var anchorIndex = x.Title?.LastIndexOf('#') ?? -1;
+                return new WikiLink(
+                    x.Article,
+                    x.Missing && (x.Title != title || x.WikiNamespace != wikiNamespace),
+                    x.IsCategory,
+                    x.IsNamespaceEscaped,
+                    x.IsTalk,
+                    anchorIndex == -1 ? x.Title ?? string.Empty : x.Title![..anchorIndex],
+                    x.WikiNamespace ?? options.DefaultNamespace);
+            }).ToList();
 
     private static bool AnyPreviews(MarkdownObject obj)
     {
@@ -751,26 +748,32 @@ public abstract class MarkdownItem : IdItem
         }
     }
 
-    [MemberNotNull(nameof(Html), nameof(Preview))]
-    internal void Update(WikiOptions options, IDataStore dataStore)
+    /// <summary>
+    /// Updates <see cref="Html"/> and <see cref="Preview"/>.
+    /// </summary>
+    /// <remarks>
+    /// This method guarantees <see cref="Html"/> and <see cref="Preview"/> are non-null, but only
+    /// if/when it is awaited.
+    /// </remarks>
+    internal async ValueTask UpdateAsync(WikiOptions options, IDataStore dataStore)
     {
-        Html = GetHtml(options, dataStore);
-        Preview = GetPreview(options, dataStore);
+        Html = await GetHtmlAsync(options, dataStore);
+        Preview = await GetPreviewAsync(options, dataStore);
     }
 
-    internal void UpdateWithLinks(
+    internal ValueTask UpdateWithLinksAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? title = null,
         string? wikiNamespace = null)
     {
         WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title, wikiNamespace).AsReadOnly();
-        Update(options, dataStore);
+        return UpdateAsync(options, dataStore);
     }
 
-    private protected virtual string PostprocessMarkdown(
+    private protected virtual ValueTask<string> PostprocessMarkdownAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        bool isPreview = false) => markdown ?? string.Empty;
+        bool isPreview = false) => ValueTask.FromResult(markdown ?? string.Empty);
 }

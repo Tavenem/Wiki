@@ -12,7 +12,7 @@ public class IntegrationTests
     private static readonly string _ExpectedAbout = $"<p>{ExpectedWelcomeTransclusion}</p>\n<p>The <a href=\"https://github.com/Tavenem/Wiki\">Tavenem.Wiki</a> package is a <a href=\"https://dotnet.microsoft.com\">.NET</a> <a href=\"https://wikipedia.org/wiki/Wiki\">wiki</a> library.</p>\n<p>Unlike many wiki implementations, the main package (<code>Tavenem.Wiki</code>) is implementation-agnostic. It provides a set of core features which can be used to build a web-based wiki, a desktop application, a distributed cloud app with native clients, or any other architecture desired.</p>\n<p>See the <a href=\"/Wiki/System:Help\" class=\"wiki-link-missing\">Help</a> page for usage information.</p>\n<p></p>\n";
 
     [TestMethod]
-    public void CreateWikiTest()
+    public async Task CreateWikiTest()
     {
         const string AdminId = "AdminId";
 
@@ -26,7 +26,7 @@ public class IntegrationTests
         var missing = main.WikiLinks.FirstOrDefault(x => x.Missing);
         Assert.IsNotNull(missing);
 
-        var category = Category.GetCategory(options, dataStore, "System pages");
+        var category = await Category.GetCategoryAsync(options, dataStore, "System pages");
         Assert.IsNotNull(category);
         SetDefaultCategoryAsync(options, dataStore, category!, AdminId).GetAwaiter().GetResult();
         missing = category.WikiLinks.FirstOrDefault(x => x.Missing);

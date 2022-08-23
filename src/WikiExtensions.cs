@@ -89,6 +89,18 @@ public static class WikiExtensions
         return -1;
     }
 
+    internal static int IndexOfUnescaped(this string value, char target)
+    {
+        for (var i = 0; i < value.Length; i++)
+        {
+            if (value.IsUnescapedMatch(i, target))
+            {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     internal static bool IsUnescapedMatch(this ReadOnlySpan<char> span, int index, char target)
     {
         if (index >= span.Length || index < 0 || span[index] != target)
@@ -98,6 +110,21 @@ public static class WikiExtensions
         var i = index - 1;
         var escapes = 0;
         while (i > 0 && span[i] == '\\')
+        {
+            escapes++;
+        }
+        return escapes == 0 || escapes % 2 == 1;
+    }
+
+    internal static bool IsUnescapedMatch(this string value, int index, char target)
+    {
+        if (index >= value.Length || index < 0 || value[index] != target)
+        {
+            return false;
+        }
+        var i = index - 1;
+        var escapes = 0;
+        while (i > 0 && value[i] == '\\')
         {
             escapes++;
         }

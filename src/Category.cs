@@ -172,7 +172,7 @@ public sealed class Category : Article
     /// <summary>
     /// Gets the latest revision for the article with the given title.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article to retrieve.</param>
     /// <param name="allowCaseInsenstive">
@@ -184,7 +184,7 @@ public sealed class Category : Article
     /// The latest revision for the article with the given title; or <see langword="null"/> if
     /// no such article exists.
     /// </returns>
-    public static Category? GetCategory(
+    public static async Task<Category?> GetCategoryAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? title,
@@ -196,18 +196,18 @@ public sealed class Category : Article
         }
 
         Category? category = null;
-        var reference = PageReference.GetPageReference(dataStore, title, options.CategoryNamespace);
+        var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.CategoryNamespace);
         if (reference is not null)
         {
-            category = dataStore.GetItem<Category>(reference.Reference);
+            category = await dataStore.GetItemAsync<Category>(reference.Reference);
         }
         // If no exact match exists, ignore case if only one such match exists.
         if (category is null && allowCaseInsenstive)
         {
-            var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, options.CategoryNamespace);
+            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, options.CategoryNamespace);
             if (normalizedReference?.References.Count == 1)
             {
-                category = dataStore.GetItem<Category>(normalizedReference.References[0]);
+                category = await dataStore.GetItemAsync<Category>(normalizedReference.References[0]);
             }
         }
 
@@ -217,7 +217,7 @@ public sealed class Category : Article
     /// <summary>
     /// Gets a new <see cref="Category"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the category. Must be unique within its namespace, and
     /// non-empty.</param>
@@ -297,13 +297,12 @@ public sealed class Category : Article
         }
         else
         {
-            md = TransclusionParser.Transclude(
+            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
                 options,
                 dataStore,
                 title,
                 $"{options.CategoryNamespace}:{title}",
-                markdown,
-                out transclusions);
+                markdown);
         }
 
         var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.CategoryNamespace);
@@ -323,8 +322,8 @@ public sealed class Category : Article
             wikiId,
             title,
             markdown,
-            RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, options.CategoryNamespace, markdown)),
-            RenderPreview(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, options.CategoryNamespace, markdown, true)),
+            RenderHtml(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.CategoryNamespace, markdown)),
+            RenderPreview(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.CategoryNamespace, markdown, true)),
             new ReadOnlyCollection<WikiLink>(wikiLinks),
             revision.TimestampTicks,
             options.CategoryNamespace,
@@ -364,7 +363,7 @@ public sealed class Category : Article
     /// <summary>
     /// Revises this <see cref="Category"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
@@ -496,13 +495,12 @@ public sealed class Category : Article
             MarkdownContent = markdown!;
 
             var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
-            var md = TransclusionParser.Transclude(
+            var (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
                 options,
                 dataStore,
                 title,
                 $"{options.CategoryNamespace}:{title}",
-                markdown!,
-                out var transclusions);
+                markdown!);
             Transclusions = transclusions.Count == 0
                 ? null
                 : transclusions.AsReadOnly();
@@ -534,7 +532,7 @@ public sealed class Category : Article
                 .ConfigureAwait(false))
                 .AsReadOnly();
 
-            Update(options, dataStore);
+            await UpdateAsync(options, dataStore);
         }
 
         var oldOwner = Owner;

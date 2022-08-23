@@ -328,7 +328,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets the latest revision for the article with the given title.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article to retrieve.</param>
     /// <param name="wikiNamespace">
@@ -346,7 +346,7 @@ public class Article : MarkdownItem
     /// </param>
     /// <returns>The latest revision for the article with the given title; or <see
     /// langword="null"/> if no such article exists.</returns>
-    public static Article? GetArticle(
+    public static async Task<Article?> GetArticleAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? title,
@@ -367,18 +367,18 @@ public class Article : MarkdownItem
         {
             redirect = false;
 
-            var reference = PageReference.GetPageReference(dataStore, title, wikiNamespace);
+            var reference = await PageReference.GetPageReferenceAsync(dataStore, title, wikiNamespace);
             if (reference is not null)
             {
-                article = dataStore.GetItem<Article>(reference.Reference);
+                article = await dataStore.GetItemAsync<Article>(reference.Reference);
             }
             // If no exact match exists, ignore case if only one such match exists.
             if (article is null)
             {
-                var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, wikiNamespace);
+                var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace);
                 if (normalizedReference?.References.Count == 1)
                 {
-                    article = dataStore.GetItem<Article>(normalizedReference.References[0]);
+                    article = await dataStore.GetItemAsync<Article>(normalizedReference.References[0]);
                 }
             }
 
@@ -429,7 +429,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Breaks the given title string into parts.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="text">The full title string.</param>
     /// <returns>
     /// The namespace and title, and <see cref="bool"/> flags indicating whether the title
@@ -498,7 +498,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets a new <see cref="Article"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article. Must be unique within its namespace, and
     /// non-empty.</param>
@@ -610,13 +610,12 @@ public class Article : MarkdownItem
         }
         else
         {
-            md = TransclusionParser.Transclude(
+            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
                 options,
                 dataStore,
                 title,
                 GetFullTitle(options, title, wikiNamespace),
-                markdown,
-                out transclusions);
+                markdown);
         }
 
         var wikiLinks = isRedirect || isScript
@@ -640,13 +639,13 @@ public class Article : MarkdownItem
             markdown,
             isScript
                 ? markdown ?? string.Empty
-                : RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, wikiNamespace, markdown)),
+                : RenderHtml(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, wikiNamespace, markdown)),
             isScript
                 ? GetScriptPreview(markdown)
                 : RenderPreview(
                     options,
                     dataStore,
-                    PostprocessArticleMarkdown(
+                    await PostprocessArticleMarkdownAsync(
                         options,
                         dataStore,
                         title,
@@ -1079,7 +1078,7 @@ public class Article : MarkdownItem
         var newCategories = new List<string>();
         foreach (var categoryTitle in currentCategories.Except(oldCategories))
         {
-            var category = Category.GetCategory(options, dataStore, categoryTitle, false)
+            var category = await Category.GetCategoryAsync(options, dataStore, categoryTitle, false)
                 ?? await Category.NewAsync(options, dataStore, categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
             if (!category.ChildIds.Contains(id))
             {
@@ -1093,7 +1092,7 @@ public class Article : MarkdownItem
             .ToList();
         foreach (var removedCategory in oldCategories.Except(currentCategories))
         {
-            var category = Category.GetCategory(options, dataStore, removedCategory, false);
+            var category = await Category.GetCategoryAsync(options, dataStore, removedCategory, false);
             if (category is not null)
             {
                 await category.RemoveChildIdAsync(dataStore, id).ConfigureAwait(false);
@@ -1159,11 +1158,11 @@ public class Article : MarkdownItem
                 var isReferringArticleRedirect = !string.IsNullOrEmpty(referringArticle.RedirectTitle);
                 if (isReferringArticleScript || isReferringArticleRedirect)
                 {
-                    referringArticle.Update(options, dataStore);
+                    await referringArticle.UpdateAsync(options, dataStore);
                 }
                 else
                 {
-                    referringArticle.UpdateWithLinks(options, dataStore, referringArticle.Title, referringArticle.WikiNamespace);
+                    await referringArticle.UpdateWithLinksAsync(options, dataStore, referringArticle.Title, referringArticle.WikiNamespace);
                 }
                 await dataStore.StoreItemAsync(referringArticle).ConfigureAwait(false);
 
@@ -1204,7 +1203,7 @@ public class Article : MarkdownItem
     /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
     /// rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1261,20 +1260,19 @@ public class Article : MarkdownItem
         {
             return string.Empty;
         }
-        return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+        return RenderHtml(options, dataStore, await TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
             GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
-            Revision.GetDiff(revisions, format),
-            out _));
+            Revision.GetDiff(revisions, format)));
     }
 
     /// <summary>
     /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
     /// rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1301,13 +1299,12 @@ public class Article : MarkdownItem
         {
             return string.Empty;
         }
-        return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+        return RenderHtml(options, dataStore, await TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
             GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
-            Revision.GetDiff(revisions, "html"),
-            out _));
+            Revision.GetDiff(revisions, "html")));
     }
 
     /// <summary>
@@ -1369,7 +1366,7 @@ public class Article : MarkdownItem
     /// Gets a diff between the text at the given <paramref name="time"/> and the current
     /// version of the text, as rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1390,13 +1387,12 @@ public class Article : MarkdownItem
     {
         var revisions = await GetRevisionsUntilAsync(dataStore, time).ConfigureAwait(false);
         var diff = Diff.GetWordDiff(Revision.GetText(revisions), MarkdownContent).ToString("html");
-        return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+        return RenderHtml(options, dataStore, await TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
             GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
-            diff,
-            out _));
+            diff));
     }
 
     /// <summary>
@@ -1468,7 +1464,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Gets a diff between the text at two given times, as rendered HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="firstTime">
     /// The first revision time to compare.
@@ -1502,19 +1498,18 @@ public class Article : MarkdownItem
         var firstRevisions = await GetRevisionsUntilAsync(dataStore, firstTime).ConfigureAwait(false);
         var secondRevisions = await GetRevisionsUntilAsync(dataStore, secondTime).ConfigureAwait(false);
         var diff = Diff.GetWordDiff(Revision.GetText(firstRevisions), Revision.GetText(secondRevisions)).ToString("html");
-        return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+        return RenderHtml(options, dataStore, await TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             secondRevisions[secondRevisions.Count - 1].Title,
             GetFullTitle(options, secondRevisions[secondRevisions.Count - 1].Title, secondRevisions[secondRevisions.Count - 1].WikiNamespace),
-            diff,
-            out _));
+            diff));
     }
 
     /// <summary>
     /// Gets this item's content at the given <paramref name="time"/>, rendered as HTML.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="time">
     /// The time of the final revision.
@@ -1530,13 +1525,12 @@ public class Article : MarkdownItem
         {
             return string.Empty;
         }
-        return RenderHtml(options, dataStore, TransclusionParser.Transclude(
+        return RenderHtml(options, dataStore, await TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
             GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
-            Revision.GetText(revisions),
-            out _));
+            Revision.GetText(revisions)));
     }
 
     /// <summary>
@@ -1597,7 +1591,7 @@ public class Article : MarkdownItem
     /// <summary>
     /// Revises this <see cref="Article"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
@@ -1766,13 +1760,12 @@ public class Article : MarkdownItem
             }
             else
             {
-                md = TransclusionParser.Transclude(
+                (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
                     options,
                     dataStore,
                     title,
                     GetFullTitle(options, title, wikiNamespace),
-                    markdown!,
-                    out transclusions);
+                    markdown!);
             }
             Transclusions = transclusions.Count == 0
                 ? null
@@ -1814,7 +1807,7 @@ public class Article : MarkdownItem
             }
             else
             {
-                Update(options, dataStore);
+                await UpdateAsync(options, dataStore);
             }
         }
 
@@ -1883,7 +1876,7 @@ public class Article : MarkdownItem
             : markdown[newline..];
     }
 
-    private protected static string PostprocessArticleMarkdown(
+    private protected static ValueTask<string> PostprocessArticleMarkdownAsync(
         WikiOptions options,
         IDataStore dataStore,
         string title,
@@ -1893,16 +1886,15 @@ public class Article : MarkdownItem
     {
         if (string.IsNullOrEmpty(markdown))
         {
-            return string.Empty;
+            return ValueTask.FromResult(string.Empty);
         }
 
-        return TransclusionParser.Transclude(
+        return TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             title,
             GetFullTitle(options, title, wikiNamespace),
             markdown,
-            out _,
             isPreview: isPreview);
     }
 
@@ -1925,11 +1917,11 @@ public class Article : MarkdownItem
             .ConfigureAwait(false);
     }
 
-    private protected override string PostprocessMarkdown(
+    private protected override ValueTask<string> PostprocessMarkdownAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        bool isPreview = false) => PostprocessArticleMarkdown(
+        bool isPreview = false) => PostprocessArticleMarkdownAsync(
             options,
             dataStore,
             Title,

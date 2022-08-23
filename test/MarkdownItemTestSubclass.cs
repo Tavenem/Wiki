@@ -64,17 +64,16 @@ public class MarkdownItemTestSubclass : MarkdownItem
         : base(markdown, html, preview, wikiLinks)
     { }
 
-    public static MarkdownItemTestSubclass New(WikiOptions options, IDataStore dataStore, string? markdown)
+    public static async Task<MarkdownItemTestSubclass> NewAsync(WikiOptions options, IDataStore dataStore, string? markdown)
     {
         var md = string.IsNullOrEmpty(markdown)
             ? null
-            : TransclusionParser.Transclude(
+            : await TransclusionParser.TranscludeAsync(
                 options,
                 dataStore,
                 null,
                 null,
-                markdown,
-                out _);
+                markdown);
         var wikiLinks = GetWikiLinks(options, dataStore, md);
         return new MarkdownItemTestSubclass(
             md,
@@ -84,13 +83,12 @@ public class MarkdownItemTestSubclass : MarkdownItem
                 dataStore,
                 string.IsNullOrEmpty(markdown)
                     ? string.Empty
-                    : TransclusionParser.Transclude(
+                    : await TransclusionParser.TranscludeAsync(
                         options,
                         dataStore,
                         null,
                         null,
                         markdown,
-                        out _,
                         isPreview: true)),
             wikiLinks);
     }

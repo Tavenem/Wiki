@@ -79,19 +79,6 @@ public class PageRedirects : IdItem
     /// The <see cref="PageRedirects"/> that fits the given parameters; or <see
     /// langword="null"/>, if there is no such item.
     /// </returns>
-    public static PageRedirects? GetPageRedirects(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItem<PageRedirects>(GetId(title, wikiNamespace));
-
-    /// <summary>
-    /// Gets the <see cref="PageRedirects"/> that fits the given parameters.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <returns>
-    /// The <see cref="PageRedirects"/> that fits the given parameters; or <see
-    /// langword="null"/>, if there is no such item.
-    /// </returns>
     public static ValueTask<PageRedirects?> GetPageRedirectsAsync(IDataStore dataStore, string title, string wikiNamespace)
         => dataStore.GetItemAsync<PageRedirects>(GetId(title, wikiNamespace));
 

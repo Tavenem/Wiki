@@ -80,19 +80,6 @@ public class NormalizedPageReference : IdItem
     /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
     /// langword="null"/>, if there is no such item.
     /// </returns>
-    public static NormalizedPageReference? GetNormalizedPageReference(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItem<NormalizedPageReference>(GetId(title, wikiNamespace));
-
-    /// <summary>
-    /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <returns>
-    /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
-    /// langword="null"/>, if there is no such item.
-    /// </returns>
     public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(IDataStore dataStore, string title, string wikiNamespace)
         => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace));
 

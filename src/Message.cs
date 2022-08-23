@@ -124,7 +124,7 @@ public class Message : MarkdownItem
     /// <summary>
     /// Creates a new reply.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
     /// <param name="senderId">The ID of the sender of this message.</param>
@@ -147,13 +147,12 @@ public class Message : MarkdownItem
     {
         if (!string.IsNullOrEmpty(markdown))
         {
-            markdown = TransclusionParser.Transclude(
+            markdown = await TransclusionParser.TranscludeAsync(
                 options,
                 dataStore,
                 null,
                 null,
-                markdown,
-                out _);
+                markdown);
         }
 
         var message = new Message(
@@ -163,7 +162,7 @@ public class Message : MarkdownItem
             senderName,
             markdown,
             RenderHtml(options, dataStore, markdown),
-            RenderPreview(options, dataStore, PostprocessMessageMarkdown(options, dataStore, markdown, true)),
+            RenderPreview(options, dataStore, await PostprocessMessageMarkdownAsync(options, dataStore, markdown, true)),
             new ReadOnlyCollection<WikiLink>(GetWikiLinks(options, dataStore, markdown)),
             DateTimeOffset.UtcNow.Ticks,
             replyMessageId);
@@ -171,7 +170,7 @@ public class Message : MarkdownItem
         return message;
     }
 
-    private static string PostprocessMessageMarkdown(
+    private static ValueTask<string> PostprocessMessageMarkdownAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
@@ -179,24 +178,23 @@ public class Message : MarkdownItem
     {
         if (string.IsNullOrEmpty(markdown))
         {
-            return string.Empty;
+            return ValueTask.FromResult(string.Empty);
         }
 
-        return TransclusionParser.Transclude(
+        return TransclusionParser.TranscludeAsync(
             options,
             dataStore,
             null,
             null,
             markdown,
-            out _,
             isPreview: isPreview);
     }
 
-    private protected override string PostprocessMarkdown(
+    private protected override ValueTask<string> PostprocessMarkdownAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        bool isPreview = false) => PostprocessMessageMarkdown(
+        bool isPreview = false) => PostprocessMessageMarkdownAsync(
             options,
             dataStore,
             markdown,

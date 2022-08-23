@@ -83,19 +83,6 @@ public class PageLinks : IdItem
     /// The <see cref="PageLinks"/> that fits the given parameters; or <see langword="null"/>,
     /// if there is no such item.
     /// </returns>
-    public static PageLinks? GetPageLinks(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItem<PageLinks>(GetId(title, wikiNamespace));
-
-    /// <summary>
-    /// Gets the <see cref="PageLinks"/> that fits the given parameters.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <returns>
-    /// The <see cref="PageLinks"/> that fits the given parameters; or <see langword="null"/>,
-    /// if there is no such item.
-    /// </returns>
     public static ValueTask<PageLinks?> GetPageLinksAsync(IDataStore dataStore, string title, string wikiNamespace)
         => dataStore.GetItemAsync<PageLinks>(GetId(title, wikiNamespace));
 

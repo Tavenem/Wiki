@@ -223,29 +223,29 @@ public sealed class WikiFile : Article
     /// <summary>
     /// Gets the latest revision for the file with the given title.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the file to retrieve.</param>
     /// <returns>The latest revision for the file with the given title; or <see
     /// langword="null"/> if no such file exists.</returns>
-    public static WikiFile? GetFile(
+    public static async Task<WikiFile?> GetFileAsync(
         WikiOptions options,
         IDataStore dataStore,
         string title)
     {
         WikiFile? file = null;
-        var reference = PageReference.GetPageReference(dataStore, title, options.FileNamespace);
+        var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.FileNamespace);
         if (reference is not null)
         {
-            file = dataStore.GetItem<WikiFile>(reference.Reference);
+            file = await dataStore.GetItemAsync<WikiFile>(reference.Reference);
         }
         // If no exact match exists, ignore case if only one such match exists.
         if (file is null)
         {
-            var normalizedReference = NormalizedPageReference.GetNormalizedPageReference(dataStore, title, options.FileNamespace);
+            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, options.FileNamespace);
             if (normalizedReference?.References.Count == 1)
             {
-                file = dataStore.GetItem<WikiFile>(normalizedReference.References[0]);
+                file = await dataStore.GetItemAsync<WikiFile>(normalizedReference.References[0]);
             }
         }
 
@@ -255,7 +255,7 @@ public sealed class WikiFile : Article
     /// <summary>
     /// Gets a new <see cref="WikiFile"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the file. Must be unique and non-empty.</param>
     /// <param name="editor">
@@ -347,13 +347,12 @@ public sealed class WikiFile : Article
         }
         else
         {
-            md = TransclusionParser.Transclude(
+            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
                 options,
                 dataStore,
                 title,
                 $"{options.FileNamespace}:{title}",
-                markdown,
-                out transclusions);
+                markdown);
         }
 
         var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace);
@@ -377,8 +376,8 @@ public sealed class WikiFile : Article
             editor,
             type,
             markdown,
-            RenderHtml(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, options.FileNamespace, markdown)),
-            RenderPreview(options, dataStore, PostprocessArticleMarkdown(options, dataStore, title, options.FileNamespace, markdown, true)),
+            RenderHtml(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.FileNamespace, markdown)),
+            RenderPreview(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.FileNamespace, markdown, true)),
             new ReadOnlyCollection<WikiLink>(wikiLinks),
             revision.TimestampTicks,
             options.FileNamespace,
@@ -420,7 +419,7 @@ public sealed class WikiFile : Article
     /// <summary>
     /// Revises this <see cref="WikiFile"/> instance.
     /// </summary>
-    /// <param name="options">An <see cref="WikiOptions"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
@@ -575,13 +574,12 @@ public sealed class WikiFile : Article
             MarkdownContent = markdown!;
 
             var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
-            var md = TransclusionParser.Transclude(
+            var (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
                 options,
                 dataStore,
                 title,
                 $"{options.FileNamespace}:{title}",
-                markdown!,
-                out var transclusions);
+                markdown!);
             Transclusions = transclusions.Count == 0
                 ? null
                 : transclusions.AsReadOnly();
@@ -613,7 +611,7 @@ public sealed class WikiFile : Article
                 .ConfigureAwait(false))
                 .AsReadOnly();
 
-            Update(options, dataStore);
+            await UpdateAsync(options, dataStore);
         }
 
         var oldOwner = Owner;

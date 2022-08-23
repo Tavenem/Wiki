@@ -73,19 +73,6 @@ public class PageReference : IdItem
     /// The <see cref="PageReference"/> that fits the given parameters; or <see
     /// langword="null"/>, if there is no such item.
     /// </returns>
-    public static PageReference? GetPageReference(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItem<PageReference>(GetId(title, wikiNamespace));
-
-    /// <summary>
-    /// Gets the <see cref="PageReference"/> that fits the given parameters.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <returns>
-    /// The <see cref="PageReference"/> that fits the given parameters; or <see
-    /// langword="null"/>, if there is no such item.
-    /// </returns>
     public static ValueTask<PageReference?> GetPageReferenceAsync(IDataStore dataStore, string title, string wikiNamespace)
         => dataStore.GetItemAsync<PageReference>(GetId(title, wikiNamespace));
 
@@ -111,4 +98,17 @@ public class PageReference : IdItem
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;
     }
+
+    /// <summary>
+    /// Gets the <see cref="PageReference"/> that fits the given parameters.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <returns>
+    /// The <see cref="PageReference"/> that fits the given parameters; or <see
+    /// langword="null"/>, if there is no such item.
+    /// </returns>
+    internal static PageReference? GetPageReference(IDataStore dataStore, string title, string wikiNamespace)
+        => dataStore.GetItem<PageReference>(GetId(title, wikiNamespace));
 }

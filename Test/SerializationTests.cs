@@ -186,7 +186,7 @@ public class SerializationTests
     }
 
     [TestMethod]
-    public void MarkdownItemTest()
+    public async Task MarkdownItemTest()
     {
         var value = new MarkdownItemTestSubclass(
             "Test markdown",
@@ -201,7 +201,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
 
-        value = MarkdownItemTestSubclass.New(_Options, new InMemoryDataStore(), "Test markdown");
+        value = await MarkdownItemTestSubclass.NewAsync(_Options, new InMemoryDataStore(), "Test markdown");
 
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -212,7 +212,7 @@ public class SerializationTests
     }
 
     [TestMethod]
-    public void MarkdownItemTest_Context()
+    public async Task MarkdownItemTest_Context()
     {
         var value = new MarkdownItemTestSubclass(
             "Test markdown",
@@ -233,7 +233,7 @@ public class SerializationTests
             deserialized,
             new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() }));
 
-        value = MarkdownItemTestSubclass.New(_Options, new InMemoryDataStore(), "Test markdown");
+        value = await MarkdownItemTestSubclass.NewAsync(_Options, new InMemoryDataStore(), "Test markdown");
 
         json = JsonSerializer.Serialize(
             value,
