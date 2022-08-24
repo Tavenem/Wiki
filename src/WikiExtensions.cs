@@ -1037,6 +1037,99 @@ public static class WikiExtensions
     }
 
     /// <summary>
+    /// Gets the most recent revision of the wiki page with the given title and namespace at the
+    /// specified <paramref name="time"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="time">The time of the requested revision.</param>
+    /// <param name="title">
+    /// <para>
+    /// The title of the wiki page.
+    /// </para>
+    /// <para>
+    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
+    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
+    /// will be used.
+    /// </para>
+    /// <para>
+    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
+    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
+    /// the result will always be <see langword="null"/>.
+    /// </para>
+    /// </param>
+    /// <param name="wikiNamespace">
+    /// <para>
+    /// The namespace of the wiki page.
+    /// </para>
+    /// <para>
+    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
+    /// </para>
+    /// </param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
+    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>; or <see
+    /// langword="null"/> if no such item exists.
+    /// </returns>
+    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        DateTimeOffset time,
+        string? title = null,
+        string? wikiNamespace = null,
+        string? userId = null)
+    {
+        IWikiUser? articleUser = null;
+        if (string.Equals(wikiNamespace, options.UserNamespace))
+        {
+            articleUser = await userManager.FindByIdAsync(title);
+            articleUser ??= await userManager.FindByNameAsync(title);
+        }
+
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, true);
+        if (wikiItem is null
+            && articleUser is not null
+            && !string.Equals(title, articleUser.Id))
+        {
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, true);
+        }
+
+        var permission = await GetPermissionInnerAsync(
+            await userManager.FindByIdAsync(userId),
+            options,
+            dataStore,
+            userManager,
+            groupManager,
+            title,
+            wikiNamespace,
+            wikiItem);
+
+        var html = wikiItem is null
+            || !permission.HasFlag(WikiPermission.Read)
+            ? null
+            : await wikiItem.GetHtmlAsync(options, dataStore, time);
+
+        return new(
+            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
+            html,
+            wikiItem is not null,
+            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
+            permission & WikiPermission.Read);
+    }
+
+    /// <summary>
     /// Gets a diff between the text at the given <paramref name="time"/> and the current
     /// version of the text.
     /// </summary>

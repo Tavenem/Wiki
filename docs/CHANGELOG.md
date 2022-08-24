@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.8.1-preview
+### Added
+- `GetWikiItemAtTimeAsync` - gets a `WikiItemInfo` record for the most recent revision of a wiki
+  page at a given time.
+
 ## 0.8.0-preview
 ### Added
 - Parent interface for `IWikiUser` and `IWikiGroup`: `IWikiOwner`
