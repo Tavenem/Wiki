@@ -48,11 +48,18 @@ public class WikiOptions
     public string? AboutPageTitle { get; set; } = "About";
 
     /// <summary>
-    /// An optional collection of namespaces which may not be assigned to pages by non-admin
-    /// users.
+    /// An optional collection of namespaces for which are reserved for admin users.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// The namespace assigned to <see cref="SystemNamespace"/> is included automatically.
+    /// </para>
+    /// <para>
+    /// Pages in these namespaces may have their <see cref="Article.AllowedEditors"/> set to include
+    /// any users, but only admin users will be able to create new pages or delete existing pages,
+    /// and no user may be assigned as the owner of pages in these namespaces; instead, all admin
+    /// users have owenership priviledges.
+    /// </para>
     /// </remarks>
     public IEnumerable<string> AdminNamespaces => (CustomAdminNamespaces ?? Enumerable.Empty<string>())
         .Concat(new[] { SystemNamespace });
@@ -368,8 +375,8 @@ public class WikiOptions
     /// An optional collection of namespaces which may not be assigned to pages by users.
     /// </summary>
     /// <remarks>
-    /// The namespaces assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/>
-    /// are included automatically.
+    /// The namespaces assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/> are
+    /// included automatically.
     /// </remarks>
     public IEnumerable<string> ReservedNamespaces => (CustomReservedNamespaces ?? Enumerable.Empty<string>())
         .Concat(new[] { FileNamespace, TalkNamespace });

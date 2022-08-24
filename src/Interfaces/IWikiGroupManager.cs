@@ -32,6 +32,38 @@ public interface IWikiGroupManager
     ValueTask<IWikiGroup?> FindByNameAsync(string? groupName);
 
     /// <summary>
+    /// Returns the wiki user who is the owner of the group with the given ID.
+    /// </summary>
+    /// <returns>
+    /// A <see cref="ValueTask{T}"/> that represents the result of the asynchronous query, an <see
+    /// cref="IWikiUser"/> whose <see cref="IWikiOwner.Id"/> matches the <see
+    /// cref="IWikiGroup.OwnerId"/> of the group with the given ID; or <see langword="null"/> if no
+    /// such group or user exists.
+    /// </returns>
+    ValueTask<IWikiUser?> GetGroupOwnerAsync(string? groupId);
+
+    /// <summary>
+    /// Returns the wiki user who is the owner of the given <paramref name="group"/>.
+    /// </summary>
+    /// <returns>
+    /// A <see cref="ValueTask{T}"/> that represents the result of the asynchronous query, an <see
+    /// cref="IWikiUser"/> whose <see cref="IWikiOwner.Id"/> matches the <see
+    /// cref="IWikiGroup.OwnerId"/> of the given <paramref name="group"/>; or <see langword="null"/>
+    /// if no such group or user exists.
+    /// </returns>
+    ValueTask<IWikiUser?> GetGroupOwnerAsync(IWikiGroup? group);
+
+    /// <summary>
+    /// Returns the ID of the wiki user who is the owner of the group with the given ID.
+    /// </summary>
+    /// <returns>
+    /// A <see cref="ValueTask{T}"/> that represents the result of the asynchronous query, a <see
+    /// cref="string"/> containing the <see cref="IWikiGroup.OwnerId"/> of the group with the given
+    /// ID; or <see langword="null"/> if no such group exists.
+    /// </returns>
+    ValueTask<string?> GetGroupOwnerIdAsync(string? groupId);
+
+    /// <summary>
     /// Returns a list of all wiki users in the group with the given ID.
     /// </summary>
     /// <returns>
@@ -49,6 +81,33 @@ public interface IWikiGroupManager
     /// <paramref name="group"/>'s ID.
     /// </returns>
     ValueTask<IList<IWikiUser>> GetUsersInGroupAsync(IWikiGroup? group);
+
+    /// <summary>
+    /// Determines if the given <paramref name="user"/> is the owner of the group with the given ID.
+    /// </summary>
+    /// <param name="groupId">The group ID to search for.</param>
+    /// <param name="user">The user to check.</param>
+    /// <returns>
+    /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing <see
+    /// langword="true"/> if the given <paramref name="user"/> is the owner of the group with the
+    /// given ID, and <see langword="false"/> if no such group or user exists, or if the user is not
+    /// the owner of the group.
+    /// </returns>
+    ValueTask<bool> UserIsGroupOwner(string? groupId, IWikiUser? user);
+
+    /// <summary>
+    /// Determines if the given <paramref name="user"/> is the owner of the given <paramref
+    /// name="group"/>.
+    /// </summary>
+    /// <param name="group">The group to check.</param>
+    /// <param name="user">The user to check.</param>
+    /// <returns>
+    /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing <see
+    /// langword="true"/> if the given <paramref name="user"/> is the owner of the given <paramref
+    /// name="group"/>, and <see langword="false"/> if no such group or user exists, or if the user
+    /// is not the owner of the group.
+    /// </returns>
+    ValueTask<bool> UserIsGroupOwner(IWikiGroup? group, IWikiUser? user);
 
     /// <summary>
     /// Determines if a user with the given ID is in the group with the given ID.

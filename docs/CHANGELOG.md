@@ -1,11 +1,31 @@
 # Changelog
 
 ## 0.8.0-preview
+### Added
+- Parent interface for `IWikiUser` and `IWikiGroup`: `IWikiOwner`
+- Default implementation of `IWikiUser`: `WikiUser`
+- Default implementation of `IWikiGroup`: `WikiGroup`
+- Wiki query capabilities previously implemented in the client project(s) have been given base
+  implementations in this library, to simplify the process of implementing a client. Most are
+  implemented as extension methods, including:
+    - `GetPermissionAsync` - calculates the permission a user has for a wiki item
+    - `GetWikiItemAsync` - fetches an `Article`, `Category`, or `WikiFile`, or fetches a `WikiItemInfo` record with the underlying item, plus permission information
+    - `GetWikiItemForEditingAsync` - fetches a `WikiEditInfo` record similar to a `WikiItemInfo` record, but with additional information suited to editing (such as detailed owner and allowed editor/viewer info)
+    - `GetWikiItemDiffWithCurrentAsync`, `GetWikiItemDiffWithPreviousAsync`, and `GetWikiItemDiffAsync` for retrieving `WikiItemInfo` records for diffs
+    - `GetCategoryAsync` - fetches a `CategoryInfo` record with information about the category and
+      its content
+    - `GetGroupPageAsync` - fetches a group page with information about the group and its members
+    - `GetUserPageAsync` - fetches a user page with information about the user
+    - `GetHistoryAsync` - gets paged revision information for a wiki item, along with editor
+      information
+    - `GetWhatLinksHereAsync` - gets a list of the pages which link to a wiki item
+    - `GetSpecialListAsync` - gets a list of wiki items which fit the criteria of a member of the new `SpecialListType` enum
 ### Changed
-- WikiOptions refactored to better support ASP.NET Options binding pattern.
-- Replaced various synchronous APIs with async.
+- `WikiOptions` refactored to better support ASP.NET Options binding pattern
+- `IWikiUser` and `IWikiGroup` now use `DisplayName` instead of `UserName` and `GroupName`
+- Replaced various synchronous APIs with async
 ### Removed
-- IWikiOptions interface removed (WikiOptions class is used directly).
+- `IWikiOptions` interface removed (`WikiOptions` class is now used directly)
 
 ## 0.7.2-preview
 ### Updated

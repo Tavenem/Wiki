@@ -26,43 +26,139 @@ public class Article : MarkdownItem
     public override string IdItemTypeName => ArticleIdItemTypeName;
 
     /// <summary>
-    /// <para>
-    /// The user(s) and/or group(s) allowed to edit this article.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the article can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
+    /// A list of the <see cref="IWikiOwner.Id"/> values of groups allowed to edit this article.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// This list complements <see cref="AllowedEditors"/>. A user may edit an article if they are a
+    /// member of a group in this list, <em>or</em> if they have permission to edit the article
+    /// according to the rules determined by <see cref="AllowedEditors"/>.
+    /// </para>
+    /// <para>
     /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// A user who cannot edit an article is still able to see that an article by that title exists
+    /// (to avoid confusion about creating a new article with that title).
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedEditArticles"/> list. Rather, the two lists are expected to be
+    /// complementary. Articles may list users with permission to edit them, and users may also have
+    /// a separate list of articles which they may edit.
+    /// </para>
+    /// <para>
+    /// When a user attempts to edit an article, if either the article indicates that the editor has
+    /// permission to edit it, or the user indicates that it has permission to edit the article,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<string>? AllowedEditorGroups { get; private protected set; }
+
+    /// <summary>
+    /// A list of the <see cref="IWikiOwner.Id"/> values of users allowed to edit this article.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If <see langword="null"/> the article can be edited by anyone, including anonymous users.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to edit the article.
+    /// </para>
+    /// <para>
+    /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// A user who cannot edit an article is still able to see that an article by that title exists
+    /// (to avoid confusion about creating a new article with that title).
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedEditArticles"/> list. Rather, the two lists are expected to be
+    /// complementary. Articles may list users with permission to edit them, and users may also have
+    /// a separate list of articles which they may edit.
+    /// </para>
+    /// <para>
+    /// When a user attempts to edit an article, if either the article indicates that the editor has
+    /// permission to edit it, or the user indicates that it has permission to edit the article,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
     /// </remarks>
     public IReadOnlyCollection<string>? AllowedEditors { get; private protected set; }
 
     /// <summary>
-    /// <para>
-    /// The user(s) and/or group(s) allowed to view this article.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the article can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the article.
-    /// </para>
+    /// A list of the <see cref="IWikiOwner.Id"/> values of groups allowed to view this article.
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// This list complements <see cref="AllowedViewers"/>. A user may view an article if they are a
+    /// member of a group in this list, <em>or</em> if they have permission to view the article
+    /// according to the rules determined by <see cref="AllowedViewers"/>.
+    /// </para>
     /// <para>
     /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
     /// </para>
     /// <para>
-    /// A user who cannot view an article is still able to see that an article by that title
-    /// exists (to avoid confusion about creating a new article with that title).
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedViewArticles"/> list. Rather, the two lists are expected to be
+    /// complementary. Articles may list groups with permission to view them, and groups may also
+    /// have a separate list of articles which they may view.
+    /// </para>
+    /// <para>
+    /// When a user attempts to view an article, if either the article indicates that the viewer has
+    /// permission to view it, or the user indicates that it has permission to view the article,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<string>? AllowedViewerGroups { get; private protected set; }
+
+    /// <summary>
+    /// A list of the <see cref="IWikiOwner.Id"/> values of users allowed to view this article.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If <see langword="null"/> the article can be viewed by anyone, including anonymous users.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the article.
+    /// </para>
+    /// <para>
+    /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// A user who cannot view an article is still able to see that an article by that title exists
+    /// (to avoid confusion about creating a new article with that title).
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedViewArticles"/> list. Rather, the two lists are expected to be
+    /// complementary. Articles may list users with permission to view them, and users may also have
+    /// a separate list of articles which they may view.
+    /// </para>
+    /// <para>
+    /// When a user attempts to view an article, if either the article indicates that the viewer has
+    /// permission to view it, or the user indicates that it has permission to view the article,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
     /// </remarks>
     public IReadOnlyCollection<string>? AllowedViewers { get; private protected set; }
@@ -107,13 +203,24 @@ public class Article : MarkdownItem
     public bool IsDoubleRedirect { get; private protected set; }
 
     /// <summary>
-    /// <para>
-    /// The owner of this article.
-    /// </para>
-    /// <para>
-    /// May be a user, a group, or <see langword="null"/>.
-    /// </para>
+    /// The ID of the owner of this article.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Should be the <see cref="IWikiOwner.Id"/> of a user or group, or <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// Only the owner of an article (if one has been set) may delete, move, or rename it,
+    /// regardless of who else may have been granted edit permission.
+    /// </para>
+    /// <para>
+    /// An article may only be assigned allowed editors and viewers if it is owned, and only the
+    /// owner may manage those permissions.
+    /// </para>
+    /// <para>
+    /// Only the current owner of an article may change its ownership.
+    /// </para>
+    /// </remarks>
     public string? Owner { get; private protected set; }
 
     /// <summary>
@@ -127,7 +234,7 @@ public class Article : MarkdownItem
     public string? RedirectTitle { get; private set; }
 
     /// <summary>
-    /// The timestamp of the latest revision to this item, in UTC.
+    /// The timestamp of the latest revision to this item.
     /// </summary>
     [JsonIgnore]
     public DateTimeOffset Timestamp
@@ -1534,8 +1641,8 @@ public class Article : MarkdownItem
     }
 
     /// <summary>
-    /// Gets a subset of the revision history of this item, in reverse chronological order (most recent
-    /// first).
+    /// Gets a subset of the revision history of this item, in reverse chronological order (most
+    /// recent first).
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="pageNumber">The current page number. The first page is 1.</param>
@@ -1543,8 +1650,9 @@ public class Article : MarkdownItem
     /// <param name="start">The earliest <see cref="Timestamp"/> to retrieve.</param>
     /// <param name="end">The most recent <see cref="Timestamp"/> to retrieve.</param>
     /// <param name="condition">An optional condition which the items must satisfy.</param>
-    /// <returns>An <see cref="IOrderedQueryable{T}"/> of <see cref="Article"/>
-    /// instances.</returns>
+    /// <returns>
+    /// An <see cref="IPagedList{T}"/> of <see cref="Revision"/> instances.
+    /// </returns>
     public async Task<IPagedList<Revision>> GetHistoryAsync(
         IDataStore dataStore,
         int pageNumber = 1,

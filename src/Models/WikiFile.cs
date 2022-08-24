@@ -231,8 +231,13 @@ public sealed class WikiFile : Article
     public static async Task<WikiFile?> GetFileAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string title)
+        string? title)
     {
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            return null;
+        }
+
         WikiFile? file = null;
         var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.FileNamespace);
         if (reference is not null)
