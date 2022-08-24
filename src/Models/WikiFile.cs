@@ -55,7 +55,7 @@ public sealed class WikiFile : Article
     public string Uploader { get; set; }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="Category"/>.
+    /// Initializes a new instance of <see cref="WikiFile"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
     /// <param name="title">
@@ -96,34 +96,54 @@ public sealed class WikiFile : Article
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this article.
+    /// The users allowed to edit this file.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be edited by anyone.
+    /// If <see langword="null"/> the file can be edited by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
     /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// <para>
-    /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
     /// </para>
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this article.
+    /// The users allowed to view this file.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// If <see langword="null"/> the file can be viewed by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
     /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the article.
+    /// langword="null"/>) list allows only the owner to view the file.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this file.
     /// </para>
     /// <para>
-    /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+    /// If <see langword="null"/> the file can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this file.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the file can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the file.
     /// </para>
     /// </param>
     /// <param name="categories">
@@ -153,6 +173,8 @@ public sealed class WikiFile : Article
         string? owner,
         IReadOnlyCollection<string>? allowedEditors,
         IReadOnlyCollection<string>? allowedViewers,
+        IReadOnlyCollection<string>? allowedEditorGroups,
+        IReadOnlyCollection<string>? allowedViewerGroups,
         IReadOnlyCollection<string> categories,
         IReadOnlyList<Transclusion>? transclusions) : base(
             id,
@@ -167,6 +189,8 @@ public sealed class WikiFile : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             null,
             null,
             false,
@@ -197,6 +221,8 @@ public sealed class WikiFile : Article
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null,
         IList<string>? categories = null,
         IList<Transclusion>? transclusions = null) : base(
             id,
@@ -211,6 +237,8 @@ public sealed class WikiFile : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             categories,
             transclusions)
     {
@@ -285,7 +313,7 @@ public sealed class WikiFile : Article
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this file.
+    /// The users allowed to edit this file.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the file can be edited by anyone.
@@ -298,7 +326,33 @@ public sealed class WikiFile : Article
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this file.
+    /// The users allowed to view this file.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the file can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the file.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this file.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the file can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this file.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the file can be viewed by anyone.
@@ -321,7 +375,9 @@ public sealed class WikiFile : Article
         string? revisionComment = null,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null)
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -370,6 +426,8 @@ public sealed class WikiFile : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             wikiLinks)
             .ConfigureAwait(false);
 
@@ -390,6 +448,8 @@ public sealed class WikiFile : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             categories,
             transclusions);
         await dataStore.StoreItemAsync(file).ConfigureAwait(false);
@@ -462,7 +522,7 @@ public sealed class WikiFile : Article
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this file.
+    /// The users allowed to edit this file.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the file can be edited by anyone.
@@ -475,7 +535,33 @@ public sealed class WikiFile : Article
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this file.
+    /// The users allowed to view this file.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the file can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the file.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this file.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the file can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this file.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the file can be viewed by anyone.
@@ -499,7 +585,9 @@ public sealed class WikiFile : Article
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null)
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
     {
         title ??= title?.ToWikiTitleCase() ?? Title;
 
@@ -611,6 +699,8 @@ public sealed class WikiFile : Article
                 owner,
                 allowedEditors,
                 allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups,
                 WikiLinks,
                 Categories)
                 .ConfigureAwait(false))

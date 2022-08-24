@@ -8,7 +8,7 @@ namespace Tavenem.Wiki.Test;
 [TestClass]
 public class SerializationTests
 {
-    private static readonly WikiOptions _Options = new WikiOptions();
+    private static readonly WikiOptions _Options = new();
 
     [TestMethod]
     public void ArticleTest()
@@ -24,6 +24,8 @@ public class SerializationTests
             "Test Namespace",
             false,
             "TEST_OWNER_ID",
+            null,
+            null,
             null,
             null,
             null,
@@ -53,6 +55,8 @@ public class SerializationTests
             "TEST_OWNER_ID",
             new ReadOnlyCollection<string>(new string[] { "TEST_EDITOR_ID" }),
             new ReadOnlyCollection<string>(new string[] { "TEST_VIEWER_ID" }),
+            null,
+            null,
             null,
             null,
             false,
@@ -86,6 +90,8 @@ public class SerializationTests
             null,
             null,
             null,
+            null,
+            null,
             false,
             false,
             new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -112,6 +118,8 @@ public class SerializationTests
             "TEST_OWNER_ID",
             new ReadOnlyCollection<string>(new string[] { "TEST_EDITOR_ID" }),
             new ReadOnlyCollection<string>(new string[] { "TEST_VIEWER_ID" }),
+            null,
+            null,
             null,
             null,
             false,
@@ -145,6 +153,8 @@ public class SerializationTests
             "TEST_OWNER_ID",
             null,
             null,
+            null,
+            null,
             new ReadOnlyCollection<string>(Array.Empty<string>()),
             null);
 
@@ -171,6 +181,8 @@ public class SerializationTests
             _Options.CategoryNamespace,
             false,
             "TEST_OWNER_ID",
+            null,
+            null,
             null,
             null,
             new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -353,6 +365,8 @@ public class SerializationTests
                 null,
                 null,
                 null,
+                null,
+                null,
                 false,
                 false,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -369,6 +383,8 @@ public class SerializationTests
                 _Options.CategoryNamespace,
                 false,
                 "TEST_OWNER_ID",
+                null,
+                null,
                 null,
                 null,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -388,6 +404,8 @@ public class SerializationTests
                 _Options.FileNamespace,
                 false,
                 "TEST_OWNER_ID",
+                null,
+                null,
                 null,
                 null,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -423,6 +441,8 @@ public class SerializationTests
                 null,
                 null,
                 null,
+                null,
+                null,
                 false,
                 false,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -439,6 +459,8 @@ public class SerializationTests
                 _Options.CategoryNamespace,
                 false,
                 "TEST_OWNER_ID",
+                null,
+                null,
                 null,
                 null,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -458,6 +480,8 @@ public class SerializationTests
                 _Options.FileNamespace,
                 false,
                 "TEST_OWNER_ID",
+                null,
+                null,
                 null,
                 null,
                 new ReadOnlyCollection<string>(Array.Empty<string>()),
@@ -520,6 +544,8 @@ public class SerializationTests
             "TEST_OWNER_ID",
             null,
             null,
+            null,
+            null,
             new ReadOnlyCollection<string>(Array.Empty<string>()),
             null);
 
@@ -549,6 +575,8 @@ public class SerializationTests
             _Options.FileNamespace,
             false,
             "TEST_OWNER_ID",
+            null,
+            null,
             null,
             null,
             new ReadOnlyCollection<string>(Array.Empty<string>()),

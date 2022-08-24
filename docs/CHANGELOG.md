@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.4-preview
+### Changed
+- Modified constructors to add support for group permissions.
+
 ## 0.8.3-preview
 ### Changed
 - Group page edit permission based solely on group membership.

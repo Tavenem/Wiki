@@ -293,7 +293,7 @@ public class Article : MarkdownItem
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this article.
+    /// The users allowed to edit this article.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the article can be edited by anyone.
@@ -303,13 +303,10 @@ public class Article : MarkdownItem
     /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
     /// </para>
-    /// <para>
-    /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
-    /// </para>
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this article.
+    /// The users allowed to view this article.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the article can be viewed by anyone.
@@ -319,8 +316,31 @@ public class Article : MarkdownItem
     /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to view the article.
     /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
     /// <para>
-    /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+    /// The groups allowed to edit this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the article.
     /// </para>
     /// </param>
     /// <param name="redirectNamespace">
@@ -357,6 +377,8 @@ public class Article : MarkdownItem
         string? owner,
         IReadOnlyCollection<string>? allowedEditors,
         IReadOnlyCollection<string>? allowedViewers,
+        IReadOnlyCollection<string>? allowedEditorGroups,
+        IReadOnlyCollection<string>? allowedViewerGroups,
         string? redirectNamespace,
         string? redirectTitle,
         bool isBrokenRedirect,
@@ -373,6 +395,8 @@ public class Article : MarkdownItem
         {
             AllowedEditors = allowedEditors;
             AllowedViewers = allowedViewers;
+            AllowedEditorGroups = allowedEditorGroups;
+            AllowedViewerGroups = allowedViewerGroups;
         }
         Categories = categories;
         IsBrokenRedirect = isBrokenRedirect;
@@ -400,6 +424,8 @@ public class Article : MarkdownItem
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null,
         IList<string>? categories = null,
         IList<Transclusion>? transclusions = null,
         string? redirectNamespace = null,
@@ -416,6 +442,8 @@ public class Article : MarkdownItem
         {
             AllowedEditors = allowedEditors?.ToList().AsReadOnly();
             AllowedViewers = allowedViewers?.ToList().AsReadOnly();
+            AllowedEditorGroups = allowedEditorGroups?.ToList().AsReadOnly();
+            AllowedViewerGroups = allowedViewerGroups?.ToList().AsReadOnly();
         }
         Categories = new ReadOnlyCollection<string>(categories ?? new List<string>());
         IsBrokenRedirect = isBrokenRedirect;
@@ -632,7 +660,7 @@ public class Article : MarkdownItem
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this article.
+    /// The users allowed to edit this article.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the article can be edited by anyone.
@@ -645,7 +673,33 @@ public class Article : MarkdownItem
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this article.
+    /// The users allowed to view this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the article.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this article.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the article can be viewed by anyone.
@@ -665,7 +719,9 @@ public class Article : MarkdownItem
         string? wikiNamespace = null,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null)
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -674,7 +730,18 @@ public class Article : MarkdownItem
         wikiNamespace = wikiNamespace?.ToWikiTitleCase();
         if (string.Equals(wikiNamespace, options.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase))
         {
-            return await Category.NewAsync(options, dataStore, title, editor, markdown, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
+            return await Category.NewAsync(
+                options,
+                dataStore,
+                title,
+                editor,
+                markdown,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups)
+                .ConfigureAwait(false);
         }
         if (options.ReservedNamespaces.Any(x => string.Equals(wikiNamespace, x, StringComparison.CurrentCultureIgnoreCase)))
         {
@@ -737,6 +804,8 @@ public class Article : MarkdownItem
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             wikiLinks)
             .ConfigureAwait(false);
 
@@ -766,6 +835,8 @@ public class Article : MarkdownItem
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             categories,
             transclusions,
             redirectNamespace,
@@ -1172,6 +1243,8 @@ public class Article : MarkdownItem
         string? owner,
         IEnumerable<string>? allowedEditors,
         IEnumerable<string>? allowedViewers,
+        IEnumerable<string>? allowedEditorGroups,
+        IEnumerable<string>? allowedViewerGroups,
         IEnumerable<WikiLink> wikiLinks,
         IEnumerable<string>? previousCategories = null)
     {
@@ -1186,7 +1259,17 @@ public class Article : MarkdownItem
         foreach (var categoryTitle in currentCategories.Except(oldCategories))
         {
             var category = await Category.GetCategoryAsync(options, dataStore, categoryTitle, false)
-                ?? await Category.NewAsync(options, dataStore, categoryTitle, editor, null, owner, allowedEditors, allowedViewers).ConfigureAwait(false);
+                ?? await Category.NewAsync(
+                    options,
+                    dataStore,
+                    categoryTitle,
+                    editor,
+                    null,
+                    owner,
+                    allowedEditors,
+                    allowedViewers,
+                    allowedEditorGroups,
+                    allowedViewerGroups).ConfigureAwait(false);
             if (!category.ChildIds.Contains(id))
             {
                 await category.AddArticleAsync(dataStore, id).ConfigureAwait(false);
@@ -1743,7 +1826,7 @@ public class Article : MarkdownItem
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this article.
+    /// The users allowed to edit this article.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the article can be edited by anyone.
@@ -1756,7 +1839,33 @@ public class Article : MarkdownItem
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this article.
+    /// The users allowed to view this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the article.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this article.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the article can be viewed by anyone.
@@ -1778,7 +1887,9 @@ public class Article : MarkdownItem
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null)
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
     {
         title ??= title?.ToWikiTitleCase() ?? Title;
         if (string.IsNullOrWhiteSpace(wikiNamespace))
@@ -1903,6 +2014,8 @@ public class Article : MarkdownItem
                 owner,
                 allowedEditors,
                 allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups,
                 WikiLinks,
                 Categories)
                 .ConfigureAwait(false))
@@ -1923,6 +2036,8 @@ public class Article : MarkdownItem
         Owner = owner;
         AllowedEditors = allowedEditors?.ToList().AsReadOnly();
         AllowedViewers = allowedViewers?.ToList().AsReadOnly();
+        AllowedEditorGroups = allowedEditorGroups?.ToList().AsReadOnly();
+        AllowedViewerGroups = allowedViewerGroups?.ToList().AsReadOnly();
 
         var revision = new Revision(
             Id,

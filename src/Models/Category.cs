@@ -63,34 +63,54 @@ public sealed class Category : Article
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this article.
+    /// The users allowed to edit this category.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be edited by anyone.
+    /// If <see langword="null"/> the category can be edited by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
+    /// If non-<see langword="null"/> the category can only be edited by those listed, plus its
     /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// <para>
-    /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
     /// </para>
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this article.
+    /// The users allowed to view this category.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// If <see langword="null"/> the category can be viewed by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
+    /// If non-<see langword="null"/> the category can only be viewed by those listed, plus its
     /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the article.
+    /// langword="null"/>) list allows only the owner to view the category.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this category.
     /// </para>
     /// <para>
-    /// Cannot be set if the <paramref name="owner"/> is <see langword="null"/>.
+    /// If <see langword="null"/> the category can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the category can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this category.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the category can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the category can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the category.
     /// </para>
     /// </param>
     /// <param name="categories">
@@ -117,6 +137,8 @@ public sealed class Category : Article
         string? owner,
         IReadOnlyCollection<string>? allowedEditors,
         IReadOnlyCollection<string>? allowedViewers,
+        IReadOnlyCollection<string>? allowedEditorGroups,
+        IReadOnlyCollection<string>? allowedViewerGroups,
         IReadOnlyCollection<string> categories,
         IReadOnlyList<Transclusion>? transclusions) : base(
             id,
@@ -131,6 +153,8 @@ public sealed class Category : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             null,
             null,
             false,
@@ -151,6 +175,8 @@ public sealed class Category : Article
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null,
         IList<string>? categories = null,
         IList<Transclusion>? transclusions = null) : base(
             id,
@@ -165,6 +191,8 @@ public sealed class Category : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             categories,
             transclusions)
     { }
@@ -235,7 +263,7 @@ public sealed class Category : Article
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this category.
+    /// The users allowed to edit this category.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the category can be edited by anyone.
@@ -248,7 +276,33 @@ public sealed class Category : Article
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this category.
+    /// The users allowed to view this category.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the category can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the category can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the category.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this category.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the category can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the category can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this category.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the category can be viewed by anyone.
@@ -267,7 +321,9 @@ public sealed class Category : Article
         string? markdown = null,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null)
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -315,6 +371,8 @@ public sealed class Category : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             wikiLinks)
             .ConfigureAwait(false);
 
@@ -331,6 +389,8 @@ public sealed class Category : Article
             owner,
             allowedEditors,
             allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
             categories,
             transclusions);
         await dataStore.StoreItemAsync(category).ConfigureAwait(false);
@@ -398,7 +458,7 @@ public sealed class Category : Article
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The user(s) and/or group(s) allowed to edit this category.
+    /// The users allowed to edit this category.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the category can be edited by anyone.
@@ -411,7 +471,33 @@ public sealed class Category : Article
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The user(s) and/or group(s) allowed to view this category.
+    /// The users allowed to view this category.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the category can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the category can only be viewed by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the category.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this category.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the category can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the category can only be edited by those listed, plus its
+    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this category.
     /// </para>
     /// <para>
     /// If <see langword="null"/> the category can be viewed by anyone.
@@ -432,7 +518,9 @@ public sealed class Category : Article
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null)
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
     {
         if (isDeleted && ChildIds.Count > 0)
         {
@@ -527,6 +615,8 @@ public sealed class Category : Article
                 owner,
                 allowedEditors,
                 allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups,
                 WikiLinks,
                 Categories)
                 .ConfigureAwait(false))
