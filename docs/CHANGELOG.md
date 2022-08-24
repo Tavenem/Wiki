@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.3-preview
+### Changed
+- Group page edit permission based solely on group membership.
+
 ## 0.8.2-preview
 ### Changed
 - Adjusted parameter order of `GetWikiPageUrl` overload to avoid ambiguity.

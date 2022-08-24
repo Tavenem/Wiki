@@ -17,8 +17,8 @@ public interface IWikiGroup : IWikiOwner
     /// </summary>
     /// <remarks>
     /// <para>
-    /// Only the owner of a group may create, delete, or move its group page, set view and edit
-    /// permission on its group page, invite or remove users, and change the group's ownership.
+    /// Only the owner of a group may create, delete, or move its group page, set view permission on
+    /// its group page, invite or remove users, and change the group's ownership.
     /// </para>
     /// <para>
     /// Although this property is nullable to avoid causing trouble for initialization and/or

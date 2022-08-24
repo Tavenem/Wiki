@@ -2348,11 +2348,16 @@ public static class WikiExtensions
             return WikiPermission.Read;
         }
 
+        if (isGroupPage)
+        {
+            return user.Groups?.Contains(title) == true
+                ? WikiPermission.ReadWrite
+                : WikiPermission.Read;
+        }
+
         var writePermission = article.AllowedEditors is null
             || article.AllowedEditors.Contains(user.Id)
             || user.AllowedEditArticles?.Contains(article.Id) == true
-            || (isGroupPage
-                && user.Groups?.Contains(title) == true)
             || (article.AllowedEditorGroups is not null
                 && user.Groups is not null
                 && article.AllowedEditorGroups.Intersect(user.Groups).Any());
