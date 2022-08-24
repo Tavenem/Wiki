@@ -593,6 +593,15 @@ public class WikiOptions
     /// <summary>
     /// Builds a relative URL for a wiki page.
     /// </summary>
+    /// <param name="queryParameters">
+    /// <para>
+    /// Any additional query parameters, as a collection of keys and values.
+    /// </para>
+    /// <para>
+    /// Each value will be converted to a string by having its <see cref="object.ToString"/> method
+    /// invoked.
+    /// </para>
+    /// </param>
     /// <param name="title">
     /// <para>
     /// The title of the page.
@@ -625,25 +634,16 @@ public class WikiOptions
     /// to avoid incorrectly encoding intentional URL control characters, such as path separators.
     /// </para>
     /// </param>
-    /// <param name="queryParameters">
-    /// <para>
-    /// Any additional query parameters, as a collection of keys and values.
-    /// </para>
-    /// <para>
-    /// Each value will be converted to a string by having its <see cref="object.ToString"/> method
-    /// invoked.
-    /// </para>
-    /// </param>
     /// <returns>
     /// A relative URL for the wiki page with the given characteristics. The string will be URL
     /// encoded.
     /// </returns>
     public string GetWikiPageUrl(
+        IReadOnlyDictionary<string, object?> queryParameters,
         string? title = null,
         string? wikiNamespace = null,
         bool talk = false,
-        string? route = null,
-        IReadOnlyDictionary<string, object?>? queryParameters = null)
+        string? route = null)
     {
         var writer = new StringWriter();
         writer.Write("./");

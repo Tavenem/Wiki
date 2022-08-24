@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.2-preview
+### Changed
+- Adjusted parameter order of `GetWikiPageUrl` overload to avoid ambiguity.
+
 ## 0.8.1-preview
 ### Added
 - `GetWikiItemAtTimeAsync` - gets a `WikiItemInfo` record for the most recent revision of a wiki
