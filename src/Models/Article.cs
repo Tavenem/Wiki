@@ -240,7 +240,7 @@ public class Article : MarkdownItem
     public DateTimeOffset Timestamp
     {
         get => new(TimestampTicks, TimeSpan.Zero);
-        set => TimestampTicks = value.ToUniversalTime().Ticks;
+        set => TimestampTicks = value.UtcTicks;
     }
 
     /// <summary>
@@ -1747,11 +1747,11 @@ public class Article : MarkdownItem
         Expression<Func<Revision, bool>> exp = x => x.WikiId == Id;
         if (start.HasValue)
         {
-            exp = exp.AndAlso(x => x.TimestampTicks >= start.Value.ToUniversalTime().Ticks);
+            exp = exp.AndAlso(x => x.TimestampTicks >= start.Value.UtcTicks);
         }
         if (end.HasValue)
         {
-            exp = exp.AndAlso(x => x.TimestampTicks <= end.Value.ToUniversalTime().Ticks);
+            exp = exp.AndAlso(x => x.TimestampTicks <= end.Value.UtcTicks);
         }
         exp = condition is null ? exp : exp.AndAlso(condition);
         return await dataStore.Query<Revision>()
@@ -2123,7 +2123,7 @@ public class Article : MarkdownItem
 
     private async Task<IReadOnlyList<Revision>> GetRevisionsUntilAsync(IDataStore dataStore, DateTimeOffset time)
     {
-        var ticks = time.ToUniversalTime().Ticks;
+        var ticks = time.UtcTicks;
         var lastMilestone = await dataStore.Query<Revision>()
             .Where(x => x.WikiId == Id && x.TimestampTicks <= ticks && x.IsMilestone)
             .OrderBy(x => x.TimestampTicks, descending: true)

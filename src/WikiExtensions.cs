@@ -866,7 +866,7 @@ public static class WikiExtensions
 
         return new(new PagedList<LinkInfo>(
             articles
-                .Skip(request.PageNumber * request.PageSize)
+                .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(x => new LinkInfo(
                     x.Title,
