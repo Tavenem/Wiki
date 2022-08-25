@@ -1372,6 +1372,136 @@ public static class WikiExtensions
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
+    /// Gets the most recent revision of the wiki page with the given title and namespace at the
+    /// specified <paramref name="timestamp"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="timestamp">
+    /// The number of ticks in the timestamp of the final revision.
+    /// </param>
+    /// <param name="title">
+    /// <para>
+    /// The title of the wiki page.
+    /// </para>
+    /// <para>
+    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
+    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
+    /// will be used.
+    /// </para>
+    /// <para>
+    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
+    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
+    /// the result will always be <see langword="null"/>.
+    /// </para>
+    /// </param>
+    /// <param name="wikiNamespace">
+    /// <para>
+    /// The namespace of the wiki page.
+    /// </para>
+    /// <para>
+    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
+    /// </para>
+    /// </param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/>.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
+    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>; or <see
+    /// langword="null"/> if no such item exists.
+    /// </returns>
+    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        long timestamp,
+        string? title = null,
+        string? wikiNamespace = null,
+        IWikiUser? user = null) => await GetWikiItemAtTimeAsync(
+            dataStore,
+            options,
+            userManager,
+            groupManager,
+            new DateTimeOffset(timestamp, TimeSpan.Zero),
+            title,
+            wikiNamespace,
+            user);
+
+    /// <summary>
+    /// Gets the most recent revision of the wiki page with the given title and namespace at the
+    /// specified <paramref name="timestamp"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="timestamp">
+    /// The number of ticks in the timestamp of the final revision.
+    /// </param>
+    /// <param name="title">
+    /// <para>
+    /// The title of the wiki page.
+    /// </para>
+    /// <para>
+    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
+    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
+    /// will be used.
+    /// </para>
+    /// <para>
+    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
+    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
+    /// the result will always be <see langword="null"/>.
+    /// </para>
+    /// </param>
+    /// <param name="wikiNamespace">
+    /// <para>
+    /// The namespace of the wiki page.
+    /// </para>
+    /// <para>
+    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
+    /// </para>
+    /// </param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
+    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>; or <see
+    /// langword="null"/> if no such item exists.
+    /// </returns>
+    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        long timestamp,
+        string? title = null,
+        string? wikiNamespace = null,
+        string? userId = null) => await GetWikiItemAtTimeAsync(
+            dataStore,
+            options,
+            userManager,
+            groupManager,
+            new DateTimeOffset(timestamp, TimeSpan.Zero),
+            title,
+            wikiNamespace,
+            await userManager.FindByIdAsync(userId));
+
+    /// <summary>
     /// Gets a diff between the text at the given <paramref name="time"/> and the current
     /// version of the text.
     /// </summary>

@@ -1,7 +1,11 @@
 # Changelog
 
+## 0.8.7-preview
+### Added
+- Added overloads for `GetWikiItemAtTimeAsync` which accept a `long` timestamp
+
 ## 0.8.6-preview
-### Changed
+### Added
 - Added overloads to query methods which accept an `IWikiUser`
 
 ## 0.8.5-preview
