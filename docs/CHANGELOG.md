@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.8-preview
+### Changed
+- Nullability of query responses
+
 ## 0.8.7-preview
 ### Added
 - Added overloads for `GetWikiItemAtTimeAsync` which accept a `long` timestamp

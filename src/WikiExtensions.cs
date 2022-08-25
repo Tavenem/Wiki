@@ -51,10 +51,9 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="CategoryInfo"/> object which corresponds to the <paramref name="title"/> given;
-    /// or <see langword="null"/> if no such <see cref="Category"/> exists.
+    /// A <see cref="CategoryInfo"/> object which corresponds to the <paramref name="title"/> given.
     /// </returns>
-    public static async Task<CategoryInfo?> GetCategoryAsync(
+    public static async Task<CategoryInfo> GetCategoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -140,10 +139,9 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="CategoryInfo"/> object which corresponds to the <paramref name="title"/> given;
-    /// or <see langword="null"/> if no such <see cref="Category"/> exists.
+    /// A <see cref="CategoryInfo"/> object which corresponds to the <paramref name="title"/> given.
     /// </returns>
-    public static async Task<CategoryInfo?> GetCategoryAsync(
+    public static async Task<CategoryInfo> GetCategoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -203,10 +201,15 @@ public static class WikiExtensions
         var articleGroup = await groupManager.FindByIdAsync(groupId);
         articleGroup ??= await groupManager.FindByNameAsync(groupId);
 
+        if (articleGroup is null)
+        {
+            return null;
+        }
+
         var wikiItem = await GetWikiItemAsync(
             dataStore,
             options,
-            articleGroup?.Id ?? groupId,
+            articleGroup.Id,
             options.GroupNamespace,
             true);
 
@@ -216,7 +219,7 @@ public static class WikiExtensions
             dataStore,
             userManager,
             groupManager,
-            articleGroup?.Id ?? groupId,
+            articleGroup.Id,
             options.GroupNamespace,
             wikiItem);
 
@@ -231,8 +234,7 @@ public static class WikiExtensions
         }
 
         IWikiGroup? group = null;
-        if (articleGroup is not null
-            && user is not null)
+        if (user is not null)
         {
             if (user is not null
                 && (user.IsWikiAdmin
@@ -271,7 +273,7 @@ public static class WikiExtensions
         }
 
         return new(
-            new WikiUserInfo(articleGroup?.Id ?? groupId, group, wikiItem is not null),
+            new WikiUserInfo(articleGroup.Id, group, wikiItem is not null),
             wikiItem,
             permission,
             userInfo);
@@ -362,6 +364,10 @@ public static class WikiExtensions
             request.Title,
             request.WikiNamespace,
             true);
+        if (item is null)
+        {
+            return null;
+        }
 
         var permission = await GetPermissionInnerAsync(
             user,
@@ -372,8 +378,7 @@ public static class WikiExtensions
             request.Title,
             request.WikiNamespace,
             item);
-        if (item is null
-            || request.Start > request.End
+        if (request.Start > request.End
             || !permission.HasFlag(WikiPermission.Read))
         {
             return new(null, permission, null);
@@ -798,11 +803,15 @@ public static class WikiExtensions
     {
         var articleUser = await userManager.FindByIdAsync(userId);
         articleUser ??= await userManager.FindByNameAsync(userId);
+        if (articleUser is null)
+        {
+            return null;
+        }
 
         var wikiItem = await GetWikiItemAsync(
             dataStore,
             options,
-            articleUser?.Id ?? userId,
+            articleUser.Id,
             options.UserNamespace,
             true);
 
@@ -814,7 +823,7 @@ public static class WikiExtensions
             dataStore,
             userManager,
             groupManager,
-            articleUser?.Id ?? userId,
+            articleUser.Id,
             options.UserNamespace,
             wikiItem);
 
@@ -828,36 +837,33 @@ public static class WikiExtensions
                 null);
         }
 
-        IWikiUser? user = null;
-        if (articleUser is not null)
+        IWikiUser? user;
+        if (requestingUser is not null
+            && (requestingUser.IsWikiAdmin
+            || string.Equals(requestingUser.Id, articleUser.Id)))
         {
-            if (requestingUser is not null
-                && (requestingUser.IsWikiAdmin
-                || string.Equals(requestingUser.Id, articleUser.Id)))
+            user = articleUser;
+        }
+        else if (articleUser.IsDeleted)
+        {
+            user = new WikiUser
             {
-                user = articleUser;
-            }
-            else if (articleUser.IsDeleted)
+                Id = articleUser.Id,
+                IsWikiAdmin = articleUser.IsWikiAdmin,
+            };
+        }
+        else
+        {
+            user = new WikiUser
             {
-                user = new WikiUser
-                {
-                    Id = articleUser.Id,
-                    IsWikiAdmin = articleUser.IsWikiAdmin,
-                };
-            }
-            else
-            {
-                user = new WikiUser
-                {
-                    DisplayName = articleUser.DisplayName,
-                    Id = articleUser.Id,
-                    IsWikiAdmin = articleUser.IsWikiAdmin,
-                };
-            }
+                DisplayName = articleUser.DisplayName,
+                Id = articleUser.Id,
+                IsWikiAdmin = articleUser.IsWikiAdmin,
+            };
         }
 
         List<WikiUserInfo>? groupInfo = null;
-        if (articleUser?.Groups is not null)
+        if (articleUser.Groups is not null)
         {
             groupInfo = new List<WikiUserInfo>();
             foreach (var id in articleUser.Groups)
@@ -885,7 +891,7 @@ public static class WikiExtensions
             groupInfo,
             wikiItem,
             permission,
-            new WikiUserInfo(articleUser?.Id ?? userId, user, wikiItem is not null));
+            new WikiUserInfo(articleUser.Id, user, wikiItem is not null));
     }
 
     /// <summary>
@@ -896,7 +902,9 @@ public static class WikiExtensions
     /// <param name="request">A record with information about the request.</param>
     /// <returns>
     /// A <see cref="PagedListDTO{T}"/> with <see cref="LinkInfo"/> records for all the pages that
-    /// link to the given item; or <see langword="null"/> if no such item exists.
+    /// link to the given item; or <see langword="null"/> if no <see
+    /// cref="WhatLinksHereRequest.Title"/> is given for a namespace which is not <see
+    /// cref="WikiOptions.DefaultNamespace"/>.
     /// </returns>
     public static async Task<PagedListDTO<LinkInfo>?> GetWhatLinksHereAsync(
         this IDataStore dataStore,
@@ -1101,9 +1109,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given; or <see langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given.
     /// </returns>
-    public static async Task<WikiItemInfo?> GetWikiItemAsync(
+    public static async Task<WikiItemInfo> GetWikiItemAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1195,9 +1203,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given; or <see langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given.
     /// </returns>
-    public static async Task<WikiItemInfo?> GetWikiItemAsync(
+    public static async Task<WikiItemInfo> GetWikiItemAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1257,10 +1265,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>; or <see
-    /// langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>.
     /// </returns>
-    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1350,10 +1357,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>; or <see
-    /// langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>.
     /// </returns>
-    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1415,10 +1421,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>; or <see
-    /// langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>.
     /// </returns>
-    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1480,10 +1485,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>; or <see
-    /// langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>.
     /// </returns>
-    public static async Task<WikiItemInfo?> GetWikiItemAtTimeAsync(
+    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1543,15 +1547,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static async Task<WikiItemInfo?> GetWikiItemDiffWithCurrentAsync(
+    public static async Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1641,15 +1644,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static async Task<WikiItemInfo?> GetWikiItemDiffWithCurrentAsync(
+    public static async Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1711,15 +1713,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static Task<WikiItemInfo?> GetWikiItemDiffWithCurrentAsync(
+    public static Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1781,15 +1782,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static Task<WikiItemInfo?> GetWikiItemDiffWithCurrentAsync(
+    public static Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1853,8 +1853,7 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
@@ -1865,7 +1864,7 @@ public static class WikiExtensions
     /// If <paramref name="secondTime"/> is before <paramref name="firstTime"/>, their values
     /// are swapped. In other words, the diff is always from an earlier version to a later version.
     /// </remarks>
-    public static async Task<WikiItemInfo?> GetWikiItemDiffAsync(
+    public static async Task<WikiItemInfo> GetWikiItemDiffAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1960,8 +1959,7 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
@@ -1972,7 +1970,7 @@ public static class WikiExtensions
     /// If <paramref name="secondTime"/> is before <paramref name="firstTime"/>, their values
     /// are swapped. In other words, the diff is always from an earlier version to a later version.
     /// </remarks>
-    public static async Task<WikiItemInfo?> GetWikiItemDiffAsync(
+    public static async Task<WikiItemInfo> GetWikiItemDiffAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2038,8 +2036,7 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
@@ -2051,7 +2048,7 @@ public static class WikiExtensions
     /// values are swapped. In other words, the diff is always from an earlier version to a later
     /// version.
     /// </remarks>
-    public static Task<WikiItemInfo?> GetWikiItemDiffAsync(
+    public static Task<WikiItemInfo> GetWikiItemDiffAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2117,8 +2114,7 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
@@ -2130,7 +2126,7 @@ public static class WikiExtensions
     /// values are swapped. In other words, the diff is always from an earlier version to a later
     /// version.
     /// </remarks>
-    public static Task<WikiItemInfo?> GetWikiItemDiffAsync(
+    public static Task<WikiItemInfo> GetWikiItemDiffAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2198,15 +2194,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static async Task<WikiItemInfo?> GetWikiItemDiffWithPreviousAsync(
+    public static async Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2306,15 +2301,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static async Task<WikiItemInfo?> GetWikiItemDiffWithPreviousAsync(
+    public static async Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2380,15 +2374,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static Task<WikiItemInfo?> GetWikiItemDiffWithPreviousAsync(
+    public static Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2454,15 +2447,14 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
     /// </returns>
     /// <exception cref="ArgumentException">
     /// A revision was incorrectly formatted; or, the sequence of revisions is not a
     /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
     /// order given.
     /// </exception>
-    public static Task<WikiItemInfo?> GetWikiItemDiffWithPreviousAsync(
+    public static Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2525,9 +2517,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiEditInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given; or <see langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given.
     /// </returns>
-    public static async Task<WikiEditInfo?> GetWikiItemForEditingAsync(
+    public static async Task<WikiEditInfo> GetWikiItemForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -2886,9 +2878,9 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// A <see cref="WikiEditInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given; or <see langword="null"/> if no such item exists.
+    /// name="wikiNamespace"/> given.
     /// </returns>
-    public static async Task<WikiEditInfo?> GetWikiItemForEditingAsync(
+    public static async Task<WikiEditInfo> GetWikiItemForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
