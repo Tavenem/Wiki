@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.9-preview
+### Added
+- `AddOrReviseWikiItemAsync` to extensions
+
 ## 0.8.8-preview
 ### Changed
 - Nullability of query responses

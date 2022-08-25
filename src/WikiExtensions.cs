@@ -11,6 +11,259 @@ namespace Tavenem.Wiki;
 public static class WikiExtensions
 {
     /// <summary>
+    /// Creates or revises an <see cref="Article"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="editor">
+    /// The wiki user who is making this revision.
+    /// </param>
+    /// <param name="title">
+    /// <para>
+    /// The optional new title of the article. Must be unique within its namespace, and non-empty.
+    /// </para>
+    /// <para>
+    /// If left <see langword="null"/> the existing title will be retained.
+    /// </para>
+    /// </param>
+    /// <param name="markdown">
+    /// <para>
+    /// The raw markdown content.
+    /// </para>
+    /// <para>
+    /// If left <see langword="null"/> the existing markdown will be retained.
+    /// </para>
+    /// </param>
+    /// <param name="revisionComment">
+    /// An optional comment supplied for this revision (e.g. to explain the changes).
+    /// </param>
+    /// <param name="wikiNamespace">
+    /// <para>
+    /// The optional new namespace to which this article belongs.
+    /// </para>
+    /// <para>
+    /// If left <see langword="null"/> the existing namespace will be retained.
+    /// </para>
+    /// </param>
+    /// <param name="isDeleted">Indicates that this article has been marked as deleted.</param>
+    /// <param name="owner">
+    /// <para>
+    /// The new owner of the article.
+    /// </para>
+    /// <para>
+    /// May be a user, a group, or <see langword="null"/>.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditors">
+    /// <para>
+    /// The users allowed to edit this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewers">
+    /// <para>
+    /// The users allowed to view this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the article.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this article.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the article.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if the article was revised; <see langword="false"/> if the article
+    /// could not be revised (usually because the editor did not have permission to make an
+    /// associated change).
+    /// </returns>
+    public static async Task<bool> AddOrReviseWikiItemAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        IWikiUser editor,
+        string? title = null,
+        string? markdown = null,
+        string? revisionComment = null,
+        string? wikiNamespace = null,
+        bool isDeleted = false,
+        string? owner = null,
+        IEnumerable<string>? allowedEditors = null,
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
+    {
+        var item = await GetWikiItemAsync(
+            dataStore,
+            options,
+            userManager,
+            groupManager,
+            title,
+            wikiNamespace,
+            editor,
+            true);
+        if (item.Item is null && string.IsNullOrEmpty(title))
+        {
+            return false;
+        }
+
+        if (!item.Permission.HasFlag(WikiPermission.Write))
+        {
+            return false;
+        }
+
+        if (item.Item is null && !item.Permission.HasFlag(WikiPermission.Create))
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(owner)
+            && !item.Permission.HasFlag(WikiPermission.SetOwner))
+        {
+            return false;
+        }
+
+        if (!item.Permission.HasFlag(WikiPermission.SetPermissions))
+        {
+            if (item.Item is null)
+            {
+                if (allowedEditors is not null
+                    || allowedEditorGroups is not null
+                    || allowedViewers is not null
+                    || allowedViewerGroups is not null)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (item.Item.AllowedEditors is null)
+                {
+                    if (allowedEditors is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedEditors is null
+                    || !item.Item.AllowedEditors.Order().SequenceEqual(allowedEditors.Order()))
+                {
+                    return false;
+                }
+
+                if (item.Item.AllowedEditorGroups is null)
+                {
+                    if (allowedEditorGroups is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedEditorGroups is null
+                    || !item.Item.AllowedEditorGroups.Order().SequenceEqual(allowedEditorGroups.Order()))
+                {
+                    return false;
+                }
+
+                if (item.Item.AllowedViewers is null)
+                {
+                    if (allowedViewers is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedViewers is null
+                    || !item.Item.AllowedViewers.Order().SequenceEqual(allowedViewers.Order()))
+                {
+                    return false;
+                }
+
+                if (item.Item.AllowedViewerGroups is null)
+                {
+                    if (allowedViewerGroups is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedViewerGroups is null
+                    || !item.Item.AllowedViewerGroups.Order().SequenceEqual(allowedViewerGroups.Order()))
+                {
+                    return false;
+                }
+            }
+        }
+
+        if (item.Item is null)
+        {
+            await Article.NewAsync(
+                options,
+                dataStore,
+                title!,
+                editor.Id,
+                markdown,
+                wikiNamespace,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups);
+        }
+        else
+        {
+            await item.Item.ReviseAsync(
+                options,
+                dataStore,
+                editor.Id,
+                title,
+                markdown,
+                revisionComment,
+                wikiNamespace,
+                isDeleted,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups);
+        }
+        return true;
+    }
+
+    /// <summary>
     /// Gets the index of the first character in this <see cref="string"/> which satisfies the
     /// given <paramref name="condition"/>.
     /// </summary>
