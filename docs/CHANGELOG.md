@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.6-preview
+### Changed
+- Added overloads to query methods which accept an `IWikiUser`
+
 ## 0.8.5-preview
 ### Fixed
 - What links here paging
