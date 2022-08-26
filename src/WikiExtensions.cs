@@ -11,7 +11,7 @@ namespace Tavenem.Wiki;
 public static class WikiExtensions
 {
     /// <summary>
-    /// Creates or revises an <see cref="Article"/>.
+    /// Creates or revises an <see cref="Article"/> or <see cref="Category"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -45,6 +45,9 @@ public static class WikiExtensions
     /// </para>
     /// <para>
     /// If left <see langword="null"/> the existing namespace will be retained.
+    /// </para>
+    /// <para>
+    /// May not be <see cref="WikiOptions.FileNamespace"/>. File uploads must be handled separately.
     /// </para>
     /// </param>
     /// <param name="isDeleted">Indicates that this article has been marked as deleted.</param>
@@ -113,6 +116,9 @@ public static class WikiExtensions
     /// could not be revised (usually because the editor did not have permission to make an
     /// associated change).
     /// </returns>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="wikiNamespace"/> was <see cref="WikiOptions.FileNamespace"/>
+    /// </exception>
     public static async Task<bool> AddOrReviseWikiItemAsync(
         this IDataStore dataStore,
         WikiOptions options,
@@ -130,6 +136,16 @@ public static class WikiExtensions
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null)
     {
+        if (string.Equals(
+            wikiNamespace,
+            options.FileNamespace,
+            StringComparison.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException(
+                $"{nameof(wikiNamespace)} may not be the value assigned to the {nameof(WikiOptions.FileNamespace)} property of {nameof(WikiOptions)}.",
+                nameof(wikiNamespace));
+        }
+
         var item = await GetWikiItemAsync(
             dataStore,
             options,
@@ -230,13 +246,49 @@ public static class WikiExtensions
 
         if (item.Item is null)
         {
-            await Article.NewAsync(
+            if (string.Equals(
+                wikiNamespace,
+                options.CategoryNamespace,
+                StringComparison.OrdinalIgnoreCase))
+            {
+                await Category.NewAsync(
+                    options,
+                    dataStore,
+                    title!,
+                    editor.Id,
+                    markdown,
+                    owner,
+                    allowedEditors,
+                    allowedViewers,
+                    allowedEditorGroups,
+                    allowedViewerGroups);
+            }
+            else
+            {
+                await Article.NewAsync(
+                    options,
+                    dataStore,
+                    title!,
+                    editor.Id,
+                    markdown,
+                    wikiNamespace,
+                    owner,
+                    allowedEditors,
+                    allowedViewers,
+                    allowedEditorGroups,
+                    allowedViewerGroups);
+            }
+        }
+        else if (item.Item is Category category)
+        {
+            await category.ReviseAsync(
                 options,
                 dataStore,
-                title!,
                 editor.Id,
+                title,
                 markdown,
-                wikiNamespace,
+                revisionComment,
+                isDeleted,
                 owner,
                 allowedEditors,
                 allowedViewers,

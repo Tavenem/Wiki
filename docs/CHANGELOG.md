@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.8.10-preview
+### Changed
+- Added support for categories to `AddOrReviseWikiItemAsync`, made using `FileNamespace` throw an exception
+
 ## 0.8.9-preview
 ### Added
 - `AddOrReviseWikiItemAsync` to extensions
