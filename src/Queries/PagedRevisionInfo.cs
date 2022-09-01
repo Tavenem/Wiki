@@ -1,13 +1,6 @@
-﻿using System.Text.Json.Serialization;
-using Tavenem.DataStorage;
+﻿using Tavenem.DataStorage;
 
 namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.PagedRevisionInfo"/>.
-/// </summary>
-[JsonSerializable(typeof(PagedRevisionInfo))]
-public partial class PagedRevisionInfoContext : JsonSerializerContext { }
 
 /// <summary>
 /// Information about a particular page of revision information for a wiki item.

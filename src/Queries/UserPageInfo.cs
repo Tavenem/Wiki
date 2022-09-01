@@ -1,12 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.UserPageInfo"/>.
-/// </summary>
-[JsonSerializable(typeof(UserPageInfo))]
-public partial class UserPageInfoContext : JsonSerializerContext { }
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// Information about a user page.

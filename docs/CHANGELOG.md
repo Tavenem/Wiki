@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0-preview
+### Changed
+- Simplified JSON serializer contexts to a single class: `WikiJsonSerializerContext`
+
 ## 0.8.10-preview
 ### Changed
 - Added support for categories to `AddOrReviseWikiItemAsync`, made using `FileNamespace` throw an exception

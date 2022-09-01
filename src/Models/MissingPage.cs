@@ -5,12 +5,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.MissingPage"/>.
-/// </summary>
-[JsonSerializable(typeof(MissingPage))]
-public partial class MissingPageContext : JsonSerializerContext { }
-
-/// <summary>
 /// A persisted reference to a missing page on the wiki. Used for efficient enumeration of
 /// broken links.
 /// </summary>

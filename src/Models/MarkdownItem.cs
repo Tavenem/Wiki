@@ -15,17 +15,6 @@ using Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Tavenem.Wiki.MarkdownItem"/> and derived types.
-/// </summary>
-[JsonSerializable(typeof(MarkdownItem))]
-[JsonSerializable(typeof(List<MarkdownItem>))]
-[JsonSerializable(typeof(List<Article>))]
-[JsonSerializable(typeof(List<Category>))]
-[JsonSerializable(typeof(List<WikiFile>))]
-[JsonSerializable(typeof(List<Message>))]
-public partial class MarkdownItemContext : JsonSerializerContext { }
-
-/// <summary>
 /// An item which contains markdown.
 /// </summary>
 [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]

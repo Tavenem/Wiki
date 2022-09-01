@@ -4,17 +4,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.IWikiOwner"/> and derived types.
-/// </summary>
-[JsonSerializable(typeof(IWikiOwner))]
-[JsonSerializable(typeof(List<IWikiOwner>))]
-[JsonSerializable(typeof(List<IWikiUser>))]
-[JsonSerializable(typeof(List<WikiUser>))]
-[JsonSerializable(typeof(List<IWikiGroup>))]
-[JsonSerializable(typeof(List<WikiGroup>))]
-public partial class WikiOwnerContext : JsonSerializerContext { }
-
-/// <summary>
 /// Represents any entity who may own a wiki item: either an individual user, or a group of users.
 /// </summary>
 [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]

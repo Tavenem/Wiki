@@ -5,12 +5,6 @@ using Tavenem.DiffPatchMerge;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.Revision"/>.
-/// </summary>
-[JsonSerializable(typeof(Revision))]
-public partial class RevisionContext : JsonSerializerContext { }
-
-/// <summary>
 /// A particular revision of a wiki item.
 /// </summary>
 public class Revision : IdItem

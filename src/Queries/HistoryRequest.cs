@@ -1,12 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.HistoryRequest"/>.
-/// </summary>
-[JsonSerializable(typeof(HistoryRequest))]
-public partial class HistoryRequestContext : JsonSerializerContext { }
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// A request record for a page of revision information for a wiki item.

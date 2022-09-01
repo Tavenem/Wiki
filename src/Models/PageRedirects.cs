@@ -5,12 +5,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.PageRedirects"/>.
-/// </summary>
-[JsonSerializable(typeof(PageRedirects))]
-public partial class PageRedirectsContext : JsonSerializerContext { }
-
-/// <summary>
 /// Represents the collection of other wiki pages which redirect to a given wiki page.
 /// </summary>
 public class PageRedirects : IdItem

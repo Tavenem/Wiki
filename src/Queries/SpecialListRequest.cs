@@ -1,12 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.SpecialListRequest"/>.
-/// </summary>
-[JsonSerializable(typeof(SpecialListRequest))]
-public partial class SpecialListRequestContext : JsonSerializerContext { }
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// A request record for a page of wiki items which fit one of the special conditions in the <see

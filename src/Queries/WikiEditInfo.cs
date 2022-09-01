@@ -1,12 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.WikiEditInfo"/>.
-/// </summary>
-[JsonSerializable(typeof(WikiEditInfo))]
-public partial class WikiEditInfoContext : JsonSerializerContext { }
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// Information about a wiki item, with additional information suited to editing the item.

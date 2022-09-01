@@ -1,12 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.GroupPageInfo"/>.
-/// </summary>
-[JsonSerializable(typeof(GroupPageInfo))]
-public partial class GroupPageInfoContext : JsonSerializerContext { }
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// Information about a group page.

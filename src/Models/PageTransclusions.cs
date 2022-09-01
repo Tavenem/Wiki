@@ -5,12 +5,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.PageTransclusions"/>.
-/// </summary>
-[JsonSerializable(typeof(PageTransclusions))]
-public partial class PageTransclusionsContext : JsonSerializerContext { }
-
-/// <summary>
 /// Represents the collection of other wiki pages which transclude a given wiki page.
 /// </summary>
 public class PageTransclusions : IdItem

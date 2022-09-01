@@ -4,12 +4,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.PageReference"/>.
-/// </summary>
-[JsonSerializable(typeof(PageReference))]
-public partial class PageReferenceContext : JsonSerializerContext { }
-
-/// <summary>
 /// A reference from a full wiki page title to the current page ID assigned to that title.
 /// </summary>
 public class PageReference : IdItem

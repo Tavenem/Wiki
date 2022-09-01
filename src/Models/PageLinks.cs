@@ -5,12 +5,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.PageLinks"/>.
-/// </summary>
-[JsonSerializable(typeof(PageLinks))]
-public partial class PageLinksContext : JsonSerializerContext { }
-
-/// <summary>
 /// Represents the collection of other wiki pages which link to a given wiki page.
 /// </summary>
 public class PageLinks : IdItem

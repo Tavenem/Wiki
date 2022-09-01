@@ -5,12 +5,6 @@ using Tavenem.DataStorage;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.NormalizedPageReference"/>.
-/// </summary>
-[JsonSerializable(typeof(NormalizedPageReference))]
-public partial class NormalizedPageReferenceContext : JsonSerializerContext { }
-
-/// <summary>
 /// A reference from a normalized (case-insensitive) full wiki page title to the current page
 /// IDs assigned to that title.
 /// </summary>

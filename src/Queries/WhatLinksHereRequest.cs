@@ -1,12 +1,4 @@
-﻿using System.Text.Json.Serialization;
-
-namespace Tavenem.Wiki.Queries;
-
-/// <summary>
-/// A JSON serializer context for <see cref="Queries.WhatLinksHereRequest"/>.
-/// </summary>
-[JsonSerializable(typeof(WhatLinksHereRequest))]
-public partial class WhatLinksHereRequestContext : JsonSerializerContext { }
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// A request record for a page of wiki items which link to a given wiki item.
