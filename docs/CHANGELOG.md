@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.10.0-preview
+### Changed
+- Default to camelCase for JSON source generation
+
 ## 0.9.0-preview
 ### Changed
 - Simplified JSON serializer contexts to a single class: `WikiJsonSerializerContext`
