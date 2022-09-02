@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using Tavenem.DataStorage;
+using Tavenem.Wiki.Queries;
 
 namespace Tavenem.Wiki.Test;
 
@@ -41,35 +42,6 @@ public class SerializationTests
         var deserialized = JsonSerializer.Deserialize<Article>(json);
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-
-        value = new Article(
-            "TEST_ID",
-            "Test title",
-            "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
-            0,
-            "Test Namespace",
-            false,
-            "TEST_OWNER_ID",
-            new ReadOnlyCollection<string>(new string[] { "TEST_EDITOR_ID" }),
-            new ReadOnlyCollection<string>(new string[] { "TEST_VIEWER_ID" }),
-            null,
-            null,
-            null,
-            null,
-            false,
-            false,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
-
-        json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize<Article>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
     }
 
     [TestMethod]
@@ -101,36 +73,6 @@ public class SerializationTests
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Article);
-        Assert.AreEqual(value, deserialized);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Article));
-
-        value = new Article(
-            "TEST_ID",
-            "Test title",
-            "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
-            0,
-            "Test Namespace",
-            false,
-            "TEST_OWNER_ID",
-            new ReadOnlyCollection<string>(new string[] { "TEST_EDITOR_ID" }),
-            new ReadOnlyCollection<string>(new string[] { "TEST_VIEWER_ID" }),
-            null,
-            null,
-            null,
-            null,
-            false,
-            false,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
-
-        json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Article);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Article);
         Assert.AreEqual(value, deserialized);
         Assert.IsNotNull(deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Article));
@@ -336,13 +278,13 @@ public class SerializationTests
             "Test Namespace",
             new List<string> { "Test_ID_2" }.AsReadOnly());
 
-        var json = JsonSerializer.Serialize(value, MissingPageContext.Default.MissingPage);
+        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.MissingPage);
         Console.WriteLine();
         Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, MissingPageContext.Default.MissingPage);
+        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.MissingPage);
         Assert.AreEqual(value, deserialized);
         Assert.IsNotNull(deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, MissingPageContext.Default.MissingPage));
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.MissingPage));
     }
 
     [TestMethod]
@@ -641,6 +583,41 @@ public class SerializationTests
     }
 
     [TestMethod]
+    public void WikiItemInfoTest()
+    {
+        var article = new Article(
+            "TEST_ID",
+            "Test title",
+            "Test markdown",
+            "Test markdown",
+            "Test markdown",
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            0,
+            "Test Namespace",
+            false,
+            "TEST_OWNER_ID",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            false,
+            new ReadOnlyCollection<string>(Array.Empty<string>()),
+            null);
+        var value = new WikiItemInfo("Display Title", article.Html, false, article, WikiPermission.All);
+
+        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiItemInfo);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiItemInfo);
+        Assert.AreEqual(value, deserialized);
+        Assert.IsNotNull(deserialized);
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiItemInfo));
+    }
+
+    [TestMethod]
     public void WikiLinkTest_Context()
     {
         var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace");
@@ -732,12 +709,12 @@ public class SerializationTests
             "Test comment",
             0);
 
-        var json = JsonSerializer.Serialize(value, RevisionContext.Default.Revision);
+        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Revision);
         Console.WriteLine();
         Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, RevisionContext.Default.Revision);
+        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Revision);
         Assert.IsNotNull(deserialized);
         Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, RevisionContext.Default.Revision));
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Revision));
     }
 }
