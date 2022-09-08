@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.1-preview
+### Changed
+- Sort category content in query result
+
 ## 0.11.0-preview
 ### Changed
 - Replaced `IList<IGrouping<string, T>>` with `Dictionary<string, List<T>>` in query classes, for (de)serialization support

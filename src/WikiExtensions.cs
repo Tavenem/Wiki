@@ -418,19 +418,19 @@ public static class WikiExtensions
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                 .ToDictionary(
                     x => x.Key,
-                    x => x.ToList()),
+                    x => x.OrderBy(y => y.Title).ToList()),
             files
                 .Select(x => new CategoryFile(x.Title, x.FileSize))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                 .ToDictionary(
                     x => x.Key,
-                    x => x.ToList()),
+                    x => x.OrderBy(y => y.Title).ToList()),
             subcategories
                 .Select(x => new Subcategory(x.Title, x.ChildIds.Count))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                 .ToDictionary(
                     x => x.Key,
-                    x => x.ToList()));
+                    x => x.OrderBy(y => y.Title).ToList()));
     }
 
     /// <summary>
