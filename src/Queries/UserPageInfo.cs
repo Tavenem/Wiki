@@ -26,7 +26,7 @@
 /// </para>
 /// </param>
 public record UserPageInfo(
-    IList<WikiUserInfo>? Groups,
+    List<WikiUserInfo>? Groups,
     Article? Item,
     WikiPermission Permission,
     WikiUserInfo? User);

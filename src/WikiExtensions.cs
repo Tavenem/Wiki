@@ -416,15 +416,21 @@ public static class WikiExtensions
                     x.Title,
                     x.WikiNamespace))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
-                .ToList(),
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList()),
             files
                 .Select(x => new CategoryFile(x.Title, x.FileSize))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
-                .ToList(),
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList()),
             subcategories
                 .Select(x => new Subcategory(x.Title, x.ChildIds.Count))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
-                .ToList());
+                .ToDictionary(
+                    x => x.Key,
+                    x => x.ToList()));
     }
 
     /// <summary>

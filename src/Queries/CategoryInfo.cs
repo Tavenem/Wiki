@@ -21,6 +21,6 @@
 public record CategoryInfo(
     Category? Item,
     WikiPermission Permission,
-    IList<IGrouping<string, CategoryPage>>? Articles,
-    IList<IGrouping<string, CategoryFile>>? Files,
-    IList<IGrouping<string, Subcategory>>? Subcategories);
+    Dictionary<string, List<CategoryPage>>? Articles,
+    Dictionary<string, List<CategoryFile>>? Files,
+    Dictionary<string, List<Subcategory>>? Subcategories);

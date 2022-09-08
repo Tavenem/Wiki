@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.11.0-preview
+### Changed
+- Replaced `IList<IGrouping<string, T>>` with `Dictionary<string, List<T>>` in query classes, for (de)serialization support
+
 ## 0.10.0-preview
 ### Changed
 - Default to camelCase for JSON source generation

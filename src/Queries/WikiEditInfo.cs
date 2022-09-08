@@ -64,10 +64,10 @@
 /// The permission(s) the requesting user has for this item.
 /// </param>
 public record WikiEditInfo(
-    IList<WikiUserInfo>? AllowedEditors,
-    IList<WikiUserInfo>? AllowedEditorGroups,
-    IList<WikiUserInfo>? AllowedViewers,
-    IList<WikiUserInfo>? AllowedViewerGroups,
+    List<WikiUserInfo>? AllowedEditors,
+    List<WikiUserInfo>? AllowedEditorGroups,
+    List<WikiUserInfo>? AllowedViewers,
+    List<WikiUserInfo>? AllowedViewerGroups,
     string? DisplayTitle,
     Article? Item,
     WikiUserInfo? Owner,

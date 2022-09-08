@@ -29,4 +29,4 @@ public record GroupPageInfo(
     WikiUserInfo? Group,
     Article? Item,
     WikiPermission Permission,
-    IList<WikiUserInfo>? Users);
+    List<WikiUserInfo>? Users);

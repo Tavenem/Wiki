@@ -34,6 +34,6 @@ namespace Tavenem.Wiki.Queries;
 /// </para>
 /// </param>
 public record PagedRevisionInfo(
-    IList<WikiUserInfo>? Editors,
+    List<WikiUserInfo>? Editors,
     WikiPermission Permission,
     PagedListDTO<Revision>? Revisions);
