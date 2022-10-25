@@ -26,6 +26,11 @@ public class Revision : IdItem
     public string? Delta { get; }
 
     /// <summary>
+    /// The domain to which this item belonged at the time of this revision (if any).
+    /// </summary>
+    public string? Domain { get; }
+
+    /// <summary>
     /// The ID of the user who made this revision.
     /// </summary>
     public string Editor { get; }
@@ -118,6 +123,9 @@ public class Revision : IdItem
     /// The namespace to which this item belonged at the time of this revision. Must be
     /// non-empty.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this item belonged at the time of this revision (if any).
+    /// </param>
     /// <param name="previousText">
     /// The original text, before this revision.
     /// </param>
@@ -132,6 +140,7 @@ public class Revision : IdItem
         string editor,
         string title,
         string wikiNamespace,
+        string? domain,
         string? previousText = null,
         string? newText = null,
         string? comment = null)
@@ -143,6 +152,7 @@ public class Revision : IdItem
         Title = title;
         WikiId = wikiId;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
 
         if (string.IsNullOrWhiteSpace(newText))
         {
@@ -204,6 +214,9 @@ public class Revision : IdItem
     /// The namespace to which this item belonged at the time of this revision. Must be
     /// non-empty.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this item belonged at the time of this revision (if any).
+    /// </param>
     /// <param name="delta">
     /// <para>
     /// A delta-formatted string representing the revision (except for milestones, which contain
@@ -236,6 +249,7 @@ public class Revision : IdItem
         string editor,
         string title,
         string wikiNamespace,
+        string? domain,
         string? delta,
         bool isDeleted,
         bool isMilestone,
@@ -256,6 +270,7 @@ public class Revision : IdItem
         Title = title;
         WikiId = wikiId;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
     }
 
     /// <summary>

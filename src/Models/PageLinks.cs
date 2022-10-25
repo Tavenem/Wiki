@@ -47,7 +47,7 @@ public class PageLinks : IdItem
     /// </param>
     /// <remarks>
     /// Note: this constructor is most useful for deserializers. The static <see
-    /// cref="NewAsync(IDataStore, string, string, string)"/> method is expected to be used
+    /// cref="NewAsync(IDataStore, string, string, string?, string)"/> method is expected to be used
     /// otherwise, as it persists instances to the <see cref="IDataStore"/> and builds the
     /// reference list dynamically.
     /// </remarks>
@@ -61,11 +61,14 @@ public class PageLinks : IdItem
     /// </summary>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// The ID which should be used for a <see cref="PageLinks"/> given the parameters.
     /// </returns>
-    public static string GetId(string title, string wikiNamespace)
-        => $"{wikiNamespace}:{title}:links";
+    public static string GetId(string title, string wikiNamespace, string? domain)
+        => string.IsNullOrEmpty(domain)
+        ? $"{wikiNamespace}:{title}:links"
+        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:links""";
 
     /// <summary>
     /// Gets the <see cref="PageLinks"/> that fits the given parameters.
@@ -73,30 +76,37 @@ public class PageLinks : IdItem
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// The <see cref="PageLinks"/> that fits the given parameters; or <see langword="null"/>,
     /// if there is no such item.
     /// </returns>
-    public static ValueTask<PageLinks?> GetPageLinksAsync(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItemAsync<PageLinks>(GetId(title, wikiNamespace));
+    public static ValueTask<PageLinks?> GetPageLinksAsync(
+        IDataStore dataStore,
+        string title,
+        string wikiNamespace,
+        string? domain)
+        => dataStore.GetItemAsync<PageLinks>(GetId(title, wikiNamespace, domain));
 
     /// <summary>
     /// Get a new instance of <see cref="PageLinks"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">
-    /// The title of the linked wiki page.
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace of the linked wiki page.
-    /// </param>
+    /// <param name="title">The title of the linked wiki page.</param>
+    /// <param name="wikiNamespace">The namespace of the linked wiki page.</param>
+    /// <param name="domain">The domain of the linked wiki page (if any).</param>
     /// <param name="referenceId">
     /// The initial <see cref="IdItem.Id"/> of a wiki page which links to the primary page.
     /// </param>
-    public static async Task<PageLinks> NewAsync(IDataStore dataStore, string title, string wikiNamespace, string referenceId)
+    public static async Task<PageLinks> NewAsync(
+        IDataStore dataStore,
+        string title,
+        string wikiNamespace,
+        string? domain,
+        string referenceId)
     {
         var result = new PageLinks(
-            GetId(title, wikiNamespace),
+            GetId(title, wikiNamespace, domain),
             new List<string> { referenceId }.AsReadOnly());
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;

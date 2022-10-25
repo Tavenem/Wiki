@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.Text;
+using System.Text.Json.Serialization;
 
 namespace Tavenem.Wiki;
 
@@ -18,6 +19,11 @@ public class WikiLink : IEquatable<WikiLink>
     /// </summary>
     [JsonIgnore]
     public Article? Article { get; set; }
+
+    /// <summary>
+    /// The domain for the linked article (if any).
+    /// </summary>
+    public string? Domain { get; }
 
     /// <summary>
     /// Whether this is a link to an existing page.
@@ -73,6 +79,9 @@ public class WikiLink : IEquatable<WikiLink>
     /// <param name="wikiNamespace">
     /// The namespace for the linked article.
     /// </param>
+    /// <param name="domain">
+    /// The domain for the linked article (if any).
+    /// </param>
     public WikiLink(
         Article? article,
         bool missing,
@@ -80,7 +89,8 @@ public class WikiLink : IEquatable<WikiLink>
         bool isNamespaceEscaped,
         bool isTalk,
         string title,
-        string wikiNamespace)
+        string wikiNamespace,
+        string? domain)
     {
         Article = article;
         Missing = missing;
@@ -89,6 +99,7 @@ public class WikiLink : IEquatable<WikiLink>
         IsTalk = isTalk;
         Title = title;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
     }
 
     /// <summary>
@@ -112,6 +123,9 @@ public class WikiLink : IEquatable<WikiLink>
     /// <param name="wikiNamespace">
     /// The namespace for the linked article.
     /// </param>
+    /// <param name="domain">
+    /// The domain for the linked article (if any).
+    /// </param>
     [JsonConstructor]
     public WikiLink(
         bool isCategory,
@@ -119,7 +133,8 @@ public class WikiLink : IEquatable<WikiLink>
         bool isTalk,
         bool missing,
         string title,
-        string wikiNamespace)
+        string wikiNamespace,
+        string? domain)
     {
         IsCategory = isCategory;
         IsNamespaceEscaped = isNamespaceEscaped;
@@ -127,6 +142,7 @@ public class WikiLink : IEquatable<WikiLink>
         Missing = missing;
         Title = title;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
     }
 
     /// <summary>
@@ -141,8 +157,9 @@ public class WikiLink : IEquatable<WikiLink>
         && Missing == other.Missing
         && IsNamespaceEscaped == other.IsNamespaceEscaped
         && IsTalk == other.IsTalk
-        && Title == other.Title
-        && WikiNamespace == other.WikiNamespace;
+        && string.Equals(Title, other.Title, StringComparison.Ordinal)
+        && string.Equals(WikiNamespace, other.WikiNamespace, StringComparison.Ordinal)
+        && string.Equals(Domain, other.Domain, StringComparison.Ordinal);
 
     /// <summary>
     /// Determines whether the specified object is equal to the current object.
@@ -156,7 +173,7 @@ public class WikiLink : IEquatable<WikiLink>
 
     /// <summary>Serves as the default hash function.</summary>
     /// <returns>A hash code for the current object.</returns>
-    public override int GetHashCode() => HashCode.Combine(Missing, IsNamespaceEscaped, IsTalk, Title, WikiNamespace);
+    public override int GetHashCode() => HashCode.Combine(Missing, IsNamespaceEscaped, IsTalk, Title, WikiNamespace, Domain);
 
     /// <summary>
     /// Determines whether this link corresponds to the given article.
@@ -165,25 +182,32 @@ public class WikiLink : IEquatable<WikiLink>
     /// <returns><see langword="true"/> if this link corresponds to the given article; otherwise
     /// <see langword="false"/>.</returns>
     public bool IsLinkMatch(Article item) => string.CompareOrdinal(item.Title, Title) == 0
-        && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0;
+        && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0
+        && string.CompareOrdinal(item.Domain, Domain) == 0;
 
     /// <summary>Returns a string that represents the current object.</summary>
     /// <returns>A string that represents the current object.</returns>
     public override string ToString()
     {
-        if (IsTalk)
-        {
-            return string.IsNullOrEmpty(WikiNamespace)
-                ? $"Talk:{Title}"
-                : $"Talk:{WikiNamespace}:{Title}";
-        }
+        var sb = new StringBuilder();
         if (IsNamespaceEscaped)
         {
-            return $":{WikiNamespace}:{Title}";
+            sb.Append(':');
         }
-        return string.IsNullOrEmpty(WikiNamespace)
-            ? Title
-            : $"{WikiNamespace}:{Title}";
+        if (!string.IsNullOrEmpty(Domain))
+        {
+            sb.Append('{')
+                .Append(Domain)
+                .Append("}:");
+        }
+        if (IsTalk)
+        {
+            sb.Append("Talk:");
+        }
+        return sb.Append(WikiNamespace)
+            .Append(':')
+            .Append(Title)
+            .ToString();
     }
 
     /// <summary>

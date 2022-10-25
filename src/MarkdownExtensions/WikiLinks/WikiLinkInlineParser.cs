@@ -388,6 +388,7 @@ public class WikiLinkInlineParser : InlineParser
             var isNamespaceEscaped = false;
             var isTalk = false;
             string? wikiNamespace = null;
+            string? domain = null;
             var ignoreMissing = false;
 
             var mainTitle = title;
@@ -452,9 +453,10 @@ public class WikiLinkInlineParser : InlineParser
                     {
                         mainTitle = title[..anchorIndex];
                     }
-                    var (wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(Options, mainTitle);
+                    var (wDomain, wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(Options, mainTitle);
                     isTalk = wIsTalk;
                     wikiNamespace = wWikiNamespace;
+                    domain = wDomain;
                     isCategory = string.Equals(wikiNamespace, Options.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
                     if (isCategory)
                     {
@@ -472,7 +474,11 @@ public class WikiLinkInlineParser : InlineParser
             var articleMissing = false;
             if (!isCategory && !isWikipedia && !isCommons && !ignoreMissing)
             {
-                var reference = PageReference.GetPageReference(DataStore, mainTitle, wikiNamespace ?? Options.DefaultNamespace);
+                var reference = PageReference.GetPageReference(
+                    DataStore,
+                    mainTitle,
+                    wikiNamespace ?? Options.DefaultNamespace,
+                    domain);
                 if (reference is null)
                 {
                     articleMissing = true;
@@ -488,6 +494,7 @@ public class WikiLinkInlineParser : InlineParser
             {
                 Title = HtmlHelper.Unescape(title),
                 Display = display,
+                Domain = domain,
                 HasDisplay = openParent.HasDisplay,
                 IsImage = openParent.IsImage,
                 IsCategory = isCategory,
@@ -497,7 +504,7 @@ public class WikiLinkInlineParser : InlineParser
                 IsTalk = isTalk,
                 Missing = articleMissing,
                 Endmatter = endmatter,
-                WikiNamespace = wikiNamespace,
+                WikiNamespace = wikiNamespace ?? Options.DefaultNamespace,
                 Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),
                 Line = openParent.Line,
                 Column = openParent.Column,

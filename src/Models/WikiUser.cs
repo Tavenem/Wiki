@@ -61,6 +61,23 @@ public class WikiUser : IdItem, IWikiUser
     public virtual IList<string>? AllowedViewArticles { get; set; }
 
     /// <summary>
+    /// A list of the names of domains in which this user has permission to view articles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The user's effective permission is determined by the combination of this property, the <see
+    /// cref="WikiGroup.AllowedViewDomains"/> property, and the <see
+    /// cref="WikiOptions.GetDomainPermission"/> function, as well as any access controls on the
+    /// specific article, which override the general permissions for the domain, if present.
+    /// </para>
+    /// <para>
+    /// Note that the default when no permission is specified is to be denied access (unlike the
+    /// default for non-domain articles, which is to grant full access even to anonymous users).
+    /// </para>
+    /// </remarks>
+    public virtual IList<string>? AllowedViewDomains { get; set; }
+
+    /// <summary>
     /// The display name for this user.
     /// </summary>
     public virtual string? DisplayName { get; set; }

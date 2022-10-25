@@ -83,6 +83,9 @@ public sealed class WikiFile : Article
     /// <param name="wikiNamespace">
     /// The namespace to which this article belongs.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this article belongs (if any).
+    /// </param>
     /// <param name="isDeleted">
     /// Indicates that this article has been marked as deleted.
     /// </param>
@@ -169,6 +172,7 @@ public sealed class WikiFile : Article
         IReadOnlyCollection<WikiLink> wikiLinks,
         long timestampTicks,
         string wikiNamespace,
+        string? domain,
         bool isDeleted,
         string? owner,
         IReadOnlyCollection<string>? allowedEditors,
@@ -185,12 +189,14 @@ public sealed class WikiFile : Article
             wikiLinks,
             timestampTicks,
             wikiNamespace,
+            domain,
             isDeleted,
             owner,
             allowedEditors,
             allowedViewers,
             allowedEditorGroups,
             allowedViewerGroups,
+            null,
             null,
             null,
             false,
@@ -217,6 +223,7 @@ public sealed class WikiFile : Article
         IReadOnlyCollection<WikiLink> wikiLinks,
         long timestampTicks,
         string wikiNamespace,
+        string? domain,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -233,6 +240,7 @@ public sealed class WikiFile : Article
             wikiLinks,
             timestampTicks,
             wikiNamespace,
+            domain,
             isDeleted,
             owner,
             allowedEditors,
@@ -254,12 +262,14 @@ public sealed class WikiFile : Article
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the file to retrieve.</param>
+    /// <param name="domain">The domain of the file to retrieve (if any).</param>
     /// <returns>The latest revision for the file with the given title; or <see
     /// langword="null"/> if no such file exists.</returns>
     public static async Task<WikiFile?> GetFileAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string? title)
+        string? title,
+        string? domain = null)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -267,7 +277,7 @@ public sealed class WikiFile : Article
         }
 
         WikiFile? file = null;
-        var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.FileNamespace);
+        var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.FileNamespace, domain);
         if (reference is not null)
         {
             file = await dataStore.GetItemAsync<WikiFile>(reference.Reference);
@@ -275,7 +285,11 @@ public sealed class WikiFile : Article
         // If no exact match exists, ignore case if only one such match exists.
         if (file is null)
         {
-            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, options.FileNamespace);
+            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(
+                dataStore,
+                title,
+                options.FileNamespace,
+                domain);
             if (normalizedReference?.References.Count == 1)
             {
                 file = await dataStore.GetItemAsync<WikiFile>(normalizedReference.References[0]);
@@ -300,6 +314,7 @@ public sealed class WikiFile : Article
     /// The MIME type of the file.
     /// </param>
     /// <param name="markdown">The raw markdown content.</param>
+    /// <param name="domain">The domain to which this file belongs (if any).</param>
     /// <param name="revisionComment">
     /// An optional comment supplied for this revision (e.g. to explain the upload).
     /// </param>
@@ -372,6 +387,7 @@ public sealed class WikiFile : Article
         int fileSize,
         string type,
         string? markdown = null,
+        string? domain = null,
         string? revisionComment = null,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -387,7 +403,7 @@ public sealed class WikiFile : Article
 
         var wikiId = dataStore.CreateNewIdFor<WikiFile>();
 
-        await CreatePageReferenceAsync(dataStore, wikiId, title, options.FileNamespace)
+        await CreatePageReferenceAsync(dataStore, wikiId, title, options.FileNamespace, domain)
             .ConfigureAwait(false);
 
         var revision = new Revision(
@@ -395,6 +411,7 @@ public sealed class WikiFile : Article
             editor,
             title,
             options.FileNamespace,
+            domain,
             null,
             markdown,
             revisionComment);
@@ -416,7 +433,7 @@ public sealed class WikiFile : Article
                 markdown);
         }
 
-        var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace);
+        var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace, domain);
 
         var categories = await UpdateCategoriesAsync(
             options,
@@ -424,6 +441,7 @@ public sealed class WikiFile : Article
             wikiId,
             editor,
             owner,
+            domain,
             allowedEditors,
             allowedViewers,
             allowedEditorGroups,
@@ -439,11 +457,31 @@ public sealed class WikiFile : Article
             editor,
             type,
             markdown,
-            RenderHtml(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.FileNamespace, markdown)),
-            RenderPreview(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.FileNamespace, markdown, true)),
+            RenderHtml(
+                options,
+                dataStore,
+                await PostprocessArticleMarkdownAsync(
+                    options,
+                    dataStore,
+                    title,
+                    options.FileNamespace,
+                    domain,
+                    markdown)),
+            RenderPreview(
+                options,
+                dataStore,
+                await PostprocessArticleMarkdownAsync(
+                    options,
+                    dataStore,
+                    title,
+                    options.FileNamespace,
+                    domain,
+                    markdown,
+                    true)),
             new ReadOnlyCollection<WikiLink>(wikiLinks),
             revision.TimestampTicks,
             options.FileNamespace,
+            domain,
             isDeleted: false,
             owner,
             allowedEditors,
@@ -465,8 +503,10 @@ public sealed class WikiFile : Article
             dataStore,
             title,
             options.FileNamespace,
+            domain,
             false,
             true,
+            null,
             null,
             null,
             false,
@@ -510,6 +550,17 @@ public sealed class WikiFile : Article
     /// <param name="markdown">The markdown.</param>
     /// <param name="revisionComment">
     /// An optional comment supplied for this revision (e.g. to explain the changes).
+    /// </param>
+    /// <param name="domain">
+    /// <para>
+    /// The optional new domain to which this article belongs.
+    /// </para>
+    /// <para>
+    /// If left <see langword="null"/> the existing domain will be retained (if any).
+    /// </para>
+    /// <para>
+    /// To clear the domain, set this to an empty string instead, which will assign <see langword="null"/>.
+    /// </para>
     /// </param>
     /// <param name="isDeleted">Indicates that this file has been marked as deleted.</param>
     /// <param name="owner">
@@ -582,6 +633,7 @@ public sealed class WikiFile : Article
         string? type = null,
         string? markdown = null,
         string? revisionComment = null,
+        string? domain = null,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -590,6 +642,26 @@ public sealed class WikiFile : Article
         IEnumerable<string>? allowedViewerGroups = null)
     {
         title ??= title?.ToWikiTitleCase() ?? Title;
+        var previousTitle = Title;
+        Title = title;
+
+        if (domain is null)
+        {
+            domain = Domain;
+        }
+        else if (string.IsNullOrWhiteSpace(domain))
+        {
+            domain = null;
+        }
+        else
+        {
+            domain = domain.Trim();
+        }
+        var previousDomain = Domain;
+        Domain = domain;
+
+        var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal)
+            && string.Equals(previousDomain, domain, StringComparison.Ordinal);
 
         var newFile = false;
         if (!string.IsNullOrWhiteSpace(path))
@@ -612,10 +684,6 @@ public sealed class WikiFile : Article
         {
             Uploader = editor;
         }
-
-        var previousTitle = Title;
-        Title = title;
-        var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal);
 
         var previousMarkdown = MarkdownContent;
         var wasDeleted = IsDeleted || string.IsNullOrWhiteSpace(previousMarkdown);
@@ -650,12 +718,12 @@ public sealed class WikiFile : Article
 
         if (!sameTitle && !IsDeleted)
         {
-            await CreatePageReferenceAsync(dataStore, Id, title, options.FileNamespace)
+            await CreatePageReferenceAsync(dataStore, Id, title, options.FileNamespace, domain)
                 .ConfigureAwait(false);
         }
         if (!sameTitle)
         {
-            await RemovePageReferenceAsync(dataStore, Id, previousTitle, options.FileNamespace)
+            await RemovePageReferenceAsync(dataStore, Id, previousTitle, options.FileNamespace, previousDomain)
                 .ConfigureAwait(false);
         }
 
@@ -671,7 +739,7 @@ public sealed class WikiFile : Article
                 options,
                 dataStore,
                 title,
-                $"{options.FileNamespace}:{title}",
+                GetFullTitle(options, title, options.FileNamespace, domain),
                 markdown!);
             Transclusions = transclusions.Count == 0
                 ? null
@@ -697,6 +765,7 @@ public sealed class WikiFile : Article
                 Id,
                 editor,
                 owner,
+                domain,
                 allowedEditors,
                 allowedViewers,
                 allowedEditorGroups,
@@ -719,6 +788,7 @@ public sealed class WikiFile : Article
             editor,
             title,
             options.FileNamespace,
+            domain,
             previousMarkdown,
             MarkdownContent,
             revisionComment);
@@ -733,10 +803,12 @@ public sealed class WikiFile : Article
             dataStore,
             title,
             options.FileNamespace,
+            domain,
             IsDeleted,
             sameTitle,
             previousTitle,
             options.FileNamespace,
+            previousDomain,
             false,
             false)
             .ConfigureAwait(false);
@@ -759,27 +831,27 @@ public sealed class WikiFile : Article
     }
 
     /// <summary>
-    /// Gets a string which shows the given file <paramref name="size"/> in bytes if &lt; 1KB,
-    /// in KB if &lt; 1GB, or in GB otherwise.
+    /// Gets a string which shows the given file <paramref name="size"/> in bytes if &lt; 1KiB,
+    /// in KiB if &lt; 1GiB, or in GiB otherwise.
     /// </summary>
     /// <param name="size">A file size, in bytes.</param>
     /// <returns>
-    /// A string which shows the given file <paramref name="size"/> in bytes if &lt; 1KB, in KB
-    /// if &lt; 1GB, or in GB otherwise.
+    /// A string which shows the given file <paramref name="size"/> in bytes if &lt; 1KiB, in KiB
+    /// if &lt; 1GiB, or in GiB otherwise.
     /// </returns>
     public static string GetFileSizeString(int size)
     {
-        if (size < 1000)
+        if (size < 1024)
         {
             return $"{size} B";
         }
-        else if (size < 1000000)
+        else if (size < 1024 * 1024)
         {
-            return $"{size / 1000:N0} KB";
+            return $"{size / 1024.0:N0} KB";
         }
         else
         {
-            return $"{size / 1000000.0:N} GB";
+            return $"{size / (1024 * 1024.0):N0} GB";
         }
     }
 }

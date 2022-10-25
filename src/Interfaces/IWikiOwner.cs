@@ -60,6 +60,26 @@ public interface IWikiOwner
     IList<string>? AllowedViewArticles { get; set; }
 
     /// <summary>
+    /// A list of the names of domains in which this entity has permission to view articles.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The <see cref="WikiOptions.GetDomainPermission"/> function will also be invoked with this
+    /// entity's <see cref="IdItem.Id"/>, if an implementation for the function is provided.
+    /// </para>
+    /// <para>
+    /// The entity's effective permission is determined by the combination of this property and <see
+    /// cref="WikiOptions.GetDomainPermission"/>, as well as any access controls on the specific
+    /// article, which override the general permissions for the domain, if present.
+    /// </para>
+    /// <para>
+    /// Note that the default when no permission is specified is to be denied access (unlike the
+    /// default for non-domain articles, which is to grant full access even to anonymous users).
+    /// </para>
+    /// </remarks>
+    IList<string>? AllowedViewDomains { get; set; }
+
+    /// <summary>
     /// The display name for this entity.
     /// </summary>
     string? DisplayName { get; set; }

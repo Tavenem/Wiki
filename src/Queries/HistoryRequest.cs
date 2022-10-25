@@ -26,6 +26,7 @@
 /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
 /// </para>
 /// </param>
+/// <param name="Domain">The domain of the wiki page (if any).</param>
 /// <param name="PageNumber">The requested page number. The first page is 1.</param>
 /// <param name="PageSize">The number of items to return per page.</param>
 /// <param name="EditorId">
@@ -40,6 +41,7 @@
 public record HistoryRequest(
     string? Title = null,
     string? WikiNamespace = null,
+    string? Domain = null,
     int PageNumber = 1,
     int PageSize = 50,
     string? EditorId = null,

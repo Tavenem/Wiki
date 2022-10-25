@@ -411,6 +411,7 @@ public abstract class MarkdownItem : IdItem
     /// <param name="markdown">The markdown.</param>
     /// <param name="title">The title of the item.</param>
     /// <param name="wikiNamespace">The namespace of the item.</param>
+    /// <param name="domain">The domain of the item (if any).</param>
     /// <returns>
     /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
     /// </returns>
@@ -419,7 +420,8 @@ public abstract class MarkdownItem : IdItem
         IDataStore dataStore,
         string? markdown,
         string? title = null,
-        string? wikiNamespace = null) => string.IsNullOrEmpty(markdown)
+        string? wikiNamespace = null,
+        string? domain = null) => string.IsNullOrEmpty(markdown)
         ? new List<WikiLink>()
         : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore))
             .Descendants<WikiLinkInline>()
@@ -440,12 +442,16 @@ public abstract class MarkdownItem : IdItem
                 var anchorIndex = x.Title?.LastIndexOf('#') ?? -1;
                 return new WikiLink(
                     x.Article,
-                    x.Missing && (x.Title != title || x.WikiNamespace != wikiNamespace),
+                    x.Missing
+                        && (!string.Equals(x.Title, title, StringComparison.Ordinal)
+                        || !string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.Ordinal)
+                        || !string.Equals(x.Domain, domain, StringComparison.Ordinal)),
                     x.IsCategory,
                     x.IsNamespaceEscaped,
                     x.IsTalk,
                     anchorIndex == -1 ? x.Title ?? string.Empty : x.Title![..anchorIndex],
-                    x.WikiNamespace ?? options.DefaultNamespace);
+                    x.WikiNamespace ?? options.DefaultNamespace,
+                    x.Domain);
             }).ToList();
 
     private static bool AnyPreviews(MarkdownObject obj)
@@ -754,9 +760,10 @@ public abstract class MarkdownItem : IdItem
         WikiOptions options,
         IDataStore dataStore,
         string? title = null,
-        string? wikiNamespace = null)
+        string? wikiNamespace = null,
+        string? domain = null)
     {
-        WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title, wikiNamespace).AsReadOnly();
+        WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title, wikiNamespace, domain).AsReadOnly();
         return UpdateAsync(options, dataStore);
     }
 

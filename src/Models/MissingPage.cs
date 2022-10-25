@@ -11,6 +11,11 @@ namespace Tavenem.Wiki;
 public class MissingPage : IdItem
 {
     /// <summary>
+    /// The domain to which this page should belong (if any).
+    /// </summary>
+    public string? Domain { get; }
+
+    /// <summary>
     /// The type discriminator for this type.
     /// </summary>
     public const string MissingPageIdItemTypeName = ":MissingPage:";
@@ -54,12 +59,15 @@ public class MissingPage : IdItem
     /// <param name="wikiNamespace">
     /// The namespace to which this page should belong.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this page should belong (if any).
+    /// </param>
     /// <param name="references">
     /// The IDs of pages which reference this missing page.
     /// </param>
     /// <remarks>
     /// Note: this constructor is most useful for deserializers. The static <see
-    /// cref="NewAsync(IDataStore, string, string?, string[])"/> method is expected to be used
+    /// cref="NewAsync(IDataStore, string, string, string?, string[])"/> method is expected to be used
     /// otherwise, as it persists instances to the <see cref="IDataStore"/> and builds the
     /// reference list dynamically.
     /// </remarks>
@@ -67,10 +75,12 @@ public class MissingPage : IdItem
         string id,
         string title,
         string wikiNamespace,
+        string? domain,
         IReadOnlyList<string> references) : base(id)
     {
         Title = title;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
         References = references;
     }
 
@@ -79,11 +89,14 @@ public class MissingPage : IdItem
     /// </summary>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// The ID which should be used for a <see cref="MissingPage"/> given the parameters.
     /// </returns>
-    public static string GetId(string title, string wikiNamespace)
-        => $"{wikiNamespace}:{title}:missing";
+    public static string GetId(string title, string wikiNamespace, string? domain)
+        => string.IsNullOrEmpty(domain)
+        ? $"{wikiNamespace}:{title}:missing"
+        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:missing""";
 
     /// <summary>
     /// Gets the <see cref="MissingPage"/> that fits the given parameters.
@@ -91,6 +104,7 @@ public class MissingPage : IdItem
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// The <see cref="MissingPage"/> that fits the given parameters; or <see langword="null"/>,
     /// if there is no such item.
@@ -98,8 +112,9 @@ public class MissingPage : IdItem
     public static ValueTask<MissingPage?> GetMissingPageAsync(
         IDataStore dataStore,
         string title,
-        string wikiNamespace)
-        => dataStore.GetItemAsync<MissingPage>(GetId(title, wikiNamespace));
+        string wikiNamespace,
+        string? domain)
+        => dataStore.GetItemAsync<MissingPage>(GetId(title, wikiNamespace, domain));
 
     /// <summary>
     /// Get a new instance of <see cref="MissingPage"/>.
@@ -111,11 +126,15 @@ public class MissingPage : IdItem
     /// <param name="wikiNamespace">
     /// The namespace to which this page should belong.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this page should belong (if any).
+    /// </param>
     /// <param name="referenceIds">The IDs of the initial pages which references this missing page.</param>
     public static async Task<MissingPage> NewAsync(
         IDataStore dataStore,
         string title,
         string wikiNamespace,
+        string? domain,
         params string[] referenceIds)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -123,9 +142,10 @@ public class MissingPage : IdItem
             throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
         }
         var result = new MissingPage(
-            GetId(title, wikiNamespace),
+            GetId(title, wikiNamespace, domain),
             title,
             wikiNamespace,
+            domain,
             referenceIds);
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;
@@ -141,13 +161,17 @@ public class MissingPage : IdItem
     /// <param name="wikiNamespace">
     /// The namespace to which this page should belong.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this page should belong (if any).
+    /// </param>
     /// <param name="referenceIds">The IDs of the initial pages which references this missing page.</param>
     public static Task<MissingPage> NewAsync(
         IDataStore dataStore,
         string title,
         string wikiNamespace,
+        string? domain,
         IEnumerable<string> referenceIds)
-        => NewAsync(dataStore, title, wikiNamespace, referenceIds.ToArray());
+        => NewAsync(dataStore, title, wikiNamespace, domain, referenceIds.ToArray());
 
     /// <summary>
     /// Adds a page to this collection.
@@ -167,6 +191,7 @@ public class MissingPage : IdItem
             Id,
             Title,
             WikiNamespace,
+            Domain,
             References.ToImmutableList().Add(id));
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
     }
@@ -196,6 +221,7 @@ public class MissingPage : IdItem
                 Id,
                 Title,
                 WikiNamespace,
+                Domain,
                 References.ToImmutableList().Remove(id));
             await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         }

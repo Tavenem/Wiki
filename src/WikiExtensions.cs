@@ -21,13 +21,20 @@ public static class WikiExtensions
     /// The wiki user who is making this revision.
     /// </param>
     /// <param name="title">
+    /// The title of the article. Must be unique within its namespace, and non-empty.
+    /// </param>
+    /// <param name="wikiNamespace">
     /// <para>
-    /// The optional new title of the article. Must be unique within its namespace, and non-empty.
+    /// The namespace to which this article belongs.
     /// </para>
     /// <para>
-    /// If left <see langword="null"/> the existing title will be retained.
+    /// May be omitted to use <see cref="WikiOptions.DefaultNamespace"/>.
+    /// </para>
+    /// <para>
+    /// May not be <see cref="WikiOptions.FileNamespace"/>. File uploads must be handled separately.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain to which this article belongs (if any).</param>
     /// <param name="markdown">
     /// <para>
     /// The raw markdown content.
@@ -38,17 +45,6 @@ public static class WikiExtensions
     /// </param>
     /// <param name="revisionComment">
     /// An optional comment supplied for this revision (e.g. to explain the changes).
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The optional new namespace to which this article belongs.
-    /// </para>
-    /// <para>
-    /// If left <see langword="null"/> the existing namespace will be retained.
-    /// </para>
-    /// <para>
-    /// May not be <see cref="WikiOptions.FileNamespace"/>. File uploads must be handled separately.
-    /// </para>
     /// </param>
     /// <param name="isDeleted">Indicates that this article has been marked as deleted.</param>
     /// <param name="owner">
@@ -111,6 +107,20 @@ public static class WikiExtensions
     /// langword="null"/>) list allows only the owner to view the article.
     /// </para>
     /// </param>
+    /// <param name="originalTitle">
+    /// The original title of the article, if it is being renamed.
+    /// </param>
+    /// <param name="originalWikiNamespace">
+    /// <para>
+    /// The original namespace to which this article belonged, if it is being moved.
+    /// </para>
+    /// <para>
+    /// May be omitted to use <see cref="WikiOptions.DefaultNamespace"/>.
+    /// </para>
+    /// </param>
+    /// <param name="originalDomain">
+    /// The original domain to which this article belonged (if any), if it is being moved.
+    /// </param>
     /// <returns>
     /// <see langword="true"/> if the article was revised; <see langword="false"/> if the article
     /// could not be revised (usually because the editor did not have permission to make an
@@ -125,16 +135,20 @@ public static class WikiExtensions
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         IWikiUser editor,
-        string? title = null,
+        string title,
+        string? wikiNamespace = null,
+        string? domain = null,
         string? markdown = null,
         string? revisionComment = null,
-        string? wikiNamespace = null,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
-        IEnumerable<string>? allowedViewerGroups = null)
+        IEnumerable<string>? allowedViewerGroups = null,
+        string? originalTitle = null,
+        string? originalWikiNamespace = null,
+        string? originalDomain = null)
     {
         if (string.Equals(
             wikiNamespace,
@@ -151,8 +165,9 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
-            title,
-            wikiNamespace,
+            originalTitle ?? title,
+            originalWikiNamespace ?? wikiNamespace,
+            originalDomain ?? domain,
             editor,
             true);
         if (item.Item is null && string.IsNullOrEmpty(title))
@@ -172,6 +187,15 @@ public static class WikiExtensions
 
         if (!string.IsNullOrEmpty(owner)
             && !item.Permission.HasFlag(WikiPermission.SetOwner))
+        {
+            return false;
+        }
+
+        if ((isDeleted
+            || !string.Equals(title, originalTitle, StringComparison.Ordinal)
+            || !string.Equals(wikiNamespace, originalWikiNamespace, StringComparison.Ordinal)
+            || !string.Equals(domain, originalDomain, StringComparison.Ordinal))
+            && !item.Permission.HasFlag(WikiPermission.Delete))
         {
             return false;
         }
@@ -257,6 +281,7 @@ public static class WikiExtensions
                     title!,
                     editor.Id,
                     markdown,
+                    domain,
                     owner,
                     allowedEditors,
                     allowedViewers,
@@ -272,6 +297,7 @@ public static class WikiExtensions
                     editor.Id,
                     markdown,
                     wikiNamespace,
+                    domain,
                     owner,
                     allowedEditors,
                     allowedViewers,
@@ -288,6 +314,7 @@ public static class WikiExtensions
                 title,
                 markdown,
                 revisionComment,
+                domain,
                 isDeleted,
                 owner,
                 allowedEditors,
@@ -305,6 +332,7 @@ public static class WikiExtensions
                 markdown,
                 revisionComment,
                 wikiNamespace,
+                domain,
                 isDeleted,
                 owner,
                 allowedEditors,
@@ -347,6 +375,7 @@ public static class WikiExtensions
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the category.</param>
+    /// <param name="domain">The domain of the category (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -364,9 +393,10 @@ public static class WikiExtensions
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         string title,
+        string? domain = null,
         IWikiUser? user = null)
     {
-        var category = await Category.GetCategoryAsync(options, dataStore, title);
+        var category = await Category.GetCategoryAsync(options, dataStore, title, domain);
 
         var permission = await GetPermissionInnerAsync(
             user,
@@ -376,6 +406,7 @@ public static class WikiExtensions
             groupManager,
             title,
             options.CategoryNamespace,
+            domain,
             category);
 
         if (category?.IsDeleted != false
@@ -441,6 +472,7 @@ public static class WikiExtensions
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the category.</param>
+    /// <param name="domain">The domain of the category (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -458,12 +490,14 @@ public static class WikiExtensions
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         string title,
+        string? domain = null,
         string? userId = null) => await GetCategoryAsync(
             dataStore,
             options,
             userManager,
             groupManager,
             title,
+            domain,
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
@@ -522,6 +556,7 @@ public static class WikiExtensions
             options,
             articleGroup.Id,
             options.GroupNamespace,
+            null,
             true);
 
         var permission = await GetPermissionInnerAsync(
@@ -532,6 +567,7 @@ public static class WikiExtensions
             groupManager,
             articleGroup.Id,
             options.GroupNamespace,
+            null,
             wikiItem);
 
         if (wikiItem?.IsDeleted != false
@@ -575,6 +611,7 @@ public static class WikiExtensions
                     dataStore,
                     groupUser.Id,
                     options.UserNamespace,
+                    null,
                     true);
                 userInfo.Add(new WikiUserInfo(
                     groupUser.Id,
@@ -674,6 +711,7 @@ public static class WikiExtensions
             options,
             request.Title,
             request.WikiNamespace,
+            request.Domain,
             true);
         if (item is null)
         {
@@ -688,6 +726,7 @@ public static class WikiExtensions
             groupManager,
             request.Title,
             request.WikiNamespace,
+            request.Domain,
             item);
         if (request.Start > request.End
             || !permission.HasFlag(WikiPermission.Read))
@@ -746,6 +785,7 @@ public static class WikiExtensions
                 dataStore,
                 editor.Id,
                 options.UserNamespace,
+                null,
                 true) is not null;
 
             (editors ??= new List<WikiUserInfo>()).Add(new WikiUserInfo(
@@ -835,6 +875,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
     /// permissions.
@@ -846,7 +887,8 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         string? id = null,
         string? title = null,
-        string? wikiNamespace = null)
+        string? wikiNamespace = null,
+        string? domain = null)
     {
         var user = await userManager.FindByIdAsync(id);
 
@@ -866,7 +908,7 @@ public static class WikiExtensions
             return WikiPermission.None;
         }
 
-        return await GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title, wikiNamespace);
+        return await GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title, wikiNamespace, domain);
     }
 
     /// <summary>
@@ -951,6 +993,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
     /// permissions.
@@ -962,7 +1005,8 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         IWikiUser user,
         string? title = null,
-        string? wikiNamespace = null)
+        string? wikiNamespace = null,
+        string? domain = null)
     {
         if (user.IsDeleted
             || user.IsDisabled)
@@ -980,7 +1024,7 @@ public static class WikiExtensions
             return ValueTask.FromResult(WikiPermission.None);
         }
 
-        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title, wikiNamespace);
+        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title, wikiNamespace, domain);
     }
 
     /// <summary>
@@ -1061,6 +1105,7 @@ public static class WikiExtensions
             items.Select(x => new LinkInfo(
                     x.Title,
                     x.WikiNamespace,
+                    x.Domain,
                     x is Category category ? category.ChildIds.Count : 0,
                     x is WikiFile file1 ? file1.FileSize : 0,
                     x is WikiFile file2 ? file2.FileType : null)),
@@ -1124,6 +1169,7 @@ public static class WikiExtensions
             options,
             articleUser.Id,
             options.UserNamespace,
+            null,
             true);
 
         var requestingUser = await userManager.FindByIdAsync(requestingUserId);
@@ -1136,6 +1182,7 @@ public static class WikiExtensions
             groupManager,
             articleUser.Id,
             options.UserNamespace,
+            null,
             wikiItem);
 
         if (wikiItem?.IsDeleted != false
@@ -1190,6 +1237,7 @@ public static class WikiExtensions
                     dataStore,
                     id,
                     options.GroupNamespace,
+                    null,
                     true);
                 groupInfo.Add(new WikiUserInfo(
                     id,
@@ -1233,7 +1281,8 @@ public static class WikiExtensions
         var references = await PageLinks.GetPageLinksAsync(
             dataStore,
             request.Title ?? options.MainPageTitle,
-            request.WikiNamespace ?? options.DefaultNamespace);
+            request.WikiNamespace ?? options.DefaultNamespace,
+            request.Domain);
         if (references is not null)
         {
             foreach (var reference in references.References)
@@ -1245,7 +1294,8 @@ public static class WikiExtensions
         var transclusions = await PageTransclusions.GetPageTransclusionsAsync(
             dataStore,
             request.Title ?? options.MainPageTitle,
-            request.WikiNamespace ?? options.DefaultNamespace);
+            request.WikiNamespace ?? options.DefaultNamespace,
+            request.Domain);
         if (transclusions is not null)
         {
             foreach (var reference in transclusions.References)
@@ -1262,7 +1312,8 @@ public static class WikiExtensions
             var redirects = await PageRedirects.GetPageRedirectsAsync(
                 dataStore,
                 request.Title ?? options.MainPageTitle,
-                request.WikiNamespace ?? options.DefaultNamespace);
+                request.WikiNamespace ?? options.DefaultNamespace,
+                request.Domain);
             if (redirects is not null)
             {
                 foreach (var reference in redirects.References)
@@ -1305,6 +1356,7 @@ public static class WikiExtensions
                 .Select(x => new LinkInfo(
                     x.Title,
                     x.WikiNamespace,
+                    x.Domain,
                     x is Category category ? category.ChildIds.Count : 0,
                     x is WikiFile file1 ? file1.FileSize : 0,
                     x is WikiFile file2 ? file2.FileType : null)),
@@ -1341,6 +1393,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="noRedirect">
     /// If <see langword="true"/> redirects will no be followed. The original matching item will be
     /// returned, potentially with a redirect as its content.
@@ -1355,6 +1408,7 @@ public static class WikiExtensions
         WikiOptions options,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         bool noRedirect = false)
     {
         if (string.Equals(wikiNamespace, options.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
@@ -1372,12 +1426,13 @@ public static class WikiExtensions
                 dataStore,
                 title ?? options.MainPageTitle,
                 wikiNamespace,
+                domain,
                 noRedirect);
         }
     }
 
     /// <summary>
-    /// Gets the wiki page with the given title and namespace.
+    /// Gets the wiki page with the given title, namespace, and domain.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -1406,6 +1461,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -1429,6 +1485,7 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null,
         bool noRedirect = false)
     {
@@ -1439,12 +1496,12 @@ public static class WikiExtensions
             articleUser ??= await userManager.FindByNameAsync(title);
         }
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, noRedirect);
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, noRedirect);
         if (wikiItem is null
             && articleUser is not null
             && !string.Equals(title, articleUser.Id))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, options.UserNamespace, true);
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, options.UserNamespace, null, true);
         }
 
         var permission = await GetPermissionInnerAsync(
@@ -1455,6 +1512,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             wikiItem);
 
         var html = wikiItem?.IsDeleted != false
@@ -1500,6 +1558,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -1523,6 +1582,7 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null,
         bool noRedirect = false) => await GetWikiItemAsync(
             dataStore,
@@ -1531,6 +1591,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId),
             noRedirect);
 
@@ -1566,6 +1627,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -1586,6 +1648,7 @@ public static class WikiExtensions
         DateTimeOffset time,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null)
     {
         IWikiUser? articleUser = null;
@@ -1595,12 +1658,12 @@ public static class WikiExtensions
             articleUser ??= await userManager.FindByNameAsync(title);
         }
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, true);
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
         if (wikiItem is null
             && articleUser is not null
             && !string.Equals(title, articleUser.Id))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, true);
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
         }
 
         var permission = await GetPermissionInnerAsync(
@@ -1611,6 +1674,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             wikiItem);
 
         var html = wikiItem is null
@@ -1658,6 +1722,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -1678,6 +1743,7 @@ public static class WikiExtensions
         DateTimeOffset time,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => await GetWikiItemAtTimeAsync(
             dataStore,
             options,
@@ -1686,6 +1752,7 @@ public static class WikiExtensions
             time,
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
@@ -1722,6 +1789,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -1742,6 +1810,7 @@ public static class WikiExtensions
         long timestamp,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null) => await GetWikiItemAtTimeAsync(
             dataStore,
             options,
@@ -1750,6 +1819,7 @@ public static class WikiExtensions
             new DateTimeOffset(timestamp, TimeSpan.Zero),
             title,
             wikiNamespace,
+            domain,
             user);
 
     /// <summary>
@@ -1786,6 +1856,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -1806,6 +1877,7 @@ public static class WikiExtensions
         long timestamp,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => await GetWikiItemAtTimeAsync(
             dataStore,
             options,
@@ -1814,6 +1886,7 @@ public static class WikiExtensions
             new DateTimeOffset(timestamp, TimeSpan.Zero),
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
@@ -1848,6 +1921,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -1873,6 +1947,7 @@ public static class WikiExtensions
         DateTimeOffset time,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null)
     {
         IWikiUser? articleUser = null;
@@ -1882,12 +1957,12 @@ public static class WikiExtensions
             articleUser ??= await userManager.FindByNameAsync(title);
         }
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, true);
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
         if (wikiItem is null
             && articleUser is not null
             && !string.Equals(title, articleUser.Id))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, true);
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
         }
 
         var permission = await GetPermissionInnerAsync(
@@ -1898,6 +1973,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             wikiItem);
 
         var html = wikiItem is null
@@ -1945,6 +2021,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -1970,6 +2047,7 @@ public static class WikiExtensions
         DateTimeOffset time,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => await GetWikiItemDiffWithCurrentAsync(
             dataStore,
             options,
@@ -1978,6 +2056,7 @@ public static class WikiExtensions
             time,
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
@@ -2014,6 +2093,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -2039,6 +2119,7 @@ public static class WikiExtensions
         long timestamp,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null) => GetWikiItemDiffWithCurrentAsync(
             dataStore,
             options,
@@ -2047,6 +2128,7 @@ public static class WikiExtensions
             new DateTimeOffset(timestamp, TimeSpan.Zero),
             title,
             wikiNamespace,
+            domain,
             user);
 
     /// <summary>
@@ -2083,6 +2165,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -2108,6 +2191,7 @@ public static class WikiExtensions
         long timestamp,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => GetWikiItemDiffWithCurrentAsync(
             dataStore,
             options,
@@ -2116,6 +2200,7 @@ public static class WikiExtensions
             new DateTimeOffset(timestamp, TimeSpan.Zero),
             title,
             wikiNamespace,
+            domain,
             userId);
 
     /// <summary>
@@ -2154,6 +2239,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -2184,6 +2270,7 @@ public static class WikiExtensions
         DateTimeOffset secondTime,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null)
     {
         IWikiUser? articleUser = null;
@@ -2193,12 +2280,12 @@ public static class WikiExtensions
             articleUser ??= await userManager.FindByNameAsync(title);
         }
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, true);
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
         if (wikiItem is null
             && articleUser is not null
             && !string.Equals(title, articleUser.Id))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, true);
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
         }
 
         var permission = await GetPermissionInnerAsync(
@@ -2209,6 +2296,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             wikiItem);
 
         var html = wikiItem is null
@@ -2260,6 +2348,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -2290,6 +2379,7 @@ public static class WikiExtensions
         DateTimeOffset secondTime,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => await GetWikiItemDiffAsync(
             dataStore,
             options,
@@ -2299,6 +2389,7 @@ public static class WikiExtensions
             secondTime,
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
@@ -2337,6 +2428,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -2368,6 +2460,7 @@ public static class WikiExtensions
         long secondTimestamp,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null) => GetWikiItemDiffAsync(
             dataStore,
             options,
@@ -2377,6 +2470,7 @@ public static class WikiExtensions
             new DateTimeOffset(secondTimestamp, TimeSpan.Zero),
             title,
             wikiNamespace,
+            domain,
             user);
 
     /// <summary>
@@ -2415,6 +2509,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -2446,6 +2541,7 @@ public static class WikiExtensions
         long secondTimestamp,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => GetWikiItemDiffAsync(
             dataStore,
             options,
@@ -2455,6 +2551,7 @@ public static class WikiExtensions
             new DateTimeOffset(secondTimestamp, TimeSpan.Zero),
             title,
             wikiNamespace,
+            domain,
             userId);
 
     /// <summary>
@@ -2495,6 +2592,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -2520,6 +2618,7 @@ public static class WikiExtensions
         DateTimeOffset? time = null,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null)
     {
         IWikiUser? articleUser = null;
@@ -2529,12 +2628,12 @@ public static class WikiExtensions
             articleUser ??= await userManager.FindByNameAsync(title);
         }
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, true);
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
         if (wikiItem is null
             && articleUser is not null
             && !string.Equals(title, articleUser.Id))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, true);
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
         }
 
         var permission = await GetPermissionInnerAsync(
@@ -2545,6 +2644,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             wikiItem);
 
         string? html = null;
@@ -2602,6 +2702,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -2627,6 +2728,7 @@ public static class WikiExtensions
         DateTimeOffset? time = null,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => await GetWikiItemDiffWithPreviousAsync(
             dataStore,
             options,
@@ -2635,6 +2737,7 @@ public static class WikiExtensions
             time,
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId));
 
     /// <summary>
@@ -2675,6 +2778,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -2700,6 +2804,7 @@ public static class WikiExtensions
         long? timestamp = null,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null) => GetWikiItemDiffWithPreviousAsync(
             dataStore,
             options,
@@ -2708,6 +2813,7 @@ public static class WikiExtensions
             timestamp.HasValue ? new DateTimeOffset(timestamp.Value, TimeSpan.Zero) : null,
             title,
             wikiNamespace,
+            domain,
             user);
 
     /// <summary>
@@ -2748,6 +2854,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -2773,6 +2880,7 @@ public static class WikiExtensions
         long? timestamp = null,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null) => GetWikiItemDiffWithPreviousAsync(
             dataStore,
             options,
@@ -2781,6 +2889,7 @@ public static class WikiExtensions
             timestamp.HasValue ? new DateTimeOffset(timestamp.Value, TimeSpan.Zero) : null,
             title,
             wikiNamespace,
+            domain,
             userId);
 
     /// <summary>
@@ -2814,6 +2923,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -2837,6 +2947,7 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         IWikiUser? user = null,
         bool noRedirect = false)
     {
@@ -2847,12 +2958,12 @@ public static class WikiExtensions
             articleUser ??= await userManager.FindByNameAsync(title);
         }
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, noRedirect);
+        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, noRedirect);
         if (wikiItem is null
             && articleUser is not null
             && !string.Equals(title, articleUser.Id))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, options.UserNamespace, true);
+            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, options.UserNamespace, null, true);
         }
 
         var permission = await GetPermissionInnerAsync(
@@ -2863,6 +2974,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             wikiItem);
 
         if (wikiItem?.IsDeleted != false
@@ -2892,6 +3004,7 @@ public static class WikiExtensions
                     dataStore,
                     owner.Id,
                     options.UserNamespace,
+                    null,
                     true) is not null;
 
             if (user is not null
@@ -2949,6 +3062,7 @@ public static class WikiExtensions
                             dataStore,
                             editorUser.Id,
                             options.UserNamespace,
+                            null,
                             true) is not null;
 
                     if (user is not null
@@ -3004,6 +3118,7 @@ public static class WikiExtensions
                             dataStore,
                             viewerUser.Id,
                             options.UserNamespace,
+                            null,
                             true) is not null;
 
                     if (user is not null
@@ -3058,6 +3173,7 @@ public static class WikiExtensions
                         dataStore,
                         group.Id,
                         options.GroupNamespace,
+                        null,
                         true) is not null;
 
                     if (user is not null
@@ -3104,6 +3220,7 @@ public static class WikiExtensions
                         dataStore,
                         group.Id,
                         options.GroupNamespace,
+                        null,
                         true) is not null;
 
                     if (user is not null
@@ -3175,6 +3292,7 @@ public static class WikiExtensions
     /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -3198,6 +3316,7 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? userId = null,
         bool noRedirect = false) => await GetWikiItemForEditingAsync(
             dataStore,
@@ -3206,6 +3325,7 @@ public static class WikiExtensions
             groupManager,
             title,
             wikiNamespace,
+            domain,
             await userManager.FindByIdAsync(userId),
             noRedirect);
 
@@ -3239,7 +3359,7 @@ public static class WikiExtensions
             return value;
         }
 
-        var si = new StringInfo(value);
+        var si = new StringInfo(value.Trim());
         if (si.LengthInTextElements == 0)
         {
             return value;
@@ -3362,7 +3482,13 @@ public static class WikiExtensions
             .GetPageAsync(request.PageNumber, request.PageSize);
 
         return new(new PagedList<LinkInfo>(
-            results.Select(x => new LinkInfo(x.Title, x.WikiNamespace, 0, 0, null)),
+            results.Select(x => new LinkInfo(
+                x.Title,
+                x.WikiNamespace,
+                x.Domain,
+                0,
+                0,
+                null)),
             results.PageNumber,
             results.PageSize,
             results.TotalCount));
@@ -3376,6 +3502,7 @@ public static class WikiExtensions
         IWikiGroupManager groupManager,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         Article? article = null)
     {
         title ??= options.MainPageTitle;
@@ -3384,11 +3511,13 @@ public static class WikiExtensions
             dataStore,
             title,
             wikiNamespace,
+            domain,
             true);
         if (article is not null)
         {
             title = article.Title;
             wikiNamespace = article.WikiNamespace;
+            domain = article.Domain;
         }
 
         var isUserPage = string.Equals(
@@ -3415,25 +3544,44 @@ public static class WikiExtensions
             }
         }
 
+        var isDomain = !string.IsNullOrEmpty(domain);
+        var defaultPermission = isDomain
+            ? WikiPermission.None
+            : WikiPermission.All;
+
+        if (isDomain
+            && user is not null
+            && !string.IsNullOrEmpty(domain))
+        {
+            if (options.GetDomainPermission is not null)
+            {
+                defaultPermission = await options.GetDomainPermission(user.Id, domain);
+            }
+            if (user.AllowedViewDomains?.Contains(domain) == true)
+            {
+                defaultPermission |= WikiPermission.Read;
+            }
+        }
+
         if (article is null)
         {
             if (isUserPage)
             {
-                return WikiPermission.Read;
+                return defaultPermission & WikiPermission.Read;
             }
             else if (isGroupPage)
             {
                 return user?.Groups?.Contains(title) == true
                     ? WikiPermission.ReadWrite
-                    : WikiPermission.Read;
+                    : defaultPermission & WikiPermission.Read;
             }
-            return WikiPermission.All;
+            return defaultPermission;
         }
 
         if (user is null)
         {
             return article.AllowedViewers is null
-                ? WikiPermission.Read
+                ? defaultPermission & WikiPermission.Read
                 : WikiPermission.None;
         }
         var isReservedNamespace = options
@@ -3484,15 +3632,15 @@ public static class WikiExtensions
         {
             if (isAdminNamespace)
             {
-                return WikiPermission.ReadWrite;
+                return defaultPermission & WikiPermission.ReadWrite;
             }
             else if (isReservedNamespace)
             {
-                return WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner;
+                return defaultPermission & (WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner);
             }
             else
             {
-                return WikiPermission.All;
+                return defaultPermission;
             }
         }
 
@@ -3526,14 +3674,14 @@ public static class WikiExtensions
 
         if (isUserPage)
         {
-            return WikiPermission.Read;
+            return defaultPermission & WikiPermission.Read;
         }
 
         if (isGroupPage)
         {
             return user.Groups?.Contains(title) == true
                 ? WikiPermission.ReadWrite
-                : WikiPermission.Read;
+                : defaultPermission & WikiPermission.Read;
         }
 
         var writePermission = article.AllowedEditors is null
@@ -3567,7 +3715,7 @@ public static class WikiExtensions
 
         return writePermission
             ? WikiPermission.ReadWrite
-            : WikiPermission.Read;
+            : defaultPermission & WikiPermission.Read;
     }
 
     private static async Task<IPagedList<Article>> GetSpecialListInnerAsync(

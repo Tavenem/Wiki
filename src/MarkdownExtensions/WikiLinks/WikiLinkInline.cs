@@ -18,6 +18,11 @@ public class WikiLinkInline : LinkInline
     public string? Display { get; set; }
 
     /// <summary>
+    /// The domain of the linked article (if any).
+    /// </summary>
+    public string? Domain { get; set; }
+
+    /// <summary>
     /// The text outside the link which is to be included.
     /// </summary>
     public string? Endmatter { get; set; }

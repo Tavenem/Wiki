@@ -20,12 +20,13 @@
 /// </param>
 /// <param name="WikiNamespace">
 /// <para>
-/// The namespace of a wiki page.
+/// The namespace of the requested wiki page.
 /// </para>
 /// <para>
 /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
 /// </para>
 /// </param>
+/// <param name="Domain">The domain of the requested wiki page (if any).</param>
 /// <param name="PageNumber">The requested page number. The first page is 1.</param>
 /// <param name="PageSize">The number of items to return per page.</param>
 /// <param name="Descending">Whether the list should be sorted in descending order.</param>
@@ -46,6 +47,7 @@
 public record WhatLinksHereRequest(
     string? Title = null,
     string? WikiNamespace = null,
+    string? Domain = null,
     int PageNumber = 0,
     int PageSize = 50,
     bool Descending = false,

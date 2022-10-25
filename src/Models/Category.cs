@@ -50,6 +50,9 @@ public sealed class Category : Article
     /// <param name="wikiNamespace">
     /// The namespace to which this article belongs.
     /// </param>
+    /// <param name="domain">
+    /// The domain to which this article belongs (if any).
+    /// </param>
     /// <param name="isDeleted">
     /// Indicates that this article has been marked as deleted.
     /// </param>
@@ -133,6 +136,7 @@ public sealed class Category : Article
         ICollection<string> childIds,
         long timestampTicks,
         string wikiNamespace,
+        string? domain,
         bool isDeleted,
         string? owner,
         IReadOnlyCollection<string>? allowedEditors,
@@ -149,12 +153,14 @@ public sealed class Category : Article
             wikiLinks,
             timestampTicks,
             wikiNamespace,
+            domain,
             isDeleted,
             owner,
             allowedEditors,
             allowedViewers,
             allowedEditorGroups,
             allowedViewerGroups,
+            null,
             null,
             null,
             false,
@@ -171,6 +177,7 @@ public sealed class Category : Article
         IReadOnlyCollection<WikiLink> wikiLinks,
         long timestampTicks,
         string wikiNamespace,
+        string? domain,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -187,6 +194,7 @@ public sealed class Category : Article
             wikiLinks,
             timestampTicks,
             wikiNamespace,
+            domain,
             isDeleted,
             owner,
             allowedEditors,
@@ -203,6 +211,7 @@ public sealed class Category : Article
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the article to retrieve.</param>
+    /// <param name="domain">The domain of the article to retrieve (if any).</param>
     /// <param name="allowCaseInsenstive">
     /// If <see langword="true"/> a case-insensitive match will be returned if no exact match is
     /// found, but only if there is only one such match. If there is more than one possible
@@ -216,6 +225,7 @@ public sealed class Category : Article
         WikiOptions options,
         IDataStore dataStore,
         string? title,
+        string? domain = null,
         bool allowCaseInsenstive = true)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -224,7 +234,11 @@ public sealed class Category : Article
         }
 
         Category? category = null;
-        var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.CategoryNamespace);
+        var reference = await PageReference.GetPageReferenceAsync(
+            dataStore,
+            title,
+            options.CategoryNamespace,
+            domain);
         if (reference is not null)
         {
             category = await dataStore.GetItemAsync<Category>(reference.Reference);
@@ -232,7 +246,11 @@ public sealed class Category : Article
         // If no exact match exists, ignore case if only one such match exists.
         if (category is null && allowCaseInsenstive)
         {
-            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, options.CategoryNamespace);
+            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(
+                dataStore,
+                title,
+                options.CategoryNamespace,
+                domain);
             if (normalizedReference?.References.Count == 1)
             {
                 category = await dataStore.GetItemAsync<Category>(normalizedReference.References[0]);
@@ -253,6 +271,7 @@ public sealed class Category : Article
     /// The ID of the user who made this revision.
     /// </param>
     /// <param name="markdown">The raw markdown content.</param>
+    /// <param name="domain">The domain to which this category belongs (if any).</param>
     /// <param name="owner">
     /// <para>
     /// The owner of the category.
@@ -319,6 +338,7 @@ public sealed class Category : Article
         string title,
         string editor,
         string? markdown = null,
+        string? domain = null,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
@@ -333,7 +353,7 @@ public sealed class Category : Article
 
         var wikiId = dataStore.CreateNewIdFor<Category>();
 
-        await CreatePageReferenceAsync(dataStore, wikiId, title, options.CategoryNamespace)
+        await CreatePageReferenceAsync(dataStore, wikiId, title, options.CategoryNamespace, domain)
             .ConfigureAwait(false);
 
         var revision = new Revision(
@@ -341,6 +361,7 @@ public sealed class Category : Article
             editor,
             title,
             options.CategoryNamespace,
+            domain,
             null,
             markdown);
         await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
@@ -361,7 +382,7 @@ public sealed class Category : Article
                 markdown);
         }
 
-        var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.CategoryNamespace);
+        var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.CategoryNamespace, domain);
 
         var categories = await UpdateCategoriesAsync(
             options,
@@ -369,6 +390,7 @@ public sealed class Category : Article
             wikiId,
             editor,
             owner,
+            domain,
             allowedEditors,
             allowedViewers,
             allowedEditorGroups,
@@ -380,11 +402,31 @@ public sealed class Category : Article
             wikiId,
             title,
             markdown,
-            RenderHtml(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.CategoryNamespace, markdown)),
-            RenderPreview(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, options.CategoryNamespace, markdown, true)),
+            RenderHtml(
+                options,
+                dataStore,
+                await PostprocessArticleMarkdownAsync(
+                    options,
+                    dataStore,
+                    title,
+                    options.CategoryNamespace,
+                    domain,
+                    markdown)),
+            RenderPreview(
+                options,
+                dataStore,
+                await PostprocessArticleMarkdownAsync(
+                    options,
+                    dataStore,
+                    title,
+                    options.CategoryNamespace,
+                    domain,
+                    markdown,
+                    true)),
             new ReadOnlyCollection<WikiLink>(wikiLinks),
             revision.TimestampTicks,
             options.CategoryNamespace,
+            domain,
             isDeleted: false,
             owner,
             allowedEditors,
@@ -404,8 +446,10 @@ public sealed class Category : Article
             dataStore,
             title,
             options.CategoryNamespace,
+            domain,
             false,
             true,
+            null,
             null,
             null,
             false,
@@ -446,6 +490,17 @@ public sealed class Category : Article
     /// </param>
     /// <param name="revisionComment">
     /// An optional comment supplied for this revision (e.g. to explain the changes).
+    /// </param>
+    /// <param name="domain">
+    /// <para>
+    /// The optional new domain to which this article belongs.
+    /// </para>
+    /// <para>
+    /// If left <see langword="null"/> the existing domain will be retained (if any).
+    /// </para>
+    /// <para>
+    /// To clear the domain, set this to an empty string instead, which will assign <see langword="null"/>.
+    /// </para>
     /// </param>
     /// <param name="isDeleted">Indicates that this category has been marked as deleted.</param>
     /// <param name="owner">
@@ -515,6 +570,7 @@ public sealed class Category : Article
         string? title = null,
         string? markdown = null,
         string? revisionComment = null,
+        string? domain = null,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -528,10 +584,26 @@ public sealed class Category : Article
         }
 
         title ??= title?.ToWikiTitleCase() ?? Title;
-
         var previousTitle = Title;
         Title = title;
-        var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal);
+
+        if (domain is null)
+        {
+            domain = Domain;
+        }
+        else if (string.IsNullOrWhiteSpace(domain))
+        {
+            domain = null;
+        }
+        else
+        {
+            domain = domain.Trim();
+        }
+        var previousDomain = Domain;
+        Domain = domain;
+
+        var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal)
+            && string.Equals(previousDomain, domain, StringComparison.Ordinal);
 
         var previousMarkdown = MarkdownContent;
         var wasDeleted = IsDeleted || string.IsNullOrWhiteSpace(previousMarkdown);
@@ -566,12 +638,12 @@ public sealed class Category : Article
 
         if (!sameTitle && !IsDeleted)
         {
-            await CreatePageReferenceAsync(dataStore, Id, title, options.CategoryNamespace)
+            await CreatePageReferenceAsync(dataStore, Id, title, options.CategoryNamespace, domain)
                 .ConfigureAwait(false);
         }
         if (!sameTitle)
         {
-            await RemovePageReferenceAsync(dataStore, Id, previousTitle, options.CategoryNamespace)
+            await RemovePageReferenceAsync(dataStore, Id, previousTitle, options.CategoryNamespace, previousDomain)
                 .ConfigureAwait(false);
         }
 
@@ -598,7 +670,7 @@ public sealed class Category : Article
                 .ConfigureAwait(false);
 
             var previousWikiLinks = WikiLinks.ToList();
-            WikiLinks = GetWikiLinks(options, dataStore, md, title, options.CategoryNamespace).AsReadOnly();
+            WikiLinks = GetWikiLinks(options, dataStore, md, title, options.CategoryNamespace, domain).AsReadOnly();
             await RemovePageLinksAsync(dataStore, Id, previousWikiLinks.Except(WikiLinks))
                 .ConfigureAwait(false);
             await AddPageLinksAsync(dataStore, Id, WikiLinks.Except(previousWikiLinks))
@@ -613,6 +685,7 @@ public sealed class Category : Article
                 Id,
                 editor,
                 owner,
+                domain,
                 allowedEditors,
                 allowedViewers,
                 allowedEditorGroups,
@@ -635,6 +708,7 @@ public sealed class Category : Article
             editor,
             title,
             options.CategoryNamespace,
+            domain,
             previousMarkdown,
             MarkdownContent,
             revisionComment);
@@ -649,10 +723,12 @@ public sealed class Category : Article
             dataStore,
             title,
             options.CategoryNamespace,
+            domain,
             IsDeleted,
             sameTitle,
             previousTitle,
             options.CategoryNamespace,
+            previousDomain,
             false,
             false)
             .ConfigureAwait(false);

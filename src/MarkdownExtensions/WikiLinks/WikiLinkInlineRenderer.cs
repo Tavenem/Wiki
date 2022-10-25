@@ -33,7 +33,12 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
         var fullTitle = !link.IsCommons
             && !link.IsWikipedia
             && (string.IsNullOrEmpty(link.Title) || link.Title[0] != '#')
-            ? Article.GetFullTitle(Options, link.Title ?? string.Empty, link.WikiNamespace, link.IsTalk)
+            ? Article.GetFullTitle(
+                Options,
+                link.Title ?? string.Empty,
+                link.WikiNamespace ?? Options.DefaultNamespace,
+                link.Domain,
+                link.IsTalk)
             : link.Title;
 
         if (renderer.EnableHtmlForInline)
@@ -165,17 +170,42 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
             }
             else
             {
-                if (!string.IsNullOrEmpty(link.WikiNamespace)
-                    && !string.Equals(link.WikiNamespace, Options.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
+                var hasDomain = !string.IsNullOrEmpty(link.Domain);
+                if (hasDomain)
+                {
+                    if (renderer.EnableHtmlForInline)
+                    {
+                        renderer.Write("<span class=\"wiki-link-domain\">");
+                    }
+                    else
+                    {
+                        renderer.Write('{');
+                    }
+                    renderer.Write(link.Domain);
+                    if (renderer.EnableHtmlForInline)
+                    {
+                        renderer.Write("</span>");
+                    }
+                    else
+                    {
+                        renderer.Write("}:");
+                    }
+                }
+                if (hasDomain
+                    || !string.Equals(link.WikiNamespace, Options.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
                 {
                     if (renderer.EnableHtmlForInline)
                     {
                         renderer.Write("<span class=\"wiki-link-namespace\">");
                     }
-                    renderer.Write(link.WikiNamespace);
+                    renderer.Write(link.WikiNamespace ?? Options.DefaultNamespace);
                     if (renderer.EnableHtmlForInline)
                     {
                         renderer.Write("</span>");
+                    }
+                    else
+                    {
+                        renderer.Write(':');
                     }
                 }
                 if (renderer.EnableHtmlForInline)

@@ -309,14 +309,15 @@ public static class TransclusionParser
                 parameterValues.Remove("code");
                 if (!string.IsNullOrWhiteSpace(code))
                 {
-                    var (codeNamespace, codeTitle, _, codeIsDefault) = Article.GetTitleParts(options, code);
+                    var (codeDomain, codeNamespace, codeTitle, _, codeIsDefault) = Article.GetTitleParts(options, code);
                     var scriptArticle = await Article.GetArticleAsync(
                         options,
                         dataStore,
                         codeTitle,
                         codeIsDefault
                             ? options.ScriptNamespace
-                            : codeNamespace);
+                            : codeNamespace,
+                        codeDomain);
                     script = scriptArticle?.MarkdownContent;
                 }
                 if (!string.IsNullOrWhiteSpace(script))
@@ -333,7 +334,7 @@ public static class TransclusionParser
             return (template, transcludedArticles);
         }
 
-        var (articleNamespace, articleTitle, isTalk, isDefault) = Article.GetTitleParts(options, reference);
+        var (articleDomain, articleNamespace, articleTitle, isTalk, isDefault) = Article.GetTitleParts(options, reference);
         if (isTalk)
         {
             return (template, transcludedArticles);
@@ -343,14 +344,14 @@ public static class TransclusionParser
             articleNamespace = options.TransclusionNamespace;
         }
 
-        var article = await Article.GetArticleAsync(options, dataStore, articleTitle, articleNamespace);
+        var article = await Article.GetArticleAsync(options, dataStore, articleTitle, articleNamespace, articleDomain);
         if (article is null)
         {
-            transcludedArticles.Add(new Wiki.Transclusion(articleTitle, articleNamespace));
+            transcludedArticles.Add(new Wiki.Transclusion(articleTitle, articleNamespace, articleDomain));
             return (template, transcludedArticles);
         }
 
-        transcludedArticles.Add(new Wiki.Transclusion(article.Title, article.WikiNamespace));
+        transcludedArticles.Add(new Wiki.Transclusion(article.Title, article.WikiNamespace, article.Domain));
 
         parameterValues = ParseParameters(parameters);
 

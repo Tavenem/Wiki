@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.Linq.Expressions;
+using System.Text;
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
@@ -168,14 +169,35 @@ public class Article : MarkdownItem
     /// The titles of the categories to which this article belongs.
     /// </para>
     /// <para>
-    /// Note that this list is a cache that is filled when the article is rendered, and will not
-    /// be accurate prior to rendering.
+    /// May be prefixed by a domain, but will never include the category namespace (which is assumed).
     /// </para>
     /// </summary>
     /// <remarks>
+    /// <para>
+    /// Note that this list is a cache that is filled when the article is rendered, and will not
+    /// be accurate prior to rendering.
+    /// </para>
+    /// <para>
     /// Updates to this list (due to changes in transcluded articles) do not count as revisions.
+    /// </para>
     /// </remarks>
     public IReadOnlyCollection<string> Categories { get; private protected set; } = new List<string>().AsReadOnly();
+
+    /// <summary>
+    /// An optional domain to which this article belongs.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A domain is like a sub-wiki, within which namespaces and article names do not collide with
+    /// those in other domains, or those without a domain.
+    /// </para>
+    /// <para>
+    /// Note that unlike titles or namespaces, domains are always case-sensitive and must match
+    /// exactly when present. They are never normalized to wiki title case, and never match on
+    /// normalized lower case.
+    /// </para>
+    /// </remarks>
+    public string? Domain { get; set; }
 
     /// <summary>
     /// <para>
@@ -222,6 +244,11 @@ public class Article : MarkdownItem
     /// </para>
     /// </remarks>
     public string? Owner { get; private protected set; }
+
+    /// <summary>
+    /// If this is a redirect, optionally contains the domain.
+    /// </summary>
+    public string? RedirectDomain { get; private set; }
 
     /// <summary>
     /// If this is a redirect, optionally contains the namespace.
@@ -279,6 +306,9 @@ public class Article : MarkdownItem
     /// </param>
     /// <param name="wikiNamespace">
     /// The namespace to which this article belongs.
+    /// </param>
+    /// <param name="domain">
+    /// The domain to which this article belongs (if any).
     /// </param>
     /// <param name="isDeleted">
     /// Indicates that this article has been marked as deleted.
@@ -343,6 +373,9 @@ public class Article : MarkdownItem
     /// langword="null"/>) list allows only the owner to view the article.
     /// </para>
     /// </param>
+    /// <param name="redirectDomain">
+    /// If this is a redirect, optionally contains the domain.
+    /// </param>
     /// <param name="redirectNamespace">
     /// If this is a redirect, optionally contains the namespace.
     /// </param>
@@ -373,12 +406,14 @@ public class Article : MarkdownItem
         IReadOnlyCollection<WikiLink> wikiLinks,
         long timestampTicks,
         string wikiNamespace,
+        string? domain,
         bool isDeleted,
         string? owner,
         IReadOnlyCollection<string>? allowedEditors,
         IReadOnlyCollection<string>? allowedViewers,
         IReadOnlyCollection<string>? allowedEditorGroups,
         IReadOnlyCollection<string>? allowedViewerGroups,
+        string? redirectDomain,
         string? redirectNamespace,
         string? redirectTitle,
         bool isBrokenRedirect,
@@ -403,12 +438,14 @@ public class Article : MarkdownItem
         IsDeleted = isDeleted;
         IsDoubleRedirect = isDoubleRedirect;
         Owner = owner;
+        RedirectDomain = redirectDomain;
         RedirectNamespace = redirectNamespace;
         RedirectTitle = redirectTitle;
         TimestampTicks = timestampTicks;
         Title = title;
         Transclusions = transclusions;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
     }
 
     private protected Article(
@@ -420,6 +457,7 @@ public class Article : MarkdownItem
         IReadOnlyCollection<WikiLink> wikiLinks,
         long timestampTicks,
         string wikiNamespace,
+        string? domain,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -428,6 +466,7 @@ public class Article : MarkdownItem
         IEnumerable<string>? allowedViewerGroups = null,
         IList<string>? categories = null,
         IList<Transclusion>? transclusions = null,
+        string? redirectDomain = null,
         string? redirectNamespace = null,
         string? redirectTitle = null,
         bool isBrokenRedirect = false,
@@ -450,6 +489,7 @@ public class Article : MarkdownItem
         IsDeleted = isDeleted;
         IsDoubleRedirect = isDoubleRedirect;
         Owner = owner;
+        RedirectDomain = redirectDomain;
         RedirectNamespace = redirectNamespace;
         RedirectTitle = redirectTitle;
         TimestampTicks = timestampTicks;
@@ -458,6 +498,7 @@ public class Article : MarkdownItem
             ? null
             : new ReadOnlyCollection<Transclusion>(transclusions);
         WikiNamespace = wikiNamespace;
+        Domain = domain;
     }
 
     /// <summary>
@@ -475,6 +516,7 @@ public class Article : MarkdownItem
     /// cref="WikiOptions.DefaultNamespace"/>) will be assumed.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the article to retrieve (if any).</param>
     /// <param name="noRedirect">
     /// If <see langword="true"/>, redirects will be ignored, and the literal content of a
     /// redirect article will be returned. Useful when a redirect itself is to be edited.
@@ -486,6 +528,7 @@ public class Article : MarkdownItem
         IDataStore dataStore,
         string? title,
         string? wikiNamespace = null,
+        string? domain = null,
         bool noRedirect = false)
     {
         if (string.IsNullOrWhiteSpace(title))
@@ -502,7 +545,7 @@ public class Article : MarkdownItem
         {
             redirect = false;
 
-            var reference = await PageReference.GetPageReferenceAsync(dataStore, title, wikiNamespace);
+            var reference = await PageReference.GetPageReferenceAsync(dataStore, title, wikiNamespace, domain);
             if (reference is not null)
             {
                 article = await dataStore.GetItemAsync<Article>(reference.Reference);
@@ -510,14 +553,16 @@ public class Article : MarkdownItem
             // If no exact match exists, ignore case if only one such match exists.
             if (article is null)
             {
-                var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace);
+                var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace, domain);
                 if (normalizedReference?.References.Count == 1)
                 {
                     article = await dataStore.GetItemAsync<Article>(normalizedReference.References[0]);
                 }
             }
 
-            if (!noRedirect && article?.IsBrokenRedirect != true && !string.IsNullOrEmpty(article?.RedirectTitle))
+            if (!noRedirect
+                && article?.IsBrokenRedirect != true
+                && !string.IsNullOrEmpty(article?.RedirectTitle))
             {
                 redirect = true;
                 if (ids.Contains(article.Id))
@@ -527,6 +572,7 @@ public class Article : MarkdownItem
                 ids.Add(article.Id);
                 title = article.RedirectTitle;
                 wikiNamespace = article.RedirectNamespace ?? options.DefaultNamespace;
+                domain = article.RedirectDomain;
             }
 
             count++;
@@ -535,30 +581,44 @@ public class Article : MarkdownItem
     }
 
     /// <summary>
-    /// Gets the full title from the given parts (includes namespace if the namespace is not
-    /// <see cref="WikiOptions.DefaultNamespace"/>).
+    /// Gets the full title from the given parts.
     /// </summary>
     /// <returns>The full title from the given parts.</returns>
+    /// <remarks>
+    /// Will omit namespace if the namespace is <see cref="WikiOptions.DefaultNamespace"/>, and no
+    /// <paramref name="domain"/> is specified, and <paramref name="talk"/> is <see
+    /// langword="false"/>.
+    /// </remarks>
     public static string GetFullTitle(
         WikiOptions options,
         string title,
-        string? wikiNamespace = null,
+        string wikiNamespace,
+        string? domain,
         bool talk = false)
     {
+        var sb = new StringBuilder();
+        var domainPresent = !string.IsNullOrEmpty(domain);
+        if (domainPresent)
+        {
+            sb.Append('{')
+                .Append(domain)
+                .Append("}:");
+        }
         if (talk)
         {
-            return string.IsNullOrWhiteSpace(wikiNamespace)
-                || string.CompareOrdinal(wikiNamespace, options.DefaultNamespace) == 0
-                ? $"{options.TalkNamespace}:{title}"
-                : $"{options.TalkNamespace}:{wikiNamespace}:{title}";
+            sb.Append(options.TalkNamespace)
+                .Append(':');
         }
-        else
+        if (!string.IsNullOrEmpty(wikiNamespace)
+            && (talk
+            || domainPresent
+            || !string.Equals(wikiNamespace, options.DefaultNamespace, StringComparison.Ordinal)))
         {
-            return string.IsNullOrWhiteSpace(wikiNamespace)
-                || string.CompareOrdinal(wikiNamespace, options.DefaultNamespace) == 0
-                ? title
-                : $"{wikiNamespace}:{title}";
+            sb.Append(wikiNamespace)
+                .Append(':');
         }
+        return sb.Append(title)
+            .ToString();
     }
 
     /// <summary>
@@ -567,12 +627,18 @@ public class Article : MarkdownItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="text">The full title string.</param>
     /// <returns>
-    /// The namespace and title, and <see cref="bool"/> flags indicating whether the title
+    /// The domain, namespace, and title, and <see cref="bool"/> flags indicating whether the title
     /// indicates a discussion page, as well as whether the namespace was omitted.
     /// </returns>
-    public static (string wikiNamespace, string title, bool isTalk, bool defaultNamespace) GetTitleParts(WikiOptions options, string? text)
+    public static (
+        string? domain,
+        string wikiNamespace,
+        string title,
+        bool isTalk,
+        bool defaultNamespace) GetTitleParts(WikiOptions options, string? text)
     {
         string wikiNamespace, title;
+        string? domain = null;
         var isTalk = false;
         var defaultNamespace = false;
         if (string.IsNullOrWhiteSpace(text))
@@ -584,6 +650,12 @@ public class Article : MarkdownItem
         else
         {
             var parts = text.Split(':', StringSplitOptions.RemoveEmptyEntries);
+            if (parts[0].StartsWith('{')
+                && parts[0].EndsWith('}'))
+            {
+                domain = parts[0][1..^1];
+                parts = parts.Skip(1).ToArray();
+            }
             if (parts.Length > 2)
             {
                 if (string.CompareOrdinal(parts[0], options.TalkNamespace) == 0)
@@ -627,7 +699,7 @@ public class Article : MarkdownItem
             wikiNamespace = options.DefaultNamespace;
             defaultNamespace = true;
         }
-        return (wikiNamespace, title, isTalk, defaultNamespace);
+        return (domain, wikiNamespace, title, isTalk, defaultNamespace);
     }
 
     /// <summary>
@@ -646,10 +718,11 @@ public class Article : MarkdownItem
     /// The namespace to which this article belongs.
     /// </para>
     /// <para>
-    /// If this is equal to <see cref="WikiOptions.CategoryNamespace"/>, the result will be a
-    /// <see cref="Category"/> rather than an <see cref="Article"/>.
+    /// If this is equal to <see cref="WikiOptions.CategoryNamespace"/>, the result will be a <see
+    /// cref="Category"/> rather than an <see cref="Article"/>.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain to which this article belongs (if any).</param>
     /// <param name="owner">
     /// <para>
     /// The ID of the intended owner of the article.
@@ -666,8 +739,8 @@ public class Article : MarkdownItem
     /// If <see langword="null"/> the article can be edited by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
     /// </para>
     /// </param>
@@ -679,8 +752,8 @@ public class Article : MarkdownItem
     /// If <see langword="null"/> the article can be viewed by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to view the article.
     /// </para>
     /// </param>
@@ -692,8 +765,8 @@ public class Article : MarkdownItem
     /// If <see langword="null"/> the article can be edited by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
     /// </para>
     /// </param>
@@ -705,8 +778,8 @@ public class Article : MarkdownItem
     /// If <see langword="null"/> the article can be viewed by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to view the article.
     /// </para>
     /// </param>
@@ -717,6 +790,7 @@ public class Article : MarkdownItem
         string editor,
         string? markdown = null,
         string? wikiNamespace = null,
+        string? domain = null,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
@@ -736,6 +810,7 @@ public class Article : MarkdownItem
                 title,
                 editor,
                 markdown,
+                domain,
                 owner,
                 allowedEditors,
                 allowedViewers,
@@ -754,10 +829,11 @@ public class Article : MarkdownItem
         var isScript = wikiNamespace.Equals(options.ScriptNamespace, StringComparison.Ordinal);
 
         title = title.ToWikiTitleCase();
+        domain = domain?.Trim();
 
         var wikiId = dataStore.CreateNewIdFor<Article>();
 
-        await CreatePageReferenceAsync(dataStore, wikiId, title, wikiNamespace)
+        await CreatePageReferenceAsync(dataStore, wikiId, title, wikiNamespace, domain)
             .ConfigureAwait(false);
 
         var revision = new Revision(
@@ -765,11 +841,13 @@ public class Article : MarkdownItem
             editor,
             title,
             wikiNamespace,
+            domain,
             null,
             markdown);
         await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
 
         var (
+            redirectDomain,
             redirectNamespace,
             redirectTitle,
             isRedirect,
@@ -788,13 +866,13 @@ public class Article : MarkdownItem
                 options,
                 dataStore,
                 title,
-                GetFullTitle(options, title, wikiNamespace),
+                GetFullTitle(options, title, wikiNamespace, domain),
                 markdown);
         }
 
         var wikiLinks = isRedirect || isScript
             ? new List<WikiLink>()
-            : GetWikiLinks(options, dataStore, md, title, wikiNamespace);
+            : GetWikiLinks(options, dataStore, md, title, wikiNamespace, domain);
 
         var categories = await UpdateCategoriesAsync(
             options,
@@ -802,6 +880,7 @@ public class Article : MarkdownItem
             wikiId,
             editor,
             owner,
+            domain,
             allowedEditors,
             allowedViewers,
             allowedEditorGroups,
@@ -815,7 +894,16 @@ public class Article : MarkdownItem
             markdown,
             isScript
                 ? markdown ?? string.Empty
-                : RenderHtml(options, dataStore, await PostprocessArticleMarkdownAsync(options, dataStore, title, wikiNamespace, markdown)),
+                : RenderHtml(
+                    options,
+                    dataStore,
+                    await PostprocessArticleMarkdownAsync(
+                        options,
+                        dataStore,
+                        title,
+                        wikiNamespace,
+                        domain,
+                        markdown)),
             isScript
                 ? GetScriptPreview(markdown)
                 : RenderPreview(
@@ -826,11 +914,13 @@ public class Article : MarkdownItem
                         dataStore,
                         title,
                         wikiNamespace,
+                        domain,
                         markdown,
                         true)),
             new ReadOnlyCollection<WikiLink>(wikiLinks),
             revision.TimestampTicks,
             wikiNamespace,
+            domain,
             isDeleted: false,
             owner,
             allowedEditors,
@@ -839,6 +929,7 @@ public class Article : MarkdownItem
             allowedViewerGroups,
             categories,
             transclusions,
+            redirectDomain,
             redirectNamespace,
             redirectTitle,
             isBrokenRedirect,
@@ -854,8 +945,10 @@ public class Article : MarkdownItem
             dataStore,
             title,
             wikiNamespace,
+            domain,
             false,
             true,
+            null,
             null,
             null,
             true,
@@ -878,11 +971,16 @@ public class Article : MarkdownItem
         foreach (var link in wikiLinks.Where(x => !x.IsCategory))
         {
             var linkReference = await PageLinks
-                .GetPageLinksAsync(dataStore, link.Title, link.WikiNamespace)
+                .GetPageLinksAsync(dataStore, link.Title, link.WikiNamespace, link.Domain)
                 .ConfigureAwait(false);
             if (linkReference is null)
             {
-                await PageLinks.NewAsync(dataStore, link.Title, link.WikiNamespace, id).ConfigureAwait(false);
+                await PageLinks.NewAsync(
+                    dataStore,
+                    link.Title,
+                    link.WikiNamespace,
+                    link.Domain,
+                    id).ConfigureAwait(false);
             }
             else
             {
@@ -892,7 +990,7 @@ public class Article : MarkdownItem
             if (link.Missing)
             {
                 var existing = await MissingPage
-                    .GetMissingPageAsync(dataStore, link.Title, link.WikiNamespace)
+                    .GetMissingPageAsync(dataStore, link.Title, link.WikiNamespace, link.Domain)
                     .ConfigureAwait(false);
                 if (existing is null)
                 {
@@ -900,6 +998,7 @@ public class Article : MarkdownItem
                         dataStore,
                         link.Title,
                         link.WikiNamespace,
+                        link.Domain,
                         id)
                         .ConfigureAwait(false);
                 }
@@ -916,11 +1015,22 @@ public class Article : MarkdownItem
         foreach (var transclusion in transclusions)
         {
             var reference = await PageTransclusions
-                .GetPageTransclusionsAsync(dataStore, transclusion.Title, transclusion.WikiNamespace)
+                .GetPageTransclusionsAsync(
+                    dataStore,
+                    transclusion.Title,
+                    transclusion.WikiNamespace,
+                    transclusion.Domain)
                 .ConfigureAwait(false);
             if (reference is null)
             {
-                await PageTransclusions.NewAsync(dataStore, transclusion.Title, transclusion.WikiNamespace, id).ConfigureAwait(false);
+                await PageTransclusions
+                    .NewAsync(
+                        dataStore,
+                        transclusion.Title,
+                        transclusion.WikiNamespace,
+                        transclusion.Domain,
+                        id)
+                    .ConfigureAwait(false);
             }
             else
             {
@@ -933,14 +1043,15 @@ public class Article : MarkdownItem
         IDataStore dataStore,
         string id,
         string title,
-        string wikiNamespace)
+        string wikiNamespace,
+        string? domain)
     {
         var existingPage = await PageReference
-            .GetPageReferenceAsync(dataStore, title, wikiNamespace)
+            .GetPageReferenceAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (existingPage is null)
         {
-            await PageReference.NewAsync(dataStore, id, title, wikiNamespace).ConfigureAwait(false);
+            await PageReference.NewAsync(dataStore, id, title, wikiNamespace, domain).ConfigureAwait(false);
         }
         else if (existingPage.Reference != id)
         {
@@ -948,11 +1059,11 @@ public class Article : MarkdownItem
         }
 
         var existingNormalizedReference = await NormalizedPageReference
-            .GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace)
+            .GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (existingNormalizedReference is null)
         {
-            await NormalizedPageReference.NewAsync(dataStore, id, title, wikiNamespace).ConfigureAwait(false);
+            await NormalizedPageReference.NewAsync(dataStore, id, title, wikiNamespace, domain).ConfigureAwait(false);
         }
         else
         {
@@ -960,7 +1071,7 @@ public class Article : MarkdownItem
         }
 
         var missing = await MissingPage
-            .GetMissingPageAsync(dataStore, title, wikiNamespace)
+            .GetMissingPageAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (missing is not null)
         {
@@ -975,9 +1086,11 @@ public class Article : MarkdownItem
         IDataStore dataStore,
         string title,
         string wikiNamespace,
+        string? domain,
         bool sameTitle,
         string? previousTitle = null,
         string? previousNamespace = null,
+        string? previousDomain = null,
         bool processRedirects = false)
     {
         var idsToUpdate = new HashSet<string>();
@@ -989,7 +1102,7 @@ public class Article : MarkdownItem
             if (!sameTitle)
             {
                 var previousRedirectReference = await PageRedirects
-                    .GetPageRedirectsAsync(dataStore, previousTitle!, previousNamespace!)
+                    .GetPageRedirectsAsync(dataStore, previousTitle!, previousNamespace!, previousDomain)
                     .ConfigureAwait(false);
                 if (previousRedirectReference is not null)
                 {
@@ -1003,7 +1116,7 @@ public class Article : MarkdownItem
             }
 
             var redirectReference = await PageRedirects
-                .GetPageRedirectsAsync(dataStore, title, wikiNamespace)
+                .GetPageRedirectsAsync(dataStore, title, wikiNamespace, domain)
                 .ConfigureAwait(false);
             if (redirectReference is not null)
             {
@@ -1019,7 +1132,11 @@ public class Article : MarkdownItem
         if (!sameTitle)
         {
             var previousPageTransclusions = await PageTransclusions
-                .GetPageTransclusionsAsync(dataStore, previousTitle!, previousNamespace!)
+                .GetPageTransclusionsAsync(
+                    dataStore,
+                    previousTitle!,
+                    previousNamespace!,
+                    previousDomain)
                 .ConfigureAwait(false);
             if (previousPageTransclusions is not null)
             {
@@ -1031,7 +1148,7 @@ public class Article : MarkdownItem
             }
 
             var previousReferences = await PageLinks
-                .GetPageLinksAsync(dataStore, previousTitle!, previousNamespace!)
+                .GetPageLinksAsync(dataStore, previousTitle!, previousNamespace!, previousDomain)
                 .ConfigureAwait(false);
             if (previousReferences is not null)
             {
@@ -1043,7 +1160,7 @@ public class Article : MarkdownItem
         }
 
         var pageTransclusions = await PageTransclusions
-            .GetPageTransclusionsAsync(dataStore, title, wikiNamespace)
+            .GetPageTransclusionsAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (pageTransclusions is not null)
         {
@@ -1055,7 +1172,7 @@ public class Article : MarkdownItem
         }
 
         var references = await PageLinks
-            .GetPageLinksAsync(dataStore, title, wikiNamespace)
+            .GetPageLinksAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (references is not null)
         {
@@ -1072,6 +1189,7 @@ public class Article : MarkdownItem
     }
 
     private static async Task<(
+        string? redirectDomain,
         string? redirectNamespace,
         string? redirectTitle,
         bool isRedirect,
@@ -1088,12 +1206,14 @@ public class Article : MarkdownItem
             return (
                 null,
                 null,
+                null,
                 false,
                 false,
                 false);
         }
 
-        var (redirectNamespace, redirectTitle, _, defaultNamespace) = GetTitleParts(options, markdown[11..markdown.IndexOf("}}")]);
+        var (redirectDomain, redirectNamespace, redirectTitle, _, defaultNamespace)
+            = GetTitleParts(options, markdown[11..markdown.IndexOf("}}")]);
 
         // Redirect to a category or file from an article is not valid.
         if (!defaultNamespace
@@ -1101,6 +1221,7 @@ public class Article : MarkdownItem
             || string.Equals(redirectNamespace, options.FileNamespace, StringComparison.Ordinal)))
         {
             return (
+                redirectDomain,
                 redirectNamespace,
                 redirectTitle,
                 true,
@@ -1112,7 +1233,7 @@ public class Article : MarkdownItem
         var isDoubleRedirect = false;
 
         var redirect = await PageReference
-            .GetPageReferenceAsync(dataStore, redirectTitle, redirectNamespace)
+            .GetPageReferenceAsync(dataStore, redirectTitle, redirectNamespace, redirectDomain)
             .ConfigureAwait(false);
         if (redirect is null)
         {
@@ -1135,11 +1256,16 @@ public class Article : MarkdownItem
                 }
 
                 var existingRedirect = await PageRedirects
-                    .GetPageRedirectsAsync(dataStore, redirectTitle, redirectNamespace)
+                    .GetPageRedirectsAsync(dataStore, redirectTitle, redirectNamespace, redirectDomain)
                     .ConfigureAwait(false);
                 if (existingRedirect is null)
                 {
-                    await PageRedirects.NewAsync(dataStore, redirectTitle!, redirectNamespace!, id).ConfigureAwait(false);
+                    await PageRedirects.NewAsync(
+                        dataStore,
+                        redirectTitle!,
+                        redirectNamespace!,
+                        redirectDomain,
+                        id).ConfigureAwait(false);
                 }
                 else
                 {
@@ -1149,6 +1275,7 @@ public class Article : MarkdownItem
         }
 
         return (
+            redirectDomain,
             redirectNamespace,
             redirectTitle,
             true,
@@ -1164,7 +1291,7 @@ public class Article : MarkdownItem
         foreach (var link in wikiLinks.Where(x => !x.IsCategory))
         {
             var linkReference = await PageLinks
-                .GetPageLinksAsync(dataStore, link.Title, link.WikiNamespace)
+                .GetPageLinksAsync(dataStore, link.Title, link.WikiNamespace, link.Domain)
                 .ConfigureAwait(false);
             if (linkReference is not null)
             {
@@ -1172,7 +1299,7 @@ public class Article : MarkdownItem
             }
 
             var missing = await MissingPage
-                .GetMissingPageAsync(dataStore, link.Title, link.WikiNamespace)
+                .GetMissingPageAsync(dataStore, link.Title, link.WikiNamespace, link.Domain)
                 .ConfigureAwait(false);
             if (missing is not null)
             {
@@ -1185,10 +1312,11 @@ public class Article : MarkdownItem
         IDataStore dataStore,
         string id,
         string title,
-        string wikiNamespace)
+        string wikiNamespace,
+        string? domain)
     {
         var existingReference = await PageReference
-            .GetPageReferenceAsync(dataStore, title, wikiNamespace)
+            .GetPageReferenceAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (existingReference is not null)
         {
@@ -1196,7 +1324,7 @@ public class Article : MarkdownItem
         }
 
         var existingNormalizedReference = await NormalizedPageReference
-            .GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace)
+            .GetNormalizedPageReferenceAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (existingNormalizedReference is not null)
         {
@@ -1204,16 +1332,18 @@ public class Article : MarkdownItem
         }
 
         var linkReference = await PageLinks
-            .GetPageLinksAsync(dataStore, title, wikiNamespace)
+            .GetPageLinksAsync(dataStore, title, wikiNamespace, domain)
             .ConfigureAwait(false);
         if (linkReference?.References.Count > 0)
         {
             var missing = await MissingPage
-                .GetMissingPageAsync(dataStore, title, wikiNamespace)
+                .GetMissingPageAsync(dataStore, title, wikiNamespace, domain)
                 .ConfigureAwait(false);
             if (missing is not null)
             {
-                await MissingPage.NewAsync(dataStore, title, wikiNamespace, linkReference.References).ConfigureAwait(false);
+                await MissingPage
+                    .NewAsync(dataStore, title, wikiNamespace, domain, linkReference.References)
+                    .ConfigureAwait(false);
             }
         }
     }
@@ -1226,7 +1356,11 @@ public class Article : MarkdownItem
         foreach (var transclusion in transclusions)
         {
             var reference = await PageTransclusions
-                .GetPageTransclusionsAsync(dataStore, transclusion.Title, transclusion.WikiNamespace)
+                .GetPageTransclusionsAsync(
+                    dataStore,
+                    transclusion.Title,
+                    transclusion.WikiNamespace,
+                    transclusion.Domain)
                 .ConfigureAwait(false);
             if (reference is not null)
             {
@@ -1241,6 +1375,7 @@ public class Article : MarkdownItem
         string id,
         string editor,
         string? owner,
+        string? domain,
         IEnumerable<string>? allowedEditors,
         IEnumerable<string>? allowedViewers,
         IEnumerable<string>? allowedEditorGroups,
@@ -1248,51 +1383,96 @@ public class Article : MarkdownItem
         IEnumerable<WikiLink> wikiLinks,
         IEnumerable<string>? previousCategories = null)
     {
+        // An article can only be categorized by categories in its own domain, or none
         var currentCategories = wikiLinks
-            .Where(x => x.IsCategory && !x.IsNamespaceEscaped)
-            .Select(x => x.Title)
+            .Where(x => x.IsCategory
+                && !x.IsNamespaceEscaped
+                && (string.IsNullOrEmpty(x.Domain)
+                || string.Equals(x.Domain, domain)))
+            .Select(x => (x.Title, x.Domain))
             .ToList();
 
-        var oldCategories = previousCategories?.ToList() ?? new List<string>();
-
-        var newCategories = new List<string>();
-        foreach (var categoryTitle in currentCategories.Except(oldCategories))
+        var oldCategories = previousCategories?.Select(x =>
         {
-            var category = await Category.GetCategoryAsync(options, dataStore, categoryTitle, false)
+            if (x.StartsWith('{'))
+            {
+                var parts = x.Split(':');
+                if (parts.Length < 2
+                    || !parts[0].EndsWith('}'))
+                {
+                    return (x, null);
+                }
+                return (string.Join(':', parts.Skip(1)), (string?)parts[0][1..^1]);
+            }
+            return (x, null);
+        })?.ToList()
+            ?? new List<(string categoryTitle, string? categoryDomain)>();
+
+        var newCategories = new List<(string categoryTitle, string? categoryDomain)>();
+        var retainedCategories = new List<(string categoryTitle, string? categoryDomain)>();
+        foreach (var (categoryTitle, categoryDomain) in currentCategories)
+        {
+            if (oldCategories.Any(x => string.Equals(x.Item1, categoryTitle, StringComparison.Ordinal)
+                && string.Equals(x.Item2, categoryDomain, StringComparison.Ordinal)))
+            {
+                retainedCategories.Add((categoryTitle, categoryDomain));
+            }
+            else
+            {
+                newCategories.Add((categoryTitle, categoryDomain));
+            }
+        }
+        foreach (var (categoryTitle, categoryDomain) in newCategories)
+        {
+            var category = await Category.GetCategoryAsync(
+                options,
+                dataStore,
+                categoryTitle,
+                categoryDomain,
+                false)
                 ?? await Category.NewAsync(
                     options,
                     dataStore,
                     categoryTitle,
                     editor,
                     null,
+                    categoryDomain,
                     owner,
                     allowedEditors,
                     allowedViewers,
                     allowedEditorGroups,
-                    allowedViewerGroups).ConfigureAwait(false);
+                    allowedViewerGroups)
+                .ConfigureAwait(false);
             if (!category.ChildIds.Contains(id))
             {
-                await category.AddArticleAsync(dataStore, id).ConfigureAwait(false);
-                newCategories.Add(category.Title);
+                await category.AddArticleAsync(dataStore, id)
+                    .ConfigureAwait(false);
             }
         }
 
-        var retainedCategories = oldCategories
-            .Intersect(currentCategories)
-            .ToList();
-        foreach (var removedCategory in oldCategories.Except(currentCategories))
+        foreach (var (categoryTitle, categoryDomain) in oldCategories)
         {
-            var category = await Category.GetCategoryAsync(options, dataStore, removedCategory, false);
-            if (category is not null)
+            if (!retainedCategories.Any(x => string.Equals(x.categoryTitle, categoryTitle, StringComparison.Ordinal)
+                && string.Equals(x.categoryDomain, categoryDomain, StringComparison.Ordinal)))
             {
-                await category.RemoveChildIdAsync(dataStore, id).ConfigureAwait(false);
-                retainedCategories.Remove(category.Title);
+                var category = await Category.GetCategoryAsync(
+                    options,
+                    dataStore,
+                    categoryTitle,
+                    categoryDomain,
+                    false);
+                if (category is not null)
+                {
+                    await category.RemoveChildIdAsync(dataStore, id).ConfigureAwait(false);
+                }
             }
         }
 
         retainedCategories.AddRange(newCategories);
-
-        return retainedCategories;
+        return retainedCategories.Select(x => string.IsNullOrEmpty(x.categoryDomain)
+            ? x.categoryTitle
+            : $$"""{{{x.categoryDomain}}}:{{x.categoryTitle}}""")
+            .ToList();
     }
 
     private protected static async Task UpdateReferencesAsync(
@@ -1300,10 +1480,12 @@ public class Article : MarkdownItem
         IDataStore dataStore,
         string title,
         string wikiNamespace,
+        string? domain,
         bool deleted,
         bool sameTitle,
         string? previousTitle = null,
         string? previousNamespace = null,
+        string? previousDomain = null,
         bool processRedirects = false,
         bool isRedirect = false)
     {
@@ -1316,9 +1498,11 @@ public class Article : MarkdownItem
                 dataStore,
                 title,
                 wikiNamespace,
+                domain,
                 sameTitle,
                 previousTitle,
                 previousNamespace,
+                previousDomain,
                 processRedirects)
             .ConfigureAwait(false);
 
@@ -1352,7 +1536,12 @@ public class Article : MarkdownItem
                 }
                 else
                 {
-                    await referringArticle.UpdateWithLinksAsync(options, dataStore, referringArticle.Title, referringArticle.WikiNamespace);
+                    await referringArticle.UpdateWithLinksAsync(
+                        options,
+                        dataStore,
+                        referringArticle.Title,
+                        referringArticle.WikiNamespace,
+                        referringArticle.Domain);
                 }
                 await dataStore.StoreItemAsync(referringArticle).ConfigureAwait(false);
 
@@ -1370,7 +1559,9 @@ public class Article : MarkdownItem
                         dataStore,
                         referringArticle.Title,
                         referringArticle.WikiNamespace,
+                        referringArticle.Domain,
                         true,
+                        null,
                         null,
                         null,
                         referringArticle.IdItemTypeName is not Category.CategoryIdItemTypeName
@@ -1454,7 +1645,11 @@ public class Article : MarkdownItem
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
-            GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
+            GetFullTitle(
+                options,
+                revisions[revisions.Count - 1].Title,
+                revisions[revisions.Count - 1].WikiNamespace,
+                revisions[revisions.Count - 1].Domain),
             Revision.GetDiff(revisions, format)));
     }
 
@@ -1493,7 +1688,11 @@ public class Article : MarkdownItem
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
-            GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
+            GetFullTitle(
+                options,
+                revisions[revisions.Count - 1].Title,
+                revisions[revisions.Count - 1].WikiNamespace,
+                revisions[revisions.Count - 1].Domain),
             Revision.GetDiff(revisions, "html")));
     }
 
@@ -1581,7 +1780,11 @@ public class Article : MarkdownItem
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
-            GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
+            GetFullTitle(
+                options,
+                revisions[revisions.Count - 1].Title,
+                revisions[revisions.Count - 1].WikiNamespace,
+                revisions[revisions.Count - 1].Domain),
             diff));
     }
 
@@ -1692,7 +1895,11 @@ public class Article : MarkdownItem
             options,
             dataStore,
             secondRevisions[secondRevisions.Count - 1].Title,
-            GetFullTitle(options, secondRevisions[secondRevisions.Count - 1].Title, secondRevisions[secondRevisions.Count - 1].WikiNamespace),
+            GetFullTitle(
+                options,
+                secondRevisions[secondRevisions.Count - 1].Title,
+                secondRevisions[secondRevisions.Count - 1].WikiNamespace,
+                secondRevisions[secondRevisions.Count - 1].Domain),
             diff));
     }
 
@@ -1719,7 +1926,11 @@ public class Article : MarkdownItem
             options,
             dataStore,
             revisions[revisions.Count - 1].Title,
-            GetFullTitle(options, revisions[revisions.Count - 1].Title, revisions[revisions.Count - 1].WikiNamespace),
+            GetFullTitle(
+                options,
+                revisions[revisions.Count - 1].Title,
+                revisions[revisions.Count - 1].WikiNamespace,
+                revisions[revisions.Count - 1].Domain),
             Revision.GetText(revisions)));
     }
 
@@ -1815,6 +2026,17 @@ public class Article : MarkdownItem
     /// If left <see langword="null"/> the existing namespace will be retained.
     /// </para>
     /// </param>
+    /// <param name="domain">
+    /// <para>
+    /// The optional new domain to which this article belongs.
+    /// </para>
+    /// <para>
+    /// If left <see langword="null"/> the existing domain will be retained (if any).
+    /// </para>
+    /// <para>
+    /// To clear the domain, set this to an empty string instead, which will assign <see langword="null"/>.
+    /// </para>
+    /// </param>
     /// <param name="isDeleted">Indicates that this article has been marked as deleted.</param>
     /// <param name="owner">
     /// <para>
@@ -1884,6 +2106,7 @@ public class Article : MarkdownItem
         string? markdown = null,
         string? revisionComment = null,
         string? wikiNamespace = null,
+        string? domain = null,
         bool isDeleted = false,
         string? owner = null,
         IEnumerable<string>? allowedEditors = null,
@@ -1892,19 +2115,32 @@ public class Article : MarkdownItem
         IEnumerable<string>? allowedViewerGroups = null)
     {
         title ??= title?.ToWikiTitleCase() ?? Title;
-        if (string.IsNullOrWhiteSpace(wikiNamespace))
-        {
-            wikiNamespace = WikiNamespace;
-        }
+        var previousTitle = Title;
+        Title = title;
+
         wikiNamespace ??= wikiNamespace?.ToWikiTitleCase() ?? WikiNamespace;
         var isScript = wikiNamespace.Equals(options.ScriptNamespace, StringComparison.Ordinal);
-
-        var previousTitle = Title;
         var previousNamespace = WikiNamespace;
-        Title = title;
         WikiNamespace = wikiNamespace;
+
+        if (domain is null)
+        {
+            domain = Domain;
+        }
+        else if (string.IsNullOrWhiteSpace(domain))
+        {
+            domain = null;
+        }
+        else
+        {
+            domain = domain.Trim();
+        }
+        var previousDomain = Domain;
+        Domain = domain;
+
         var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal)
-            && string.Equals(previousNamespace, wikiNamespace, StringComparison.Ordinal);
+            && string.Equals(previousNamespace, wikiNamespace, StringComparison.Ordinal)
+            && string.Equals(previousDomain, domain, StringComparison.Ordinal);
 
         var previousMarkdown = MarkdownContent;
         var wasDeleted = IsDeleted || string.IsNullOrWhiteSpace(previousMarkdown);
@@ -1923,13 +2159,16 @@ public class Article : MarkdownItem
                 Categories = new List<string>().AsReadOnly();
                 RedirectTitle = null;
                 RedirectNamespace = null;
+                RedirectDomain = null;
 
                 if (Transclusions is not null)
                 {
-                    await RemovePageTransclusionsAsync(dataStore, Id, Transclusions).ConfigureAwait(false);
+                    await RemovePageTransclusionsAsync(dataStore, Id, Transclusions)
+                        .ConfigureAwait(false);
                 }
 
-                await RemovePageLinksAsync(dataStore, Id, WikiLinks).ConfigureAwait(false);
+                await RemovePageLinksAsync(dataStore, Id, WikiLinks)
+                    .ConfigureAwait(false);
 
                 Transclusions = null;
                 WikiLinks = new List<WikiLink>().AsReadOnly();
@@ -1942,11 +2181,18 @@ public class Article : MarkdownItem
 
         if (!sameTitle && !IsDeleted)
         {
-            await CreatePageReferenceAsync(dataStore, Id, title, wikiNamespace).ConfigureAwait(false);
+            await CreatePageReferenceAsync(dataStore, Id, title, wikiNamespace, domain)
+                .ConfigureAwait(false);
         }
         if (!sameTitle)
         {
-            await RemovePageReferenceAsync(dataStore, Id, previousTitle, previousNamespace).ConfigureAwait(false);
+            await RemovePageReferenceAsync(
+                dataStore,
+                Id,
+                previousTitle,
+                previousNamespace,
+                previousDomain)
+                .ConfigureAwait(false);
         }
 
         var changed = wasDeleted != IsDeleted
@@ -1956,9 +2202,11 @@ public class Article : MarkdownItem
         {
             MarkdownContent = markdown!;
 
+            string? redirectDomain;
             string? redirectNamespace;
             string? redirectTitle;
             (
+                redirectDomain,
                 redirectNamespace,
                 redirectTitle,
                 isRedirect,
@@ -1968,6 +2216,7 @@ public class Article : MarkdownItem
             {
                 RedirectTitle = redirectTitle;
                 RedirectNamespace = redirectNamespace;
+                RedirectDomain = redirectDomain;
             }
 
             var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
@@ -1983,7 +2232,7 @@ public class Article : MarkdownItem
                     options,
                     dataStore,
                     title,
-                    GetFullTitle(options, title, wikiNamespace),
+                    GetFullTitle(options, title, wikiNamespace, domain),
                     markdown!);
             }
             Transclusions = transclusions.Count == 0
@@ -1997,7 +2246,7 @@ public class Article : MarkdownItem
             var previousWikiLinks = WikiLinks.ToList();
             WikiLinks = isRedirect || isScript
                 ? new List<WikiLink>()
-                : GetWikiLinks(options, dataStore, md, title, wikiNamespace).AsReadOnly();
+                : GetWikiLinks(options, dataStore, md, title, wikiNamespace, domain).AsReadOnly();
             await RemovePageLinksAsync(dataStore, Id, previousWikiLinks.Except(WikiLinks))
                 .ConfigureAwait(false);
             await AddPageLinksAsync(dataStore, Id, WikiLinks.Except(previousWikiLinks))
@@ -2012,6 +2261,7 @@ public class Article : MarkdownItem
                 Id,
                 editor,
                 owner,
+                domain,
                 allowedEditors,
                 allowedViewers,
                 allowedEditorGroups,
@@ -2044,6 +2294,7 @@ public class Article : MarkdownItem
             editor,
             title,
             wikiNamespace,
+            domain,
             previousMarkdown,
             MarkdownContent,
             revisionComment);
@@ -2058,10 +2309,12 @@ public class Article : MarkdownItem
             dataStore,
             title,
             wikiNamespace,
+            domain,
             IsDeleted,
             sameTitle,
             previousTitle,
             previousNamespace,
+            previousDomain,
             true,
             isRedirect)
             .ConfigureAwait(false);
@@ -2104,6 +2357,7 @@ public class Article : MarkdownItem
         IDataStore dataStore,
         string title,
         string wikiNamespace,
+        string? domain,
         string? markdown,
         bool isPreview = false)
     {
@@ -2116,7 +2370,7 @@ public class Article : MarkdownItem
             options,
             dataStore,
             title,
-            GetFullTitle(options, title, wikiNamespace),
+            GetFullTitle(options, title, wikiNamespace, domain),
             markdown,
             isPreview: isPreview);
     }
@@ -2149,6 +2403,7 @@ public class Article : MarkdownItem
             dataStore,
             Title,
             WikiNamespace,
+            Domain,
             markdown,
             isPreview);
 }

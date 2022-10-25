@@ -5,6 +5,13 @@ using Tavenem.Wiki.MarkdownExtensions;
 namespace Tavenem.Wiki;
 
 /// <summary>
+/// The delegate signature used by <see cref="WikiOptions.GetDomainPermission"/>.
+/// </summary>
+/// <param name="domain">The domain.</param>
+/// <param name="userId">The ID of a user.</param>
+public delegate ValueTask<WikiPermission> GetDomainPermissionFunc(string userId, string domain);
+
+/// <summary>
 /// The delegate signature used by <see cref="WikiOptions.OnCreated"/>.
 /// </summary>
 /// <param name="article">The new article.</param>
@@ -220,6 +227,31 @@ public class WikiOptions
             ? FileNamespaceDefault
             : value;
     }
+
+    /// <summary>
+    /// When a user attempts to interact with an article in a domain (including viewing, creating,
+    /// editing, or deleting items), this function is invoked (if provided) to determine the
+    /// permissions the user has for that domain.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The <see cref="WikiUser.AllowedViewDomains"/> property for the given user will also be
+    /// checked, and will provide <see cref="WikiPermission.Read"/> permission, if a matching domain
+    /// name is found.
+    /// </para>
+    /// <para>
+    /// The user's effective permission is determined by the combination of this function, <see
+    /// cref="WikiUser.AllowedViewDomains"/>, and <see cref="WikiGroup.AllowedViewDomains"/>, as
+    /// well as any access controls on the specific article, which override the general permissions
+    /// for the domain, if present.
+    /// </para>
+    /// <para>
+    /// Note that the default when no permission is specified is to be denied access (unlike the
+    /// default for non-domain articles, which is to grant full access even to anonymous users).
+    /// </para>
+    /// Also see <seealso cref="UserDomains"/>.
+    /// </remarks>
+    public GetDomainPermissionFunc? GetDomainPermission { get; set; }
 
     private const string GroupNamespaceDefault = "Group";
     private string _groupNamespace = GroupNamespaceDefault;
@@ -482,6 +514,25 @@ public class WikiOptions
             ? UserNamespaceDefault
             : value;
     }
+
+    /// <summary>
+    /// If set to <see langword="true"/> each user (and only that user) is automatically granted
+    /// full permission in a domain with the same name as their user ID.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The <see cref="GetDomainPermission"/> function, the <see
+    /// cref="WikiUser.AllowedViewDomains"/> property, and the <see
+    /// cref="WikiGroup.AllowedViewDomains"/> property will still be checked for other users
+    /// attempting to access content in such domains, but the user with the matching ID will always
+    /// be granted all permissions automatically.
+    /// </para>
+    /// <para>
+    /// A possible use for user domains is as a "scratch-pad" area where articles can be drafted and
+    /// tested prior to publication.
+    /// </para>
+    /// </remarks>
+    public bool UserDomains { get; set; }
 
     private const string WikiLinkPrefixDefault = "Wiki";
     private string _wikiLinkPrefix = WikiLinkPrefixDefault;

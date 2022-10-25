@@ -43,7 +43,7 @@ public class NormalizedPageReference : IdItem
     /// </param>
     /// <remarks>
     /// Note: this constructor is most useful for deserializers. The static <see
-    /// cref="NewAsync(IDataStore, string, string, string)"/> method is expected to be used
+    /// cref="NewAsync(IDataStore, string, string, string, string?)"/> method is expected to be used
     /// otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns the ID
     /// dynamically.
     /// </remarks>
@@ -57,12 +57,15 @@ public class NormalizedPageReference : IdItem
     /// </summary>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// The ID which should be used for a <see cref="NormalizedPageReference"/> given the
     /// parameters.
     /// </returns>
-    public static string GetId(string title, string wikiNamespace)
-        => $"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference";
+    public static string GetId(string title, string wikiNamespace, string? domain)
+        => string.IsNullOrEmpty(domain)
+        ? $"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference"
+        : $$"""{{{domain}}}:{{wikiNamespace.ToLowerInvariant()}}:{{title.ToLowerInvariant()}}:normalizedreference""";
 
     /// <summary>
     /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
@@ -70,12 +73,17 @@ public class NormalizedPageReference : IdItem
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="wikiNamespace">The namespace of the wiki page.</param>
+    /// <param name="domain">The domain of the wiki page (if any).</param>
     /// <returns>
     /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
     /// langword="null"/>, if there is no such item.
     /// </returns>
-    public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(IDataStore dataStore, string title, string wikiNamespace)
-        => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace));
+    public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(
+        IDataStore dataStore,
+        string title,
+        string wikiNamespace,
+        string? domain)
+        => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace, domain));
 
     /// <summary>
     /// Get a new instance of <see cref="NormalizedPageReference"/>.
@@ -91,10 +99,18 @@ public class NormalizedPageReference : IdItem
     /// <param name="wikiNamespace">
     /// The namespace of the wiki page which is currently assigned to the referenced full title.
     /// </param>
-    public static async Task<NormalizedPageReference> NewAsync(IDataStore dataStore, string id, string title, string wikiNamespace)
+    /// <param name="domain">
+    /// The domain of the wiki page which is currently assigned to the referenced full title (if any).
+    /// </param>
+    public static async Task<NormalizedPageReference> NewAsync(
+        IDataStore dataStore,
+        string id,
+        string title,
+        string wikiNamespace,
+        string? domain)
     {
         var result = new NormalizedPageReference(
-            GetId(title, wikiNamespace),
+            GetId(title, wikiNamespace, domain),
             new List<string> { id }.AsReadOnly());
         await dataStore.StoreItemAsync(result).ConfigureAwait(false);
         return result;

@@ -8,6 +8,11 @@ namespace Tavenem.Wiki;
 public class Transclusion : IEquatable<Transclusion>
 {
     /// <summary>
+    /// The domain for the linked article.
+    /// </summary>
+    public string? Domain { get; }
+
+    /// <summary>
     /// The title for the linked article.
     /// </summary>
     public string Title { get; }
@@ -22,11 +27,13 @@ public class Transclusion : IEquatable<Transclusion>
     /// </summary>
     /// <param name="title">The title for the linked article.</param>
     /// <param name="wikiNamespace">The namespace for the linked article.</param>
+    /// <param name="domain">The domain for the linked article.</param>
     [JsonConstructor]
-    public Transclusion(string title, string wikiNamespace)
+    public Transclusion(string title, string wikiNamespace, string? domain)
     {
         Title = title;
         WikiNamespace = wikiNamespace;
+        Domain = domain;
     }
 
     /// <summary>
@@ -38,8 +45,9 @@ public class Transclusion : IEquatable<Transclusion>
     /// parameter; otherwise, <see langword="false" />.
     /// </returns>
     public bool Equals(Transclusion? other) => other is not null
-        && Title == other.Title
-        && WikiNamespace == other.WikiNamespace;
+        && string.Equals(Title, other.Title, StringComparison.Ordinal)
+        && string.Equals(WikiNamespace, other.WikiNamespace, StringComparison.Ordinal)
+        && string.Equals(Domain, other.Domain, StringComparison.Ordinal);
 
     /// <summary>
     /// Determines whether the specified object is equal to the current object.
@@ -53,7 +61,7 @@ public class Transclusion : IEquatable<Transclusion>
 
     /// <summary>Serves as the default hash function.</summary>
     /// <returns>A hash code for the current object.</returns>
-    public override int GetHashCode() => HashCode.Combine(Title, WikiNamespace);
+    public override int GetHashCode() => HashCode.Combine(Title, WikiNamespace, Domain);
 
     /// <summary>
     /// Determines whether this transclusion corresponds to the given article.
@@ -62,13 +70,26 @@ public class Transclusion : IEquatable<Transclusion>
     /// <returns><see langword="true"/> if this transclusion corresponds to the given article;
     /// otherwise <see langword="false"/>.</returns>
     public bool IsMatch(Article item) => string.CompareOrdinal(item.Title, Title) == 0
-        && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0;
+        && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0
+        && string.CompareOrdinal(item.Domain, Domain) == 0;
 
     /// <summary>Returns a string that represents the current object.</summary>
     /// <returns>A string that represents the current object.</returns>
-    public override string ToString() => string.IsNullOrEmpty(WikiNamespace)
-        ? Title
-        : $"{WikiNamespace}:{Title}";
+    public override string ToString()
+    {
+        if (string.IsNullOrEmpty(Domain))
+        {
+            return string.IsNullOrEmpty(WikiNamespace)
+                ? Title
+                : $"{WikiNamespace}:{Title}";
+        }
+        else
+        {
+            return string.IsNullOrEmpty(WikiNamespace)
+                ? $$"""{{{Domain}}}:{{Title}}"""
+                : $$"""{{{Domain}}}:{{WikiNamespace}}:{{Title}}""";
+        }
+    }
 
     /// <summary>
     /// Determines equality.

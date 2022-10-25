@@ -20,11 +20,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             0,
             "Test Namespace",
+            null,
             false,
             "TEST_OWNER_ID",
+            null,
             null,
             null,
             null,
@@ -53,11 +55,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             0,
             "Test Namespace",
+            null,
             false,
             "TEST_OWNER_ID",
+            null,
             null,
             null,
             null,
@@ -87,10 +91,11 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             new List<string> { "TEST_CHILD_ID" },
             0,
             _Options.CategoryNamespace,
+            null,
             false,
             "TEST_OWNER_ID",
             null,
@@ -117,10 +122,11 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             new List<string> { "TEST_CHILD_ID" },
             0,
             _Options.CategoryNamespace,
+            null,
             false,
             "TEST_OWNER_ID",
             null,
@@ -146,7 +152,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }));
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }));
 
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -172,7 +178,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }));
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }));
 
         var json = JsonSerializer.Serialize(
             value,
@@ -211,7 +217,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             "TEST_TOPIC_ID",
             "TEST_SENDER_ID",
             false,
@@ -235,7 +241,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             "TEST_TOPIC_ID",
             "TEST_SENDER_ID",
             false,
@@ -256,9 +262,10 @@ public class SerializationTests
     public void MissingPageTest()
     {
         var value = new MissingPage(
-            MissingPage.GetId("Test Title", "Test Namespace"),
+            MissingPage.GetId("Test Title", "Test Namespace", null),
             "Test Title",
             "Test Namespace",
+            null,
             new List<string> { "Test_ID_2" }.AsReadOnly());
 
         var json = JsonSerializer.Serialize(value);
@@ -273,9 +280,10 @@ public class SerializationTests
     public void MissingPageTest_Context()
     {
         var value = new MissingPage(
-            MissingPage.GetId("Test Title", "Test Namespace"),
+            MissingPage.GetId("Test Title", "Test Namespace", null),
             "Test Title",
             "Test Namespace",
+            null,
             new List<string> { "Test_ID_2" }.AsReadOnly());
 
         var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.MissingPage);
@@ -298,11 +306,13 @@ public class SerializationTests
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
                 0,
                 "Test Namespace",
+                null,
                 false,
                 "TEST_OWNER_ID",
+                null,
                 null,
                 null,
                 null,
@@ -319,10 +329,11 @@ public class SerializationTests
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
                 new List<string> { "TEST_CHILD_ID" },
                 0,
                 _Options.CategoryNamespace,
+                null,
                 false,
                 "TEST_OWNER_ID",
                 null,
@@ -341,9 +352,10 @@ public class SerializationTests
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
                 0,
                 _Options.FileNamespace,
+                null,
                 false,
                 "TEST_OWNER_ID",
                 null,
@@ -374,11 +386,13 @@ public class SerializationTests
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
                 0,
                 "Test Namespace",
+                null,
                 false,
                 "TEST_OWNER_ID",
+                null,
                 null,
                 null,
                 null,
@@ -395,10 +409,11 @@ public class SerializationTests
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
                 new List<string> { "TEST_CHILD_ID" },
                 0,
                 _Options.CategoryNamespace,
+                null,
                 false,
                 "TEST_OWNER_ID",
                 null,
@@ -417,9 +432,10 @@ public class SerializationTests
                 "Test markdown",
                 "Test markdown",
                 "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
                 0,
                 _Options.FileNamespace,
+                null,
                 false,
                 "TEST_OWNER_ID",
                 null,
@@ -442,7 +458,7 @@ public class SerializationTests
     [TestMethod]
     public void TransclusionTest()
     {
-        var value = new Transclusion("Test Title", "Test Namespace");
+        var value = new Transclusion("Test Title", "Test Namespace", null);
 
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -455,7 +471,7 @@ public class SerializationTests
     [TestMethod]
     public void TransclusionTest_Context()
     {
-        var value = new Transclusion("Test Title", "Test Namespace");
+        var value = new Transclusion("Test Title", "Test Namespace", null);
 
         var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Transclusion);
         Console.WriteLine();
@@ -479,9 +495,10 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             0,
             _Options.FileNamespace,
+            null,
             false,
             "TEST_OWNER_ID",
             null,
@@ -512,9 +529,10 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             0,
             _Options.FileNamespace,
+            null,
             false,
             "TEST_OWNER_ID",
             null,
@@ -536,7 +554,7 @@ public class SerializationTests
     [TestMethod]
     public void WikiLinkTest()
     {
-        var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace");
+        var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null);
 
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -545,7 +563,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
 
-        value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace");
+        value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace", null);
 
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -554,7 +572,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
 
-        value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace);
+        value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace, null);
 
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -563,7 +581,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
 
-        value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace);
+        value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace, null);
 
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -572,7 +590,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
 
-        value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace");
+        value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace", null);
 
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -591,11 +609,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace") }),
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
             0,
             "Test Namespace",
+            null,
             false,
             "TEST_OWNER_ID",
+            null,
             null,
             null,
             null,
@@ -620,7 +640,7 @@ public class SerializationTests
     [TestMethod]
     public void WikiLinkTest_Context()
     {
-        var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace");
+        var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null);
 
         var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
@@ -630,7 +650,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace");
+        value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace", null);
 
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
@@ -640,7 +660,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace);
+        value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace, null);
 
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
@@ -650,7 +670,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace);
+        value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace, null);
 
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
@@ -660,7 +680,7 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace");
+        value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace", null);
 
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
@@ -680,6 +700,7 @@ public class SerializationTests
             "Test Editor",
             "Test Title",
             "Test Namespace",
+            null,
             "Test Revision",
             false,
             true,
@@ -703,6 +724,7 @@ public class SerializationTests
             "Test Editor",
             "Test Title",
             "Test Namespace",
+            null,
             "Test Revision",
             false,
             true,

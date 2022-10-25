@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.0-preview
+### Changed
+- Added domains
+
 ## 0.11.1-preview
 ### Changed
 - Sort category content in query result

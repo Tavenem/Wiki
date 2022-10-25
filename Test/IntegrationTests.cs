@@ -62,6 +62,7 @@ See the [[System:Help|]] page for usage information.
 
 [[{options.CategoryNamespace}:System pages]]",
         "System",
+        null,
         adminId,
         new[] { adminId });
 
@@ -76,6 +77,7 @@ See the [[System:About|]] page for more information.
 
 [[{options.CategoryNamespace}:System pages]]",
         options.DefaultNamespace,
+        null,
         adminId,
         new[] { adminId });
 
@@ -88,6 +90,7 @@ See the [[System:About|]] page for more information.
 
 {{{{ifnottemplate|[[{options.CategoryNamespace}:System pages]]}}}}",
         options.TransclusionNamespace,
+        null,
         adminId,
         new[] { adminId });
 
