@@ -39,11 +39,27 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 - `ContactPageTitle`*: The title of the main contact page. Default is "Contact".
 - `ContentsPageTitle`*: The title of the main contents page. Default is "Contents".
 - `CopyrightPageTitle`*: The title of the main copyright page. Default is "Copyright".
+- `DefaultAnonymousPermission`: The default permission granted to an anonymous user for wiki content with no configured access control.
+
+  This defaults to `Read`, which allows anonymous users to view any content for which no specific
+  access has been configured. It can be set to `None` to disable anonymous browsing, and require all
+  users to sign in prior to viewing any content.
+
+  Note that anonymous users cannot make any changes regardless of this setting. A specific editor is
+  required for all content creation and revision.
 - `DefaultNamespace`: The name of the default namespace. Default is "Wiki".
+- `DefaultRegisteredPermission`: The default permission granted to a registered user for wiki content with no configured access control.
+
+  This defaults to `All`, which allows registered users full access when no specific access controls
+  take precedence.
 - `DefaultTableOfContentsDepth`: The default number of levels of nesting shown in an article's table
   of contents. Can be overridden by specifying the level for a given article. Default is 3.
 - `DefaultTableOfContentsTitle`: The default title of tables of contents. Default is "Contents".
 - `FileNamespace`: The name of the file namespace. Default is "File".
+- `GetDomainPermission`: When a user attempts to interact with an article in a domain (including viewing, creating, editing, or deleting items), this function is invoked (if provided) to determine the permissions the user has for that domain.
+
+  Receives the user's ID and the name of the domain as parameters, and should return a
+  `WikiPermission` enum value.
 - `GroupNamespace`: The name of the user group namespace. Default is "Group".
 - `HelpPageTitle`*: The title of the main help page. Default is "Help".
 - `LinkTemplate`: A string added to all wiki links, if non-empty. The string '\{LINK\}', if included,

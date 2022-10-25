@@ -3544,10 +3544,14 @@ public static class WikiExtensions
             }
         }
 
+        var defaultPermission = WikiPermission.None;
         var isDomain = !string.IsNullOrEmpty(domain);
-        var defaultPermission = isDomain
-            ? WikiPermission.None
-            : WikiPermission.All;
+        if (!isDomain)
+        {
+            defaultPermission = user is null
+                ? options.DefaultAnonymousPermission
+                : options.DefaultRegisteredPermission;
+        }
 
         if (isDomain
             && user is not null

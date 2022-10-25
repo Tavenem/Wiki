@@ -7,8 +7,8 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// The delegate signature used by <see cref="WikiOptions.GetDomainPermission"/>.
 /// </summary>
-/// <param name="domain">The domain.</param>
 /// <param name="userId">The ID of a user.</param>
+/// <param name="domain">The domain.</param>
 public delegate ValueTask<WikiPermission> GetDomainPermissionFunc(string userId, string domain);
 
 /// <summary>
@@ -169,6 +169,28 @@ public class WikiOptions
     /// </remarks>
     public IList<string>? CustomReservedNamespaces { get; set; }
 
+    /// <summary>
+    /// The default permission granted to an anonymous user for wiki content with no configured
+    /// access control.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This defaults to <see cref="WikiPermission.Read"/>, which allows anonymous users to view any
+    /// content for which no specific access has been configured. It can be set to <see
+    /// cref="WikiPermission.None"/> to disable anonymous browsing, and require all users to sign in
+    /// prior to viewing any content.
+    /// </para>
+    /// <para>
+    /// Note that anonymous users cannot make any changes regardless of this setting. A specific
+    /// editor is required for all content creation and revision.
+    /// </para>
+    /// <para>
+    /// Note also that content in a domain always uses a default permission of <see
+    /// cref="WikiPermission.None"/>.
+    /// </para>
+    /// </remarks>
+    public WikiPermission DefaultAnonymousPermission { get; set; } = WikiPermission.Read;
+
     private const string DefaultNamespaceDefault = "Wiki";
     private string _defaultNamespace = DefaultNamespaceDefault;
     /// <summary>
@@ -185,6 +207,22 @@ public class WikiOptions
             ? DefaultNamespaceDefault
             : value;
     }
+
+    /// <summary>
+    /// The default permission granted to a registered user for wiki content with no configured
+    /// access control.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This defaults to <see cref="WikiPermission.All"/>, which allows registered users full access
+    /// when no specific access controls take precedence.
+    /// </para>
+    /// <para>
+    /// Note that content in a domain always uses a default permission of <see
+    /// cref="WikiPermission.None"/>.
+    /// </para>
+    /// </remarks>
+    public WikiPermission DefaultRegisteredPermission { get; set; } = WikiPermission.All;
 
     /// <summary>
     /// The default number of levels of nesting shown in an article's table of contents.

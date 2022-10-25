@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1-preview
+### Changed
+- Configurable default permissions
+
 ## 0.12.0-preview
 ### Changed
 - Added domains
