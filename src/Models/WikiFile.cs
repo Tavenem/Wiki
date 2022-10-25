@@ -831,13 +831,13 @@ public sealed class WikiFile : Article
     }
 
     /// <summary>
-    /// Gets a string which shows the given file <paramref name="size"/> in bytes if &lt; 1KiB,
-    /// in KiB if &lt; 1GiB, or in GiB otherwise.
+    /// Gets a string which shows the given file <paramref name="size"/> in bytes if &lt; 1KiB, in
+    /// KiB if &lt; 1MiB, in MiB if &lt; 1GiB, or in GiB otherwise.
     /// </summary>
     /// <param name="size">A file size, in bytes.</param>
     /// <returns>
-    /// A string which shows the given file <paramref name="size"/> in bytes if &lt; 1KiB, in KiB
-    /// if &lt; 1GiB, or in GiB otherwise.
+    /// A string which shows the given file <paramref name="size"/> in bytes if &lt; 1KiB, in KiB if
+    /// &lt; 1MiB, in MiB if &lt; 1GiB, or in GiB otherwise.
     /// </returns>
     public static string GetFileSizeString(int size)
     {
@@ -847,11 +847,15 @@ public sealed class WikiFile : Article
         }
         else if (size < 1024 * 1024)
         {
-            return $"{size / 1024.0:N0} KB";
+            return $"{size / 1024.0:N0} KiB";
+        }
+        else if (size < 1024 * 1024 * 1024)
+        {
+            return $"{size / (1024 * 1024.0):N0} MiB";
         }
         else
         {
-            return $"{size / (1024 * 1024.0):N0} GB";
+            return $"{size / (1024 * 1024 * 1024.0):N0} GiB";
         }
     }
 }

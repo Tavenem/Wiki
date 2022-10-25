@@ -362,14 +362,14 @@ public class WikiOptions
     public int MaxFileSize { get; set; } = 5000000; // 5 MB
 
     /// <summary>
-    /// Gets a string representing the <see cref="MaxFileSize"/> in a reasonable unit (GB for
+    /// Gets a string representing the <see cref="MaxFileSize"/> in a reasonable unit (GiB for
     /// large sizes, down to bytes for small ones).
     /// </summary>
     public string MaxFileSizeString => MaxFileSize switch
     {
-        >= 1000000000 => $"{MaxFileSize / 1000000000.0:N3} GB",
-        >= 1000000 => $"{MaxFileSize / 1000000.0:N3} MB",
-        >= 1000 => $"{MaxFileSize / 1000.0:G} KB",
+        >= 1024 * 1024 * 1024 => $"{MaxFileSize / (1024 * 1024 * 1024.0):N3} GiB",
+        >= 1024 * 1024 => $"{MaxFileSize / 1024 * 1024.0:N3} MiB",
+        >= 1024 => $"{MaxFileSize / 1024.0:G} KiB",
         _ => $"{MaxFileSize} bytes"
     };
 
