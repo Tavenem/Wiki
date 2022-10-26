@@ -34,13 +34,12 @@ public interface IWikiUserManager
     ValueTask<IWikiUser?> FindByNameAsync(string? userName);
 
     /// <summary>
-    /// Returns the user corresponding to the IdentityOptions.ClaimsIdentity.UserIdClaimType
-    /// claim in the <paramref name="principal"/> or <see langword="null"/>.
+    /// Returns the user corresponding to the given <see cref="ClaimsPrincipal"/>.
     /// </summary>
-    /// <param name="principal">The principal which contains the user id claim.</param>
+    /// <param name="principal">A <see cref="ClaimsPrincipal"/>.</param>
     /// <returns>
-    /// The user corresponding to the IdentityOptions.ClaimsIdentity.UserIdClaimType claim in
-    /// the <paramref name="principal"/> or <see langword="null"/>
+    /// The user corresponding to given <see cref="ClaimsPrincipal"/>; or <see langword="null"/> if
+    /// there is no such user.
     /// </returns>
     ValueTask<IWikiUser?> GetUserAsync(ClaimsPrincipal? principal);
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.2-preview
+### Added
+- Default WikiUserManager and WikiGroupManager implementations
+
 ## 0.12.1-preview
 ### Changed
 - Configurable default permissions
