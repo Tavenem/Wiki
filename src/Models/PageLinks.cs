@@ -68,7 +68,7 @@ public class PageLinks : IdItem
     public static string GetId(string title, string wikiNamespace, string? domain)
         => string.IsNullOrEmpty(domain)
         ? $"{wikiNamespace}:{title}:links"
-        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:links""";
+        : $"({domain}):{wikiNamespace}:{title}:links";
 
     /// <summary>
     /// Gets the <see cref="PageLinks"/> that fits the given parameters.

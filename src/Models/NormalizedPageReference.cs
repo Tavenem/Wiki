@@ -65,7 +65,7 @@ public class NormalizedPageReference : IdItem
     public static string GetId(string title, string wikiNamespace, string? domain)
         => string.IsNullOrEmpty(domain)
         ? $"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference"
-        : $$"""{{{domain}}}:{{wikiNamespace.ToLowerInvariant()}}:{{title.ToLowerInvariant()}}:normalizedreference""";
+        : $"({domain}):{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference";
 
     /// <summary>
     /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.

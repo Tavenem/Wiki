@@ -86,8 +86,8 @@ public class Transclusion : IEquatable<Transclusion>
         else
         {
             return string.IsNullOrEmpty(WikiNamespace)
-                ? $$"""{{{Domain}}}:{{Title}}"""
-                : $$"""{{{Domain}}}:{{WikiNamespace}}:{{Title}}""";
+                ? $"({Domain}):{Title}"
+                : $"({Domain}):{WikiNamespace}:{Title}";
         }
     }
 

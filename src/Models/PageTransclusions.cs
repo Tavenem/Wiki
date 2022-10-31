@@ -69,7 +69,7 @@ public class PageTransclusions : IdItem
     public static string GetId(string title, string wikiNamespace, string? domain)
         => string.IsNullOrEmpty(domain)
         ? $"{wikiNamespace}:{title}:transclusions"
-        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:transclusions""";
+        : $"({domain}):{wikiNamespace}:{title}:transclusions";
 
     /// <summary>
     /// Gets the <see cref="PageTransclusions"/> that fits the given parameters.

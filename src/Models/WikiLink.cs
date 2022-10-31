@@ -196,9 +196,9 @@ public class WikiLink : IEquatable<WikiLink>
         }
         if (!string.IsNullOrEmpty(Domain))
         {
-            sb.Append('{')
+            sb.Append('(')
                 .Append(Domain)
-                .Append("}:");
+                .Append("):");
         }
         if (IsTalk)
         {

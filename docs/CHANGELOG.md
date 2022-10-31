@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0-preview
+### Added
+- Domain URLs
+### Changed
+- Domain delimiters changed from "\{ }" to "( )" for better URL compatibility
+
 ## 0.12.3-preview
 ### Added
 - `GetWikiItemAsync` overload for ID

@@ -96,7 +96,7 @@ public class MissingPage : IdItem
     public static string GetId(string title, string wikiNamespace, string? domain)
         => string.IsNullOrEmpty(domain)
         ? $"{wikiNamespace}:{title}:missing"
-        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:missing""";
+        : $"({domain}):{wikiNamespace}:{title}:missing";
 
     /// <summary>
     /// Gets the <see cref="MissingPage"/> that fits the given parameters.

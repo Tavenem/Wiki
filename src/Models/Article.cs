@@ -600,9 +600,9 @@ public class Article : MarkdownItem
         var domainPresent = !string.IsNullOrEmpty(domain);
         if (domainPresent)
         {
-            sb.Append('{')
+            sb.Append('(')
                 .Append(domain)
-                .Append("}:");
+                .Append("):");
         }
         if (talk)
         {
@@ -650,8 +650,8 @@ public class Article : MarkdownItem
         else
         {
             var parts = text.Split(':', StringSplitOptions.RemoveEmptyEntries);
-            if (parts[0].StartsWith('{')
-                && parts[0].EndsWith('}'))
+            if (parts[0].StartsWith('(')
+                && parts[0].EndsWith(')'))
             {
                 domain = parts[0][1..^1];
                 parts = parts.Skip(1).ToArray();
@@ -1394,11 +1394,11 @@ public class Article : MarkdownItem
 
         var oldCategories = previousCategories?.Select(x =>
         {
-            if (x.StartsWith('{'))
+            if (x.StartsWith('('))
             {
                 var parts = x.Split(':');
                 if (parts.Length < 2
-                    || !parts[0].EndsWith('}'))
+                    || !parts[0].EndsWith(')'))
                 {
                     return (x, null);
                 }
@@ -1471,7 +1471,7 @@ public class Article : MarkdownItem
         retainedCategories.AddRange(newCategories);
         return retainedCategories.Select(x => string.IsNullOrEmpty(x.categoryDomain)
             ? x.categoryTitle
-            : $$"""{{{x.categoryDomain}}}:{{x.categoryTitle}}""")
+            : $"({x.categoryDomain}):{x.categoryTitle}")
             .ToList();
     }
 

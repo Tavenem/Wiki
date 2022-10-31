@@ -58,7 +58,7 @@ public class PageReference : IdItem
     public static string GetId(string title, string wikiNamespace, string? domain)
         => string.IsNullOrEmpty(domain)
         ? $"{wikiNamespace}:{title}:reference"
-        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:reference""";
+        : $"({domain}):{wikiNamespace}:{title}:reference";
 
     /// <summary>
     /// Gets the <see cref="PageReference"/> that fits the given parameters.

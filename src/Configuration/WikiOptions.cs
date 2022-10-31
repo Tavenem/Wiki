@@ -610,6 +610,7 @@ public class WikiOptions
     /// If omitted, <see cref="DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the page (if any).</param>
     /// <param name="talk">
     /// Whether to generate a link for the talk page.
     /// </param>
@@ -646,6 +647,7 @@ public class WikiOptions
     public string GetWikiPageUrl(
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         bool talk = false,
         string? route = null,
         string? query = null)
@@ -654,6 +656,12 @@ public class WikiOptions
         writer.Write("./");
         UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
         writer.Write('/');
+        if (!string.IsNullOrEmpty(domain))
+        {
+            writer.Write('(');
+            UrlEncoder.Default.Encode(writer, domain);
+            writer.Write("):");
+        }
         if (talk)
         {
             UrlEncoder.Default.Encode(writer, TalkNamespace);
@@ -708,6 +716,7 @@ public class WikiOptions
     /// If omitted, <see cref="DefaultNamespace"/> will be used.
     /// </para>
     /// </param>
+    /// <param name="domain">The domain of the page (if any).</param>
     /// <param name="talk">
     /// Whether to generate a link for the talk page.
     /// </param>
@@ -731,6 +740,7 @@ public class WikiOptions
         IReadOnlyDictionary<string, object?> queryParameters,
         string? title = null,
         string? wikiNamespace = null,
+        string? domain = null,
         bool talk = false,
         string? route = null)
     {
@@ -738,6 +748,11 @@ public class WikiOptions
         writer.Write("./");
         UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
         writer.Write('/');
+        if (!string.IsNullOrEmpty(domain))
+        {
+            UrlEncoder.Default.Encode(writer, domain);
+            writer.Write('-');
+        }
         if (talk)
         {
             UrlEncoder.Default.Encode(writer, TalkNamespace);

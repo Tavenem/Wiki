@@ -179,7 +179,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                     }
                     else
                     {
-                        renderer.Write('{');
+                        renderer.Write('(');
                     }
                     renderer.Write(link.Domain);
                     if (renderer.EnableHtmlForInline)
@@ -188,7 +188,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                     }
                     else
                     {
-                        renderer.Write("}:");
+                        renderer.Write("):");
                     }
                 }
                 if (hasDomain

@@ -64,7 +64,7 @@ public class PageRedirects : IdItem
     public static string GetId(string title, string wikiNamespace, string? domain)
         => string.IsNullOrEmpty(domain)
         ? $"{wikiNamespace}:{title}:redirects"
-        : $$"""{{{domain}}}:{{wikiNamespace}}:{{title}}:redirects""";
+        : $"({domain}):{wikiNamespace}:{title}:redirects";
 
     /// <summary>
     /// Gets the <see cref="PageRedirects"/> that fits the given parameters.
