@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.3-preview
+### Added
+- `GetWikiItemAsync` overload for ID
+
 ## 0.12.2-preview
 ### Added
 - Default WikiUserManager and WikiGroupManager implementations

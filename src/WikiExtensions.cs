@@ -1432,6 +1432,100 @@ public static class WikiExtensions
     }
 
     /// <summary>
+    /// Gets the wiki page with the given <paramref name="id"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="id">The ID of the wiki page.</param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/>.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiItemInfo"/> which corresponds to the given <paramref name="id"/>.
+    /// </returns>
+    public static async Task<WikiItemInfo> GetWikiItemAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        string id,
+        IWikiUser? user = null)
+    {
+        var wikiItem = await dataStore.GetItemAsync<Article>(id);
+
+        var permission = await GetPermissionInnerAsync(
+            user,
+            options,
+            dataStore,
+            userManager,
+            groupManager,
+            wikiItem?.Title,
+            wikiItem?.WikiNamespace,
+            wikiItem?.Domain,
+            wikiItem);
+
+        var html = wikiItem?.IsDeleted != false
+            || !permission.HasFlag(WikiPermission.Read)
+            ? null
+            : wikiItem.Html;
+
+        IWikiUser? articleUser = null;
+        if (wikiItem is not null
+            && string.Equals(wikiItem.WikiNamespace, options.UserNamespace))
+        {
+            articleUser = await userManager.FindByIdAsync(wikiItem.Title);
+            articleUser ??= await userManager.FindByNameAsync(wikiItem.Title);
+        }
+
+        return new(
+            articleUser?.DisplayName ?? wikiItem?.Title ?? (wikiItem is null ? null : options.MainPageTitle),
+            html,
+            false,
+            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
+            permission);
+    }
+
+    /// <summary>
+    /// Gets the wiki page with the given <paramref name="id"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="id">The ID of the wiki page.</param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiItemInfo"/> which corresponds to the given <paramref name="id"/>.
+    /// </returns>
+    public static async Task<WikiItemInfo> GetWikiItemAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        string id,
+        string? userId = null) => await GetWikiItemAsync(
+            dataStore,
+            options,
+            userManager,
+            groupManager,
+            id,
+            await userManager.FindByIdAsync(userId));
+
+    /// <summary>
     /// Gets the wiki page with the given title, namespace, and domain.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
@@ -1529,7 +1623,7 @@ public static class WikiExtensions
     }
 
     /// <summary>
-    /// Gets the wiki page with the given title and namespace.
+    /// Gets the wiki page with the given title, namespace, and domain.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
