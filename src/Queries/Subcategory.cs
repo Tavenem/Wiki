@@ -5,4 +5,5 @@
 /// </summary>
 /// <param name="Title">The title of the represented <see cref="Category"/>.</param>
 /// <param name="Count">The number of articles in the represented <see cref="Category"/>.</param>
-public record Subcategory(string Title, long Count);
+/// <param name="Domain">The domain of the represented <see cref="Category"/> (if any).</param>
+public record Subcategory(string Title, long Count, string? Domain);

@@ -445,19 +445,20 @@ public static class WikiExtensions
             articles
                 .Select(x => new CategoryPage(
                     x.Title,
-                    x.WikiNamespace))
+                    x.WikiNamespace,
+                    x.Domain))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                 .ToDictionary(
                     x => x.Key,
                     x => x.OrderBy(y => y.Title).ToList()),
             files
-                .Select(x => new CategoryFile(x.Title, x.FileSize))
+                .Select(x => new CategoryFile(x.Title, x.FileSize, x.Domain))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                 .ToDictionary(
                     x => x.Key,
                     x => x.OrderBy(y => y.Title).ToList()),
             subcategories
-                .Select(x => new Subcategory(x.Title, x.ChildIds.Count))
+                .Select(x => new Subcategory(x.Title, x.ChildIds.Count, x.Domain))
                 .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
                 .ToDictionary(
                     x => x.Key,

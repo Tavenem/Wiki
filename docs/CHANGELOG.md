@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.1-preview
+### Added
+- Domain information to category query objects
+
 ## 0.13.0-preview
 ### Added
 - Domain URLs
