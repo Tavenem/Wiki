@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.2-preview
+### Fixed
+- Double execution of scripts
+
 ## 0.13.1-preview
 ### Added
 - Domain information to category query objects

@@ -242,9 +242,7 @@ internal static class TransclusionFunctions
         {
             var x = GetEngine()
                 .Evaluate(scriptCode.ToString());
-            return GetEngine()
-                .Evaluate(scriptCode.ToString())
-                .ToString() ?? string.Empty;
+            return x.ToString() ?? string.Empty;
         }
         catch
         {
