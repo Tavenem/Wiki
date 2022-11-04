@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 using System.Text.Encodings.Web;
+using System.Text.Json.Serialization;
 using Tavenem.Wiki.MarkdownExtensions;
 
 namespace Tavenem.Wiki;
@@ -158,7 +159,7 @@ public class WikiOptions
     /// Use <see cref="AdminNamespaces"/> to get the full list, which includes the namespace
     /// assigned to <see cref="SystemNamespace"/> automatically.
     /// </remarks>
-    public IList<string>? CustomAdminNamespaces { get; set; }
+    public List<string>? CustomAdminNamespaces { get; set; }
 
     /// <summary>
     /// An optional collection of namespaces which may not be assigned to pages by users.
@@ -167,7 +168,7 @@ public class WikiOptions
     /// Use <see cref="ReservedNamespaces"/> to get the full list, which includes the namespaces
     /// assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/> automatically.
     /// </remarks>
-    public IList<string>? CustomReservedNamespaces { get; set; }
+    public List<string>? CustomReservedNamespaces { get; set; }
 
     /// <summary>
     /// The default permission granted to an anonymous user for wiki content with no configured
@@ -289,6 +290,7 @@ public class WikiOptions
     /// </para>
     /// Also see <seealso cref="UserDomains"/>.
     /// </remarks>
+    [JsonIgnore]
     public GetDomainPermissionFunc? GetDomainPermission { get; set; }
 
     private const string GroupNamespaceDefault = "Group";
@@ -389,6 +391,7 @@ public class WikiOptions
     /// <remarks>
     /// Receives the new <see cref="Article"/> as a parameter.
     /// </remarks>
+    [JsonIgnore]
     public OnCreatedFunc? OnCreated { get; set; }
 
     /// <summary>
@@ -399,6 +402,7 @@ public class WikiOptions
     /// Receives the deleted <see cref="Article"/>, the original <see cref="Article.Owner"/>,
     /// and the new <see cref="Article.Owner"/> as parameters.
     /// </remarks>
+    [JsonIgnore]
     public OnDeletedFunc? OnDeleted { get; set; }
 
     /// <summary>
@@ -411,6 +415,7 @@ public class WikiOptions
     /// the original <see cref="Article.Owner"/>, and the new <see cref="Article.Owner"/> as
     /// parameters.
     /// </remarks>
+    [JsonIgnore]
     public OnEditedFunc? OnEdited { get; set; }
 
     /// <summary>
@@ -439,7 +444,8 @@ public class WikiOptions
     /// Note that no processors are run if the initial content is empty.
     /// </para>
     /// </remarks>
-    public IList<IArticleProcessor>? Postprocessors { get; set; } = new List<IArticleProcessor>();
+    [JsonIgnore]
+    public List<IArticleProcessor>? Postprocessors { get; set; }
 
     /// <summary>
     /// An optional collection of namespaces which may not be assigned to pages by users.
@@ -451,7 +457,7 @@ public class WikiOptions
     public IEnumerable<string> ReservedNamespaces => (CustomReservedNamespaces ?? Enumerable.Empty<string>())
         .Concat(new[] { FileNamespace, TalkNamespace });
 
-    private const string ScriptNamespaceDefault = "Script";
+    internal const string ScriptNamespaceDefault = "Script";
     private string _scriptNamespace = ScriptNamespaceDefault;
     /// <summary>
     /// The name of the script namespace.

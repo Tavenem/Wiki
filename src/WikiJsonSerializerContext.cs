@@ -7,6 +7,7 @@ namespace Tavenem.Wiki;
 /// A source gererated serializer context for <c>Tavenem.Wiki</c> types.
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
+[JsonSerializable(typeof(Archive))]
 [JsonSerializable(typeof(MarkdownItem))]
 [JsonSerializable(typeof(List<MarkdownItem>))]
 [JsonSerializable(typeof(List<Article>))]

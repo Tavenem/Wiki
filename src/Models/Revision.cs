@@ -156,7 +156,7 @@ public class Revision : IdItem
 
         if (string.IsNullOrWhiteSpace(newText))
         {
-            IsDeleted = true;
+            IsDeleted = !string.IsNullOrWhiteSpace(previousText);
         }
         else if (string.IsNullOrWhiteSpace(previousText))
         {

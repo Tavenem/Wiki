@@ -858,4 +858,105 @@ public sealed class WikiFile : Article
             return $"{size / (1024 * 1024 * 1024.0):N0} GiB";
         }
     }
+
+    internal async Task RestoreAsync(
+        WikiOptions options,
+        IDataStore dataStore,
+        string editor)
+    {
+        WikiNamespace = options.FileNamespace;
+
+        var existing = await GetFileAsync(options, dataStore, Title, Domain);
+        if (existing is not null)
+        {
+            Id = existing.Id;
+        }
+
+        await CreatePageReferenceAsync(
+            dataStore,
+            Id,
+            Title,
+            WikiNamespace,
+            Domain)
+            .ConfigureAwait(false);
+
+        var md = MarkdownContent;
+        List<Transclusion> transclusions;
+        if (string.IsNullOrEmpty(MarkdownContent))
+        {
+            transclusions = new List<Transclusion>();
+        }
+        else
+        {
+            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
+                options,
+                dataStore,
+                Title,
+                $"{options.FileNamespace}:{Title}",
+                MarkdownContent);
+        }
+
+        var wikiLinks = GetWikiLinks(options, dataStore, md, Title, options.FileNamespace, Domain);
+
+        var categories = await UpdateCategoriesAsync(
+            options,
+            dataStore,
+            Id,
+            editor,
+            Owner,
+            Domain,
+            AllowedEditors,
+            AllowedViewers,
+            AllowedEditorGroups,
+            AllowedViewerGroups,
+            wikiLinks)
+            .ConfigureAwait(false);
+
+        Html = RenderHtml(
+            options,
+            dataStore,
+            await PostprocessArticleMarkdownAsync(
+                options,
+                dataStore,
+                Title,
+                options.FileNamespace,
+                Domain,
+                MarkdownContent));
+        Preview = RenderPreview(
+            options,
+            dataStore,
+            await PostprocessArticleMarkdownAsync(
+                options,
+                dataStore,
+                Title,
+                options.FileNamespace,
+                Domain,
+                MarkdownContent,
+                true));
+        WikiLinks = new ReadOnlyCollection<WikiLink>(wikiLinks);
+        Categories = categories;
+        Transclusions = transclusions;
+        await dataStore.StoreItemAsync(this).ConfigureAwait(false);
+
+        await AddPageTransclusionsAsync(dataStore, Id, transclusions)
+            .ConfigureAwait(false);
+
+        await AddPageLinksAsync(dataStore, Id, wikiLinks)
+            .ConfigureAwait(false);
+
+        await UpdateReferencesAsync(
+            options,
+            dataStore,
+            Title,
+            options.FileNamespace,
+            Domain,
+            IsDeleted,
+            true,
+            null,
+            null,
+            null,
+            false,
+            false)
+            .ConfigureAwait(false);
+    }
 }

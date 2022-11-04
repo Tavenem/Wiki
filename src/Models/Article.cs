@@ -2336,6 +2336,141 @@ public class Article : MarkdownItem
         }
     }
 
+    internal async Task RestoreAsync(
+        WikiOptions options,
+        IDataStore dataStore,
+        string editor,
+        string? newNamespace)
+    {
+        if (!string.IsNullOrEmpty(newNamespace))
+        {
+            WikiNamespace = newNamespace;
+        }
+
+        var isScript = WikiNamespace.Equals(options.ScriptNamespace, StringComparison.Ordinal);
+
+        var existing = await GetArticleAsync(options, dataStore, Title, WikiNamespace, Domain, true);
+        if (existing is not null)
+        {
+            Id = existing.Id;
+        }
+
+        await CreatePageReferenceAsync(
+            dataStore,
+            Id,
+            Title,
+            WikiNamespace,
+            Domain)
+            .ConfigureAwait(false);
+
+        var (
+            redirectDomain,
+            redirectNamespace,
+            redirectTitle,
+            isRedirect,
+            isBrokenRedirect,
+            isDoubleRedirect) = await IdentifyRedirectAsync(
+                options,
+                dataStore,
+                Id,
+                MarkdownContent)
+            .ConfigureAwait(false);
+
+        var md = MarkdownContent;
+        List<Transclusion> transclusions;
+        if (isRedirect || isScript || string.IsNullOrEmpty(MarkdownContent))
+        {
+            transclusions = new List<Transclusion>();
+        }
+        else
+        {
+            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
+                options,
+                dataStore,
+                Title,
+                GetFullTitle(options, Title, WikiNamespace, Domain),
+                MarkdownContent);
+        }
+
+        var wikiLinks = isRedirect || isScript
+            ? new List<WikiLink>()
+            : GetWikiLinks(
+                options,
+                dataStore,
+                md,
+                Title,
+                WikiNamespace,
+                Domain);
+
+        var categories = await UpdateCategoriesAsync(
+            options,
+            dataStore,
+            Id,
+            editor,
+            Owner,
+            Domain,
+            AllowedEditors,
+            AllowedViewers,
+            AllowedEditorGroups,
+            AllowedViewerGroups,
+            wikiLinks)
+            .ConfigureAwait(false);
+
+        Html = isScript
+            ? MarkdownContent ?? string.Empty
+            : RenderHtml(
+                options,
+                dataStore,
+                await PostprocessArticleMarkdownAsync(
+                    options,
+                    dataStore,
+                    Title,
+                    WikiNamespace,
+                    Domain,
+                    MarkdownContent));
+        Preview = isScript
+            ? GetScriptPreview(MarkdownContent)
+            : RenderPreview(
+                options,
+                dataStore,
+                await PostprocessArticleMarkdownAsync(
+                    options,
+                    dataStore,
+                    Title,
+                    WikiNamespace,
+                    Domain,
+                    MarkdownContent,
+                    true));
+        WikiLinks = new ReadOnlyCollection<WikiLink>(wikiLinks);
+        Categories = categories;
+        Transclusions = transclusions;
+        RedirectDomain = redirectDomain;
+        RedirectNamespace = redirectNamespace;
+        RedirectTitle = redirectTitle;
+        IsBrokenRedirect = isBrokenRedirect;
+        IsDoubleRedirect = isDoubleRedirect;
+        await dataStore.StoreItemAsync(this).ConfigureAwait(false);
+
+        await AddPageTransclusionsAsync(dataStore, Id, transclusions).ConfigureAwait(false);
+
+        await AddPageLinksAsync(dataStore, Id, wikiLinks).ConfigureAwait(false);
+
+        await UpdateReferencesAsync(
+            options,
+            dataStore,
+            Title,
+            WikiNamespace,
+            Domain,
+            IsDeleted,
+            true,
+            null,
+            null,
+            null,
+            true,
+            isRedirect)
+            .ConfigureAwait(false);
+    }
+
     private static string GetScriptPreview(string? markdown)
     {
         if (string.IsNullOrEmpty(markdown))

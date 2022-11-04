@@ -1367,6 +1367,111 @@ public static class WikiExtensions
     }
 
     /// <summary>
+    /// Retrieves a wiki <see cref="Archive"/>, either for the given <paramref name="domain"/>, or
+    /// for the entire wiki if no domain is specified.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="domain">
+    /// The domain to archive; or <see langword="null"/> to archive the entire wiki.
+    /// </param>
+    /// <returns>An <see cref="Archive"/> instance.</returns>
+    public static async Task<Archive> GetWikiArchiveAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        string? domain = null)
+    {
+        var hasDomain = !string.IsNullOrEmpty(domain);
+
+        var archive = new Archive
+        {
+            Options = options,
+        };
+
+        var articles = dataStore.Query<Article>().Where(x => x.IdItemTypeName == Article.ArticleIdItemTypeName);
+        if (hasDomain)
+        {
+            articles = articles.Where(x => x.Domain == domain);
+        }
+        var allPages = await articles.ToListAsync();
+        if (allPages.Count > 0)
+        {
+            (archive.Pages = new()).AddRange(allPages);
+        }
+
+        var categories = dataStore.Query<Category>();
+        if (hasDomain)
+        {
+            categories = categories.Where(x => x.Domain == domain);
+        }
+        var allCategories = await categories.ToListAsync();
+        if (allCategories.Count > 0)
+        {
+            (archive.Pages ??= new()).AddRange(allCategories);
+        }
+
+        var files = dataStore.Query<WikiFile>();
+        if (hasDomain)
+        {
+            files = files.Where(x => x.Domain == domain);
+        }
+        var allFiles = await files.ToListAsync();
+        if (allFiles.Count > 0)
+        {
+            (archive.Pages ??= new()).AddRange(allFiles);
+        }
+
+        List<string>? allIds = null;
+        IReadOnlyList<Revision>? revisions = null;
+        if (hasDomain)
+        {
+            allIds = archive.Pages?.Select(x => x.Id).ToList() ?? new();
+            if (allIds.Count > 0)
+            {
+                revisions = await dataStore
+                    .Query<Revision>()
+                    .Where(x => allIds.Contains(x.WikiId))
+                    .ToListAsync();
+            }
+        }
+        else
+        {
+            revisions = await dataStore
+                .Query<Revision>()
+                .ToListAsync();
+        }
+        if ((revisions?.Count ?? 0) > 0)
+        {
+            (archive.Revisions = new()).AddRange(revisions!);
+        }
+
+        IReadOnlyList<Message>? messages = null;
+        if (hasDomain)
+        {
+            allIds ??= archive.Pages?.Select(x => x.Id).ToList() ?? new();
+            if (allIds.Count > 0)
+            {
+                messages = await dataStore
+                    .Query<Message>()
+                    .Where(x => allIds.Contains(x.TopicId))
+                    .ToListAsync();
+            }
+        }
+        else
+        {
+            messages = await dataStore
+                .Query<Message>()
+                .ToListAsync();
+        }
+        if ((messages?.Count ?? 0) > 0)
+        {
+            (archive.Messages = new()).AddRange(messages!);
+        }
+
+        return archive;
+    }
+
+    /// <summary>
     /// Gets the wiki page with the given title and namespace.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>

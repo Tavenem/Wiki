@@ -10,11 +10,6 @@ Unlike many wiki software packages, this main library is implementation-agnostic
 of core features which can be used to build a web-based wiki, a desktop application, a distributed
 cloud app with native clients, or any other architecture desired.
 
-The "reference" implementation ([Tavenem.Wiki.Mvc](https://github.com/Tavenem/Wiki.Mvc)) is a [Razor
-class library](https://docs.microsoft.com/en-us/aspnet/core/razor-pages/ui-class) which can be
-included in an [ASP.NET Core](https://docs.microsoft.com/en-us/aspnet/core) project to turn it into
-a wiki.
-
 ## Installation
 
 Tavenem.Wiki is available as a [NuGet package](https://www.nuget.org/packages/Tavenem.Wiki/).
