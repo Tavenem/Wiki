@@ -1367,13 +1367,13 @@ public static class WikiExtensions
     }
 
     /// <summary>
-    /// Retrieves a wiki <see cref="Archive"/>, either for the given <paramref name="domain"/>, or
-    /// for the entire wiki if no domain is specified.
+    /// Retrieves a wiki <see cref="Archive"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="domain">
-    /// The domain to archive; or <see langword="null"/> to archive the entire wiki.
+    /// The domain to archive; or an empty string to archive content wihout a domain; or <see
+    /// langword="null"/> to archive the entire wiki.
     /// </param>
     /// <returns>An <see cref="Archive"/> instance.</returns>
     public static async Task<Archive> GetWikiArchiveAsync(
@@ -1382,6 +1382,7 @@ public static class WikiExtensions
         string? domain = null)
     {
         var hasDomain = !string.IsNullOrEmpty(domain);
+        var fullWiki = domain is null;
 
         var archive = new Archive
         {
@@ -1392,6 +1393,10 @@ public static class WikiExtensions
         if (hasDomain)
         {
             articles = articles.Where(x => x.Domain == domain);
+        }
+        else if (!fullWiki)
+        {
+            articles = articles.Where(x => x.Domain == null);
         }
         var allPages = await articles.ToListAsync();
         if (allPages.Count > 0)
@@ -1404,6 +1409,10 @@ public static class WikiExtensions
         {
             categories = categories.Where(x => x.Domain == domain);
         }
+        else if (!fullWiki)
+        {
+            categories = categories.Where(x => x.Domain == null);
+        }
         var allCategories = await categories.ToListAsync();
         if (allCategories.Count > 0)
         {
@@ -1415,6 +1424,10 @@ public static class WikiExtensions
         {
             files = files.Where(x => x.Domain == domain);
         }
+        else if (!fullWiki)
+        {
+            files = files.Where(x => x.Domain == null);
+        }
         var allFiles = await files.ToListAsync();
         if (allFiles.Count > 0)
         {
@@ -1423,7 +1436,7 @@ public static class WikiExtensions
 
         List<string>? allIds = null;
         IReadOnlyList<Revision>? revisions = null;
-        if (hasDomain)
+        if (hasDomain || !fullWiki)
         {
             allIds = archive.Pages?.Select(x => x.Id).ToList() ?? new();
             if (allIds.Count > 0)
@@ -1446,7 +1459,7 @@ public static class WikiExtensions
         }
 
         IReadOnlyList<Message>? messages = null;
-        if (hasDomain)
+        if (hasDomain || !fullWiki)
         {
             allIds ??= archive.Pages?.Select(x => x.Id).ToList() ?? new();
             if (allIds.Count > 0)

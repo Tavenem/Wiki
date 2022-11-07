@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.0-preview
+### Changed
+- Allow archiving non-domain content only
+
 ## 0.13.3-preview
 ### Added
 - Archives
