@@ -1,4 +1,4 @@
-﻿using Ganss.XSS;
+﻿using Ganss.Xss;
 using Markdig;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions;
@@ -15,15 +15,17 @@ internal static class WikiConfig
 
     private static IHtmlSanitizer? _HtmlSanitizerFull;
     internal static IHtmlSanitizer HtmlSanitizerFull
-        => _HtmlSanitizerFull ??= new HtmlSanitizer(
-            Array.Empty<string>(),
-            Array.Empty<string>(),
-            Array.Empty<string>(),
-            Array.Empty<string>(),
-            Array.Empty<string>())
+    {
+        get
         {
-            KeepChildNodes = true
-        };
+            if (_HtmlSanitizerFull is null)
+            {
+                _HtmlSanitizerFull = new HtmlSanitizer(new HtmlSanitizerOptions());
+                _HtmlSanitizerFull.KeepChildNodes = true;
+            }
+            return _HtmlSanitizerFull;
+        }
+    }
 
     internal static IHtmlSanitizer GetHtmlSanitizer(WikiOptions options)
     {
