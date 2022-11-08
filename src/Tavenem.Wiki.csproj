@@ -37,9 +37,9 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="HtmlSanitizer" Version="7.1.542" />
-    <PackageReference Include="Jint" Version="3.0.0-beta-2039" />
-    <PackageReference Include="Markdig" Version="0.30.3" />
+    <PackageReference Include="HtmlSanitizer" Version="8.0.601" />
+    <PackageReference Include="Jint" Version="3.0.0-beta-2042" />
+    <PackageReference Include="Markdig" Version="0.30.4" />
     <PackageReference Include="Tavenem.DataStore" Version="0.36.2-preview" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>

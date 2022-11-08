@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.1-preview
+### Changed
+- Update to .NET 7
+
 ## 0.14.0-preview
 ### Changed
 - Allow archiving non-domain content only
