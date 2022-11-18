@@ -19,11 +19,4 @@
 /// cref="IWikiOwner.Id"/> will be set for other users.
 /// </para>
 /// </param>
-/// <param name="PageExists">
-/// Whether a wiki page for the referenced user/group currently exists in the <see
-/// cref="WikiOptions.UserNamespace"/> or <see cref="WikiOptions.GroupNamespace"/>.
-/// </param>
-public record WikiUserInfo(
-    string Id,
-    IWikiOwner? Entity,
-    bool PageExists);
+public record WikiUserInfo(string Id, IWikiOwner? Entity);

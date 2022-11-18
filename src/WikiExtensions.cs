@@ -11,7 +11,7 @@ namespace Tavenem.Wiki;
 public static class WikiExtensions
 {
     /// <summary>
-    /// Creates or revises an <see cref="Article"/> or <see cref="Category"/>.
+    /// Creates or revises a <see cref="Page"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -21,20 +21,8 @@ public static class WikiExtensions
     /// The wiki user who is making this revision.
     /// </param>
     /// <param name="title">
-    /// The title of the article. Must be unique within its namespace, and non-empty.
+    /// The title of the page.
     /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace to which this article belongs.
-    /// </para>
-    /// <para>
-    /// May be omitted to use <see cref="WikiOptions.DefaultNamespace"/>.
-    /// </para>
-    /// <para>
-    /// May not be <see cref="WikiOptions.FileNamespace"/>. File uploads must be handled separately.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain to which this article belongs (if any).</param>
     /// <param name="markdown">
     /// <para>
     /// The raw markdown content.
@@ -46,10 +34,10 @@ public static class WikiExtensions
     /// <param name="revisionComment">
     /// An optional comment supplied for this revision (e.g. to explain the changes).
     /// </param>
-    /// <param name="isDeleted">Indicates that this article has been marked as deleted.</param>
+    /// <param name="isDeleted">Indicates that this page has been marked as deleted.</param>
     /// <param name="owner">
     /// <para>
-    /// The new owner of the article.
+    /// The new owner of the page.
     /// </para>
     /// <para>
     /// May be a user, a group, or <see langword="null"/>.
@@ -57,87 +45,97 @@ public static class WikiExtensions
     /// </param>
     /// <param name="allowedEditors">
     /// <para>
-    /// The users allowed to edit this article.
+    /// The users allowed to edit this page.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be edited by anyone.
+    /// If <see langword="null"/> the page can be edited by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
     /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
     /// </para>
     /// </param>
     /// <param name="allowedViewers">
     /// <para>
-    /// The users allowed to view this article.
+    /// The users allowed to view this page.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// If <see langword="null"/> the page can be viewed by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
     /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the article.
+    /// langword="null"/>) list allows only the owner to view the page.
     /// </para>
     /// </param>
     /// <param name="allowedEditorGroups">
     /// <para>
-    /// The groups allowed to edit this article.
+    /// The groups allowed to edit this page.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be edited by anyone.
+    /// If <see langword="null"/> the page can be edited by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be edited by those listed, plus its owner
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
     /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
     /// langword="null"/>) list allows only the owner to make edits.
     /// </para>
     /// </param>
     /// <param name="allowedViewerGroups">
     /// <para>
-    /// The groups allowed to view this article.
+    /// The groups allowed to view this page.
     /// </para>
     /// <para>
-    /// If <see langword="null"/> the article can be viewed by anyone.
+    /// If <see langword="null"/> the page can be viewed by anyone.
     /// </para>
     /// <para>
-    /// If non-<see langword="null"/> the article can only be viewed by those listed, plus its owner
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
     /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the article.
+    /// langword="null"/>) list allows only the owner to view the page.
     /// </para>
+    /// </param>
+    /// <param name="redirectTitle">
+    /// If this page will redirect to another, this indicates the title of the destination.
     /// </param>
     /// <param name="originalTitle">
-    /// The original title of the article, if it is being renamed.
-    /// </param>
-    /// <param name="originalWikiNamespace">
-    /// <para>
-    /// The original namespace to which this article belonged, if it is being moved.
-    /// </para>
-    /// <para>
-    /// May be omitted to use <see cref="WikiOptions.DefaultNamespace"/>.
-    /// </para>
-    /// </param>
-    /// <param name="originalDomain">
-    /// The original domain to which this article belonged (if any), if it is being moved.
+    /// The original title of the page, if it is being renamed.
     /// </param>
     /// <returns>
-    /// <see langword="true"/> if the article was revised; <see langword="false"/> if the article
-    /// could not be revised (usually because the editor did not have permission to make an
-    /// associated change).
+    /// <see langword="true"/> if the page was revised; <see langword="false"/> if the page could
+    /// not be revised (usually because the editor did not have permission to make an associated
+    /// change).
     /// </returns>
     /// <exception cref="ArgumentException">
-    /// <paramref name="wikiNamespace"/> was <see cref="WikiOptions.FileNamespace"/>
+    /// <para>
+    /// The namespace was <see cref="WikiOptions.FileNamespace"/>.
+    /// </para>
+    /// <para>
+    /// Or, a <paramref name="redirectTitle"/> was provided for a page in the category, group, or
+    /// user namespaces. Redirects in those namespaces are not permitted.
+    /// </para>
+    /// <para>
+    /// Or, a page in the group or user namespaces was given a domain. Pages in those namespaces
+    /// cannot be given domains.
+    /// </para>
     /// </exception>
-    public static async Task<bool> AddOrReviseWikiItemAsync(
+    /// <exception cref="InvalidOperationException">
+    /// <para>
+    /// The target namespace is reserved.
+    /// </para>
+    /// <para>
+    /// Or, the namespace of either the original or renamed page is the category, file, group,
+    /// script, or user namespace, and the namespaces of the original and renamed page do not match.
+    /// Moving a page to or from those namespaces is not permitted.
+    /// </para>
+    /// </exception>
+    public static async Task<bool> AddOrReviseWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         IWikiUser editor,
-        string title,
-        string? wikiNamespace = null,
-        string? domain = null,
+        PageTitle title,
         string? markdown = null,
         string? revisionComment = null,
         bool isDeleted = false,
@@ -146,200 +144,126 @@ public static class WikiExtensions
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        string? originalTitle = null,
-        string? originalWikiNamespace = null,
-        string? originalDomain = null)
+        PageTitle? redirectTitle = null,
+        PageTitle? originalTitle = null)
     {
         if (string.Equals(
-            wikiNamespace,
+            title.Namespace,
             options.FileNamespace,
             StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException(
-                $"{nameof(wikiNamespace)} may not be the value assigned to the {nameof(WikiOptions.FileNamespace)} property of {nameof(WikiOptions)}.",
-                nameof(wikiNamespace));
+                $"Pages cannot be edited in the {nameof(WikiOptions.FileNamespace)} namespace with this method.",
+                nameof(title));
+        }
+        if (!string.IsNullOrEmpty(title.Domain)
+            && (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
+            || string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0))
+        {
+            throw new ArgumentException($"Cannot assign a page in the {title.Namespace} namespace to a domain", nameof(title));
         }
 
-        var item = await GetWikiItemAsync(
+        var page = await GetWikiPageAsync(
             dataStore,
             options,
             userManager,
             groupManager,
-            originalTitle ?? title,
-            originalWikiNamespace ?? wikiNamespace,
-            originalDomain ?? domain,
+            title,
             editor,
-            true);
-        if (item.Item is null && string.IsNullOrEmpty(title))
+            true)
+            .ConfigureAwait(false);
+        var hasPermission = CheckEditPermissions(
+            options,
+            page,
+            isDeleted
+                || (originalTitle.HasValue && !originalTitle.Equals(title)),
+            allowedEditors,
+            allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups);
+        if (!hasPermission || page.Page is null)
         {
             return false;
         }
 
-        if (!item.Permission.HasFlag(WikiPermission.Write))
+        WikiPageInfo? originalPage = null;
+        if (originalTitle.HasValue
+            && !originalTitle.Equals(title))
         {
-            return false;
-        }
-
-        if (item.Item is null && !item.Permission.HasFlag(WikiPermission.Create))
-        {
-            return false;
-        }
-
-        if (!string.IsNullOrEmpty(owner)
-            && !item.Permission.HasFlag(WikiPermission.SetOwner))
-        {
-            return false;
-        }
-
-        if ((isDeleted
-            || !string.Equals(title, originalTitle, StringComparison.Ordinal)
-            || !string.Equals(wikiNamespace, originalWikiNamespace, StringComparison.Ordinal)
-            || !string.Equals(domain, originalDomain, StringComparison.Ordinal))
-            && !item.Permission.HasFlag(WikiPermission.Delete))
-        {
-            return false;
-        }
-
-        if (!item.Permission.HasFlag(WikiPermission.SetPermissions))
-        {
-            if (item.Item is null)
-            {
-                if (allowedEditors is not null
-                    || allowedEditorGroups is not null
-                    || allowedViewers is not null
-                    || allowedViewerGroups is not null)
-                {
-                    return false;
-                }
-            }
-            else
-            {
-                if (item.Item.AllowedEditors is null)
-                {
-                    if (allowedEditors is not null)
-                    {
-                        return false;
-                    }
-                }
-                else if (allowedEditors is null
-                    || !item.Item.AllowedEditors.Order().SequenceEqual(allowedEditors.Order()))
-                {
-                    return false;
-                }
-
-                if (item.Item.AllowedEditorGroups is null)
-                {
-                    if (allowedEditorGroups is not null)
-                    {
-                        return false;
-                    }
-                }
-                else if (allowedEditorGroups is null
-                    || !item.Item.AllowedEditorGroups.Order().SequenceEqual(allowedEditorGroups.Order()))
-                {
-                    return false;
-                }
-
-                if (item.Item.AllowedViewers is null)
-                {
-                    if (allowedViewers is not null)
-                    {
-                        return false;
-                    }
-                }
-                else if (allowedViewers is null
-                    || !item.Item.AllowedViewers.Order().SequenceEqual(allowedViewers.Order()))
-                {
-                    return false;
-                }
-
-                if (item.Item.AllowedViewerGroups is null)
-                {
-                    if (allowedViewerGroups is not null)
-                    {
-                        return false;
-                    }
-                }
-                else if (allowedViewerGroups is null
-                    || !item.Item.AllowedViewerGroups.Order().SequenceEqual(allowedViewerGroups.Order()))
-                {
-                    return false;
-                }
-            }
-        }
-
-        if (item.Item is null)
-        {
-            if (string.Equals(
-                wikiNamespace,
-                options.CategoryNamespace,
-                StringComparison.OrdinalIgnoreCase))
-            {
-                await Category.NewAsync(
-                    options,
-                    dataStore,
-                    title!,
-                    editor.Id,
-                    markdown,
-                    domain,
-                    owner,
-                    allowedEditors,
-                    allowedViewers,
-                    allowedEditorGroups,
-                    allowedViewerGroups);
-            }
-            else
-            {
-                await Article.NewAsync(
-                    options,
-                    dataStore,
-                    title!,
-                    editor.Id,
-                    markdown,
-                    wikiNamespace,
-                    domain,
-                    owner,
-                    allowedEditors,
-                    allowedViewers,
-                    allowedEditorGroups,
-                    allowedViewerGroups);
-            }
-        }
-        else if (item.Item is Category category)
-        {
-            await category.ReviseAsync(
-                options,
+            originalPage = await GetWikiPageAsync(
                 dataStore,
-                editor.Id,
-                title,
-                markdown,
-                revisionComment,
-                domain,
-                isDeleted,
-                owner,
+                options,
+                userManager,
+                groupManager,
+                originalTitle.Value,
+                editor,
+                true)
+                .ConfigureAwait(false);
+
+            var hasOriginalPermission = CheckEditPermissions(
+                options,
+                originalPage,
+                true,
                 allowedEditors,
                 allowedViewers,
                 allowedEditorGroups,
                 allowedViewerGroups);
+            if (!hasOriginalPermission || originalPage.Page is null)
+            {
+                return false;
+            }
+        }
+
+        if (originalPage?.Page is not null)
+        {
+            await originalPage.Page.RenameAsync(
+                options,
+                dataStore,
+                title,
+                editor.Id,
+                isDeleted ? null : markdown ?? originalPage.Page.MarkdownContent,
+                revisionComment,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups,
+                redirectTitle)
+                .ConfigureAwait(false);
+        }
+        else if (isDeleted)
+        {
+            await page.Page.UpdateAsync(
+                options,
+                dataStore,
+                editor.Id,
+                null,
+                revisionComment,
+                owner,
+                allowedEditors,
+                allowedViewers,
+                allowedEditorGroups,
+                allowedViewerGroups,
+                null)
+                .ConfigureAwait(false);
         }
         else
         {
-            await item.Item.ReviseAsync(
+            await page.Page.UpdateAsync(
                 options,
                 dataStore,
                 editor.Id,
-                title,
-                markdown,
+                markdown ?? page.Page.MarkdownContent,
                 revisionComment,
-                wikiNamespace,
-                domain,
-                isDeleted,
                 owner,
                 allowedEditors,
                 allowedViewers,
                 allowedEditorGroups,
-                allowedViewerGroups);
+                allowedViewerGroups,
+                redirectTitle)
+                .ConfigureAwait(false);
         }
+
         return true;
     }
 
@@ -368,14 +292,13 @@ public static class WikiExtensions
     }
 
     /// <summary>
-    /// Gets the category page with the given title.
+    /// Gets the category page with the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the category.</param>
-    /// <param name="domain">The domain of the category (if any).</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -392,88 +315,84 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        string title,
-        string? domain = null,
+        PageTitle title,
         IWikiUser? user = null)
     {
-        var category = await Category.GetCategoryAsync(options, dataStore, title, domain);
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
+        var page = await GetWikiPageAsync(
             dataStore,
+            options,
             userManager,
             groupManager,
             title,
-            options.CategoryNamespace,
-            domain,
-            category);
+            user,
+            true)
+            .ConfigureAwait(false);
 
-        if (category?.IsDeleted != false
-            || !permission.HasFlag(WikiPermission.Read))
+        if (page.Page is not Category category
+            || !page.Permission.HasFlag(WikiPermission.Read))
         {
-            return new(null, permission, null, null, null);
+            return new(null, page.Permission, null, null, null);
         }
 
-        var articles = new List<Article>();
+        var pages = new List<Page>();
         var files = new List<WikiFile>();
         var subcategories = new List<Category>();
-        foreach (var id in category.ChildIds)
+        if (category.Children is not null)
         {
-            var child = await dataStore.GetItemAsync<Article>(id);
-            if (child is null)
+            foreach (var childTitle in category.Children)
             {
-                continue;
-            }
-            if (child is Category subcategory)
-            {
-                subcategories.Add(subcategory);
-            }
-            else if (child is WikiFile file)
-            {
-                files.Add(file);
-            }
-            else if (child is Article article)
-            {
-                articles.Add(article);
+                var child = await GetExistingWikiPageAsync(dataStore, options, childTitle)
+                    .ConfigureAwait(false);
+                if (child is null)
+                {
+                    continue;
+                }
+                if (child is Category subcategory)
+                {
+                    subcategories.Add(subcategory);
+                }
+                else if (child is WikiFile file)
+                {
+                    files.Add(file);
+                }
+                else
+                {
+                    pages.Add(child);
+                }
             }
         }
 
         return new(
             category,
-            permission,
-            articles
-                .Select(x => new CategoryPage(
-                    x.Title,
-                    x.WikiNamespace,
-                    x.Domain))
-                .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
+            page.Permission,
+            pages
+                .Select(x => x.Title)
+                .GroupBy(x => StringInfo.GetNextTextElement(x.Title ?? string.Empty, 0))
                 .ToDictionary(
                     x => x.Key,
                     x => x.OrderBy(y => y.Title).ToList()),
             files
-                .Select(x => new CategoryFile(x.Title, x.FileSize, x.Domain))
-                .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
+                .Select(x => new CategoryFile(x.Title, x.FileSize))
+                .GroupBy(x => StringInfo.GetNextTextElement(x.Title.Title ?? string.Empty, 0))
                 .ToDictionary(
                     x => x.Key,
                     x => x.OrderBy(y => y.Title).ToList()),
             subcategories
-                .Select(x => new Subcategory(x.Title, x.ChildIds.Count, x.Domain))
-                .GroupBy(x => StringInfo.GetNextTextElement(x.Title, 0))
+                .Select(x => new Subcategory(x.Title, x.Children?.Count ?? 0))
+                .GroupBy(x => StringInfo.GetNextTextElement(x.Title.Title ?? string.Empty, 0))
                 .ToDictionary(
                     x => x.Key,
-                    x => x.OrderBy(y => y.Title).ToList()));
+                    x => x.OrderBy(y => y.Title.Title).ToList()));
     }
 
     /// <summary>
-    /// Gets the category page with the given title.
+    /// Gets the category page with the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the category.</param>
-    /// <param name="domain">The domain of the category (if any).</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -490,16 +409,15 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        string title,
-        string? domain = null,
+        PageTitle title,
         string? userId = null) => await GetCategoryAsync(
             dataStore,
             options,
             userManager,
             groupManager,
             title,
-            domain,
-            await userManager.FindByIdAsync(userId));
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false));
 
     /// <summary>
     /// Gets the group page with the given group ID.
@@ -532,7 +450,7 @@ public static class WikiExtensions
     /// </para>
     /// <para>
     /// Note that a result is still returned if the group <em>page</em> does not exist, but the
-    /// group itself does. In this case, the <see cref="GroupPageInfo.Item"/> will be <see
+    /// group itself does. In this case, the <see cref="GroupPageInfo.Page"/> will be <see
     /// langword="null"/> but the record's other properties will be set appropriately.
     /// </para>
     /// </returns>
@@ -544,21 +462,22 @@ public static class WikiExtensions
         string groupId,
         IWikiUser? user = null)
     {
-        var articleGroup = await groupManager.FindByIdAsync(groupId);
-        articleGroup ??= await groupManager.FindByNameAsync(groupId);
-
+        Page page;
+        var articleGroup = await groupManager.FindByIdAsync(groupId)
+            .ConfigureAwait(false);
         if (articleGroup is null)
         {
-            return null;
+            articleGroup = await groupManager.FindByNameAsync(groupId);
+            page = await dataStore
+                .GetWikiPageAsync(options, new(articleGroup?.Id, options.GroupNamespace))
+                .ConfigureAwait(false);
         }
-
-        var wikiItem = await GetWikiItemAsync(
-            dataStore,
-            options,
-            articleGroup.Id,
-            options.GroupNamespace,
-            null,
-            true);
+        else
+        {
+            page = await dataStore
+                .GetWikiPageAsync(options, new(articleGroup.Id, options.GroupNamespace))
+                .ConfigureAwait(false);
+        }
 
         var permission = await GetPermissionInnerAsync(
             user,
@@ -566,13 +485,11 @@ public static class WikiExtensions
             dataStore,
             userManager,
             groupManager,
-            articleGroup.Id,
-            options.GroupNamespace,
-            null,
-            wikiItem);
+            page.Title,
+            page)
+            .ConfigureAwait(false);
 
-        if (wikiItem?.IsDeleted != false
-            || !permission.HasFlag(WikiPermission.Read))
+        if (!permission.HasFlag(WikiPermission.Read))
         {
             return new(
                 null,
@@ -582,7 +499,7 @@ public static class WikiExtensions
         }
 
         IWikiGroup? group = null;
-        if (user is not null)
+        if (user is not null && articleGroup is not null)
         {
             if (user is not null
                 && (user.IsWikiAdmin
@@ -607,23 +524,17 @@ public static class WikiExtensions
             userInfo = new List<WikiUserInfo>();
             foreach (var groupUser in users)
             {
-                var userPage = await Article.GetArticleAsync(
-                    options,
-                    dataStore,
-                    groupUser.Id,
-                    options.UserNamespace,
-                    null,
-                    true);
                 userInfo.Add(new WikiUserInfo(
                     groupUser.Id,
-                    groupUser,
-                    userPage is not null));
+                    groupUser));
             }
         }
 
         return new(
-            new WikiUserInfo(articleGroup.Id, group, wikiItem is not null),
-            wikiItem,
+            group is null
+                ? null
+                : new WikiUserInfo(group.Id, group),
+            page as Article,
             permission,
             userInfo);
     }
@@ -659,7 +570,7 @@ public static class WikiExtensions
     /// </para>
     /// <para>
     /// Note that a result is still returned if the group <em>page</em> does not exist, but the
-    /// group itself does. In this case, the <see cref="GroupPageInfo.Item"/> will be <see
+    /// group itself does. In this case, the <see cref="GroupPageInfo.Page"/> will be <see
     /// langword="null"/> but the record's other properties will be set appropriately.
     /// </para>
     /// </returns>
@@ -675,10 +586,11 @@ public static class WikiExtensions
             userManager,
             groupManager,
             groupId,
-            await userManager.FindByIdAsync(userId));
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false));
 
     /// <summary>
-    /// Gets a page of revision information for the wiki page with the given title and namespace.
+    /// Gets a page of revision information for a wiki page.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -695,11 +607,10 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// <para>
-    /// A <see cref="PagedRevisionInfo"/> record with information for the requested wiki page; or
-    /// <see langword="null"/> if no such page exists.
+    /// A <see cref="PagedRevisionInfo"/> record with information for the requested wiki page.
     /// </para>
     /// </returns>
-    public static async Task<PagedRevisionInfo?> GetHistoryAsync(
+    public static async Task<PagedRevisionInfo> GetHistoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -707,35 +618,23 @@ public static class WikiExtensions
         HistoryRequest request,
         IWikiUser? user = null)
     {
-        var item = await GetWikiItemAsync(
+        var page = await GetWikiPageAsync(
             dataStore,
             options,
-            request.Title,
-            request.WikiNamespace,
-            request.Domain,
-            true);
-        if (item is null)
-        {
-            return null;
-        }
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
             userManager,
             groupManager,
             request.Title,
-            request.WikiNamespace,
-            request.Domain,
-            item);
+            user,
+            true)
+            .ConfigureAwait(false);
         if (request.Start > request.End
-            || !permission.HasFlag(WikiPermission.Read))
+            || !page.Permission.HasFlag(WikiPermission.Read)
+            || page.Page is null)
         {
-            return new(null, permission, null);
+            return new(null, page.Permission, null);
         }
 
-        var history = await item.GetHistoryAsync(
+        var history = await page.Page.GetHistoryAsync(
             dataStore,
             request.PageNumber,
             request.PageSize,
@@ -747,19 +646,27 @@ public static class WikiExtensions
                 : null);
 
         List<WikiUserInfo>? editors = null;
+        var editorIds = new HashSet<string>();
         foreach (var revision in history)
         {
-            var editor = await userManager.FindByIdAsync(revision.Editor);
-            if (editor?.IsDeleted != false
-                || editors?.Any(x => string.Equals(x.Id, editor.Id)) == true)
+            if (editorIds.Contains(revision.Editor))
             {
                 continue;
             }
 
-            IWikiUser? editorUser = null;
+            var editor = await userManager.FindByIdAsync(revision.Editor)
+                .ConfigureAwait(false);
+            if (editor?.IsDeleted != false)
+            {
+                continue;
+            }
+
+            editorIds.Add(editor.Id);
+
+            IWikiUser editorUser;
             if (user is not null
                 && (user.IsWikiAdmin
-                || string.Equals(user.Id, editor.Id)))
+                || string.CompareOrdinal(user.Id, editor.Id) == 0))
             {
                 editorUser = editor;
             }
@@ -768,7 +675,6 @@ public static class WikiExtensions
                 editorUser = new WikiUser
                 {
                     Id = editor.Id,
-                    IsWikiAdmin = editor.IsWikiAdmin,
                 };
             }
             else
@@ -781,28 +687,19 @@ public static class WikiExtensions
                 };
             }
 
-            var editorPageExists = await Article.GetArticleAsync(
-                options,
-                dataStore,
+            (editors ??= new()).Add(new WikiUserInfo(
                 editor.Id,
-                options.UserNamespace,
-                null,
-                true) is not null;
-
-            (editors ??= new List<WikiUserInfo>()).Add(new WikiUserInfo(
-                editor.Id,
-                editorUser,
-                editorPageExists));
+                editorUser));
         }
 
         return new PagedRevisionInfo(
             editors,
-            permission,
+            page.Permission,
             new PagedListDTO<Revision>(history));
     }
 
     /// <summary>
-    /// Gets a page of revision information for the wiki page with the given title and namespace.
+    /// Gets a page of revision information for a wiki page.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -819,11 +716,10 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// <para>
-    /// A <see cref="PagedRevisionInfo"/> record with information for the requested wiki page; or
-    /// <see langword="null"/> if no such page exists.
+    /// A <see cref="PagedRevisionInfo"/> record with information for the requested wiki page.
     /// </para>
     /// </returns>
-    public static async Task<PagedRevisionInfo?> GetHistoryAsync(
+    public static async Task<PagedRevisionInfo> GetHistoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -835,92 +731,138 @@ public static class WikiExtensions
             userManager,
             groupManager,
             request,
-            await userManager.FindByIdAsync(userId));
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false));
+
+    /// <summary>
+    /// Determines the permission the given user has for the wiki page with the given <paramref
+    /// name="title"/>.
+    /// </summary>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/> instance.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
+    /// permissions.
+    /// </returns>
+    public static ValueTask<WikiPermission> GetPermissionAsync(
+        this IWikiUserManager userManager,
+        WikiOptions options,
+        IDataStore dataStore,
+        IWikiGroupManager groupManager,
+        PageTitle title,
+        IWikiUser? user)
+    {
+        if (user?.IsDeleted == true
+            || user?.IsDisabled == true)
+        {
+            return ValueTask.FromResult(WikiPermission.None);
+        }
+        if (user?.IsWikiAdmin == true)
+        {
+            return ValueTask.FromResult(WikiPermission.All);
+        }
+
+        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title);
+    }
+
+    /// <summary>
+    /// Determines the permission the given user has for the given page.
+    /// </summary>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="page">The wiki page.</param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/> instance.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
+    /// permissions.
+    /// </returns>
+    public static ValueTask<WikiPermission> GetPermissionAsync(
+        this IWikiUserManager userManager,
+        WikiOptions options,
+        IDataStore dataStore,
+        IWikiGroupManager groupManager,
+        Page page,
+        IWikiUser? user)
+    {
+        if (user?.IsDeleted == true
+            || user?.IsDisabled == true)
+        {
+            return ValueTask.FromResult(WikiPermission.None);
+        }
+        if (user?.IsWikiAdmin == true)
+        {
+            return ValueTask.FromResult(WikiPermission.All);
+        }
+
+        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, page.Title, page);
+    }
+
+    /// <summary>
+    /// Determines the permission the user with the given ID has for the given page.
+    /// </summary>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="page">The wiki page.</param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
+    /// permissions.
+    /// </returns>
+    public static async Task<WikiPermission> GetPermissionAsync(
+        this IWikiUserManager userManager,
+        WikiOptions options,
+        IDataStore dataStore,
+        IWikiGroupManager groupManager,
+        Page page,
+        string? userId = null) => await GetPermissionAsync(
+            userManager,
+            options,
+            dataStore,
+            groupManager,
+            page,
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false))
+        .ConfigureAwait(false);
 
     /// <summary>
     /// Determines the permission the user with the given ID has for the wiki page with the given
-    /// title and namespace.
+    /// <paramref name="title"/>.
     /// </summary>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="id">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see cref="WikiPermission.None"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <returns>
-    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
-    /// permissions.
-    /// </returns>
-    public static async ValueTask<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
-        WikiOptions options,
-        IDataStore dataStore,
-        IWikiGroupManager groupManager,
-        string? id = null,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null)
-    {
-        var user = await userManager.FindByIdAsync(id);
-
-        if (user?.IsDeleted == true
-            || user?.IsDisabled == true)
-        {
-            return WikiPermission.None;
-        }
-        if (user?.IsWikiAdmin == true)
-        {
-            return WikiPermission.All;
-        }
-        if (string.IsNullOrEmpty(title)
-            && string.IsNullOrEmpty(wikiNamespace)
-            && !string.Equals(wikiNamespace, options.DefaultNamespace))
-        {
-            return WikiPermission.None;
-        }
-
-        return await GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title, wikiNamespace, domain);
-    }
-
-    /// <summary>
-    /// Determines the permission the user with the given ID has for the given article.
-    /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="article">The wiki page.</param>
-    /// <param name="id">
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
     /// </para>
@@ -932,149 +874,27 @@ public static class WikiExtensions
     /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
     /// permissions.
     /// </returns>
-    public static async ValueTask<WikiPermission> GetPermissionAsync(
+    public static async Task<WikiPermission> GetPermissionAsync(
         this IWikiUserManager userManager,
         WikiOptions options,
         IDataStore dataStore,
         IWikiGroupManager groupManager,
-        Article article,
-        string? id = null)
-    {
-        var user = await userManager.FindByIdAsync(id);
-
-        if (user?.IsDeleted == true
-            || user?.IsDisabled == true)
-        {
-            return WikiPermission.None;
-        }
-        if (user?.IsWikiAdmin == true)
-        {
-            return WikiPermission.All;
-        }
-
-        return await GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, article: article);
-    }
-
-    /// <summary>
-    /// Determines the permission the given user has for the wiki page with the given title and
-    /// namespace.
-    /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/> instance.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see cref="WikiPermission.None"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <returns>
-    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
-    /// permissions.
-    /// </returns>
-    public static ValueTask<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
-        WikiOptions options,
-        IDataStore dataStore,
-        IWikiGroupManager groupManager,
-        IWikiUser user,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null)
-    {
-        if (user.IsDeleted
-            || user.IsDisabled)
-        {
-            return ValueTask.FromResult(WikiPermission.None);
-        }
-        if (user.IsWikiAdmin)
-        {
-            return ValueTask.FromResult(WikiPermission.All);
-        }
-        if (string.IsNullOrEmpty(title)
-            && string.IsNullOrEmpty(wikiNamespace)
-            && !string.Equals(wikiNamespace, options.DefaultNamespace))
-        {
-            return ValueTask.FromResult(WikiPermission.None);
-        }
-
-        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title, wikiNamespace, domain);
-    }
-
-    /// <summary>
-    /// Determines the permission the given user has for the given article.
-    /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="article">The wiki page.</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/> instance.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
-    /// permissions.
-    /// </returns>
-    public static ValueTask<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
-        WikiOptions options,
-        IDataStore dataStore,
-        IWikiGroupManager groupManager,
-        Article article,
-        IWikiUser user)
-    {
-        if (user.IsDeleted
-            || user.IsDisabled)
-        {
-            return ValueTask.FromResult(WikiPermission.None);
-        }
-        if (user.IsWikiAdmin)
-        {
-            return ValueTask.FromResult(WikiPermission.All);
-        }
-
-        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, article: article);
-    }
+        PageTitle title,
+        string? userId = null) => await GetPermissionAsync(
+            userManager,
+            options,
+            dataStore,
+            groupManager,
+            title,
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false))
+        .ConfigureAwait(false);
 
     /// <summary>
     /// Gets a page of wiki items which fit one of the special conditions in the <see
     /// cref="SpecialListType"/> enumeration.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="request">A record with information about the request.</param>
     /// <returns>
     /// A <see cref="PagedListDTO{T}"/> with <see cref="LinkInfo"/> records for all the pages that
@@ -1089,27 +909,24 @@ public static class WikiExtensions
     /// </remarks>
     public static async Task<PagedListDTO<LinkInfo>> GetSpecialListAsync(
         this IDataStore dataStore,
-        WikiOptions options,
         SpecialListRequest request)
     {
         if (request.Type == SpecialListType.Missing_Pages)
         {
-            return await GetMissingPagesAsync(dataStore, options, request);
+            return await GetMissingPagesAsync(dataStore, request);
         }
         else if (request.Type == SpecialListType.What_Links_Here)
         {
             return new(new PagedList<LinkInfo>(null, 1, request.PageSize, 0));
         }
 
-        var items = await GetSpecialListInnerAsync(request, options, dataStore);
+        var items = await GetSpecialListInnerAsync(request, dataStore);
         return new(new PagedList<LinkInfo>(
             items.Select(x => new LinkInfo(
-                    x.Title,
-                    x.WikiNamespace,
-                    x.Domain,
-                    x is Category category ? category.ChildIds.Count : 0,
-                    x is WikiFile file1 ? file1.FileSize : 0,
-                    x is WikiFile file2 ? file2.FileType : null)),
+                x.Title,
+                x is Category category ? category.Children?.Count ?? 0 : 0,
+                x is WikiFile file1 ? file1.FileSize : 0,
+                x is WikiFile file2 ? file2.FileType : null)),
             items.PageNumber,
             items.PageSize,
             items.TotalCount));
@@ -1146,7 +963,7 @@ public static class WikiExtensions
     /// </para>
     /// <para>
     /// Note that a result is still returned if the user <em>page</em> does not exist, but the
-    /// user itself does. In this case, the <see cref="UserPageInfo.Item"/> will be <see
+    /// user itself does. In this case, the <see cref="UserPageInfo.Page"/> will be <see
     /// langword="null"/> but the record's other properties will be set appropriately.
     /// </para>
     /// </returns>
@@ -1158,22 +975,26 @@ public static class WikiExtensions
         string userId,
         string? requestingUserId = null)
     {
-        var articleUser = await userManager.FindByIdAsync(userId);
-        articleUser ??= await userManager.FindByNameAsync(userId);
+        Page page;
+        var articleUser = await userManager.FindByIdAsync(userId)
+            .ConfigureAwait(false);
         if (articleUser is null)
         {
-            return null;
+            articleUser = await userManager.FindByNameAsync(userId)
+                .ConfigureAwait(false);
+            page = await dataStore
+                .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            page = await dataStore
+                .GetWikiPageAsync(options, new(articleUser.Id, options.UserNamespace))
+                .ConfigureAwait(false);
         }
 
-        var wikiItem = await GetWikiItemAsync(
-            dataStore,
-            options,
-            articleUser.Id,
-            options.UserNamespace,
-            null,
-            true);
-
-        var requestingUser = await userManager.FindByIdAsync(requestingUserId);
+        var requestingUser = await userManager.FindByIdAsync(requestingUserId)
+            .ConfigureAwait(false);
 
         var permission = await GetPermissionInnerAsync(
             requestingUser,
@@ -1181,13 +1002,12 @@ public static class WikiExtensions
             dataStore,
             userManager,
             groupManager,
-            articleUser.Id,
-            options.UserNamespace,
-            null,
-            wikiItem);
+            page.Title,
+            page)
+            .ConfigureAwait(false);
 
-        if (wikiItem?.IsDeleted != false
-            || !permission.HasFlag(WikiPermission.Read))
+        if (!permission.HasFlag(WikiPermission.Read)
+            || articleUser is null)
         {
             return new(
                 null,
@@ -1233,25 +1053,19 @@ public static class WikiExtensions
                 {
                     continue;
                 }
-                var groupPage = await Article.GetArticleAsync(
-                    options,
-                    dataStore,
-                    id,
-                    options.GroupNamespace,
-                    null,
-                    true);
                 groupInfo.Add(new WikiUserInfo(
                     id,
-                    group,
-                    groupPage is not null));
+                    group));
             }
         }
 
         return new(
             groupInfo,
-            wikiItem,
+            page as Article,
             permission,
-            new WikiUserInfo(articleUser.Id, user, wikiItem is not null));
+            user is null
+                ? null
+                : new WikiUserInfo(user.Id, user));
     }
 
     /// <summary>
@@ -1262,108 +1076,84 @@ public static class WikiExtensions
     /// <param name="request">A record with information about the request.</param>
     /// <returns>
     /// A <see cref="PagedListDTO{T}"/> with <see cref="LinkInfo"/> records for all the pages that
-    /// link to the given item; or <see langword="null"/> if no <see
-    /// cref="WhatLinksHereRequest.Title"/> is given for a namespace which is not <see
-    /// cref="WikiOptions.DefaultNamespace"/>.
+    /// link to the given item.
     /// </returns>
-    public static async Task<PagedListDTO<LinkInfo>?> GetWhatLinksHereAsync(
+    public static async Task<PagedListDTO<LinkInfo>> GetWhatLinksHereAsync(
         this IDataStore dataStore,
         WikiOptions options,
         WhatLinksHereRequest request)
     {
-        if (string.IsNullOrEmpty(request.Title)
-            && (string.IsNullOrEmpty(request.WikiNamespace)
-            || string.Equals(request.WikiNamespace, options.DefaultNamespace, StringComparison.OrdinalIgnoreCase)))
+        var page = await IPage<Page>
+            .GetExistingPageAsync<Page>(dataStore, request.Title)
+            .ConfigureAwait(false);
+        if (page is null
+            || (page.References is null
+            && page.TransclusionReferences is null
+            && page.RedirectReferences is null))
         {
-            return null;
+            return new(new PagedList<LinkInfo>(
+                null,
+                1,
+                request.PageSize,
+                0));
         }
 
-        var allReferences = new HashSet<string>();
-        var references = await PageLinks.GetPageLinksAsync(
-            dataStore,
-            request.Title ?? options.MainPageTitle,
-            request.WikiNamespace ?? options.DefaultNamespace,
-            request.Domain);
-        if (references is not null)
+        var allReferences = new HashSet<PageTitle>();
+        if (page.References is not null)
         {
-            foreach (var reference in references.References)
+            allReferences.UnionWith(page.References);
+        }
+        if (page.TransclusionReferences is not null)
+        {
+            allReferences.UnionWith(page.TransclusionReferences);
+        }
+        if (page.RedirectReferences is not null)
+        {
+            allReferences.UnionWith(page.RedirectReferences);
+        }
+
+        var references = !string.IsNullOrWhiteSpace(request.Filter)
+            ? allReferences.Where(x => x.Title?.Contains(request.Filter) == true)
+            : allReferences;
+
+        var pages = new List<Page>();
+        foreach (var reference in references)
+        {
+            var referringPage = await dataStore.GetExistingWikiPageAsync(options, reference)
+                .ConfigureAwait(false);
+            if (referringPage is not null)
             {
-                allReferences.Add(reference);
+                pages.Add(referringPage);
             }
         }
 
-        var transclusions = await PageTransclusions.GetPageTransclusionsAsync(
-            dataStore,
-            request.Title ?? options.MainPageTitle,
-            request.WikiNamespace ?? options.DefaultNamespace,
-            request.Domain);
-        if (transclusions is not null)
+        if (string.Equals(request.Sort, "name", StringComparison.OrdinalIgnoreCase))
         {
-            foreach (var reference in transclusions.References)
-            {
-                allReferences.Add(reference);
-            }
+            pages.Sort((x, y) => (x.Title.Title ?? string.Empty).CompareTo(y.Title.Title ?? string.Empty));
+        }
+        else if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
+        {
+            pages.Sort((x, y) => (x.Revision?.TimestampTicks ?? 0)
+                .CompareTo(y.Revision?.TimestampTicks ?? 0));
         }
 
-        if (!string.Equals(request.WikiNamespace, options.CategoryNamespace, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(request.WikiNamespace, options.FileNamespace, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(request.WikiNamespace, options.UserNamespace, StringComparison.OrdinalIgnoreCase)
-            && !string.Equals(request.WikiNamespace, options.GroupNamespace, StringComparison.OrdinalIgnoreCase))
+        if (request.Descending)
         {
-            var redirects = await PageRedirects.GetPageRedirectsAsync(
-                dataStore,
-                request.Title ?? options.MainPageTitle,
-                request.WikiNamespace ?? options.DefaultNamespace,
-                request.Domain);
-            if (redirects is not null)
-            {
-                foreach (var reference in redirects.References)
-                {
-                    allReferences.Add(reference);
-                }
-            }
-        }
-
-        var articles = new List<Article>();
-        var hasFilter = !string.IsNullOrWhiteSpace(request.Filter);
-        foreach (var reference in allReferences)
-        {
-            var article = await dataStore.GetItemAsync<Article>(reference);
-            if (article is not null
-                && !article.IsDeleted
-                && (!hasFilter
-                || article.Title.Contains(request.Filter!)))
-            {
-                articles.Add(article);
-            }
-        }
-        if (string.Equals(request.Sort, "timestamp", StringComparison.OrdinalIgnoreCase))
-        {
-            articles.Sort((x, y) => request.Descending
-                ? -x.TimestampTicks.CompareTo(y.TimestampTicks)
-                : x.TimestampTicks.CompareTo(y.TimestampTicks));
-        }
-        else
-        {
-            articles.Sort((x, y) => request.Descending
-                ? -x.Title.CompareTo(y.Title)
-                : x.Title.CompareTo(y.Title));
+            pages.Reverse();
         }
 
         return new(new PagedList<LinkInfo>(
-            articles
+            pages
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .Select(x => new LinkInfo(
                     x.Title,
-                    x.WikiNamespace,
-                    x.Domain,
-                    x is Category category ? category.ChildIds.Count : 0,
+                    x is Category category ? category.Children?.Count ?? 0 : 0,
                     x is WikiFile file1 ? file1.FileSize : 0,
                     x is WikiFile file2 ? file2.FileType : null)),
             request.PageNumber,
             request.PageSize,
-            articles.Count));
+            pages.Count));
     }
 
     /// <summary>
@@ -1389,292 +1179,77 @@ public static class WikiExtensions
             Options = options,
         };
 
-        var articles = dataStore.Query<Article>().Where(x => x.IdItemTypeName == Article.ArticleIdItemTypeName);
+        var pages = dataStore.Query<Page>();
         if (hasDomain)
         {
-            articles = articles.Where(x => x.Domain == domain);
+            pages = pages.Where(x => x.Title.Domain == domain);
         }
         else if (!fullWiki)
         {
-            articles = articles.Where(x => x.Domain == null);
+            pages = pages.Where(x => x.Title.Domain == null);
         }
-        var allPages = await articles.ToListAsync();
+        var allPages = await pages.ToListAsync().ConfigureAwait(false);
         if (allPages.Count > 0)
         {
-            (archive.Pages = new()).AddRange(allPages);
-        }
-
-        var categories = dataStore.Query<Category>();
-        if (hasDomain)
-        {
-            categories = categories.Where(x => x.Domain == domain);
-        }
-        else if (!fullWiki)
-        {
-            categories = categories.Where(x => x.Domain == null);
-        }
-        var allCategories = await categories.ToListAsync();
-        if (allCategories.Count > 0)
-        {
-            (archive.Pages ??= new()).AddRange(allCategories);
-        }
-
-        var files = dataStore.Query<WikiFile>();
-        if (hasDomain)
-        {
-            files = files.Where(x => x.Domain == domain);
-        }
-        else if (!fullWiki)
-        {
-            files = files.Where(x => x.Domain == null);
-        }
-        var allFiles = await files.ToListAsync();
-        if (allFiles.Count > 0)
-        {
-            (archive.Pages ??= new()).AddRange(allFiles);
-        }
-
-        List<string>? allIds = null;
-        IReadOnlyList<Revision>? revisions = null;
-        if (hasDomain || !fullWiki)
-        {
-            allIds = archive.Pages?.Select(x => x.Id).ToList() ?? new();
-            if (allIds.Count > 0)
+            archive.Pages = new();
+            foreach (var page in allPages)
             {
-                revisions = await dataStore
-                    .Query<Revision>()
-                    .Where(x => allIds.Contains(x.WikiId))
-                    .ToListAsync();
+                archive.Pages.Add(page.GetArchiveCopy());
             }
-        }
-        else
-        {
-            revisions = await dataStore
-                .Query<Revision>()
-                .ToListAsync();
-        }
-        if ((revisions?.Count ?? 0) > 0)
-        {
-            (archive.Revisions = new()).AddRange(revisions!);
-        }
-
-        IReadOnlyList<Message>? messages = null;
-        if (hasDomain || !fullWiki)
-        {
-            allIds ??= archive.Pages?.Select(x => x.Id).ToList() ?? new();
-            if (allIds.Count > 0)
-            {
-                messages = await dataStore
-                    .Query<Message>()
-                    .Where(x => allIds.Contains(x.TopicId))
-                    .ToListAsync();
-            }
-        }
-        else
-        {
-            messages = await dataStore
-                .Query<Message>()
-                .ToListAsync();
-        }
-        if ((messages?.Count ?? 0) > 0)
-        {
-            (archive.Messages = new()).AddRange(messages!);
         }
 
         return archive;
     }
 
     /// <summary>
-    /// Gets the wiki page with the given title and namespace.
+    /// Gets the wiki page with the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
+    /// <param name="title">The title of the wiki page.</param>
     /// <param name="noRedirect">
-    /// If <see langword="true"/> redirects will no be followed. The original matching item will be
-    /// returned, potentially with a redirect as its content.
+    /// If <see langword="true"/> redirects will not be followed. The original matching item will be
+    /// returned, even if it is a redirect.
+    /// </param>
+    /// <param name="exactMatchOnly">
+    /// If <see langword="true"/> a case-insensitive match will not be attempted if an exact match
+    /// is not found.
     /// </param>
     /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given; or
-    /// <see langword="null"/> if no such item exists.
+    /// The <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<Article?> GetWikiItemAsync(
+    public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        bool noRedirect = false)
+        PageTitle title,
+        bool noRedirect = false,
+        bool exactMatchOnly = false)
     {
-        if (string.Equals(wikiNamespace, options.CategoryNamespace, StringComparison.OrdinalIgnoreCase))
+        if (string.CompareOrdinal(title.Namespace, options.CategoryNamespace) == 0)
         {
-            return await Category.GetCategoryAsync(options, dataStore, title);
+            return await IPage<Category>
+                .GetPageAsync<Category>(dataStore, title, exactMatchOnly, true)
+                .ConfigureAwait(false);
         }
-        else if (string.Equals(wikiNamespace, options.FileNamespace, StringComparison.OrdinalIgnoreCase))
+        if (string.CompareOrdinal(title.Namespace, options.FileNamespace) == 0)
         {
-            return await WikiFile.GetFileAsync(options, dataStore, title);
+            return await IPage<WikiFile>
+                .GetPageAsync<WikiFile>(dataStore, title, exactMatchOnly, noRedirect)
+                .ConfigureAwait(false);
         }
-        else
-        {
-            return await Article.GetArticleAsync(
-                options,
-                dataStore,
-                title ?? options.MainPageTitle,
-                wikiNamespace,
-                domain,
-                noRedirect);
-        }
+        return await IPage<Article>
+            .GetPageAsync<Article>(dataStore, title, exactMatchOnly, noRedirect)
+            .ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Gets the wiki page with the given <paramref name="id"/>.
+    /// Gets the wiki page with the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="id">The ID of the wiki page.</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the given <paramref name="id"/>.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        string id,
-        IWikiUser? user = null)
-    {
-        var wikiItem = await dataStore.GetItemAsync<Article>(id);
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            wikiItem?.Title,
-            wikiItem?.WikiNamespace,
-            wikiItem?.Domain,
-            wikiItem);
-
-        var html = wikiItem?.IsDeleted != false
-            || !permission.HasFlag(WikiPermission.Read)
-            ? null
-            : wikiItem.Html;
-
-        IWikiUser? articleUser = null;
-        if (wikiItem is not null
-            && string.Equals(wikiItem.WikiNamespace, options.UserNamespace))
-        {
-            articleUser = await userManager.FindByIdAsync(wikiItem.Title);
-            articleUser ??= await userManager.FindByNameAsync(wikiItem.Title);
-        }
-
-        return new(
-            articleUser?.DisplayName ?? wikiItem?.Title ?? (wikiItem is null ? null : options.MainPageTitle),
-            html,
-            false,
-            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
-            permission);
-    }
-
-    /// <summary>
-    /// Gets the wiki page with the given <paramref name="id"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="id">The ID of the wiki page.</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the given <paramref name="id"/>.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        string id,
-        string? userId = null) => await GetWikiItemAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            id,
-            await userManager.FindByIdAsync(userId));
-
-    /// <summary>
-    /// Gets the wiki page with the given title, namespace, and domain.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
+    /// <param name="title">The title of the wiki page.</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -1684,1170 +1259,45 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <param name="noRedirect">
-    /// If <see langword="true"/> redirects will no be followed. The original matching item will be
-    /// returned, potentially with a redirect as its content.
+    /// If <see langword="true"/> redirects will not be followed. The original matching item will be
+    /// returned, even if it is a redirect.
     /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null,
-        bool noRedirect = false)
-    {
-        IWikiUser? articleUser = null;
-        if (string.Equals(wikiNamespace, options.UserNamespace))
-        {
-            articleUser = await userManager.FindByIdAsync(title);
-            articleUser ??= await userManager.FindByNameAsync(title);
-        }
-
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, noRedirect);
-        if (wikiItem is null
-            && articleUser is not null
-            && !string.Equals(title, articleUser.Id))
-        {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, options.UserNamespace, null, true);
-        }
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            title,
-            wikiNamespace,
-            domain,
-            wikiItem);
-
-        var html = wikiItem?.IsDeleted != false
-            || !permission.HasFlag(WikiPermission.Read)
-            ? null
-            : wikiItem.Html;
-
-        return new(
-            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
-            html,
-            false,
-            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
-            permission);
-    }
-
-    /// <summary>
-    /// Gets the wiki page with the given title, namespace, and domain.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <param name="noRedirect">
-    /// If <see langword="true"/> redirects will no be followed. The original matching item will be
-    /// returned, potentially with a redirect as its content.
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null,
-        bool noRedirect = false) => await GetWikiItemAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId),
-            noRedirect);
-
-    /// <summary>
-    /// Gets the most recent revision of the wiki page with the given title and namespace at the
-    /// specified <paramref name="time"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="time">The time of the requested revision.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        DateTimeOffset time,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null)
-    {
-        IWikiUser? articleUser = null;
-        if (string.Equals(wikiNamespace, options.UserNamespace))
-        {
-            articleUser = await userManager.FindByIdAsync(title);
-            articleUser ??= await userManager.FindByNameAsync(title);
-        }
-
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
-        if (wikiItem is null
-            && articleUser is not null
-            && !string.Equals(title, articleUser.Id))
-        {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
-        }
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            title,
-            wikiNamespace,
-            domain,
-            wikiItem);
-
-        var html = wikiItem is null
-            || !permission.HasFlag(WikiPermission.Read)
-            ? null
-            : await wikiItem.GetHtmlAsync(options, dataStore, time);
-
-        return new(
-            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
-            html,
-            wikiItem is not null,
-            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
-            permission & WikiPermission.Read);
-    }
-
-    /// <summary>
-    /// Gets the most recent revision of the wiki page with the given title and namespace at the
-    /// specified <paramref name="time"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="time">The time of the requested revision.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="time"/>.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        DateTimeOffset time,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => await GetWikiItemAtTimeAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            time,
-            title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId));
-
-    /// <summary>
-    /// Gets the most recent revision of the wiki page with the given title and namespace at the
-    /// specified <paramref name="timestamp"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="timestamp">
-    /// The number of ticks in the timestamp of the final revision.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long timestamp,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null) => await GetWikiItemAtTimeAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            new DateTimeOffset(timestamp, TimeSpan.Zero),
-            title,
-            wikiNamespace,
-            domain,
-            user);
-
-    /// <summary>
-    /// Gets the most recent revision of the wiki page with the given title and namespace at the
-    /// specified <paramref name="timestamp"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="timestamp">
-    /// The number of ticks in the timestamp of the final revision.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// A <see cref="WikiItemInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given, at the given <paramref name="timestamp"/>.
-    /// </returns>
-    public static async Task<WikiItemInfo> GetWikiItemAtTimeAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long timestamp,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => await GetWikiItemAtTimeAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            new DateTimeOffset(timestamp, TimeSpan.Zero),
-            title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId));
-
-    /// <summary>
-    /// Gets a diff between the text at the given <paramref name="time"/> and the current
-    /// version of the text.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="time">The time of the final revision.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static async Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        DateTimeOffset time,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null)
-    {
-        IWikiUser? articleUser = null;
-        if (string.Equals(wikiNamespace, options.UserNamespace))
-        {
-            articleUser = await userManager.FindByIdAsync(title);
-            articleUser ??= await userManager.FindByNameAsync(title);
-        }
-
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
-        if (wikiItem is null
-            && articleUser is not null
-            && !string.Equals(title, articleUser.Id))
-        {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
-        }
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            title,
-            wikiNamespace,
-            domain,
-            wikiItem);
-
-        var html = wikiItem is null
-            || !permission.HasFlag(WikiPermission.Read)
-            ? null
-            : await wikiItem.GetDiffWithCurrentHtmlAsync(options, dataStore, time);
-
-        return new(
-            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
-            html,
-            wikiItem is not null,
-            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
-            permission & WikiPermission.Read);
-    }
-
-    /// <summary>
-    /// Gets a diff between the text at the given <paramref name="time"/> and the current
-    /// version of the text.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="time">The time of the final revision.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static async Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        DateTimeOffset time,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => await GetWikiItemDiffWithCurrentAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            time,
-            title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId));
-
-    /// <summary>
-    /// Gets a diff between the text at the given <paramref name="timestamp"/> and the current
-    /// version of the text.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="timestamp">
-    /// The number of ticks in the timestamp of the final revision.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long timestamp,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null) => GetWikiItemDiffWithCurrentAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            new DateTimeOffset(timestamp, TimeSpan.Zero),
-            title,
-            wikiNamespace,
-            domain,
-            user);
-
-    /// <summary>
-    /// Gets a diff between the text at the given <paramref name="timestamp"/> and the current
-    /// version of the text.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="timestamp">
-    /// The number of ticks in the timestamp of the final revision.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static Task<WikiItemInfo> GetWikiItemDiffWithCurrentAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long timestamp,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => GetWikiItemDiffWithCurrentAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            new DateTimeOffset(timestamp, TimeSpan.Zero),
-            title,
-            wikiNamespace,
-            domain,
-            userId);
-
-    /// <summary>
-    /// Gets a diff between the text at two given times.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="firstTime">
-    /// The first revision time to compare.
-    /// </param>
-    /// <param name="secondTime">
-    /// The second revision time to compare.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    /// <remarks>
-    /// If <paramref name="secondTime"/> is before <paramref name="firstTime"/>, their values
-    /// are swapped. In other words, the diff is always from an earlier version to a later version.
-    /// </remarks>
-    public static async Task<WikiItemInfo> GetWikiItemDiffAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        DateTimeOffset firstTime,
-        DateTimeOffset secondTime,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null)
-    {
-        IWikiUser? articleUser = null;
-        if (string.Equals(wikiNamespace, options.UserNamespace))
-        {
-            articleUser = await userManager.FindByIdAsync(title);
-            articleUser ??= await userManager.FindByNameAsync(title);
-        }
-
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
-        if (wikiItem is null
-            && articleUser is not null
-            && !string.Equals(title, articleUser.Id))
-        {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
-        }
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            title,
-            wikiNamespace,
-            domain,
-            wikiItem);
-
-        var html = wikiItem is null
-            || !permission.HasFlag(WikiPermission.Read)
-            ? null
-            : await wikiItem.GetDiffWithOtherHtmlAsync(options, dataStore, firstTime, secondTime);
-
-        return new(
-            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
-            html,
-            wikiItem is not null,
-            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
-            permission & WikiPermission.Read);
-    }
-
-    /// <summary>
-    /// Gets a diff between the text at two given times.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="firstTime">
-    /// The first revision time to compare.
-    /// </param>
-    /// <param name="secondTime">
-    /// The second revision time to compare.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    /// <remarks>
-    /// If <paramref name="secondTime"/> is before <paramref name="firstTime"/>, their values
-    /// are swapped. In other words, the diff is always from an earlier version to a later version.
-    /// </remarks>
-    public static async Task<WikiItemInfo> GetWikiItemDiffAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        DateTimeOffset firstTime,
-        DateTimeOffset secondTime,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => await GetWikiItemDiffAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            firstTime,
-            secondTime,
-            title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId));
-
-    /// <summary>
-    /// Gets a diff between the text at two given times.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="firstTimestamp">
-    /// The number of ticks in the timestamp of the first revision time to compare.
-    /// </param>
-    /// <param name="secondTimestamp">
-    /// The number of ticks in the timestamp of the second revision time to compare.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    /// <remarks>
-    /// If <paramref name="secondTimestamp"/> is before <paramref name="firstTimestamp"/>, their
-    /// values are swapped. In other words, the diff is always from an earlier version to a later
-    /// version.
-    /// </remarks>
-    public static Task<WikiItemInfo> GetWikiItemDiffAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long firstTimestamp,
-        long secondTimestamp,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null) => GetWikiItemDiffAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            new DateTimeOffset(firstTimestamp, TimeSpan.Zero),
-            new DateTimeOffset(secondTimestamp, TimeSpan.Zero),
-            title,
-            wikiNamespace,
-            domain,
-            user);
-
-    /// <summary>
-    /// Gets a diff between the text at two given times.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="firstTimestamp">
-    /// The number of ticks in the timestamp of the first revision time to compare.
-    /// </param>
-    /// <param name="secondTimestamp">
-    /// The number of ticks in the timestamp of the second revision time to compare.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    /// <remarks>
-    /// If <paramref name="secondTimestamp"/> is before <paramref name="firstTimestamp"/>, their
-    /// values are swapped. In other words, the diff is always from an earlier version to a later
-    /// version.
-    /// </remarks>
-    public static Task<WikiItemInfo> GetWikiItemDiffAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long firstTimestamp,
-        long secondTimestamp,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => GetWikiItemDiffAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            new DateTimeOffset(firstTimestamp, TimeSpan.Zero),
-            new DateTimeOffset(secondTimestamp, TimeSpan.Zero),
-            title,
-            wikiNamespace,
-            domain,
-            userId);
-
-    /// <summary>
-    /// Gets a diff which represents the final revision at the given <paramref name="time"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="time">
-    /// <para>
-    /// The time of the final revision.
-    /// </para>
-    /// <para>
-    /// If omitted, the current time is used.
-    /// </para>
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
+    /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
+    /// rather than the current state of the page.
     /// </param>
     /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
+    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static async Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
+    public static async Task<WikiPageInfo> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        DateTimeOffset? time = null,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null)
+        PageTitle title,
+        IWikiUser? user = null,
+        bool noRedirect = false,
+        DateTimeOffset? time = null)
     {
+        Page? page = null;
         IWikiUser? articleUser = null;
-        if (string.Equals(wikiNamespace, options.UserNamespace))
+        if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
+            && !string.IsNullOrEmpty(title.Title))
         {
-            articleUser = await userManager.FindByIdAsync(title);
-            articleUser ??= await userManager.FindByNameAsync(title);
+            articleUser = await userManager.FindByIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (articleUser is null)
+            {
+                articleUser = await userManager.FindByNameAsync(title.Title)
+                    .ConfigureAwait(false);
+                page = await dataStore
+                    .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
+                    .ConfigureAwait(false);
+            }
         }
-
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, true);
-        if (wikiItem is null
-            && articleUser is not null
-            && !string.Equals(title, articleUser.Id))
-        {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, wikiNamespace, null, true);
-        }
+        page ??= await dataStore
+            .GetWikiPageAsync(options, title, noRedirect)
+            .ConfigureAwait(false);
 
         var permission = await GetPermissionInnerAsync(
             user,
@@ -2856,287 +1306,80 @@ public static class WikiExtensions
             userManager,
             groupManager,
             title,
-            wikiNamespace,
-            domain,
-            wikiItem);
+            page)
+            .ConfigureAwait(false);
 
         string? html = null;
-        if (wikiItem is not null
-            && permission.HasFlag(WikiPermission.Read))
+        if (permission.HasFlag(WikiPermission.Read))
         {
             html = time.HasValue
-                ? await wikiItem.GetDiffHtmlAsync(options, dataStore, time.Value)
-                : await wikiItem.GetDiffHtmlAsync(options, dataStore, DateTimeOffset.UtcNow);
+                ? await page.GetHtmlAsync(options, dataStore, time.Value)
+                    .ConfigureAwait(false)
+                : page.Html;
         }
 
         return new(
-            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
+            articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
             html,
-            wikiItem is not null,
-            permission.HasFlag(WikiPermission.Read) ? wikiItem : null,
-            permission & WikiPermission.Read);
+            false,
+            permission.HasFlag(WikiPermission.Read) ? page : null,
+            permission);
     }
 
     /// <summary>
-    /// Gets a diff which represents the final revision at the given <paramref name="time"/>.
+    /// Gets the wiki page with the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <param name="noRedirect">
+    /// If <see langword="true"/> redirects will not be followed. The original matching item will be
+    /// returned, even if it is a redirect.
+    /// </param>
     /// <param name="time">
-    /// <para>
-    /// The time of the final revision.
-    /// </para>
-    /// <para>
-    /// If omitted, the current time is used.
-    /// </para>
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
+    /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
+    /// rather than the current state of the page.
     /// </param>
     /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
+    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static async Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
+    public static async Task<WikiPageInfo> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        DateTimeOffset? time = null,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => await GetWikiItemDiffWithPreviousAsync(
+        PageTitle title,
+        string? userId = null,
+        bool noRedirect = false,
+        DateTimeOffset? time = null) => await GetWikiPageAsync(
             dataStore,
             options,
             userManager,
             groupManager,
-            time,
             title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId));
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false),
+            noRedirect,
+            time);
 
     /// <summary>
-    /// Gets a diff which represents the final revision at the given <paramref name="timestamp"/>.
+    /// Gets the wiki page with the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="timestamp">
-    /// <para>
-    /// The number of ticks in the timestamp of the final revision.
-    /// </para>
-    /// <para>
-    /// If omitted, the current time is used.
-    /// </para>
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="user">
-    /// <para>
-    /// An <see cref="IWikiUser"/>.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long? timestamp = null,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        IWikiUser? user = null) => GetWikiItemDiffWithPreviousAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            timestamp.HasValue ? new DateTimeOffset(timestamp.Value, TimeSpan.Zero) : null,
-            title,
-            wikiNamespace,
-            domain,
-            user);
-
-    /// <summary>
-    /// Gets a diff which represents the final revision at the given <paramref name="timestamp"/>.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="timestamp">
-    /// <para>
-    /// The number of ticks in the timestamp of the final revision.
-    /// </para>
-    /// <para>
-    /// If omitted, the current time is used.
-    /// </para>
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
-    /// <param name="userId">
-    /// <para>
-    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
-    /// </para>
-    /// <para>
-    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <returns>
-    /// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/> which
-    /// corresponds to the <paramref name="title"/> and <paramref name="wikiNamespace"/> given.
-    /// </returns>
-    /// <exception cref="ArgumentException">
-    /// A revision was incorrectly formatted; or, the sequence of revisions is not a
-    /// well-ordered set of revisions which start with a milestone and apply seamlessly in the
-    /// order given.
-    /// </exception>
-    public static Task<WikiItemInfo> GetWikiItemDiffWithPreviousAsync(
-        this IDataStore dataStore,
-        WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
-        long? timestamp = null,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null) => GetWikiItemDiffWithPreviousAsync(
-            dataStore,
-            options,
-            userManager,
-            groupManager,
-            timestamp.HasValue ? new DateTimeOffset(timestamp.Value, TimeSpan.Zero) : null,
-            title,
-            wikiNamespace,
-            domain,
-            userId);
-
-    /// <summary>
-    /// Gets the wiki page with the given title and namespace, with additional information suited to
-    /// editing the item.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
+    /// <param name="title">The title of the wiki page.</param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -3146,38 +1389,154 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <param name="noRedirect">
-    /// If <see langword="true"/> redirects will no be followed. The original matching item will be
-    /// returned, potentially with a redirect as its content.
+    /// If <see langword="true"/> redirects will not be followed. The original matching item will be
+    /// returned, even if it is a redirect.
+    /// </param>
+    /// <param name="timestamp">
+    /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
+    /// rather than the current state of the page.
     /// </param>
     /// <returns>
-    /// A <see cref="WikiEditInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given.
+    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiEditInfo> GetWikiItemForEditingAsync(
+    public static async Task<WikiPageInfo> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
+        PageTitle title,
+        long timestamp,
         IWikiUser? user = null,
-        bool noRedirect = false)
-    {
-        IWikiUser? articleUser = null;
-        if (string.Equals(wikiNamespace, options.UserNamespace))
-        {
-            articleUser = await userManager.FindByIdAsync(title);
-            articleUser ??= await userManager.FindByNameAsync(title);
-        }
+        bool noRedirect = false) => await GetWikiPageAsync(
+            dataStore,
+            options,
+            userManager,
+            groupManager,
+            title,
+            user,
+            noRedirect,
+            new DateTimeOffset(timestamp, TimeSpan.Zero));
 
-        var wikiItem = await GetWikiItemAsync(dataStore, options, title, wikiNamespace, domain, noRedirect);
-        if (wikiItem is null
-            && articleUser is not null
-            && !string.Equals(title, articleUser.Id))
+    /// <summary>
+    /// Gets the wiki page with the given <paramref name="title"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="timestamp">
+    /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
+    /// rather than the current state of the page.
+    /// </param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <param name="noRedirect">
+    /// If <see langword="true"/> redirects will not be followed. The original matching item will be
+    /// returned, even if it is a redirect.
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// </returns>
+    public static async Task<WikiPageInfo> GetWikiPageAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        PageTitle title,
+        long timestamp,
+        string? userId = null,
+        bool noRedirect = false) => await GetWikiPageAsync(
+            dataStore,
+            options,
+            userManager,
+            groupManager,
+            title,
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false),
+            noRedirect,
+            new DateTimeOffset(timestamp, TimeSpan.Zero));
+
+    /// <summary>
+    /// Gets the wiki page with the given <paramref name="title"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="firstTime">
+    /// <para>
+    /// The first revision time to compare.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the revision at <paramref name="secondTime"/> will be compared
+    /// with the previous version.
+    /// </para>
+    /// <para>
+    /// If both are <see langword="null"/> the current version of the page will be compared with the
+    /// previous version.
+    /// </para>
+    /// </param>
+    /// <param name="secondTime">
+    /// <para>
+    /// The second revision time to compare.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the revision at <paramref name="firstTime"/> will be compared with
+    /// the current version.
+    /// </para>
+    /// <para>
+    /// If both are <see langword="null"/> the current version of the page will be compared with the
+    /// previous version.
+    /// </para>
+    /// </param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/>.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// </returns>
+    public static async Task<WikiPageInfo> GetWikiPageDiffAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        PageTitle title,
+        DateTimeOffset? firstTime = null,
+        DateTimeOffset? secondTime = null,
+        IWikiUser? user = null)
+    {
+        Page? page = null;
+        IWikiUser? articleUser = null;
+        if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
+            && !string.IsNullOrEmpty(title.Title))
         {
-            wikiItem = await GetWikiItemAsync(dataStore, options, articleUser.Id, options.UserNamespace, null, true);
+            articleUser = await userManager.FindByIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (articleUser is null)
+            {
+                articleUser = await userManager.FindByNameAsync(title.Title)
+                    .ConfigureAwait(false);
+                page = await dataStore
+                    .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
+                    .ConfigureAwait(false);
+            }
         }
+        page ??= await dataStore
+            .GetWikiPageAsync(options, title, true)
+            .ConfigureAwait(false);
 
         var permission = await GetPermissionInnerAsync(
             user,
@@ -3186,40 +1545,135 @@ public static class WikiExtensions
             userManager,
             groupManager,
             title,
-            wikiNamespace,
-            domain,
-            wikiItem);
+            page)
+            .ConfigureAwait(false);
 
-        if (wikiItem?.IsDeleted != false
-            || !permission.HasFlag(WikiPermission.Read))
+        string? html = null;
+        if (permission.HasFlag(WikiPermission.Read))
+        {
+            if (firstTime.HasValue)
+            {
+                if (secondTime.HasValue)
+                {
+                    html = await page.GetDiffWithOtherHtmlAsync(
+                        options,
+                        dataStore,
+                        firstTime.Value,
+                        secondTime.Value)
+                        .ConfigureAwait(false);
+                }
+                else
+                {
+                    html = await page.GetDiffWithCurrentHtmlAsync(
+                        options,
+                        dataStore,
+                        firstTime.Value)
+                        .ConfigureAwait(false);
+                }
+            }
+            else if (secondTime.HasValue)
+            {
+                html = await page.GetDiffHtmlAsync(
+                    options,
+                    dataStore,
+                    secondTime.Value)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                html = await page.GetDiffHtmlAsync(
+                    options,
+                    dataStore,
+                    DateTimeOffset.UtcNow)
+                    .ConfigureAwait(false);
+            }
+        }
+
+        return new(
+            articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
+            html,
+            true,
+            permission.HasFlag(WikiPermission.Read) ? page : null,
+            permission);
+    }
+
+    /// <summary>
+    /// Gets the wiki page with the given <paramref name="title"/>, with additional information
+    /// suited to editing the item.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/>.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="WikiEditInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// </returns>
+    public static async Task<WikiEditInfo> GetWikiPageForEditingAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        PageTitle title,
+        IWikiUser? user = null)
+    {
+        Page? page = null;
+        IWikiUser? articleUser = null;
+        if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            articleUser = await userManager.FindByIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (articleUser is null)
+            {
+                articleUser = await userManager.FindByNameAsync(title.Title)
+                    .ConfigureAwait(false);
+                page = await dataStore
+                    .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
+                    .ConfigureAwait(false);
+            }
+        }
+        page ??= await dataStore
+            .GetWikiPageAsync(options, title, true)
+            .ConfigureAwait(false);
+
+        var permission = await GetPermissionInnerAsync(
+            user,
+            options,
+            dataStore,
+            userManager,
+            groupManager,
+            title,
+            page)
+            .ConfigureAwait(false);
+        if (!permission.HasFlag(WikiPermission.Read))
         {
             return new(
                 null,
                 null,
                 null,
                 null,
-                null,
+                articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
                 null,
                 null,
                 permission);
         }
 
-        var owner = string.IsNullOrEmpty(wikiItem?.Owner)
+        var owner = string.IsNullOrEmpty(page.Owner)
             ? null
-            : await userManager.FindByIdAsync(wikiItem.Owner);
+            : await userManager.FindByIdAsync(page.Owner)
+                .ConfigureAwait(false);
         IWikiUser? ownerUser = null;
-        var ownerPageExists = false;
         if (owner is not null)
         {
-            ownerPageExists = !owner.IsDeleted
-                && await Article.GetArticleAsync(
-                    options,
-                    dataStore,
-                    owner.Id,
-                    options.UserNamespace,
-                    null,
-                    true) is not null;
-
             if (user is not null
                 && (user.IsWikiAdmin
                 || string.Equals(user.Id, owner.Id)))
@@ -3247,37 +1701,28 @@ public static class WikiExtensions
         WikiUserInfo? ownerInfo = null;
         if (ownerUser is null)
         {
-            if (!string.IsNullOrEmpty(wikiItem?.Owner))
+            if (!string.IsNullOrEmpty(page.Owner))
             {
-                ownerInfo = new WikiUserInfo(wikiItem.Owner, null, false);
+                ownerInfo = new WikiUserInfo(page.Owner, null);
             }
         }
         else
         {
-            ownerInfo = new WikiUserInfo(ownerUser.Id, ownerUser, ownerPageExists);
+            ownerInfo = new WikiUserInfo(ownerUser.Id, ownerUser);
         }
 
         List<WikiUserInfo>? allowedEditors = null;
-        if (wikiItem?.AllowedEditors is not null)
+        if (page.AllowedEditors is not null)
         {
-            foreach (var id in wikiItem.AllowedEditors)
+            foreach (var id in page.AllowedEditors)
             {
                 allowedEditors ??= new();
 
-                var editorUser = await userManager.FindByIdAsync(id);
+                var editorUser = await userManager.FindByIdAsync(id)
+                    .ConfigureAwait(false);
                 IWikiUser? userItem = null;
-                var userPageExists = false;
                 if (editorUser is not null)
                 {
-                    userPageExists = !editorUser.IsDeleted
-                        && await Article.GetArticleAsync(
-                            options,
-                            dataStore,
-                            editorUser.Id,
-                            options.UserNamespace,
-                            null,
-                            true) is not null;
-
                     if (user is not null
                         && (user.IsWikiAdmin
                         || string.Equals(user.Id, editorUser.Id)))
@@ -3304,36 +1749,27 @@ public static class WikiExtensions
                 }
                 if (userItem is null)
                 {
-                    allowedEditors.Add(new(id, null, false));
+                    allowedEditors.Add(new(id, null));
                 }
                 else
                 {
-                    allowedEditors.Add(new(userItem.Id, userItem, userPageExists));
+                    allowedEditors.Add(new(userItem.Id, userItem));
                 }
             }
         }
 
         List<WikiUserInfo>? allowedViewers = null;
-        if (wikiItem?.AllowedViewers is not null)
+        if (page.AllowedViewers is not null)
         {
-            foreach (var id in wikiItem.AllowedViewers)
+            foreach (var id in page.AllowedViewers)
             {
                 allowedViewers ??= new();
 
-                var viewerUser = await userManager.FindByIdAsync(id);
+                var viewerUser = await userManager.FindByIdAsync(id)
+                    .ConfigureAwait(false);
                 IWikiUser? userItem = null;
-                var userPageExists = false;
                 if (viewerUser is not null)
                 {
-                    userPageExists = !viewerUser.IsDeleted
-                        && await Article.GetArticleAsync(
-                            options,
-                            dataStore,
-                            viewerUser.Id,
-                            options.UserNamespace,
-                            null,
-                            true) is not null;
-
                     if (user is not null
                         && (user.IsWikiAdmin
                         || string.Equals(user.Id, viewerUser.Id)))
@@ -3360,35 +1796,27 @@ public static class WikiExtensions
                 }
                 if (userItem is null)
                 {
-                    allowedViewers.Add(new(id, null, false));
+                    allowedViewers.Add(new(id, null));
                 }
                 else
                 {
-                    allowedViewers.Add(new(userItem.Id, userItem, userPageExists));
+                    allowedViewers.Add(new(userItem.Id, userItem));
                 }
             }
         }
 
         List<WikiUserInfo>? allowedEditorGroups = null;
-        if (wikiItem?.AllowedEditorGroups is not null)
+        if (page.AllowedEditorGroups is not null)
         {
-            foreach (var id in wikiItem.AllowedEditorGroups)
+            foreach (var id in page.AllowedEditorGroups)
             {
                 allowedEditorGroups ??= new();
 
-                var group = await groupManager.FindByIdAsync(id);
+                var group = await groupManager.FindByIdAsync(id)
+                    .ConfigureAwait(false);
                 IWikiGroup? groupItem = null;
-                var groupPageExists = false;
                 if (group is not null)
                 {
-                    groupPageExists = await Article.GetArticleAsync(
-                        options,
-                        dataStore,
-                        group.Id,
-                        options.GroupNamespace,
-                        null,
-                        true) is not null;
-
                     if (user is not null
                         && (user.IsWikiAdmin
                         || user.Groups?.Contains(group.Id) == true))
@@ -3407,35 +1835,26 @@ public static class WikiExtensions
 
                 if (groupItem is null)
                 {
-                    allowedEditorGroups.Add(new(id, null, false));
+                    allowedEditorGroups.Add(new(id, null));
                 }
                 else
                 {
-                    allowedEditorGroups.Add(new(groupItem.Id, groupItem, groupPageExists));
+                    allowedEditorGroups.Add(new(groupItem.Id, groupItem));
                 }
             }
         }
 
         List<WikiUserInfo>? allowedViewerGroups = null;
-        if (wikiItem?.AllowedViewerGroups is not null)
+        if (page.AllowedViewerGroups is not null)
         {
-            foreach (var id in wikiItem.AllowedViewerGroups)
+            foreach (var id in page.AllowedViewerGroups)
             {
                 allowedViewerGroups ??= new();
 
                 var group = await groupManager.FindByIdAsync(id);
                 IWikiGroup? groupItem = null;
-                var groupPageExists = false;
                 if (group is not null)
                 {
-                    groupPageExists = await Article.GetArticleAsync(
-                        options,
-                        dataStore,
-                        group.Id,
-                        options.GroupNamespace,
-                        null,
-                        true) is not null;
-
                     if (user is not null
                         && (user.IsWikiAdmin
                         || user.Groups?.Contains(group.Id) == true))
@@ -3454,11 +1873,11 @@ public static class WikiExtensions
 
                 if (groupItem is null)
                 {
-                    allowedViewerGroups.Add(new(id, null, false));
+                    allowedViewerGroups.Add(new(id, null));
                 }
                 else
                 {
-                    allowedViewerGroups.Add(new(groupItem.Id, groupItem, groupPageExists));
+                    allowedViewerGroups.Add(new(groupItem.Id, groupItem));
                 }
             }
         }
@@ -3468,44 +1887,21 @@ public static class WikiExtensions
             allowedEditorGroups,
             allowedViewers,
             allowedViewerGroups,
-            articleUser?.DisplayName ?? wikiItem?.Title ?? title ?? (wikiItem is null ? null : options.MainPageTitle),
-            wikiItem,
+            articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
+            page,
             ownerInfo,
             permission);
     }
 
     /// <summary>
-    /// Gets the wiki page with the given title and namespace, with additional information suited to
-    /// editing the item.
+    /// Gets the wiki page with the given <paramref name="title"/>, with additional information
+    /// suited to editing the item.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted if the <paramref name="wikiNamespace"/> is also omitted, or equal to the <see
-    /// cref="WikiOptions.DefaultNamespace"/>, in which case <see cref="WikiOptions.MainPageTitle"/>
-    /// will be used.
-    /// </para>
-    /// <para>
-    /// If this parameter is <see langword="null"/> or empty, but <paramref name="wikiNamespace"/>
-    /// is <em>not</em> either omitted or equal to the <see cref="WikiOptions.DefaultNamespace"/>,
-    /// the result will always be <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the wiki page.
-    /// </para>
-    /// <para>
-    /// May be omitted, in which case <see cref="WikiOptions.DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
+    /// <param name="title">The title of the wiki page.</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of a wiki user.
@@ -3514,33 +1910,23 @@ public static class WikiExtensions
     /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
     /// </para>
     /// </param>
-    /// <param name="noRedirect">
-    /// If <see langword="true"/> redirects will no be followed. The original matching item will be
-    /// returned, potentially with a redirect as its content.
-    /// </param>
     /// <returns>
-    /// A <see cref="WikiEditInfo"/> which corresponds to the <paramref name="title"/> and <paramref
-    /// name="wikiNamespace"/> given.
+    /// A <see cref="WikiEditInfo"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiEditInfo> GetWikiItemForEditingAsync(
+    public static async Task<WikiEditInfo> GetWikiPageForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        string? userId = null,
-        bool noRedirect = false) => await GetWikiItemForEditingAsync(
+        PageTitle title,
+        string? userId = null) => await GetWikiPageForEditingAsync(
             dataStore,
             options,
             userManager,
             groupManager,
             title,
-            wikiNamespace,
-            domain,
-            await userManager.FindByIdAsync(userId),
-            noRedirect);
+            await userManager.FindByIdAsync(userId)
+                .ConfigureAwait(false));
 
     /// <summary>
     /// Converts a <see cref="DateTimeOffset"/> to a formatted display string.
@@ -3586,6 +1972,29 @@ public static class WikiExtensions
             return si.SubstringByTextElements(0, 1).ToUpper(CultureInfo.CurrentCulture)
                 + si.SubstringByTextElements(1);
         }
+    }
+
+    internal static async Task<Page?> GetExistingWikiPageAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        PageTitle title,
+        bool noRedirect = true)
+    {
+        if (string.CompareOrdinal(title.Namespace, options.CategoryNamespace) == 0)
+        {
+            return await IPage<Category>
+                .GetExistingPageAsync<Category>(dataStore, title)
+                .ConfigureAwait(false);
+        }
+        if (string.CompareOrdinal(title.Namespace, options.FileNamespace) == 0)
+        {
+            return await IPage<WikiFile>
+                .GetExistingPageAsync<WikiFile>(dataStore, title, noRedirect: noRedirect)
+                .ConfigureAwait(false);
+        }
+        return await IPage<Article>
+            .GetExistingPageAsync<Article>(dataStore, title, noRedirect: noRedirect)
+            .ConfigureAwait(false);
     }
 
     internal static int IndexOfUnescaped(this ReadOnlySpan<char> span, char target)
@@ -3642,6 +2051,114 @@ public static class WikiExtensions
         return escapes == 0 || escapes % 2 == 1;
     }
 
+    private static bool CheckEditPermissions(
+        WikiOptions options,
+        WikiPageInfo page,
+        bool isDeletedOrRenamed = false,
+        IEnumerable<string>? allowedEditors = null,
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null)
+    {
+        if (page.Page is null
+            || !page.Permission.HasFlag(WikiPermission.Write))
+        {
+            return false;
+        }
+        if (!page.Page.Exists)
+        {
+            if (!page.Permission.HasFlag(WikiPermission.Create))
+            {
+                return false;
+            }
+            if (options.ReservedNamespaces.Any(x => string.CompareOrdinal(page.Page.Title.Namespace, x) == 0))
+            {
+                return false;
+            }
+        }
+        if (!string.IsNullOrEmpty(page.Page.Owner)
+            && !page.Permission.HasFlag(WikiPermission.SetOwner))
+        {
+            return false;
+        }
+
+        if (isDeletedOrRenamed
+            && !page.Permission.HasFlag(WikiPermission.Delete))
+        {
+            return false;
+        }
+
+        if (!page.Permission.HasFlag(WikiPermission.SetPermissions))
+        {
+            if (!page.Page.Exists)
+            {
+                if (allowedEditors is not null
+                    || allowedEditorGroups is not null
+                    || allowedViewers is not null
+                    || allowedViewerGroups is not null)
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                if (page.Page.AllowedEditors is null)
+                {
+                    if (allowedEditors is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedEditors is null
+                    || !page.Page.AllowedEditors.Order().SequenceEqual(allowedEditors.Order()))
+                {
+                    return false;
+                }
+
+                if (page.Page.AllowedEditorGroups is null)
+                {
+                    if (allowedEditorGroups is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedEditorGroups is null
+                    || !page.Page.AllowedEditorGroups.Order().SequenceEqual(allowedEditorGroups.Order()))
+                {
+                    return false;
+                }
+
+                if (page.Page.AllowedViewers is null)
+                {
+                    if (allowedViewers is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedViewers is null
+                    || !page.Page.AllowedViewers.Order().SequenceEqual(allowedViewers.Order()))
+                {
+                    return false;
+                }
+
+                if (page.Page.AllowedViewerGroups is null)
+                {
+                    if (allowedViewerGroups is not null)
+                    {
+                        return false;
+                    }
+                }
+                else if (allowedViewerGroups is null
+                    || !page.Page.AllowedViewerGroups.Order().SequenceEqual(allowedViewerGroups.Order()))
+                {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
     private static async Task<IPagedList<T>> GetListAsync<T>(
         IDataStore dataStore,
         int pageNumber = 0,
@@ -3649,14 +2166,15 @@ public static class WikiExtensions
         string? sort = null,
         bool descending = false,
         string? filter = null,
-        Expression<Func<T, bool>>? condition = null) where T : Article
+        Expression<Func<T, bool>>? condition = null) where T : Page
     {
         var pageCondition = condition is null
-            ? (T x) => !x.IsDeleted
-            : condition.AndAlso(x => !x.IsDeleted);
+            ? (T x) => x.Exists
+            : condition.AndAlso(x => x.Exists);
         if (!string.IsNullOrEmpty(filter))
         {
-            pageCondition = pageCondition.AndAlso(x => x.Title.Contains(filter));
+            pageCondition = pageCondition.AndAlso(x => x.Title.Title != null
+                && x.Title.Title.Contains(filter));
         }
 
         var query = dataStore.Query<T>();
@@ -3670,7 +2188,7 @@ public static class WikiExtensions
         }
         else
         {
-            query = query.OrderBy(x => x.Title, descending: descending);
+            query = query.OrderBy(x => x.Title.Title, descending: descending);
         }
 
         return await query.GetPageAsync(pageNumber, pageSize);
@@ -3678,33 +2196,29 @@ public static class WikiExtensions
 
     private static async Task<PagedListDTO<LinkInfo>> GetMissingPagesAsync(
         IDataStore dataStore,
-        WikiOptions options,
         SpecialListRequest request)
     {
-        var query = dataStore.Query<MissingPage>()
-            .Where(x => x.WikiNamespace != options.UserNamespace && x.WikiNamespace != options.GroupNamespace);
+        Expression<Func<Page, bool>> pageCondition = x => x.IsMissing;
         if (!string.IsNullOrEmpty(request.Filter))
         {
-            query = query.Where(x => x.Id
-                .Substring(0, x.Id.Length - 8)
-                .Contains(request.Filter));
+            pageCondition = pageCondition.AndAlso(x => x.Title.Title != null
+                && x.Title.Title.Contains(request.Filter));
         }
 
-        var results = await query
-            .OrderBy(x => x.Title, descending: request.Descending)
-            .GetPageAsync(request.PageNumber, request.PageSize);
-
-        return new(new PagedList<LinkInfo>(
-            results.Select(x => new LinkInfo(
+        var page = await dataStore.Query<Page>()
+            .Where(pageCondition)
+            .OrderBy(x => x.Title.Title, descending: request.Descending)
+            .GetPageAsync(request.PageNumber, request.PageSize)
+            .ConfigureAwait(false);
+        return new(
+            page.Select(x => new LinkInfo(
                 x.Title,
-                x.WikiNamespace,
-                x.Domain,
-                0,
-                0,
-                null)),
-            results.PageNumber,
-            results.PageSize,
-            results.TotalCount));
+                x is Category category ? category.Children?.Count ?? 0 : 0,
+                x is WikiFile wikiFile1 ? wikiFile1.FileSize : 0,
+                x is WikiFile wikiFile2 ? wikiFile2.FileType : null)),
+            request.PageNumber,
+            request.PageSize,
+            page.TotalCount);
     }
 
     private static async ValueTask<WikiPermission> GetPermissionInnerAsync(
@@ -3713,82 +2227,73 @@ public static class WikiExtensions
         IDataStore dataStore,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        Article? article = null)
+        PageTitle title,
+        Page? page = null)
     {
-        title ??= options.MainPageTitle;
-        article ??= await Article.GetArticleAsync(
-            options,
-            dataStore,
-            title,
-            wikiNamespace,
-            domain,
-            true);
-        if (article is not null)
-        {
-            title = article.Title;
-            wikiNamespace = article.WikiNamespace;
-            domain = article.Domain;
-        }
-
-        var isUserPage = string.Equals(
-                wikiNamespace,
-                options.UserNamespace,
-                StringComparison.OrdinalIgnoreCase);
-        if (isUserPage
-            && user is not null
-            && string.Equals(user.Id, title))
-        {
-            return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
-        }
-
-        var isGroupPage = string.Equals(
-                wikiNamespace,
-                options.GroupNamespace,
-                StringComparison.OrdinalIgnoreCase);
-        if (isGroupPage && user is not null)
-        {
-            var ownerId = await groupManager.GetGroupOwnerIdAsync(title);
-            if (string.Equals(user.Id, ownerId))
-            {
-                return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
-            }
-        }
-
         var defaultPermission = WikiPermission.None;
-        var isDomain = !string.IsNullOrEmpty(domain);
-        if (!isDomain)
+        var hasDomain = !string.IsNullOrEmpty(title.Domain);
+        if (!hasDomain)
         {
             defaultPermission = user is null
                 ? options.DefaultAnonymousPermission
                 : options.DefaultRegisteredPermission;
         }
 
-        if (isDomain
+        if (hasDomain
             && user is not null
-            && !string.IsNullOrEmpty(domain))
+            && !string.IsNullOrEmpty(title.Domain))
         {
+            if (options.UserDomains
+                && string.CompareOrdinal(title.Domain, user.Id) == 0)
+            {
+                return WikiPermission.All;
+            }
             if (options.GetDomainPermission is not null)
             {
-                defaultPermission = await options.GetDomainPermission(user.Id, domain);
+                defaultPermission = await options.GetDomainPermission(user.Id, title.Domain);
             }
-            if (user.AllowedViewDomains?.Contains(domain) == true)
+            if (user.AllowedViewDomains?.Contains(title.Domain) == true)
             {
                 defaultPermission |= WikiPermission.Read;
             }
         }
 
-        if (article is null)
+        page ??= await dataStore.GetWikiPageAsync(options, title, true)
+            .ConfigureAwait(false);
+
+        var isUserPage = string.CompareOrdinal(page.Title.Namespace, options.UserNamespace) == 0;
+        if (isUserPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title)
+            && string.Equals(user.Id, title.Title))
+        {
+            return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+        }
+
+        var isGroupPage = string.CompareOrdinal(page.Title.Namespace, options.GroupNamespace) == 0;
+        if (isGroupPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            var ownerId = await groupManager
+                .GetGroupOwnerIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (string.Equals(user.Id, ownerId))
+            {
+                return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+            }
+        }
+
+        if (page is null)
         {
             if (isUserPage)
             {
                 return defaultPermission & WikiPermission.Read;
             }
-            else if (isGroupPage)
+            else if (isGroupPage
+                && !string.IsNullOrEmpty(title.Title))
             {
-                return user?.Groups?.Contains(title) == true
+                return user?.Groups?.Contains(title.Title) == true
                     ? WikiPermission.ReadWrite
                     : defaultPermission & WikiPermission.Read;
             }
@@ -3797,21 +2302,20 @@ public static class WikiExtensions
 
         if (user is null)
         {
-            return article.AllowedViewers is null
+            return page.AllowedViewers is null
                 ? defaultPermission & WikiPermission.Read
                 : WikiPermission.None;
         }
         var isReservedNamespace = options
             .ReservedNamespaces
-            .Any(x => string.Equals(
+            .Any(x => string.CompareOrdinal(
                 x,
-                article.WikiNamespace,
-                StringComparison.OrdinalIgnoreCase));
+                title.Namespace) == 0);
 
         IWikiUser? owner = null;
-        if (!string.IsNullOrEmpty(article.Owner))
+        if (!string.IsNullOrEmpty(page.Owner))
         {
-            owner = await userManager.FindByIdAsync(article.Owner);
+            owner = await userManager.FindByIdAsync(page.Owner);
 
             if (owner is not null
                 && string.Equals(user.Id, owner.Id))
@@ -3821,7 +2325,7 @@ public static class WikiExtensions
                     : WikiPermission.All;
             }
 
-            if (!isGroupPage && user.Groups?.Contains(article.Owner) == true)
+            if (!isGroupPage && user.Groups?.Contains(page.Owner) == true)
             {
                 return isReservedNamespace
                     ? WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner
@@ -3831,10 +2335,9 @@ public static class WikiExtensions
 
         var isAdminNamespace = options
             .AdminNamespaces
-            .Any(x => string.Equals(
+            .Any(x => string.CompareOrdinal(
                 x,
-                article.WikiNamespace,
-                StringComparison.OrdinalIgnoreCase));
+                title.Namespace) == 0);
         if (isAdminNamespace
             && user.IsWikiAdmin)
         {
@@ -3845,7 +2348,7 @@ public static class WikiExtensions
 
         if (!isUserPage
             && !isGroupPage
-            && string.IsNullOrEmpty(article.Owner))
+            && string.IsNullOrEmpty(page.Owner))
         {
             if (isAdminNamespace)
             {
@@ -3862,14 +2365,15 @@ public static class WikiExtensions
         }
 
         List<IWikiGroup>? userGroups = null;
-        if (article.AllowedViewers is not null
-            && !article.AllowedViewers.Contains(user.Id)
-            && user.AllowedViewArticles?.Contains(article.Id) != true
+        if (page.AllowedViewers is not null
+            && !page.AllowedViewers.Contains(user.Id)
+            && user.AllowedViewPages?.Contains(title) != true
             && (!isGroupPage
-                || user.Groups?.Contains(title) != true)
-            && (article.AllowedViewerGroups is null
+                || string.IsNullOrEmpty(title.Title)
+                || user.Groups?.Contains(title.Title) != true)
+            && (page.AllowedViewerGroups is null
                 || user.Groups is null
-                || !article.AllowedViewerGroups.Intersect(user.Groups).Any()))
+                || !page.AllowedViewerGroups.Intersect(user.Groups).Any()))
         {
             userGroups = new();
             if (user.Groups is not null)
@@ -3883,7 +2387,7 @@ public static class WikiExtensions
                     }
                 }
             }
-            if (!userGroups.Any(x => x.AllowedViewArticles?.Contains(article.Id) == true))
+            if (!userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
             {
                 return WikiPermission.None;
             }
@@ -3894,19 +2398,20 @@ public static class WikiExtensions
             return defaultPermission & WikiPermission.Read;
         }
 
-        if (isGroupPage)
+        if (isGroupPage
+            && !string.IsNullOrEmpty(title.Title))
         {
-            return user.Groups?.Contains(title) == true
+            return user.Groups?.Contains(title.Title) == true
                 ? WikiPermission.ReadWrite
                 : defaultPermission & WikiPermission.Read;
         }
 
-        var writePermission = article.AllowedEditors is null
-            || article.AllowedEditors.Contains(user.Id)
-            || user.AllowedEditArticles?.Contains(article.Id) == true
-            || (article.AllowedEditorGroups is not null
+        var writePermission = page.AllowedEditors is null
+            || page.AllowedEditors.Contains(user.Id)
+            || user.AllowedEditPages?.Contains(title) == true
+            || (page.AllowedEditorGroups is not null
                 && user.Groups is not null
-                && article.AllowedEditorGroups.Intersect(user.Groups).Any());
+                && page.AllowedEditorGroups.Intersect(user.Groups).Any());
         if (!writePermission)
         {
             if (userGroups is null)
@@ -3924,7 +2429,7 @@ public static class WikiExtensions
                     }
                 }
             }
-            if (userGroups.Any(x => x.AllowedEditArticles?.Contains(article.Id) == true))
+            if (userGroups.Any(x => x.AllowedEditPages?.Contains(title) == true))
             {
                 writePermission = true;
             }
@@ -3935,9 +2440,8 @@ public static class WikiExtensions
             : defaultPermission & WikiPermission.Read;
     }
 
-    private static async Task<IPagedList<Article>> GetSpecialListInnerAsync(
+    private static async Task<IPagedList<Page>> GetSpecialListInnerAsync(
         SpecialListRequest request,
-        WikiOptions options,
         IDataStore dataStore) => request.Type switch
         {
             SpecialListType.All_Categories => await GetListAsync<Category>(
@@ -3946,7 +2450,8 @@ public static class WikiExtensions
                 request.PageSize,
                 request.Sort,
                 request.Descending,
-                request.Filter),
+                request.Filter)
+                .ConfigureAwait(false),
 
             SpecialListType.All_Files => await GetListAsync<WikiFile>(
                 dataStore,
@@ -3954,47 +2459,47 @@ public static class WikiExtensions
                 request.PageSize,
                 request.Sort,
                 request.Descending,
-                request.Filter),
+                request.Filter)
+                .ConfigureAwait(false),
 
-            SpecialListType.All_Pages => await GetListAsync<Article>(
+            SpecialListType.All_Articles => await GetListAsync<Article>(
+                dataStore,
+                request.PageNumber,
+                request.PageSize,
+                request.Sort,
+                request.Descending,
+                request.Filter)
+                .ConfigureAwait(false),
+
+            SpecialListType.All_Redirects => await GetListAsync<Page>(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.IdItemTypeName == Article.ArticleIdItemTypeName)
-        ,
+                x => x.RedirectTitle.HasValue)
+                .ConfigureAwait(false),
 
-#pragma warning disable RCS1113 // Use 'string.IsNullOrEmpty' method: not necessarily supported by all data providers
-            SpecialListType.All_Redirects => await GetListAsync<Article>(
+            SpecialListType.Broken_Redirects => await GetListAsync<Page>(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.RedirectTitle != null && x.RedirectTitle != string.Empty)
-        ,
-#pragma warning restore RCS1113 // Use 'string.IsNullOrEmpty' method.
+                x => x.IsBrokenRedirect)
+                .ConfigureAwait(false),
 
-            SpecialListType.Broken_Redirects => await GetListAsync<Article>(
+            SpecialListType.Double_Redirects => await GetListAsync<Page>(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.IsBrokenRedirect),
-
-            SpecialListType.Double_Redirects => await GetListAsync<Article>(
-                dataStore,
-                request.PageNumber,
-                request.PageSize,
-                request.Sort,
-                request.Descending,
-                request.Filter,
-                x => x.IsDoubleRedirect),
+                x => x.IsDoubleRedirect)
+                .ConfigureAwait(false),
 
             SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(
                 dataStore,
@@ -4003,11 +2508,8 @@ public static class WikiExtensions
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.IdItemTypeName == Article.ArticleIdItemTypeName
-                    && x.RedirectTitle == null
-                    && x.WikiNamespace != options.ScriptNamespace
-                    && (x.Categories == null || x.Categories.Count() == 0))
-        ,
+                x => x.Uncategorized)
+                .ConfigureAwait(false),
 
             SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(
                 dataStore,
@@ -4016,8 +2518,8 @@ public static class WikiExtensions
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.Categories == null || x.Categories.Count() == 0)
-        ,
+                x => x.Uncategorized)
+                .ConfigureAwait(false),
 
             SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(
                 dataStore,
@@ -4026,8 +2528,8 @@ public static class WikiExtensions
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.Categories == null || x.Categories.Count() == 0)
-        ,
+                x => x.Uncategorized)
+                .ConfigureAwait(false),
 
             SpecialListType.Unused_Categories => await GetListAsync<Category>(
                 dataStore,
@@ -4036,8 +2538,9 @@ public static class WikiExtensions
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.ChildIds.Count() == 0)
-        ,
-            _ => new PagedList<Article>(null, 1, request.PageSize, 0),
+                x => x.IsEmpty)
+                .ConfigureAwait(false),
+
+            _ => new PagedList<Page>(null, 1, request.PageSize, 0),
         };
 }

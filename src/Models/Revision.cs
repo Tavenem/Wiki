@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
 
 namespace Tavenem.Wiki;
@@ -7,7 +6,7 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// A particular revision of a wiki item.
 /// </summary>
-public class Revision : IdItem
+public class Revision : IEquatable<Revision>
 {
     /// <summary>
     /// An optional comment supplied for this revision (e.g. to explain the changes).
@@ -26,33 +25,9 @@ public class Revision : IdItem
     public string? Delta { get; }
 
     /// <summary>
-    /// The domain to which this item belonged at the time of this revision (if any).
-    /// </summary>
-    public string? Domain { get; }
-
-    /// <summary>
     /// The ID of the user who made this revision.
     /// </summary>
     public string Editor { get; }
-
-    /// <summary>
-    /// The type discriminator for this type.
-    /// </summary>
-    public const string RevisionIdItemTypeName = ":Revision:";
-    /// <summary>
-    /// <para>
-    /// A built-in, read-only type discriminator.
-    /// </para>
-    /// <para>
-    /// The set accessor performs no function.
-    /// </para>
-    /// </summary>
-    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
-    public override string IdItemTypeName
-    {
-        get => RevisionIdItemTypeName;
-        set { }
-    }
 
     /// <summary>
     /// Whether the item was marked as deleted by this revision.
@@ -90,41 +65,10 @@ public class Revision : IdItem
     public long TimestampTicks { get; }
 
     /// <summary>
-    /// The title of the item at the time of this revision. Must be non-empty, but may not be
-    /// unique.
-    /// </summary>
-    public string Title { get; }
-
-    /// <summary>
-    /// A unique ID that identifies this wiki item across revisions.
-    /// </summary>
-    public string WikiId { get; }
-
-    /// <summary>
-    /// The namespace to which this item belonged at the time of this revision. Must be
-    /// non-empty.
-    /// </summary>
-    public string WikiNamespace { get; }
-
-    /// <summary>
     /// Initializes a new instance of <see cref="Revision"/>.
     /// </summary>
-    /// <param name="wikiId">
-    /// A unique ID that identifies this wiki item across revisions.
-    /// </param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
-    /// </param>
-    /// <param name="title">
-    /// The title of the item at the time of this revision. Must be non-empty, but may not be
-    /// unique.
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace to which this item belonged at the time of this revision. Must be
-    /// non-empty.
-    /// </param>
-    /// <param name="domain">
-    /// The domain to which this item belonged at the time of this revision (if any).
     /// </param>
     /// <param name="previousText">
     /// The original text, before this revision.
@@ -136,11 +80,7 @@ public class Revision : IdItem
     /// An optional comment supplied for this revision (e.g. to explain the changes).
     /// </param>
     public Revision(
-        string wikiId,
         string editor,
-        string title,
-        string wikiNamespace,
-        string? domain,
         string? previousText = null,
         string? newText = null,
         string? comment = null)
@@ -149,10 +89,6 @@ public class Revision : IdItem
 
         Editor = editor;
         Comment = comment;
-        Title = title;
-        WikiId = wikiId;
-        WikiNamespace = wikiNamespace;
-        Domain = domain;
 
         if (string.IsNullOrWhiteSpace(newText))
         {
@@ -197,25 +133,8 @@ public class Revision : IdItem
     /// <summary>
     /// Initializes a new instance of <see cref="Revision"/>.
     /// </summary>
-    /// <param name="id">
-    /// The unique ID of this revision.
-    /// </param>
-    /// <param name="wikiId">
-    /// A unique ID that identifies this wiki item across revisions.
-    /// </param>
     /// <param name="editor">
     /// The ID of the user who made this revision.
-    /// </param>
-    /// <param name="title">
-    /// The title of the item at the time of this revision. Must be non-empty, but may not be
-    /// unique.
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace to which this item belonged at the time of this revision. Must be
-    /// non-empty.
-    /// </param>
-    /// <param name="domain">
-    /// The domain to which this item belonged at the time of this revision (if any).
     /// </param>
     /// <param name="delta">
     /// <para>
@@ -244,17 +163,12 @@ public class Revision : IdItem
     /// </remarks>
     [JsonConstructor]
     public Revision(
-        string id,
-        string wikiId,
         string editor,
-        string title,
-        string wikiNamespace,
-        string? domain,
         string? delta,
         bool isDeleted,
         bool isMilestone,
         string? comment,
-        long timestampTicks) : base(id)
+        long timestampTicks)
     {
         if (isDeleted && isMilestone)
         {
@@ -267,10 +181,6 @@ public class Revision : IdItem
         Comment = comment;
         Delta = isDeleted ? null : delta;
         TimestampTicks = timestampTicks;
-        Title = title;
-        WikiId = wikiId;
-        WikiNamespace = wikiNamespace;
-        Domain = domain;
     }
 
     /// <summary>
@@ -420,4 +330,35 @@ public class Revision : IdItem
         }
         return text;
     }
+
+    /// <inheritdoc/>
+    public bool Equals(Revision? other)
+        => other is not null && Editor == other.Editor && TimestampTicks == other.TimestampTicks;
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+        => obj is Revision revision && Equals(revision);
+
+    /// <inheritdoc/>
+    public override int GetHashCode() => HashCode.Combine(Editor, TimestampTicks);
+
+    /// <summary>
+    /// Determine equality of two <see cref="Revision"/> instances.
+    /// </summary>
+    /// <param name="left">The first <see cref="Revision"/> instance.</param>
+    /// <param name="right">The second <see cref="Revision"/> instance.</param>
+    /// <returns>
+    /// <see langword="true"/> if the instances are equal; otherwise <see langword="false"/>.
+    /// </returns>
+    public static bool operator ==(Revision? left, Revision? right) => EqualityComparer<Revision>.Default.Equals(left, right);
+
+    /// <summary>
+    /// Determine inequality of two <see cref="Revision"/> instances.
+    /// </summary>
+    /// <param name="left">The first <see cref="Revision"/> instance.</param>
+    /// <param name="right">The second <see cref="Revision"/> instance.</param>
+    /// <returns>
+    /// <see langword="true"/> if the instances are not equal; otherwise <see langword="false"/>.
+    /// </returns>
+    public static bool operator !=(Revision? left, Revision? right) => !(left == right);
 }

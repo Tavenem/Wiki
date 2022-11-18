@@ -2,7 +2,7 @@
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 
-namespace Tavenem.Wiki;
+namespace Tavenem.Wiki.Models;
 
 /// <summary>
 /// A reference from a normalized (case-insensitive) full wiki page title to the current page
@@ -41,127 +41,102 @@ public class NormalizedPageReference : IdItem
     /// <param name="references">
     /// The IDs of the wiki pages which are currently assigned to the referenced full title.
     /// </param>
-    /// <remarks>
-    /// Note: this constructor is most useful for deserializers. The static <see
-    /// cref="NewAsync(IDataStore, string, string, string, string?)"/> method is expected to be used
-    /// otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns the ID
-    /// dynamically.
-    /// </remarks>
     public NormalizedPageReference(
         string id,
         IReadOnlyList<string> references) : base(id)
         => References = references;
 
     /// <summary>
-    /// Gets an ID for a <see cref="NormalizedPageReference"/> given the parameters.
+    /// Gets the ID for a <see cref="NormalizedPageReference"/> given its <paramref name="title"/>.
     /// </summary>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
+    /// <param name="title">
+    /// The title of the page.
+    /// </param>
     /// <returns>
-    /// The ID which should be used for a <see cref="NormalizedPageReference"/> given the
-    /// parameters.
+    /// The ID which should be used for a <see cref="NormalizedPageReference"/> given the parameters.
     /// </returns>
-    public static string GetId(string title, string wikiNamespace, string? domain)
-        => string.IsNullOrEmpty(domain)
-        ? $"{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference"
-        : $"({domain}):{wikiNamespace.ToLowerInvariant()}:{title.ToLowerInvariant()}:normalizedreference";
+    public static string GetId(PageTitle title) => NormalizedPageReferenceIdItemTypeName + title.ToString();
+
+    /// <summary>
+    /// Adds a page to the reference for the given <paramref name="title"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="title">The title of the page.</param>
+    /// <param name="id">
+    /// The <see cref="IdItem.Id"/> of the page which is to be assigned to the referenced title.
+    /// </param>
+    public static async Task AddReferenceAsync(
+        IDataStore dataStore,
+        PageTitle title,
+        string id)
+    {
+        var reference = await dataStore
+            .GetItemAsync<NormalizedPageReference>(GetId(title))
+            .ConfigureAwait(false);
+        if (reference is null)
+        {
+            reference = new NormalizedPageReference(
+                GetId(title),
+                new List<string> { id }.AsReadOnly());
+        }
+        else if (reference.References.Contains(id))
+        {
+            return;
+        }
+        else
+        {
+            reference.References = reference.References.ToImmutableList().Add(id);
+        }
+
+        await dataStore.StoreItemAsync(reference)
+            .ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Gets the <see cref="NormalizedPageReference"/> that fits the given parameters.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the wiki page.</param>
-    /// <param name="wikiNamespace">The namespace of the wiki page.</param>
-    /// <param name="domain">The domain of the wiki page (if any).</param>
+    /// <param name="title">The title of the page.</param>
     /// <returns>
     /// The <see cref="NormalizedPageReference"/> that fits the given parameters; or <see
     /// langword="null"/>, if there is no such item.
     /// </returns>
     public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(
         IDataStore dataStore,
-        string title,
-        string wikiNamespace,
-        string? domain)
-        => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title, wikiNamespace, domain));
+        PageTitle title)
+        => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title));
 
     /// <summary>
-    /// Get a new instance of <see cref="NormalizedPageReference"/>.
+    /// Removes a page from the reference for the given <paramref name="title"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="title">The title of the page.</param>
     /// <param name="id">
-    /// The <see cref="IdItem.Id"/> of the wiki page which is currently assigned to the
-    /// referenced full title.
+    /// The <see cref="IdItem.Id"/> of the page which is to be removed from the referenced title.
     /// </param>
-    /// <param name="title">
-    /// The title of the wiki page which is currently assigned to the referenced full title.
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace of the wiki page which is currently assigned to the referenced full title.
-    /// </param>
-    /// <param name="domain">
-    /// The domain of the wiki page which is currently assigned to the referenced full title (if any).
-    /// </param>
-    public static async Task<NormalizedPageReference> NewAsync(
+    public static async Task RemoveReferenceAsync(
         IDataStore dataStore,
-        string id,
-        string title,
-        string wikiNamespace,
-        string? domain)
+        PageTitle title,
+        string id)
     {
-        var result = new NormalizedPageReference(
-            GetId(title, wikiNamespace, domain),
-            new List<string> { id }.AsReadOnly());
-        await dataStore.StoreItemAsync(result).ConfigureAwait(false);
-        return result;
-    }
-
-    /// <summary>
-    /// Adds a page to this reference.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="id">
-    /// The <see cref="IdItem.Id"/> of the wiki page which is to be assigned to the referenced
-    /// full title.
-    /// </param>
-    public async Task AddReferenceAsync(IDataStore dataStore, string id)
-    {
-        if (References.Contains(id))
+        var reference = await dataStore
+            .GetItemAsync<NormalizedPageReference>(GetId(title))
+            .ConfigureAwait(false);
+        if (reference is null
+            || !reference.References.Contains(id))
         {
             return;
         }
-
-        var result = new NormalizedPageReference(
-            Id,
-            References.ToImmutableList().Add(id));
-        await dataStore.StoreItemAsync(result).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Removes a page from this reference.
-    /// </summary>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="id">
-    /// The <see cref="IdItem.Id"/> of the wiki page which is to be removed from the referenced
-    /// full title.
-    /// </param>
-    public async Task RemoveReferenceAsync(IDataStore dataStore, string id)
-    {
-        if (!References.Contains(id))
+        else if (reference.References.Count == 1)
         {
-            return;
-        }
-
-        if (References.Count == 1)
-        {
-            await dataStore.RemoveItemAsync<NormalizedPageReference>(Id).ConfigureAwait(false);
+            await dataStore.RemoveItemAsync(reference)
+                .ConfigureAwait(false);
         }
         else
         {
-            var result = new NormalizedPageReference(
-                Id,
-                References.ToImmutableList().Remove(id));
-            await dataStore.StoreItemAsync(result).ConfigureAwait(false);
+            reference.References = reference.References.ToImmutableList().Remove(id);
+            await dataStore.StoreItemAsync(reference)
+                .ConfigureAwait(false);
         }
     }
 }

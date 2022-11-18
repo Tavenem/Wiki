@@ -9,6 +9,11 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 public class WikiLinkDelimiterInline : LinkDelimiterInline
 {
     /// <summary>
+    /// An action segment which follows the link.
+    /// </summary>
+    public string? Action { get; set; }
+
+    /// <summary>
     /// Whether this link's display label was auto-generated.
     /// </summary>
     public bool AutoDisplay { get; set; }

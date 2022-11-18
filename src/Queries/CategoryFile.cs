@@ -1,9 +1,10 @@
-﻿namespace Tavenem.Wiki.Queries;
+﻿using Tavenem.Wiki.Models;
+
+namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// A file in a category.
 /// </summary>
 /// <param name="Title">The title of the represented <see cref="WikiFile"/>.</param>
 /// <param name="Size">The size of the file, in bytes.</param>
-/// <param name="Domain">The domain of the represented <see cref="WikiFile"/> (if any).</param>
-public record CategoryFile(string Title, int Size, string? Domain);
+public record CategoryFile(PageTitle Title, int Size);

@@ -57,9 +57,9 @@ internal static class WikiConfig
         return htmlSanitizer;
     }
 
-    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options, IDataStore dataStore) =>
+    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options, IDataStore dataStore, PageTitle title) =>
         new MarkdownPipelineBuilder()
-        .UseWikiLinks(options, dataStore)
+        .UseWikiLinks(options, dataStore, title)
         .UseAbbreviations()
         .UseAutoIdentifiers()
         .UseTableOfContents(new MarkdownExtensions.TableOfContents.TableOfContentsOptions
@@ -86,9 +86,9 @@ internal static class WikiConfig
         .UseSmartyPants()
         .Build();
 
-    internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore) =>
+    internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore, PageTitle title) =>
         new MarkdownPipelineBuilder()
-        .UseWikiLinks(options, dataStore)
+        .UseWikiLinks(options, dataStore, title)
         .UseAbbreviations()
         .UseAutoIdentifiers()
         .UseCitations()

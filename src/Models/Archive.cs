@@ -3,26 +3,29 @@
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// An archive is a storage class used to (de)serialize an entire wiki, or a domain within a wiki.
+/// An archive is a storage class used to (de)serialize all the pages in a wiki, or a domain within
+/// a wiki.
 /// </summary>
 /// <remarks>
 /// <para>
 /// The advantage of an archive over backup and restoration of underlying storage is that not
-/// everything needs to be stored in order to reconstitute a wiki. Many of the data objects
-/// maintained by the wiki are intended to optimize performance, and can be rebuilt on demand.
+/// everything needs to be stored in order to reconstitute a wiki's pages. Many of the data objects
+/// maintained by the wiki are intended to optimize performance, and can be rebuilt on demand. In
+/// addition, an archive discards all history, capturing only the most recent version of every page.
+/// An archive also does not record messages, only page content.
 /// </para>
 /// <para>
-/// This represents a tradeoff between storage size and restoration speed. If your goal is to save
+/// Using archives is a tradeoff between storage size and restoration speed. If your goal is to save
 /// and restore a wiki as quickly as possible, the native save and restore options for your
 /// underlying data source are likely to be far superior. If your aim is to make the size of the
 /// storage item as small as possible, an archive object will likely be significantly more compact.
 /// </para>
 /// <para>
-/// Anotehr advantage of an archive is that it can be imported into an existing wiki in-place,
+/// Another advantage of an archive is that it can be imported into an existing wiki in-place,
 /// without deleting the current contents. This can be used to move domains from one wiki to
-/// another, or to move pages from one wiki to another. Archive restoration is "smart" in that it
-/// puts articles from the default namespace of the original wiki into the default namespace of the
-/// target wiki, even if the defaults of the two wikis is different.
+/// another, or to move pages from one wiki to another. Archive restoration is also "smart" in that
+/// it puts articles from well-known namespaces of the original wiki into the same namespaces of the
+/// target wiki, even if the options of the two wikis have been set differently.
 /// </para>
 /// </remarks>
 public class Archive
@@ -38,19 +41,9 @@ public class Archive
     public WikiOptions? Options { get; set; }
 
     /// <summary>
-    /// All messages posted to Talk pages in the wiki/domain.
+    /// All the pages in the wiki/domain.
     /// </summary>
-    public List<Message>? Messages { get; set; }
-
-    /// <summary>
-    /// All the articles, categories, and files in the wiki/domain.
-    /// </summary>
-    public List<Article>? Pages { get; set; }
-
-    /// <summary>
-    /// All the revisions for all articles, categories, and files in the wiki/domain.
-    /// </summary>
-    public List<Revision>? Revisions { get; set; }
+    public List<Page>? Pages { get; set; }
 
     /// <summary>
     /// Restores this <see cref="Archive"/> to the wiki in the given <see cref="IDataStore"/>.
@@ -59,15 +52,17 @@ public class Archive
     /// <param name="options">
     /// A <see cref="WikiOptions"/> instance describing the target wiki.
     /// </param>
+    /// <param name="editor">
+    /// <para>
+    /// The ID of the user who is restoring this archive.
+    /// </para>
+    /// <para>
+    /// This will be listed as the editor of all restored pages.
+    /// </para>
+    /// </param>
     /// <remarks>
     /// <para>
     /// Pages in the target wiki with the same domain, namespace, and title will be overwritten.
-    /// </para>
-    /// <para>
-    /// The overwritten pages, their history, and their associated talk messages, will not be
-    /// deleted from the data source and could still be recovered by whatever means of manually
-    /// accessing data the data source provides. They will no longer be accessible from within the
-    /// wiki, however.
     /// </para>
     /// <para>
     /// The restore operation is not guaranteed to be transactional. In other words, the process may
@@ -78,123 +73,86 @@ public class Archive
     /// </remarks>
     public async Task RestoreAsync(
         IDataStore dataStore,
-        WikiOptions options)
+        WikiOptions options,
+        string editor)
     {
-        if (Pages is not null)
+        if (Pages is null)
         {
-            foreach (var page in Pages)
-            {
-                var revisions = Revisions?
-                    .Where(x => x.WikiId == page.Id)
-                    .ToList();
-
-                var lastEditor = revisions?
-                    .OrderByDescending(x => x.TimestampTicks)
-                    .FirstOrDefault()?
-                    .Editor;
-
-                if (page is Category category)
-                {
-                    await category.RestoreAsync(options, dataStore, lastEditor ?? "archive restore");
-                }
-                else if (page is WikiFile file)
-                {
-                    await file.RestoreAsync(options, dataStore, lastEditor ?? "archive restore");
-                }
-                else
-                {
-                    string? newNamespace = null;
-                    if (Options is not null)
-                    {
-                        if (string.Equals(page.WikiNamespace, Options.CategoryNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.CategoryNamespace;
-                        }
-                        else if (string.Equals(page.WikiNamespace, Options.DefaultNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.DefaultNamespace;
-                        }
-                        else if (string.Equals(page.WikiNamespace, Options.FileNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.FileNamespace;
-                        }
-                        else if (string.Equals(page.WikiNamespace, Options.GroupNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.GroupNamespace;
-                        }
-                        else if (string.Equals(page.WikiNamespace, Options.ScriptNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.ScriptNamespace;
-                        }
-                        else if (string.Equals(page.WikiNamespace, Options.TransclusionNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.TransclusionNamespace;
-                        }
-                        else if (string.Equals(page.WikiNamespace, Options.UserNamespace, StringComparison.Ordinal))
-                        {
-                            newNamespace = options.UserNamespace;
-                        }
-                    }
-                    await page.RestoreAsync(options, dataStore, lastEditor ?? "archive restore", newNamespace);
-                }
-
-                if (revisions is not null)
-                {
-                    var first = true;
-                    foreach (var revision in revisions.OrderBy(x => x.TimestampTicks))
-                    {
-                        Revision? newRevision = null;
-                        if (first
-                            && page is Category
-                            && revision.Delta is null
-                            && !revision.IsMilestone
-                            && !revision.IsDeleted)
-                        {
-                            var existing = await dataStore
-                                .Query<Revision>()
-                                .Where(x => x.WikiId == page.Id && x.Delta == null && !x.IsMilestone && !x.IsDeleted)
-                                .OrderBy(x => x.TimestampTicks)
-                                .FirstOrDefaultAsync();
-                            if (existing is not null)
-                            {
-                                newRevision = new Revision(
-                                    existing.Id,
-                                    page.Id,
-                                    revision.Editor,
-                                    revision.Title,
-                                    revision.WikiNamespace,
-                                    revision.Domain,
-                                    null,
-                                    false,
-                                    false,
-                                    revision.Comment,
-                                    revision.TimestampTicks);
-                            }
-                        }
-                        newRevision ??= new Revision(
-                            revision.Id,
-                            page.Id,
-                            revision.Editor,
-                            revision.Title,
-                            revision.WikiNamespace,
-                            revision.Domain,
-                            revision.Delta,
-                            revision.IsDeleted,
-                            revision.IsMilestone,
-                            revision.Comment,
-                            revision.TimestampTicks);
-                        await dataStore.StoreItemAsync(newRevision).ConfigureAwait(false);
-                        first = false;
-                    }
-                }
-            }
+            return;
         }
 
-        if (Messages is not null)
+        foreach (var page in Pages)
         {
-            foreach (var message in Messages)
+            if (page is Category category)
             {
-                await dataStore.StoreItemAsync(message).ConfigureAwait(false);
+                await Page.RestoreAsync(options, dataStore, category, editor, null, options.CategoryNamespace)
+                    .ConfigureAwait(false);
+            }
+            else if (page is WikiFile file)
+            {
+                await Page.RestoreAsync(options, dataStore, file, editor, null, options.FileNamespace)
+                    .ConfigureAwait(false);
+            }
+            else if (page is Article article)
+            {
+                string? newTitle = null;
+                string? newNamespace = null;
+                if (Options is not null)
+                {
+                    if (string.CompareOrdinal(page.Title.Namespace, Options.GroupNamespace) == 0)
+                    {
+                        newNamespace = options.GroupNamespace;
+                    }
+                    else if (string.CompareOrdinal(page.Title.Namespace, Options.ScriptNamespace) == 0)
+                    {
+                        newNamespace = options.ScriptNamespace;
+                    }
+                    else if (string.CompareOrdinal(page.Title.Namespace, Options.TransclusionNamespace) == 0)
+                    {
+                        newNamespace = options.TransclusionNamespace;
+                    }
+                    else if (string.CompareOrdinal(page.Title.Namespace, Options.UserNamespace) == 0)
+                    {
+                        newNamespace = options.UserNamespace;
+                    }
+                    else if (string.IsNullOrEmpty(page.Title.Domain)
+                        && string.CompareOrdinal(page.Title.Namespace, Options.SystemNamespace) == 0)
+                    {
+                        newNamespace = options.SystemNamespace;
+
+                        if (string.CompareOrdinal(page.Title.Title, Options.AboutPageTitle) == 0)
+                        {
+                            newTitle = options.AboutPageTitle;
+                        }
+                        else if (string.CompareOrdinal(page.Title.Title, Options.ContactPageTitle) == 0)
+                        {
+                            newTitle = options.ContactPageTitle;
+                        }
+                        else if (string.CompareOrdinal(page.Title.Title, Options.ContentsPageTitle) == 0)
+                        {
+                            newTitle = options.ContentsPageTitle;
+                        }
+                        else if (string.CompareOrdinal(page.Title.Title, Options.CopyrightPageTitle) == 0)
+                        {
+                            newTitle = options.CopyrightPageTitle;
+                        }
+                        else if (string.CompareOrdinal(page.Title.Title, Options.HelpPageTitle) == 0)
+                        {
+                            newTitle = options.HelpPageTitle;
+                        }
+                        else if (string.CompareOrdinal(page.Title.Title, Options.PolicyPageTitle) == 0)
+                        {
+                            newTitle = options.PolicyPageTitle;
+                        }
+                    }
+                }
+                await Page.RestoreAsync(options, dataStore, article, editor, newTitle, newNamespace)
+                    .ConfigureAwait(false);
+            }
+            else
+            {
+                await Page.RestoreAsync(options, dataStore, page, editor, null, null)
+                    .ConfigureAwait(false);
             }
         }
     }

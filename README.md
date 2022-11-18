@@ -42,7 +42,6 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 
   Note that anonymous users cannot make any changes regardless of this setting. A specific editor is
   required for all content creation and revision.
-- `DefaultNamespace`: The name of the default namespace. Default is "Wiki".
 - `DefaultRegisteredPermission`: The default permission granted to a registered user for wiki content with no configured access control.
 
   This defaults to `All`, which allows registered users full access when no specific access controls
@@ -59,8 +58,8 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 - `HelpPageTitle`*: The title of the main help page. Default is "Help".
 - `LinkTemplate`: A string added to all wiki links, if non-empty. The string '\{LINK\}', if included,
   will be replaced by the full article title being linked.
-- `MainPageTitle`: The title of the main page (shown when no article title is given). Default is
-  "Main".
+- `MainPageTitle`: The title of the main page for any namespace (shown when no article title is
+  explicitly requested). If omitted "Main" will be used.
 - `MaxFileSize`: The maximum size (in bytes) of uploaded files. Default is 5,000,000 (5 MB).
 
   Setting this to a value less than or equal to zero effectively prevents file uploads.
@@ -88,19 +87,19 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
 
   Processors are run in the order they are added to the collection.
 - `ReservedNamespaces`: An optional collection of namespaces which may not be assigned to pages by
-  users. The namespaces assigned to `CategoryNamespace`, `FileNamespace`, and `TalkNamespace` are
-  included automatically.
+  users. The namespace assigned to `FileNamespace` is included automatically.
 
   Read-only. Values can be added with the `AddReservedNamespace` method.
 - `ScriptNamespace`: The name of the script namespace. Default is "Script".
 - `SiteName`: The name of the wiki. Displayed as a subheading below each article title. Default is
   "a NeverFoundry wiki".
 - `SystemNamespace`: The name of the system namespace. Default is "System".
-- `TalkNamespace`: The name of the talk pseudo-namespace. Default is "Talk".
 - `TransclusionNamespace`: The name of the transclusion namespace. Default is "Transclusion".
 - `UserNamespace`: The name of the user namespace. Default is "User".
-- `WikiLinkPrefix`: The prefix added before wiki links (to distinguish them from other pages on the
+- `WikiLinkPrefix`: A prefix added before wiki links (to distinguish them from other pages on the
   same server). Default is "Wiki".
+  
+  May be set to `null` or an empty `string`, which omits any prefix from generated URLs.
 
 **This property may be set to `null` or an empty `string` to disable the associated wiki page.*
 

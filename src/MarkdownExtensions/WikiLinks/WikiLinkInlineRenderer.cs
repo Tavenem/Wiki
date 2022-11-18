@@ -26,20 +26,14 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
     /// <param name="link">The markdown object.</param>
     protected override void Write(HtmlRenderer renderer, WikiLinkInline link)
     {
-        if (!link.IsWikipedia && !link.IsCommons && link.IsCategory && !link.IsNamespaceEscaped)
+        if (!link.IsWikipedia && !link.IsCommons && link.IsCategory && !link.IsEscaped)
         {
             return; // do not render unescaped category links
         }
-        var fullTitle = !link.IsCommons
-            && !link.IsWikipedia
-            && (string.IsNullOrEmpty(link.Title) || link.Title[0] != '#')
-            ? Article.GetFullTitle(
-                Options,
-                link.Title ?? string.Empty,
-                link.WikiNamespace ?? Options.DefaultNamespace,
-                link.Domain,
-                link.IsTalk)
-            : link.Title;
+        var url = link.IsCommons
+            || link.IsWikipedia
+            ? link.Title
+            : link.PageTitle.ToString();
 
         if (renderer.EnableHtmlForInline)
         {
@@ -55,19 +49,33 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
             {
                 if (link.IsImage)
                 {
-                    renderer.Write("<img src=\"/");
+                    renderer.Write("<img src=\"./");
                 }
                 else if (!string.IsNullOrEmpty(link.Title) && link.Title[0] == '#')
                 {
                     renderer.Write("<a href=\"");
                 }
+                else if (string.IsNullOrEmpty(Options.WikiLinkPrefix))
+                {
+                    renderer.Write("<a href=\"./");
+                }
                 else
                 {
-                    renderer.Write($"<a href=\"/{Options.WikiLinkPrefix}/");
+                    renderer.Write($"<a href=\"./{Options.WikiLinkPrefix}/");
                 }
-                link.GetAttributes().AddClass(link.Missing ? "wiki-link-missing" : "wiki-link-exists");
+                link.GetAttributes().AddClass(link.IsMissing ? "wiki-link-missing" : "wiki-link-exists");
             }
-            renderer.WriteEscapeUrl(fullTitle);
+            renderer.WriteEscapeUrl(url);
+            if (!string.IsNullOrEmpty(link.Action))
+            {
+                renderer.Write('/');
+                renderer.Write(link.Action);
+            }
+            if (!string.IsNullOrEmpty(link.Fragment))
+            {
+                renderer.Write('#');
+                renderer.Write(link.Fragment.ToLowerInvariant().Replace(' ', '-'));
+            }
             renderer.Write("\"");
             renderer.WriteAttributes(link);
 
@@ -77,7 +85,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                 && !string.IsNullOrEmpty(Options.LinkTemplate))
             {
                 renderer.Write(" ");
-                renderer.Write(Options.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(fullTitle)));
+                renderer.Write(Options.LinkTemplate.Replace("{LINK}", HttpUtility.HtmlEncode(url)));
             }
         }
         if (link.IsImage)
@@ -170,7 +178,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
             }
             else
             {
-                var hasDomain = !string.IsNullOrEmpty(link.Domain);
+                var hasDomain = !string.IsNullOrEmpty(link.PageTitle.Domain);
                 if (hasDomain)
                 {
                     if (renderer.EnableHtmlForInline)
@@ -181,7 +189,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                     {
                         renderer.Write('(');
                     }
-                    renderer.Write(link.Domain);
+                    renderer.Write(link.PageTitle.Domain);
                     if (renderer.EnableHtmlForInline)
                     {
                         renderer.Write("</span>");
@@ -191,14 +199,13 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                         renderer.Write("):");
                     }
                 }
-                if (hasDomain
-                    || !string.Equals(link.WikiNamespace, Options.DefaultNamespace, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(link.PageTitle.Namespace))
                 {
                     if (renderer.EnableHtmlForInline)
                     {
                         renderer.Write("<span class=\"wiki-link-namespace\">");
                     }
-                    renderer.Write(link.WikiNamespace ?? Options.DefaultNamespace);
+                    renderer.Write(link.PageTitle.Namespace);
                     if (renderer.EnableHtmlForInline)
                     {
                         renderer.Write("</span>");
@@ -208,14 +215,17 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                         renderer.Write(':');
                     }
                 }
-                if (renderer.EnableHtmlForInline)
+                if (!string.IsNullOrEmpty(link.PageTitle.Title))
                 {
-                    renderer.Write("<span class=\"wiki-link-title\">");
-                }
-                renderer.Write(link.Title);
-                if (renderer.EnableHtmlForInline)
-                {
-                    renderer.Write("</span>");
+                    if (renderer.EnableHtmlForInline)
+                    {
+                        renderer.Write("<span class=\"wiki-link-title\">");
+                    }
+                    renderer.Write(link.PageTitle.Title);
+                    if (renderer.EnableHtmlForInline)
+                    {
+                        renderer.Write("</span>");
+                    }
                 }
                 //renderer.WriteChildren(link);
             }

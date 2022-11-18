@@ -6,8 +6,9 @@ namespace Tavenem.Wiki.Test;
 [TestClass]
 public class WikiFunctionTests
 {
-    private const string Editor = "Tester";
+    private const string TEST_OWNER_ID = "Tester";
     private const string InnerNestedTitle = "InnerNested";
+    private const string Namespace = "Namespace";
     private const string NestedTitle = "Nested";
     private const string Title = "Title";
 
@@ -34,190 +35,191 @@ Fourth section text";
     private const string LongArticleExpected = "<p>First paragraph text</p>\n{0}<p>Second paragraph text</p>\n<h1 id=\"first-heading\">First heading</h1>\n<p>Second section text</p>\n<h2 id=\"nested-heading\">Nested heading</h2>\n<p>Nested section text</p>\n<h1 id=\"second-heading\">Second heading</h1>\n<p>Third section text</p>\n<h1 id=\"third-heading\">Third heading</h1>\n<p>Fourth section text</p>\n";
 
     private static readonly WikiOptions _Options = new();
-    private static readonly IDataStore _DataStore = new InMemoryDataStore();
-
-    private static Article? _Article;
-    private static Article? _InnerNestedArticle;
-    private static Article? _NestedArticle;
 
     [TestMethod]
-    public void EvalTest() => TestTemplate("{{eval|Math.pow(x, 3)|x=2}}", "8");
+    public Task EvalTest() => TestTemplateAsync(new InMemoryDataStore(), "{{eval|Math.pow(x, 3)|x=2}}", "8");
 
     [TestMethod]
-    public void ExecTest()
+    public async Task ExecTest()
     {
-        _ = Article.NewAsync(
-            _Options,
-            _DataStore,
-            "NestedExec",
-            Editor,
-            "return Math.pow(x, 3);",
-            _Options.ScriptNamespace)
-            .GetAwaiter()
-            .GetResult();
-        TestTemplate("{{exec|NestedExec|x=2}}", "8");
+        var dataStore = new InMemoryDataStore();
+        _ = await GetArticleAsync(dataStore, "return Math.pow(x, 3);", "NestedExec", _Options.ScriptNamespace);
+        await TestTemplateAsync(dataStore, "{{exec|NestedExec|x=2}}", "8");
     }
 
     [TestMethod]
-    public void AnchorLinkTest()
+    public async Task AnchorLinkTest()
     {
-        TestTemplate("[[Title#Anchor|]]", "<a href=\"/Wiki/Title#anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
-        TestTemplate("[[Title#Anchor||]]", "<a href=\"/Wiki/Title#anchor\" class=\"wiki-link-exists\">title § anchor</a>");
-        TestTemplate("[[#Local Anchor|]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">Local Anchor</a>");
-        TestTemplate("[[#Local Anchor||]]", "<a href=\"#Local%20Anchor\" class=\"wiki-link-exists\">local anchor</a>");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "[[Title#Anchor|]]", "<a href=\"./Wiki/Title#anchor\" class=\"wiki-link-exists\">Title § Anchor</a>");
+        await TestTemplateAsync(dataStore, "[[Title#Anchor||]]", "<a href=\"./Wiki/Title#anchor\" class=\"wiki-link-exists\">title § anchor</a>");
+        await TestTemplateAsync(dataStore, "[[#Local Anchor|]]", "<a href=\"#local-anchor\" class=\"wiki-link-exists\">Local Anchor</a>");
+        await TestTemplateAsync(dataStore, "[[#Local Anchor||]]", "<a href=\"#local-anchor\" class=\"wiki-link-exists\">local anchor</a>");
     }
 
     [TestMethod]
-    public void FormatTest()
+    public async Task FormatTest()
     {
-        TestTemplate("{{format|52}}", "52");
-        TestTemplate("{{format|52|D3}}", "052");
-        TestTemplate("{{format|54321}}", "54,321");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{format|52}}", "52");
+        await TestTemplateAsync(dataStore, "{{format|52|D3}}", "052");
+        await TestTemplateAsync(dataStore, "{{format|54321}}", "54,321");
 
-        TestTemplate("{{format|5.2}}", "5.20");
-        TestTemplate("{{format|5.2|C2}}", "$5.20");
-        TestTemplate("{{format|54321|e5}}", "5.43210e+004");
+        await TestTemplateAsync(dataStore, "{{format|5.2}}", "5.20");
+        await TestTemplateAsync(dataStore, "{{format|5.2|C2}}", "$5.20");
+        await TestTemplateAsync(dataStore, "{{format|54321|e5}}", "5.43210e+004");
 
-        TestTemplate("{{format|03/10/2020 11:37 AM}}", "3/10/2020 11:37 AM");
-        TestTemplate("{{format|03/10/2020 11:37 AM|d}}", "3/10/2020");
-        TestTemplate("{{format|03/10/2020 11:37 AM +0:00|u}}", "2020-03-10 11:37:00Z");
+        await TestTemplateAsync(dataStore, "{{format|03/10/2020 11:37 AM}}", "3/10/2020 11:37 AM");
+        await TestTemplateAsync(dataStore, "{{format|03/10/2020 11:37 AM|d}}", "3/10/2020");
+        await TestTemplateAsync(dataStore, "{{format|03/10/2020 11:37 AM +0:00|u}}", "2020-03-10 11:37:00Z");
     }
 
     [TestMethod]
-    public void FullPageNameTest()
+    public async Task FullPageNameTest()
     {
-        TestTemplate("{{fullpagename}}", "Title");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{fullpagename}}", Title);
 
-        var nested = GetNestedArticle("{{fullpagename}}");
-        Assert.AreEqual($"<p>{_Options.TransclusionNamespace}:Nested</p>\n", nested.Html);
-        TestTemplate("{{Nested}}", "Title");
+        var nested = await GetArticleAsync(dataStore, "{{fullpagename}}", NestedTitle, _Options.TransclusionNamespace);
+        Assert.AreEqual($"<p>{_Options.TransclusionNamespace}:{NestedTitle}</p>\n", nested.Html);
+        await TestTemplateAsync(dataStore, $$$"""{{{{{NestedTitle}}}}}""", Title);
     }
 
     [TestMethod]
-    public void IfTest()
+    public async Task IfTest()
     {
-        TestTemplate("{{if|true|success}}", "success");
-        TestTemplate("{{if|true|success|other}}", "success");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{if|true|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{if|true|success|other}}", "success");
 
-        TestTemplate("{{if|false|other|success}}", "success");
-        TestTemplate("{{if|false|other}}", string.Empty, paragraph: false);
+        await TestTemplateAsync(dataStore, "{{if|false|other|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{if|false|other}}", string.Empty, paragraph: false);
 
-        TestTemplate("{{if|1|success}}", "success");
-        TestTemplate("{{if|1|success|other}}", "success");
+        await TestTemplateAsync(dataStore, "{{if|1|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{if|1|success|other}}", "success");
 
-        TestTemplate("{{if|0|other|success}}", "success");
-        TestTemplate("{{if|0|other}}", string.Empty, paragraph: false);
+        await TestTemplateAsync(dataStore, "{{if|0|other|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{if|0|other}}", string.Empty, paragraph: false);
     }
 
     [TestMethod]
-    public void IfCategoryTest()
+    public async Task IfCategoryTest()
     {
+        var dataStore = new InMemoryDataStore();
         const string Markdown = "{{ifcategory|yes|no}}";
-        TestTemplate(Markdown, "no");
+        await TestTemplateAsync(dataStore, Markdown, "no");
 
-        var category = Category.NewAsync(
+        var page = Category.Empty(new(Title, _Options.CategoryNamespace));
+        await page.UpdateAsync(
             _Options,
-            _DataStore,
-            Title,
-            Editor,
-            Markdown)
-            .GetAwaiter()
-            .GetResult();
+            dataStore,
+            TEST_OWNER_ID,
+            Markdown);
+        var category = dataStore.GetItem<Category>(page.Id, TimeSpan.Zero);
+        Assert.IsNotNull(category);
         Assert.AreEqual("<p>yes</p>\n", category.Html);
     }
 
     [TestMethod]
-    public void IfEqTest()
+    public async Task IfEqTest()
     {
-        TestTemplate("{{ifeq|one|one|success}}", "success");
-        TestTemplate("{{ifeq|one|one|success|other}}", "success");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{ifeq|one|one|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|one|one|success|other}}", "success");
 
-        TestTemplate("{{ifeq|one|two|other|success}}", "success");
-        TestTemplate("{{ifeq|one|two|other}}", string.Empty, paragraph: false);
+        await TestTemplateAsync(dataStore, "{{ifeq|one|two|other|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|one|two|other}}", string.Empty, paragraph: false);
 
-        TestTemplate("{{ifeq|true|TRUE|success}}", "success");
-        TestTemplate("{{ifeq|true|TRUE|success|other}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|true|TRUE|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|true|TRUE|success|other}}", "success");
 
-        TestTemplate("{{ifeq|1,234|1234|success}}", "success");
-        TestTemplate("{{ifeq|1,234|1234|success|other}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|1,234|1234|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|1,234|1234|success|other}}", "success");
 
-        TestTemplate("{{ifeq|1234.0|1234|success}}", "success");
-        TestTemplate("{{ifeq|1234.0|1234|success|other}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|1234.0|1234|success}}", "success");
+        await TestTemplateAsync(dataStore, "{{ifeq|1234.0|1234|success|other}}", "success");
     }
 
     [TestMethod]
-    public void IfNotTemplateTest() => TestTemplate("{{ifnottemplate|success}}", "success");
+    public Task IfNotTemplateTest() => TestTemplateAsync(new InMemoryDataStore(), "{{ifnottemplate|success}}", "success");
 
     [TestMethod]
-    public void IfTalkTest() => TestTemplate("{{iftalk|fail|success}}", "success");
+    public Task IfTalkTest() => TestTemplateAsync(new InMemoryDataStore(), "{{iftalk|fail|success}}", "success");
 
     [TestMethod]
-    public void IfTemplateTest()
+    public async Task IfTemplateTest()
     {
-        _ = GetNestedArticle("{{iftemplate|success}}");
-        TestTemplate("{{Nested}}", "success");
+        var dataStore = new InMemoryDataStore();
+        _ = await GetArticleAsync(dataStore, "{{iftemplate|success}}", NestedTitle, _Options.TransclusionNamespace);
+        await TestTemplateAsync(dataStore, $$$"""{{{{{NestedTitle}}}}}""", "success");
     }
 
     [TestMethod]
-    public void LinkTest()
+    public async Task LinkTest()
     {
-        TestTemplate("[[Title|Alt <strong>title</strong>]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
-        TestTemplate("[[title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
-        TestTemplate("[[Title]]s", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span>s</a>");
-        TestTemplate("[[Wiki:Title]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
-        TestTemplate("[[Wiki:Title|]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Title</a>");
-        TestTemplate("[[Wiki:Title||]]", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">title</a>");
-        TestTemplate("[[Wiki:Title|]]s", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">Titles</a>");
-        TestTemplate("[[Wiki:Title||]]s", "<a href=\"/Wiki/Title\" class=\"wiki-link-exists\">titles</a>");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "[[Title|Alt <strong>title</strong>]]", "<a href=\"./Wiki/Title\" class=\"wiki-link-exists\">Alt <strong>title</strong></a>");
+        await TestTemplateAsync(dataStore, "[[title]]", "<a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>");
+        await TestTemplateAsync(dataStore, "[[Title]]s", "<a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span>s</a>");
+        await TestTemplateAsync(dataStore, "[[Namespace:Title]]", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-namespace\">Namespace</span><span class=\"wiki-link-title\">Title</span></a>", @namespace: Namespace);
+        await TestTemplateAsync(dataStore, "[[Namespace:Title]]s", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-namespace\">Namespace</span><span class=\"wiki-link-title\">Title</span>s</a>", @namespace: Namespace);
+        await TestTemplateAsync(dataStore, "[[Namespace:Title|]]", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">Title</a>", @namespace: Namespace);
+        await TestTemplateAsync(dataStore, "[[Namespace:Title||]]", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">title</a>", @namespace: Namespace);
+        await TestTemplateAsync(dataStore, "[[Namespace:Title|]]s", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">Titles</a>", @namespace: Namespace);
+        await TestTemplateAsync(dataStore, "[[Namespace:Title||]]s", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">titles</a>", @namespace: Namespace);
     }
 
     [TestMethod]
-    public void NamespaceTest() => TestTemplate("{{namespace}}", _Options.DefaultNamespace);
+    public Task NamespaceTest() => TestTemplateAsync(new InMemoryDataStore(), "{{namespace}}", Namespace, @namespace: Namespace);
 
     [TestMethod]
-    public void NoTableOfContentsTest()
+    public async Task NoTableOfContentsTest()
     {
-        TestTemplate(string.Format(LongArticle, $"{{{{notoc}}}}{Environment.NewLine}{Environment.NewLine}"), string.Format(LongArticleExpected, string.Empty), paragraph: false);
-        TestTemplate(string.Format(LongArticle, $"<!-- NOTOC -->{Environment.NewLine}{Environment.NewLine}"), string.Format(LongArticleExpected, string.Empty), paragraph: false);
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, string.Format(LongArticle, $"{{{{notoc}}}}{Environment.NewLine}{Environment.NewLine}"), string.Format(LongArticleExpected, string.Empty), paragraph: false);
+        await TestTemplateAsync(dataStore, string.Format(LongArticle, $"<!-- NOTOC -->{Environment.NewLine}{Environment.NewLine}"), string.Format(LongArticleExpected, string.Empty), paragraph: false);
     }
 
     [TestMethod]
-    public void PadLeftTest()
+    public async Task PadLeftTest()
     {
-        TestTemplate("{{padleft|1|3}}", "001");
-        TestTemplate("{{padleft|1|3|:}}", "::1");
-        TestTemplate("{{padleft|1|3|:m}}", "::1");
-
-        TestTemplate("{{padleft|1|m}}", "1");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{padleft|1|3}}", "001");
+        await TestTemplateAsync(dataStore, "{{padleft|1|3|:}}", "::1");
+        await TestTemplateAsync(dataStore, "{{padleft|1|3|:m}}", "::1");
+        await TestTemplateAsync(dataStore, "{{padleft|1|m}}", "1");
     }
 
     [TestMethod]
-    public void PadRightTest()
+    public async Task PadRightTest()
     {
-        TestTemplate("{{padright|1|3}}", "100");
-        TestTemplate("{{padright|1|3|:}}", "1::");
-        TestTemplate("{{padright|1|3|:m}}", "1::");
-
-        TestTemplate("{{padright|1|m}}", "1");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{padright|1|3}}", "100");
+        await TestTemplateAsync(dataStore, "{{padright|1|3|:}}", "1::");
+        await TestTemplateAsync(dataStore, "{{padright|1|3|:m}}", "1::");
+        await TestTemplateAsync(dataStore, "{{padright|1|m}}", "1");
     }
 
     [TestMethod]
-    public void PageNameTest()
+    public async Task PageNameTest()
     {
-        TestTemplate("{{pagename}}", "Title");
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(dataStore, "{{pagename}}", Title);
 
-        _ = GetNestedArticle("{{pagename}}");
-        TestTemplate("{{Nested}}", "Title");
+        _ = await GetArticleAsync(dataStore, "{{pagename}}", NestedTitle, _Options.TransclusionNamespace);
+        await TestTemplateAsync(dataStore, $$$"""{{{{{NestedTitle}}}}}""", Title);
     }
 
     [TestMethod]
-    public void PreviewTest()
+    public async Task PreviewTest()
     {
-        var article = GetArticle("content");
+        var dataStore = new InMemoryDataStore();
+        var article = await GetArticleAsync(dataStore, "content");
         Assert.AreEqual("<p>content</p>\n", article.Html);
         Assert.AreEqual("<p>content</p>\n", article.Preview);
 
-        article = GetArticle(
+        article = await GetArticleAsync(
+            dataStore,
 @"content
 
 {{preview|hidden}}");
@@ -228,31 +230,30 @@ Fourth section text";
     [TestMethod]
     public async Task ReviseTest()
     {
-        var article = GetArticle("Article with [[link]]");
-        Assert.AreEqual("<p>Article with <a href=\"/Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>\n", article.Html);
-        await article.ReviseAsync(
-            _Options,
-            _DataStore,
-            Editor,
-            Title,
-            "Revised article with [[link]]",
-            "Revision");
-        Assert.AreEqual("<p>Revised article with <a href=\"/Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>\n", article.Html);
+        var dataStore = new InMemoryDataStore();
+        var article = await GetArticleAsync(dataStore, "Article with [[link]]");
+        Assert.AreEqual("<p>Article with <a href=\"./Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>\n", article.Html);
+        article = await GetArticleAsync(dataStore, "Revised article with [[link]]");
+        Assert.AreEqual("<p>Revised article with <a href=\"./Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>\n", article.Html);
     }
 
     [TestMethod]
     public async Task RevisionTest()
     {
-        var article = GetArticle("Test content");
+        var dataStore = new InMemoryDataStore();
+        var article = await GetArticleAsync(dataStore, "Test content");
         var timestamp = article.Timestamp;
-        var revision = await article.GetHtmlAsync(_Options, _DataStore, timestamp).ConfigureAwait(false);
+        var revision = await article
+            .GetHtmlAsync(_Options, dataStore, timestamp)
+            .ConfigureAwait(false);
         Assert.AreEqual("<p>Test content</p>\n", revision);
     }
 
     [TestMethod]
-    public void SerializeTest()
+    public async Task SerializeTest()
     {
-        var article = GetArticle("Content with a [[WikiLink]].");
+        var dataStore = new InMemoryDataStore();
+        var article = await GetArticleAsync(dataStore, "Content with a [[WikiLink]].");
         var json = System.Text.Json.JsonSerializer.Serialize(article);
         Console.WriteLine(json);
 
@@ -261,57 +262,66 @@ Fourth section text";
     }
 
     [TestMethod]
-    public void TableOfContentsTest()
+    public async Task TableOfContentsTest()
     {
-        TestTemplate(
+        var dataStore = new InMemoryDataStore();
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"{{{{toc}}}}{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Contents</h2>\n   <ul>\n      <li><a href=\"#first-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">First heading</span></a>\n         <ul>\n            <li><a href=\"#nested-heading\"><span class=\"toc-number\">1.1</span><span class=\"toc-heading\">Nested heading</span></a></li>\n         </ul>\n      </li>\n      <li><a href=\"#second-heading\"><span class=\"toc-number\">2</span><span class=\"toc-heading\">Second heading</span></a></li>\n      <li><a href=\"#third-heading\"><span class=\"toc-number\">3</span><span class=\"toc-heading\">Third heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"<!-- TOC -->{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Contents</h2>\n   <ul>\n      <li><a href=\"#first-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">First heading</span></a>\n         <ul>\n            <li><a href=\"#nested-heading\"><span class=\"toc-number\">1.1</span><span class=\"toc-heading\">Nested heading</span></a></li>\n         </ul>\n      </li>\n      <li><a href=\"#second-heading\"><span class=\"toc-number\">2</span><span class=\"toc-heading\">Second heading</span></a></li>\n      <li><a href=\"#third-heading\"><span class=\"toc-number\">3</span><span class=\"toc-heading\">Third heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
 
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"{{{{toc|1}}}}{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Contents</h2>\n   <ul>\n      <li><a href=\"#first-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">First heading</span></a></li>\n      <li><a href=\"#second-heading\"><span class=\"toc-number\">2</span><span class=\"toc-heading\">Second heading</span></a></li>\n      <li><a href=\"#third-heading\"><span class=\"toc-number\">3</span><span class=\"toc-heading\">Third heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
 
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"<!-- TOC 1 -->{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Contents</h2>\n   <ul>\n      <li><a href=\"#first-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">First heading</span></a></li>\n      <li><a href=\"#second-heading\"><span class=\"toc-number\">2</span><span class=\"toc-heading\">Second heading</span></a></li>\n      <li><a href=\"#third-heading\"><span class=\"toc-number\">3</span><span class=\"toc-heading\">Third heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
 
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"{{{{toc|*|2}}}}{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Contents</h2>\n   <ul>\n      <li><a href=\"#nested-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">Nested heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
 
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"<!-- TOC * 2 -->{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Contents</h2>\n   <ul>\n      <li><a href=\"#nested-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">Nested heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
 
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"{{{{toc|*|*|Headings}}}}{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
                 "<div class=\"toc\" role=\"navigation\">\n   <h2 class=\"toc-title\">Headings</h2>\n   <ul>\n      <li><a href=\"#first-heading\"><span class=\"toc-number\">1</span><span class=\"toc-heading\">First heading</span></a>\n         <ul>\n            <li><a href=\"#nested-heading\"><span class=\"toc-number\">1.1</span><span class=\"toc-heading\">Nested heading</span></a></li>\n         </ul>\n      </li>\n      <li><a href=\"#second-heading\"><span class=\"toc-number\">2</span><span class=\"toc-heading\">Second heading</span></a></li>\n      <li><a href=\"#third-heading\"><span class=\"toc-number\">3</span><span class=\"toc-heading\">Third heading</span></a></li>\n   </ul>\n</div>\n"),
             paragraph: false);
 
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             string.Format(LongArticle, $"<!-- TOC * * Headings -->{Environment.NewLine}{Environment.NewLine}"),
             string.Format(
                 LongArticleExpected,
@@ -320,142 +330,121 @@ Fourth section text";
     }
 
     [TestMethod]
-    public void ToLowerTest() => TestTemplate("{{tolower|miXed}}", "mixed");
+    public Task ToLowerTest() => TestTemplateAsync(new InMemoryDataStore(), "{{tolower|miXed}}", "mixed");
 
     [TestMethod]
-    public void ToTitleCaseTest() => TestTemplate("{{totitlecase|miXed}}", "MiXed");
+    public Task ToTitleCaseTest() => TestTemplateAsync(new InMemoryDataStore(), "{{totitlecase|miXed}}", "MiXed");
 
     [TestMethod]
-    public void ToUpperTest() => TestTemplate("{{toupper|miXed}}", "MIXED");
+    public Task ToUpperTest() => TestTemplateAsync(new InMemoryDataStore(), "{{toupper|miXed}}", "MIXED");
 
     [TestMethod]
-    public void ComplexTest()
+    public async Task ComplexTest()
     {
-        const string InnerTemplate =
-@"let s;
-if (args.length && args[0] && args[0].length) {
-s = args[0] + ', ';
-} else {
-s = 'For other uses, ';
-}
-if (args.length <= 1) {
-if (fullTitle == null) {
-    return s + 'try searching for this topic.';
-} else {
-    return s + 'see [[' + fullTitle + ' (disambiguation)|]]';
-}
-} else {
-s += 'see ';
-}
-for (let i = 1; i < args.length - 1; i++) {
-if (i > 1) {
-s += ', ';
-}
-s += '[[' + args[i] + ']]';
-}
-if (args.length > 3) {
-s += ',';
-}
-if (args.length > 2) {
-s += ' and ';
-}
-s += '[[' + args[args.length - 1] + ']]';
-return s;";
-        _ = GetInnerNestedArticle(InnerTemplate, _Options.ScriptNamespace);
+        var dataStore = new InMemoryDataStore();
 
-        const string Template =
-@":::wiki-article-ref
-{{iftemplate|{{exec|" + InnerNestedTitle + @"}}}}{{ifnottemplate|This is the ""For"" template}}
-:::";
-        _ = GetNestedArticle(Template);
+        const string InnerTemplate = """
+            let s;
+            if (args.length && args[0] && args[0].length) {
+                s = args[0] + ', ';
+            } else {
+                s = 'For other uses, ';
+            }
+            if (args.length <= 1) {
+                if (fullTitle == null) {
+                    return s + 'try searching for this topic.';
+                } else {
+                    return s + 'see [[' + fullTitle + ' (disambiguation)|]]';
+                }
+            } else {
+                s += 'see ';
+            }
+            for (let i = 1; i < args.length - 1; i++) {
+                if (i > 1) {
+                    s += ', ';
+                }
+                s += '[[' + args[i] + ']]';
+            }
+            if (args.length > 3) {
+                s += ',';
+            }
+            if (args.length > 2) {
+                s += ' and ';
+            }
+            s += '[[' + args[args.length - 1] + ']]';
+            return s;
+            """;
+        _ = await GetArticleAsync(dataStore, InnerTemplate, InnerNestedTitle, _Options.ScriptNamespace);
 
-        TestTemplate(
+        const string Template = $$$$$"""
+            :::wiki-article-ref
+            {{iftemplate|{{exec|{{{{{InnerNestedTitle}}}}}}}}}{{ifnottemplate|This is the ""For"" template}}
+            :::
+            """;
+        _ = await GetArticleAsync(dataStore, Template, NestedTitle, _Options.TransclusionNamespace);
+
+        await TestTemplateAsync(
+            dataStore,
             $"{{{{{NestedTitle}}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
             false);
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             $"{{{{{NestedTitle}|For stuff}}}}",
-            "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"/Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"./Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
             false);
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             $"{{{{{NestedTitle}||Title}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
             false);
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             $"{{{{{NestedTitle}||Title|Other}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"./Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>\n",
             false);
-        TestTemplate(
+        await TestTemplateAsync(
+            dataStore,
             $"{{{{{NestedTitle}||Title|Other|Misc}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"/Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"/Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"/Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"./Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"./Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>\n",
             false);
     }
 
-    private static Article GetArticle(string markdown)
+    private static async Task<Article> GetArticleAsync(IDataStore dataStore, string markdown, string? title = null, string? @namespace = null)
     {
-        if (_Article is null)
+        var pageTitle = new PageTitle(title ?? Title, @namespace);
+        var id = IPage<Page>.GetId(pageTitle);
+        var article = dataStore.GetItem<Article>(id, TimeSpan.Zero);
+        if (article is null)
         {
-            _Article = Article.NewAsync(
+            article = Article.Empty(pageTitle);
+            await article.UpdateAsync(
                 _Options,
-                _DataStore,
-                Title,
-                Editor,
-                markdown)
-                .GetAwaiter()
-                .GetResult();
+                dataStore,
+                TEST_OWNER_ID,
+                markdown);
         }
         else
         {
-            _Article.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
-        }
-        return _Article;
-    }
-
-    private static Article GetInnerNestedArticle(string markdown, string? wikiNamespace = null)
-    {
-        if (_InnerNestedArticle is null)
-        {
-            _InnerNestedArticle = Article.NewAsync(
+            await article.UpdateAsync(
                 _Options,
-                _DataStore,
-                InnerNestedTitle,
-                Editor,
-                markdown,
-                wikiNamespace ?? _Options.TransclusionNamespace)
-                .GetAwaiter()
-                .GetResult();
+                dataStore,
+                TEST_OWNER_ID,
+                markdown);
         }
-        else
-        {
-            _InnerNestedArticle.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
-        }
-        return _InnerNestedArticle;
+        article = dataStore.GetItem<Article>(id, TimeSpan.Zero);
+        Assert.IsNotNull(article);
+        return article;
     }
 
-    private static Article GetNestedArticle(string markdown, string? wikiNamespace = null)
+    private static async Task TestTemplateAsync(
+        IDataStore dataStore,
+        string markdown,
+        string expected,
+        bool paragraph = true,
+        string? @namespace = null)
     {
-        if (_NestedArticle is null)
-        {
-            _NestedArticle = Article.NewAsync(
-                _Options,
-                _DataStore,
-                NestedTitle,
-                Editor,
-                markdown,
-                wikiNamespace ?? _Options.TransclusionNamespace)
-                .GetAwaiter()
-                .GetResult();
-        }
-        else
-        {
-            _NestedArticle.ReviseAsync(_Options, _DataStore, Editor, markdown: markdown).GetAwaiter().GetResult();
-        }
-        return _NestedArticle;
-    }
-
-    private static void TestTemplate(string markdown, string expected, bool paragraph = true)
-    {
-        var article = GetArticle(markdown);
+        var article = await GetArticleAsync(dataStore, markdown, null, @namespace);
         Assert.AreEqual(paragraph ? $"<p>{expected}</p>\n" : expected, article.Html);
     }
 }

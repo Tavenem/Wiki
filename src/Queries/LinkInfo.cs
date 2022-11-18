@@ -1,11 +1,11 @@
-﻿namespace Tavenem.Wiki.Queries;
+﻿using Tavenem.Wiki.Models;
+
+namespace Tavenem.Wiki.Queries;
 
 /// <summary>
-/// Information about a link to or from a wiki item.
+/// Information about a link to or from a wiki page.
 /// </summary>
-/// <param name="Title">The title of the item.</param>
-/// <param name="WikiNamespace">The namespace of the item.</param>
-/// <param name="Domain">The domain of the item.</param>
+/// <param name="Title">The title of the page.</param>
 /// <param name="ChildCount">
 /// The number of child items if the link is a <see cref="Category"/>.
 /// </param>
@@ -16,9 +16,7 @@
 /// The file type if the link is a <see cref="WikiFile"/>.
 /// </param>
 public record LinkInfo(
-    string Title,
-    string WikiNamespace,
-    string? Domain,
+    PageTitle Title,
     int ChildCount,
     int FileSize,
     string? FileType);

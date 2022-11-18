@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json.Serialization;
 
-namespace Tavenem.Wiki;
+namespace Tavenem.Wiki.Models;
 
 /// <summary>
 /// Represents an intra-wiki link.
@@ -9,26 +9,19 @@ namespace Tavenem.Wiki;
 public class WikiLink : IEquatable<WikiLink>
 {
     /// <summary>
-    /// <para>
-    /// The linked article (if any).
-    /// </para>
-    /// <para>
-    /// Note: this property is not persisted to storage, and should only be considered valid
-    /// immediately after parsing.
-    /// </para>
+    /// Any action segment which follows the link.
     /// </summary>
-    [JsonIgnore]
-    public Article? Article { get; set; }
+    /// <remarks>
+    /// <see cref="IsMissing"/> is never <see langword="true"/> when <see cref="Action"/> is not
+    /// <see langword="null"/>, since actions are always possible, even for pages which do not
+    /// currently exist.
+    /// </remarks>
+    public string? Action { get; set; }
 
     /// <summary>
-    /// The domain for the linked article (if any).
+    /// Any fragment which follows the link.
     /// </summary>
-    public string? Domain { get; }
-
-    /// <summary>
-    /// Whether this is a link to an existing page.
-    /// </summary>
-    public bool Missing { get; set; }
+    public string? Fragment { get; set; }
 
     /// <summary>
     /// Whether this is a link to a category.
@@ -36,113 +29,124 @@ public class WikiLink : IEquatable<WikiLink>
     public bool IsCategory { get; }
 
     /// <summary>
-    /// Whether a leading ':' precedes the namespace.
+    /// Whether a leading ':' precedes the link.
     /// </summary>
-    public bool IsNamespaceEscaped { get; }
+    public bool IsEscaped { get; }
 
     /// <summary>
-    /// Whether this is a link to a discussion page.
+    /// Whether this is a link to a missing page.
     /// </summary>
-    public bool IsTalk { get; }
+    /// <remarks>
+    /// <para>
+    /// <see cref="IsMissing"/> is never <see langword="true"/> when the link is to an external
+    /// site. Page existence is not verified for external sites.
+    /// </para>
+    /// <para>
+    /// <see cref="IsMissing"/> is also never <see langword="true"/> for links to categories, which
+    /// exist implicitly even if nothing is currently categorized under them.
+    /// </para>
+    /// <para>
+    /// <see cref="IsMissing"/> is also never <see langword="true"/> when the link is to an external
+    /// site. Page existence is not verified for external sites.
+    /// </para>
+    /// </remarks>
+    public bool IsMissing { get; set; }
 
     /// <summary>
-    /// The title for the linked article.
+    /// <para>
+    /// The linked page (if any).
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted to storage, and should only be considered valid
+    /// immediately after parsing.
+    /// </para>
     /// </summary>
-    public string Title { get; }
+    [JsonIgnore]
+    public Page? Page { get; set; }
 
     /// <summary>
-    /// The namespace for the linked article.
+    /// The title of the linked article.
     /// </summary>
-    public string WikiNamespace { get; }
+    public PageTitle Title { get; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="WikiLink"/>.
     /// </summary>
-    /// <param name="article">
-    /// The linked article (if any).
+    /// <param name="page">
+    /// The linked page (if any).
     /// </param>
-    /// <param name="missing">
-    /// Whether this is a link to a missing page.
+    /// <param name="action">
+    /// Any action segment which follows the link.
+    /// </param>
+    /// <param name="fragment">
+    /// Any fragment which follows the link.
     /// </param>
     /// <param name="isCategory">
     /// Whether this is a link to a category.
     /// </param>
-    /// <param name="isNamespaceEscaped">
-    /// Whether a leading ':' precedes the namespace.
+    /// <param name="isEscaped">
+    /// Whether a leading ':' precedes the link.
     /// </param>
-    /// <param name="isTalk">
-    /// Whether this is a link to a discussion page.
+    /// <param name="isMissing">
+    /// Whether this is a link to a missing page.
     /// </param>
     /// <param name="title">
-    /// The title for the linked article.
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace for the linked article.
-    /// </param>
-    /// <param name="domain">
-    /// The domain for the linked article (if any).
+    /// The title of the linked page.
     /// </param>
     public WikiLink(
-        Article? article,
-        bool missing,
+        Page? page,
+        string? action,
+        string? fragment,
         bool isCategory,
-        bool isNamespaceEscaped,
-        bool isTalk,
-        string title,
-        string wikiNamespace,
-        string? domain)
+        bool isEscaped,
+        bool isMissing,
+        PageTitle title)
     {
-        Article = article;
-        Missing = missing;
+        Page = page;
+        Action = action;
+        Fragment = fragment;
         IsCategory = isCategory;
-        IsNamespaceEscaped = isNamespaceEscaped;
-        IsTalk = isTalk;
+        IsEscaped = isEscaped;
+        IsMissing = isMissing;
         Title = title;
-        WikiNamespace = wikiNamespace;
-        Domain = domain;
     }
 
     /// <summary>
     /// Initializes a new instance of <see cref="WikiLink"/>.
     /// </summary>
+    /// <param name="action">
+    /// Any action segment which follows the link.
+    /// </param>
+    /// <param name="fragment">
+    /// Any fragment which follows the link.
+    /// </param>
     /// <param name="isCategory">
     /// Whether this is a link to a category.
     /// </param>
-    /// <param name="isNamespaceEscaped">
+    /// <param name="isEscaped">
     /// Whether a leading ':' precedes the namespace.
     /// </param>
-    /// <param name="isTalk">
-    /// Whether this is a link to a discussion page.
-    /// </param>
-    /// <param name="missing">
+    /// <param name="isMissing">
     /// Whether this is a link to an existing page.
     /// </param>
     /// <param name="title">
     /// The title for the linked article.
     /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace for the linked article.
-    /// </param>
-    /// <param name="domain">
-    /// The domain for the linked article (if any).
-    /// </param>
     [JsonConstructor]
     public WikiLink(
+        string? action,
+        string? fragment,
         bool isCategory,
-        bool isNamespaceEscaped,
-        bool isTalk,
-        bool missing,
-        string title,
-        string wikiNamespace,
-        string? domain)
+        bool isEscaped,
+        bool isMissing,
+        PageTitle title)
     {
+        Action = action;
+        Fragment = fragment;
         IsCategory = isCategory;
-        IsNamespaceEscaped = isNamespaceEscaped;
-        IsTalk = isTalk;
-        Missing = missing;
+        IsEscaped = isEscaped;
+        IsMissing = isMissing;
         Title = title;
-        WikiNamespace = wikiNamespace;
-        Domain = domain;
     }
 
     /// <summary>
@@ -154,12 +158,10 @@ public class WikiLink : IEquatable<WikiLink>
     /// parameter; otherwise, <see langword="false" />.
     /// </returns>
     public bool Equals(WikiLink? other) => other is not null
-        && Missing == other.Missing
-        && IsNamespaceEscaped == other.IsNamespaceEscaped
-        && IsTalk == other.IsTalk
-        && string.Equals(Title, other.Title, StringComparison.Ordinal)
-        && string.Equals(WikiNamespace, other.WikiNamespace, StringComparison.Ordinal)
-        && string.Equals(Domain, other.Domain, StringComparison.Ordinal);
+        && IsEscaped == other.IsEscaped
+        && string.Equals(Action, other.Action, StringComparison.OrdinalIgnoreCase)
+        && string.CompareOrdinal(Fragment, other.Fragment) == 0
+        && Title.Equals(other.Title);
 
     /// <summary>
     /// Determines whether the specified object is equal to the current object.
@@ -173,41 +175,41 @@ public class WikiLink : IEquatable<WikiLink>
 
     /// <summary>Serves as the default hash function.</summary>
     /// <returns>A hash code for the current object.</returns>
-    public override int GetHashCode() => HashCode.Combine(Missing, IsNamespaceEscaped, IsTalk, Title, WikiNamespace, Domain);
+    public override int GetHashCode() => HashCode.Combine(Action, Fragment, IsEscaped, Title);
 
     /// <summary>
-    /// Determines whether this link corresponds to the given article.
+    /// Determines whether this link corresponds to the given page.
     /// </summary>
-    /// <param name="item">The <see cref="Article"/> to match.</param>
-    /// <returns><see langword="true"/> if this link corresponds to the given article; otherwise
-    /// <see langword="false"/>.</returns>
-    public bool IsLinkMatch(Article item) => string.CompareOrdinal(item.Title, Title) == 0
-        && string.CompareOrdinal(item.WikiNamespace, WikiNamespace) == 0
-        && string.CompareOrdinal(item.Domain, Domain) == 0;
+    /// <param name="page">The <see cref="Wiki.Page"/> to match.</param>
+    /// <returns>
+    /// <see langword="true"/> if this link corresponds to the given page; otherwise <see
+    /// langword="false"/>.
+    /// </returns>
+    public bool IsLinkMatch(Page page) => Title.Equals(page.Title);
 
     /// <summary>Returns a string that represents the current object.</summary>
     /// <returns>A string that represents the current object.</returns>
     public override string ToString()
     {
         var sb = new StringBuilder();
-        if (IsNamespaceEscaped)
+        sb.Append("[[");
+        if (IsEscaped)
         {
             sb.Append(':');
         }
-        if (!string.IsNullOrEmpty(Domain))
+        sb.Append(Title.ToString());
+        if (!string.IsNullOrEmpty(Action))
         {
-            sb.Append('(')
-                .Append(Domain)
-                .Append("):");
+            sb.Append('/');
+            sb.Append(Action);
         }
-        if (IsTalk)
+        if (!string.IsNullOrEmpty(Fragment))
         {
-            sb.Append("Talk:");
+            sb.Append('#');
+            sb.Append(Fragment);
         }
-        return sb.Append(WikiNamespace)
-            .Append(':')
-            .Append(Title)
-            .ToString();
+        sb.Append("]]");
+        return sb.ToString();
     }
 
     /// <summary>

@@ -12,7 +12,7 @@ using Tavenem.Wiki.MarkdownExtensions.TableOfContents;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
 using Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 
-namespace Tavenem.Wiki;
+namespace Tavenem.Wiki.Models;
 
 /// <summary>
 /// An item which contains markdown.
@@ -20,8 +20,8 @@ namespace Tavenem.Wiki;
 [JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
 [JsonDerivedType(typeof(Article), Article.ArticleIdItemTypeName)]
 [JsonDerivedType(typeof(Category), Category.CategoryIdItemTypeName)]
-[JsonDerivedType(typeof(WikiFile), WikiFile.WikiFileIdItemTypeName)]
 [JsonDerivedType(typeof(Message), Message.MessageIdItemTypeName)]
+[JsonDerivedType(typeof(WikiFile), WikiFile.WikiFileIdItemTypeName)]
 public abstract class MarkdownItem : IdItem
 {
     /// <summary>
@@ -156,13 +156,17 @@ public abstract class MarkdownItem : IdItem
     /// <param name="singleParagraph">
     /// If true, stops after the first paragraph break, even still under the allowed character limit.
     /// </param>
+    /// <param name="title">
+    /// The title of the page being rendered, if it is a wiki page.
+    /// </param>
     /// <returns>The plain text.</returns>
     public static string FormatPlainText(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
         int? characterLimit = 200,
-        bool singleParagraph = true)
+        bool singleParagraph = true,
+        PageTitle title = default)
     {
         if (string.IsNullOrEmpty(markdown))
         {
@@ -183,7 +187,7 @@ public abstract class MarkdownItem : IdItem
             markdown = markdown[..(characterLimit.Value * 5)];
         }
 
-        var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipelinePlainText(options, dataStore));
+        var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipelinePlainText(options, dataStore, title));
         if (string.IsNullOrWhiteSpace(html))
         {
             return string.Empty;
@@ -227,15 +231,18 @@ public abstract class MarkdownItem : IdItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
+    /// <param name="title">
+    /// The title of the page being rendered, if it is a wiki page.
+    /// </param>
     /// <returns>The rendered HTML.</returns>
-    public static string RenderHtml(WikiOptions options, IDataStore dataStore, string? markdown)
+    public static string RenderHtml(WikiOptions options, IDataStore dataStore, string? markdown, PageTitle title = default)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
             return string.Empty;
         }
 
-        var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore));
+        var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title));
         if (string.IsNullOrWhiteSpace(html))
         {
             return string.Empty;
@@ -258,15 +265,18 @@ public abstract class MarkdownItem : IdItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
+    /// <param name="title">
+    /// The title of the page being rendered, if it is a wiki page.
+    /// </param>
     /// <returns>A preview of the rendered HTML.</returns>
-    public static string RenderPreview(WikiOptions options, IDataStore dataStore, string? markdown)
+    public static string RenderPreview(WikiOptions options, IDataStore dataStore, string? markdown, PageTitle title = default)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
             return string.Empty;
         }
 
-        var document = Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore));
+        var document = Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title));
         if (AnyPreviews(document))
         {
             TrimNonPreview(document);
@@ -282,7 +292,7 @@ public abstract class MarkdownItem : IdItem
         using (var writer = new StringWriter())
         {
             var renderer = new HtmlRenderer(writer);
-            WikiConfig.GetMarkdownPipeline(options, dataStore).Setup(renderer);
+            WikiConfig.GetMarkdownPipeline(options, dataStore, title).Setup(renderer);
             renderer.Render(document);
             html = writer.ToString();
         }
@@ -350,14 +360,14 @@ public abstract class MarkdownItem : IdItem
     /// A string representing the diff between this instance and the <paramref name="other"/>
     /// instance, as rendered HTML.
     /// </returns>
-    public async ValueTask<string> GetDiffHtmlAsync(WikiOptions options, IDataStore dataStore, MarkdownItem other)
+    public virtual async ValueTask<string> GetDiffHtmlAsync(WikiOptions options, IDataStore dataStore, MarkdownItem other)
         => RenderHtml(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, GetDiff(other, "html")));
 
     /// <summary>
     /// Gets this item's content rendered as HTML.
     /// </summary>
     /// <returns>The rendered HTML.</returns>
-    public async ValueTask<string> GetHtmlAsync(WikiOptions options, IDataStore dataStore)
+    public virtual async ValueTask<string> GetHtmlAsync(WikiOptions options, IDataStore dataStore)
         => RenderHtml(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent));
 
     /// <summary>
@@ -371,7 +381,7 @@ public abstract class MarkdownItem : IdItem
     /// If true, stops after the first paragraph break, even still under the allowed character limit.
     /// </param>
     /// <returns>The plain text.</returns>
-    public async ValueTask<string> GetPlainTextAsync(
+    public virtual async ValueTask<string> GetPlainTextAsync(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
@@ -389,7 +399,7 @@ public abstract class MarkdownItem : IdItem
     /// If true, stops after the first paragraph break, even still under the allowed character limit.
     /// </param>
     /// <returns>The plain text.</returns>
-    public async ValueTask<string> GetPlainTextAsync(
+    public virtual async ValueTask<string> GetPlainTextAsync(
         WikiOptions options,
         IDataStore dataStore,
         int? characterLimit = 200,
@@ -409,9 +419,7 @@ public abstract class MarkdownItem : IdItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown.</param>
-    /// <param name="title">The title of the item.</param>
-    /// <param name="wikiNamespace">The namespace of the item.</param>
-    /// <param name="domain">The domain of the item (if any).</param>
+    /// <param name="title">The title of the page, if this is a page.</param>
     /// <returns>
     /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
     /// </returns>
@@ -419,11 +427,9 @@ public abstract class MarkdownItem : IdItem
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null) => string.IsNullOrEmpty(markdown)
+        PageTitle title = default) => string.IsNullOrEmpty(markdown)
         ? new List<WikiLink>()
-        : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore))
+        : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title))
             .Descendants<WikiLinkInline>()
             .Where(x => !x.IsWikipedia
                 && !x.IsCommons
@@ -437,22 +443,14 @@ public abstract class MarkdownItem : IdItem
                 || x.Title[1] != TransclusionParser.ParameterOpenChar
                 || x.Title[^1] != TransclusionParser.ParameterCloseChar
                 || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
-            .Select(x =>
-            {
-                var anchorIndex = x.Title?.LastIndexOf('#') ?? -1;
-                return new WikiLink(
-                    x.Article,
-                    x.Missing
-                        && (!string.Equals(x.Title, title, StringComparison.Ordinal)
-                        || !string.Equals(x.WikiNamespace, wikiNamespace, StringComparison.Ordinal)
-                        || !string.Equals(x.Domain, domain, StringComparison.Ordinal)),
-                    x.IsCategory,
-                    x.IsNamespaceEscaped,
-                    x.IsTalk,
-                    anchorIndex == -1 ? x.Title ?? string.Empty : x.Title![..anchorIndex],
-                    x.WikiNamespace ?? options.DefaultNamespace,
-                    x.Domain);
-            }).ToList();
+            .Select(x => new WikiLink(
+                x.Page,
+                x.Action,
+                x.Fragment,
+                x.IsCategory,
+                x.IsEscaped,
+                x.IsMissing,
+                x.PageTitle)).ToList();
 
     private static bool AnyPreviews(MarkdownObject obj)
     {
@@ -759,11 +757,9 @@ public abstract class MarkdownItem : IdItem
     internal ValueTask UpdateWithLinksAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null)
+        PageTitle title = default)
     {
-        WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title, wikiNamespace, domain).AsReadOnly();
+        WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title).AsReadOnly();
         return UpdateAsync(options, dataStore);
     }
 

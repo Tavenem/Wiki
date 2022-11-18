@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
+using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -15,50 +16,48 @@ namespace Tavenem.Wiki;
 public class WikiUser : IdItem, IWikiUser
 {
     /// <summary>
-    /// A list of the <see cref="IdItem.Id"/> values of articles which this user has permission to
-    /// edit.
+    /// A list of the pages which this user has permission to edit.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Note that this list is not intended to have duplicate information for the <see
-    /// cref="Article.AllowedEditors"/> list. Rather, the lists are expected to be complementary.
-    /// Articles may list users with permission to edit them, and users may also have a separate
-    /// list of articles which they may edit.
+    /// cref="Page.AllowedEditors"/> or <see cref="Page.AllowedEditorGroups"/> list. Rather, the
+    /// lists are expected to be complementary. Pages may list entities with permission to edit
+    /// them, and entities may also have a separate list of pages which they may edit.
     /// </para>
     /// <para>
-    /// When a user attempts to edit an article, if either the article indicates that the editor has
-    /// permission to edit it, or the user indicates that it has permission to edit the article,
-    /// then permission is granted.
+    /// When a user attempts to edit a page, if either the page indicates that the editor has
+    /// permission to edit it, or the user indicates that it has permission to edit the page, then
+    /// permission is granted.
     /// </para>
     /// <para>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
     /// </remarks>
-    public virtual IList<string>? AllowedEditArticles { get; set; }
+    public virtual IList<PageTitle>? AllowedEditPages { get; set; }
 
     /// <summary>
-    /// A list of the <see cref="IdItem.Id"/> values of articles which this user has permission to
-    /// view.
+    /// A list of the pages which this user has permission to view.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Note that this list is not intended to have duplicate information for the <see
-    /// cref="Article.AllowedViewers"/> list. Rather, the two lists are expected to be
-    /// complementary. Articles may list users with permission to view them, and users may also have
-    /// a separate list of articles which they may view.
+    /// cref="Page.AllowedViewers"/> or <see cref="Page.AllowedViewerGroups"/> list. Rather, the two
+    /// lists are expected to be complementary. Pages may list entities with permission to view
+    /// them, and entities may also have a separate list of pages which they may view.
     /// </para>
     /// <para>
-    /// When a user attempts to view an article, if either the article indicates that the viewer has
-    /// permission to view it, or the user indicates that it has permission to view the article,
-    /// then permission is granted.
+    /// When a user attempts to view a page, if either the page indicates that the viewer has
+    /// permission to view it, or the user indicates that it has permission to view the page, then
+    /// permission is granted.
     /// </para>
     /// <para>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
     /// </remarks>
-    public virtual IList<string>? AllowedViewArticles { get; set; }
+    public virtual IList<PageTitle>? AllowedViewPages { get; set; }
 
     /// <summary>
     /// A list of the names of domains in which this user has permission to view articles.

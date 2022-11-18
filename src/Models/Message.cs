@@ -2,6 +2,7 @@
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
+using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -53,11 +54,6 @@ public class Message : MarkdownItem
     public long TimestampTicks { get; }
 
     /// <summary>
-    /// The ID of the topic to which this message has been addressed.
-    /// </summary>
-    public string TopicId { get; }
-
-    /// <summary>
     /// Initializes a new instance of <see cref="Message"/>.
     /// </summary>
     /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
@@ -65,7 +61,6 @@ public class Message : MarkdownItem
     /// <param name="html">The rendered HTML content.</param>
     /// <param name="preview">A preview of this item's rendered HTML.</param>
     /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-    /// <param name="topicId">The ID of the topipc to which the reply is being addressed.</param>
     /// <param name="senderId">The ID of the sender of this message.</param>
     /// <param name="senderIsAdmin">Whether the sender of this message is an admin.</param>
     /// <param name="senderName">The name of the sender of this message.</param>
@@ -86,7 +81,6 @@ public class Message : MarkdownItem
         string html,
         string preview,
         IReadOnlyCollection<WikiLink> wikiLinks,
-        string topicId,
         string senderId,
         bool senderIsAdmin,
         string senderName,
@@ -98,11 +92,9 @@ public class Message : MarkdownItem
         SenderIsAdmin = senderIsAdmin;
         SenderName = senderName;
         TimestampTicks = timestampTicks;
-        TopicId = topicId;
     }
 
     internal Message(
-        string topicId,
         string senderId,
         bool senderIsAdmin,
         string senderName,
@@ -118,7 +110,6 @@ public class Message : MarkdownItem
         SenderIsAdmin = senderIsAdmin;
         SenderName = senderName;
         TimestampTicks = timestampTicks;
-        TopicId = topicId;
     }
 
     /// <summary>
@@ -151,12 +142,10 @@ public class Message : MarkdownItem
                 options,
                 dataStore,
                 null,
-                null,
                 markdown);
         }
 
         var message = new Message(
-            topicId,
             senderId,
             senderIsAdmin,
             senderName,
@@ -166,7 +155,22 @@ public class Message : MarkdownItem
             new ReadOnlyCollection<WikiLink>(GetWikiLinks(options, dataStore, markdown)),
             DateTimeOffset.UtcNow.Ticks,
             replyMessageId);
-        await dataStore.StoreItemAsync(message).ConfigureAwait(false);
+
+        var topic = await dataStore.GetItemAsync<Topic>(topicId).ConfigureAwait(false);
+        if (topic is null)
+        {
+            topic = new Topic(
+                topicId,
+                new[] { message });
+        }
+        else
+        {
+            var messages = topic.Messages?.ToList() ?? new();
+            messages.Add(message);
+            topic.Messages = messages;
+        }
+        await dataStore.StoreItemAsync(topic).ConfigureAwait(false);
+
         return message;
     }
 
@@ -184,7 +188,6 @@ public class Message : MarkdownItem
         return TransclusionParser.TranscludeAsync(
             options,
             dataStore,
-            null,
             null,
             markdown,
             isPreview: isPreview);

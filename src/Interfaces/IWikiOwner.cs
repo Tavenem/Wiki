@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
+using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -14,53 +15,51 @@ namespace Tavenem.Wiki;
 public interface IWikiOwner
 {
     /// <summary>
-    /// A list of the <see cref="IdItem.Id"/> values of articles which this entity has permission to
-    /// edit.
+    /// A list of the pages which this entity has permission to edit.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Note that this list is not intended to have duplicate information for the <see
-    /// cref="Article.AllowedEditors"/> or <see cref="Article.AllowedEditorGroups"/> list. Rather,
-    /// the lists are expected to be complementary. Articles may list entities with permission to
-    /// edit them, and entities may also have a separate list of articles which they may edit.
+    /// cref="Page.AllowedEditors"/> or <see cref="Page.AllowedEditorGroups"/> list. Rather,
+    /// the lists are expected to be complementary. Pages may list entities with permission to edit
+    /// them, and entities may also have a separate list of pages which they may edit.
     /// </para>
     /// <para>
-    /// When a user attempts to edit an article, if either the article indicates that the editor has
-    /// permission to edit it, or the user indicates that it has permission to edit the article,
-    /// then permission is granted.
+    /// When a user attempts to edit a page, if either the page indicates that the editor has
+    /// permission to edit it, or the user indicates that it has permission to edit the page, then
+    /// permission is granted.
     /// </para>
     /// <para>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
     /// </remarks>
-    IList<string>? AllowedEditArticles { get; set; }
+    IList<PageTitle>? AllowedEditPages { get; set; }
 
     /// <summary>
-    /// A list of the <see cref="IdItem.Id"/> values of articles which this entity has permission to
-    /// view.
+    /// A list of the pages which this entity has permission to view.
     /// </summary>
     /// <remarks>
     /// <para>
     /// Note that this list is not intended to have duplicate information for the <see
-    /// cref="Article.AllowedViewers"/> or <see cref="Article.AllowedViewerGroups"/> list. Rather,
-    /// the two lists are expected to be complementary. Articles may list entities with permission
-    /// to view them, and entities may also have a separate list of articles which they may view.
+    /// cref="Page.AllowedViewers"/> or <see cref="Page.AllowedViewerGroups"/> list. Rather,
+    /// the two lists are expected to be complementary. Pages may list entities with permission to
+    /// view them, and entities may also have a separate list of pages which they may view.
     /// </para>
     /// <para>
-    /// When a user attempts to view an article, if either the article indicates that the viewer has
-    /// permission to view it, or the user indicates that it has permission to view the article,
-    /// then permission is granted.
+    /// When a user attempts to view a page, if either the page indicates that the viewer has
+    /// permission to view it, or the user indicates that it has permission to view the page, then
+    /// permission is granted.
     /// </para>
     /// <para>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
     /// </remarks>
-    IList<string>? AllowedViewArticles { get; set; }
+    IList<PageTitle>? AllowedViewPages { get; set; }
 
     /// <summary>
-    /// A list of the names of domains in which this entity has permission to view articles.
+    /// A list of the names of domains in which this entity has permission to view pages.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -70,11 +69,11 @@ public interface IWikiOwner
     /// <para>
     /// The entity's effective permission is determined by the combination of this property and <see
     /// cref="WikiOptions.GetDomainPermission"/>, as well as any access controls on the specific
-    /// article, which override the general permissions for the domain, if present.
+    /// page, which override the general permissions for the domain, if present.
     /// </para>
     /// <para>
     /// Note that the default when no permission is specified is to be denied access (unlike the
-    /// default for non-domain articles, which is to grant full access even to anonymous users).
+    /// default for non-domain pages, which is to grant full access even to anonymous users).
     /// </para>
     /// </remarks>
     IList<string>? AllowedViewDomains { get; set; }

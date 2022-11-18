@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.0-preview
+### Changed
+- Revisions are now based on a wiki domain, namespace, and title (rather than an article ID), and
+  have a `PageHistory` collection object for direct retrieval (without querying over a collection).
+- Messages now have a `Topic` collection object for direct retrieval (without querying over a collection).
+
 ## 0.14.1-preview
 ### Changed
 - Update to .NET 7

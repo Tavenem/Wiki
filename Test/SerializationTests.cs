@@ -2,6 +2,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Collections.ObjectModel;
 using System.Text.Json;
 using Tavenem.DataStorage;
+using Tavenem.Wiki.Models;
 using Tavenem.Wiki.Queries;
 
 namespace Tavenem.Wiki.Test;
@@ -9,138 +10,115 @@ namespace Tavenem.Wiki.Test;
 [TestClass]
 public class SerializationTests
 {
+    private const string TEST_OWNER_ID = "TEST_OWNER_ID";
     private static readonly WikiOptions _Options = new();
 
     [TestMethod]
-    public void ArticleTest()
+    public async Task ArticleTest()
     {
-        var value = new Article(
-            "TEST_ID",
-            "Test title",
+        var dataStore = new InMemoryDataStore();
+        var page = Article.Empty(new("Test title"));
+        await page.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
             "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            0,
-            "Test Namespace",
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            false,
-            false,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
+            "Test comment",
+            TEST_OWNER_ID);
 
-        var json = JsonSerializer.Serialize(value);
+        var json = JsonSerializer.Serialize(page);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize<Article>(json);
-        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(page, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
     }
 
     [TestMethod]
-    public void ArticleTest_Context()
+    public async Task ArticleTest_Context()
     {
-        var value = new Article(
-            "TEST_ID",
-            "Test title",
+        var dataStore = new InMemoryDataStore();
+        var page = Article.Empty(new("Test title"));
+        await page.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
             "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            0,
-            "Test Namespace",
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
-            false,
-            false,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
+            "Test comment",
+            TEST_OWNER_ID);
 
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Article);
+        var json = JsonSerializer.Serialize(page, WikiJsonSerializerContext.Default.Article);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Article);
-        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(page, deserialized);
         Assert.IsNotNull(deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Article));
     }
 
     [TestMethod]
-    public void CategoryTest()
+    public async Task CategoryTest()
     {
-        var value = new Category(
-            "TEST_ID",
-            "Test title",
+        var dataStore = new InMemoryDataStore();
+        var category = Category.Empty(new("Test title", _Options.CategoryNamespace));
+        await category.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
             "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            new List<string> { "TEST_CHILD_ID" },
-            0,
-            _Options.CategoryNamespace,
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
+            "Test comment",
+            TEST_OWNER_ID);
+        Assert.AreEqual(0, category.Children?.Count ?? 0);
+        var child = Article.Empty(new("Test child"));
+        await child.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            $"[[{_Options.CategoryNamespace}:Test title]]",
+            "Test comment",
+            TEST_OWNER_ID);
+        category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
+        Assert.IsNotNull(category);
+        Assert.AreEqual(1, category.Children?.Count ?? 0);
 
-        var json = JsonSerializer.Serialize(value);
+        var json = JsonSerializer.Serialize(category);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize<Category>(json);
-        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(category, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
     }
 
     [TestMethod]
-    public void CategoryTest_Context()
+    public async Task CategoryTest_Context()
     {
-        var value = new Category(
-            "TEST_ID",
-            "Test title",
+        var dataStore = new InMemoryDataStore();
+        var category = Category.Empty(new("Test title", _Options.CategoryNamespace));
+        await category.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
             "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            new List<string> { "TEST_CHILD_ID" },
-            0,
-            _Options.CategoryNamespace,
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
+            "Test comment",
+            TEST_OWNER_ID);
+        Assert.AreEqual(0, category.Children?.Count ?? 0);
+        var child = Article.Empty(new("Test child"));
+        await child.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            $"[[{_Options.CategoryNamespace}:Test title]]",
+            "Test comment",
+            TEST_OWNER_ID);
+        category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
+        Assert.IsNotNull(category);
+        Assert.AreEqual(1, category.Children?.Count ?? 0);
 
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Category);
+        var json = JsonSerializer.Serialize(category, WikiJsonSerializerContext.Default.Category);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Category);
-        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(category, deserialized);
         Assert.IsNotNull(deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Category));
     }
@@ -152,7 +130,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }));
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+                null,
+                null,
+                false,
+                false,
+                false,
+                new("Test Title", "Test Namespace")) }));
 
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -178,7 +162,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }));
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+                null,
+                null,
+                false,
+                false,
+                false,
+                new("Test Title", "Test Namespace")) }));
 
         var json = JsonSerializer.Serialize(
             value,
@@ -217,9 +207,14 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            "TEST_TOPIC_ID",
-            "TEST_SENDER_ID",
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+                null,
+                null,
+                false,
+                false,
+                false,
+                new("Test Title", "Test Namespace")) }),
+            TEST_OWNER_ID,
             false,
             "Test Sender Name",
             0,
@@ -241,9 +236,14 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            "TEST_TOPIC_ID",
-            "TEST_SENDER_ID",
+            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+                null,
+                null,
+                false,
+                false,
+                false,
+                new("Test Title", "Test Namespace")) }),
+            TEST_OWNER_ID,
             false,
             "Test Sender Name",
             0,
@@ -259,294 +259,160 @@ public class SerializationTests
     }
 
     [TestMethod]
-    public void MissingPageTest()
+    public async Task MixedPageTypesTest()
     {
-        var value = new MissingPage(
-            MissingPage.GetId("Test Title", "Test Namespace", null),
-            "Test Title",
-            "Test Namespace",
-            null,
-            new List<string> { "Test_ID_2" }.AsReadOnly());
+        var dataStore = new InMemoryDataStore();
 
-        var json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize<MissingPage>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-    }
+        var article = Article.Empty(new("Test title"));
+        await article.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
 
-    [TestMethod]
-    public void MissingPageTest_Context()
-    {
-        var value = new MissingPage(
-            MissingPage.GetId("Test Title", "Test Namespace", null),
-            "Test Title",
-            "Test Namespace",
-            null,
-            new List<string> { "Test_ID_2" }.AsReadOnly());
+        var category = Category.Empty(new("Test title"));
+        await category.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
 
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.MissingPage);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.MissingPage);
-        Assert.AreEqual(value, deserialized);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.MissingPage));
-    }
-
-    [TestMethod]
-    public void MixedArticleTypesTest()
-    {
-        var value = new List<Article>
-        {
-            new Article(
-                "TEST_ID",
-                "Test title",
-                "Test markdown",
-                "Test markdown",
-                "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-                0,
-                "Test Namespace",
-                null,
-                false,
-                "TEST_OWNER_ID",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                false,
-                new ReadOnlyCollection<string>(Array.Empty<string>()),
-                null),
-            new Category(
-                "TEST_ID",
-                "Test title",
-                "Test markdown",
-                "Test markdown",
-                "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-                new List<string> { "TEST_CHILD_ID" },
-                0,
-                _Options.CategoryNamespace,
-                null,
-                false,
-                "TEST_OWNER_ID",
-                null,
-                null,
-                null,
-                null,
-                new ReadOnlyCollection<string>(Array.Empty<string>()),
-                null),
-            new WikiFile(
-                "TEST_ID",
-                "Test title",
-                "Test/Path",
-                100,
-                "test/type",
-                "TEST_OWNER_ID",
-                "Test markdown",
-                "Test markdown",
-                "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-                0,
-                _Options.FileNamespace,
-                null,
-                false,
-                "TEST_OWNER_ID",
-                null,
-                null,
-                null,
-                null,
-                new ReadOnlyCollection<string>(Array.Empty<string>()),
-                null),
-        };
-
-        var json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize<List<Article>>(json);
-        Assert.IsNotNull(deserialized);
-        Assert.IsTrue(value.OrderBy(x => x.Id).SequenceEqual(deserialized!.OrderBy(x => x.Id)));
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-    }
-
-    [TestMethod]
-    public void MixedArticleTypesTest_Context()
-    {
-        var value = new List<Article>
-        {
-            new Article(
-                "TEST_ID",
-                "Test title",
-                "Test markdown",
-                "Test markdown",
-                "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-                0,
-                "Test Namespace",
-                null,
-                false,
-                "TEST_OWNER_ID",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                false,
-                false,
-                new ReadOnlyCollection<string>(Array.Empty<string>()),
-                null),
-            new Category(
-                "TEST_ID",
-                "Test title",
-                "Test markdown",
-                "Test markdown",
-                "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-                new List<string> { "TEST_CHILD_ID" },
-                0,
-                _Options.CategoryNamespace,
-                null,
-                false,
-                "TEST_OWNER_ID",
-                null,
-                null,
-                null,
-                null,
-                new ReadOnlyCollection<string>(Array.Empty<string>()),
-                null),
-            new WikiFile(
-                "TEST_ID",
-                "Test title",
-                "Test/Path",
-                100,
-                "test/type",
-                "TEST_OWNER_ID",
-                "Test markdown",
-                "Test markdown",
-                "Test markdown",
-                new ReadOnlyCollection<WikiLink>(new [] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-                0,
-                _Options.FileNamespace,
-                null,
-                false,
-                "TEST_OWNER_ID",
-                null,
-                null,
-                null,
-                null,
-                new ReadOnlyCollection<string>(Array.Empty<string>()),
-                null),
-        };
-
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.ListArticle);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.ListArticle);
-        Assert.IsNotNull(deserialized);
-        Assert.IsTrue(value.OrderBy(x => x.Id).SequenceEqual(deserialized!.OrderBy(x => x.Id)));
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.ListArticle));
-    }
-
-    [TestMethod]
-    public void TransclusionTest()
-    {
-        var value = new Transclusion("Test Title", "Test Namespace", null);
-
-        var json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize<Transclusion>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-    }
-
-    [TestMethod]
-    public void TransclusionTest_Context()
-    {
-        var value = new Transclusion("Test Title", "Test Namespace", null);
-
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Transclusion);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Transclusion);
-        Assert.AreEqual(value, deserialized);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Transclusion));
-    }
-
-    [TestMethod]
-    public void WikiFileTest()
-    {
-        var value = new WikiFile(
-            "TEST_ID",
-            "Test title",
+        var file = WikiFile.Empty(new("Test title"));
+        await file.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
             "Test/Path",
             100,
             "test/type",
-            "TEST_OWNER_ID",
             "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            0,
-            _Options.FileNamespace,
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
+            "Test comment",
+            TEST_OWNER_ID);
+
+        var value = new List<Page>
+        {
+            article,
+            category,
+            file,
+        };
 
         var json = JsonSerializer.Serialize(value);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        var deserialized = JsonSerializer.Deserialize<List<Page>>(json);
+        Assert.IsNotNull(deserialized);
+        Assert.IsTrue(value.OrderBy(x => x.Id).SequenceEqual(deserialized!.OrderBy(x => x.Id)));
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
+        Assert.AreEqual(3, deserialized.Count);
+        Assert.IsTrue(deserialized[0] is Article);
+        Assert.IsTrue(deserialized[1] is Category);
+        Assert.IsTrue(deserialized[2] is WikiFile);
+    }
+
+    [TestMethod]
+    public async Task MixedArticleTypesTest_Context()
+    {
+        var dataStore = new InMemoryDataStore();
+
+        var article = Article.Empty(new("Test title"));
+        await article.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
+
+        var category = Category.Empty(new("Test title"));
+        await category.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
+
+        var file = WikiFile.Empty(new("Test title"));
+        await file.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test/Path",
+            100,
+            "test/type",
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
+
+        var value = new List<Page>
+        {
+            article,
+            category,
+            file,
+        };
+
+        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.ListPage);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.ListPage);
+        Assert.IsNotNull(deserialized);
+        Assert.IsTrue(value.OrderBy(x => x.Id).SequenceEqual(deserialized!.OrderBy(x => x.Id)));
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.ListPage));
+        Assert.AreEqual(3, deserialized.Count);
+        Assert.IsTrue(deserialized[0] is Article);
+        Assert.IsTrue(deserialized[1] is Category);
+        Assert.IsTrue(deserialized[2] is WikiFile);
+    }
+
+    [TestMethod]
+    public async Task WikiFileTest()
+    {
+        var dataStore = new InMemoryDataStore();
+        var page = WikiFile.Empty(new("Test title"));
+        await page.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test/Path",
+            100,
+            "test/type",
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
+
+        var json = JsonSerializer.Serialize(page);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize<WikiFile>(json);
-        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(page, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
     }
 
     [TestMethod]
-    public void WikiFileTest_Context()
+    public async Task WikiFileTest_Context()
     {
-        var value = new WikiFile(
-            "TEST_ID",
-            "Test title",
+        var dataStore = new InMemoryDataStore();
+        var page = WikiFile.Empty(new("Test title"));
+        await page.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
             "Test/Path",
             100,
             "test/type",
-            "TEST_OWNER_ID",
             "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            0,
-            _Options.FileNamespace,
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
+            "Test comment",
+            TEST_OWNER_ID);
 
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiFile);
+        var json = JsonSerializer.Serialize(page, WikiJsonSerializerContext.Default.WikiFile);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiFile);
-        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(page, deserialized);
         Assert.IsNotNull(deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiFile));
     }
@@ -554,8 +420,13 @@ public class SerializationTests
     [TestMethod]
     public void WikiLinkTest()
     {
-        var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null);
-
+        var value = new WikiLink(
+            null,
+            null,
+            false,
+            false,
+            false,
+            new("Test Title", "Test Namespace", "Test Domain"));
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -563,85 +434,73 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
 
-        value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace", null);
-
-        json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-
-        value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace, null);
-
-        json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-
-        value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace, null);
-
-        json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-
-        value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace", null);
-
-        json = JsonSerializer.Serialize(value);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-    }
-
-    [TestMethod]
-    public void WikiItemInfoTest()
-    {
-        var article = new Article(
-            "TEST_ID",
-            "Test title",
-            "Test markdown",
-            "Test markdown",
-            "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null) }),
-            0,
-            "Test Namespace",
-            null,
-            false,
-            "TEST_OWNER_ID",
-            null,
-            null,
-            null,
-            null,
-            null,
+        value = new WikiLink(
             null,
             null,
             false,
             false,
-            new ReadOnlyCollection<string>(Array.Empty<string>()),
-            null);
-        var value = new WikiItemInfo("Display Title", article.Html, false, article, WikiPermission.All);
-
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiItemInfo);
+            true,
+            new("Test Title", "Test Namespace", "Test Domain"));
+        json = JsonSerializer.Serialize(value);
         Console.WriteLine();
         Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiItemInfo);
+        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
         Assert.AreEqual(value, deserialized);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiItemInfo));
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
+
+        value = new WikiLink(
+            null,
+            null,
+            true,
+            false,
+            false,
+            new("Test Title", _Options.CategoryNamespace, "Test Domain"));
+        json = JsonSerializer.Serialize(value);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
+        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
+
+        value = new WikiLink(
+            null,
+            null,
+            true,
+            true,
+            false,
+            new("Test Title", _Options.CategoryNamespace, "Test Domain"));
+        json = JsonSerializer.Serialize(value);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
+        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
+
+        value = new WikiLink(
+            null,
+            "talk",
+            false,
+            false,
+            false,
+            new("Test Title", "Test Namespace", "Test Domain"));
+        json = JsonSerializer.Serialize(value);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        deserialized = JsonSerializer.Deserialize<WikiLink>(json);
+        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
     }
 
     [TestMethod]
     public void WikiLinkTest_Context()
     {
-        var value = new WikiLink(false, false, false, false, "Test Title", "Test Namespace", null);
-
+        var value = new WikiLink(
+            null,
+            null,
+            false,
+            false,
+            false,
+            new("Test Title", "Test Namespace", "Test Domain"));
         var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -650,8 +509,13 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(false, true, false, false, "Test Title", "Test Namespace", null);
-
+        value = new WikiLink(
+            null,
+            null,
+            false,
+            false,
+            true,
+            new("Test Title", "Test Namespace", "Test Domain"));
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -660,8 +524,13 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(true, false, false, false, "Test Title", _Options.CategoryNamespace, null);
-
+        value = new WikiLink(
+            null,
+            null,
+            true,
+            false,
+            false,
+            new("Test Title", _Options.CategoryNamespace, "Test Domain"));
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -670,8 +539,13 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(true, true, false, false, "Test Title", _Options.CategoryNamespace, null);
-
+        value = new WikiLink(
+            null,
+            null,
+            true,
+            true,
+            false,
+            new("Test Title", _Options.CategoryNamespace, "Test Domain"));
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -680,8 +554,13 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
 
-        value = new WikiLink(false, false, true, false, "Test Title", "Test Namespace", null);
-
+        value = new WikiLink(
+            null,
+            "talk",
+            false,
+            false,
+            false,
+            new("Test Title", "Test Namespace", "Test Domain"));
         json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -692,21 +571,40 @@ public class SerializationTests
     }
 
     [TestMethod]
+    public async Task WikiItemInfoTest()
+    {
+        var dataStore = new InMemoryDataStore();
+        var page = Article.Empty(new("Test title"));
+        await page.UpdateAsync(
+            _Options,
+            dataStore,
+            TEST_OWNER_ID,
+            "Test markdown",
+            "Test comment",
+            TEST_OWNER_ID);
+        var value = new WikiPageInfo("Display Title", page.Html, false, page, WikiPermission.All);
+
+        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiPageInfo);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiPageInfo);
+        Assert.AreEqual(value, deserialized);
+        Assert.IsNotNull(deserialized);
+        Assert.AreEqual(json, JsonSerializer.Serialize(
+            deserialized,
+            WikiJsonSerializerContext.Default.WikiPageInfo));
+    }
+
+    [TestMethod]
     public void WikiRevisionTest()
     {
         var value = new Revision(
-            "TEST_ID",
-            "TEST_WIKI_ID",
-            "Test Editor",
-            "Test Title",
-            "Test Namespace",
-            null,
+            TEST_OWNER_ID,
             "Test Revision",
             false,
             true,
             "Test comment",
             0);
-
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
         Console.WriteLine(json);
@@ -719,18 +617,12 @@ public class SerializationTests
     public void WikiRevisionTest_Context()
     {
         var value = new Revision(
-            "TEST_ID",
-            "TEST_WIKI_ID",
-            "Test Editor",
-            "Test Title",
-            "Test Namespace",
-            null,
+            TEST_OWNER_ID,
             "Test Revision",
             false,
             true,
             "Test comment",
             0);
-
         var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.Revision);
         Console.WriteLine();
         Console.WriteLine(json);

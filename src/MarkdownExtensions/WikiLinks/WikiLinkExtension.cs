@@ -22,12 +22,18 @@ public class WikiLinkExtension : IMarkdownExtension
     public WikiOptions Options { get; }
 
     /// <summary>
+    /// The title of the page being parsed/rendered.
+    /// </summary>
+    public PageTitle Title { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="WikiLinkExtension"/>.
     /// </summary>
-    public WikiLinkExtension(WikiOptions options, IDataStore dataStore)
+    public WikiLinkExtension(WikiOptions options, IDataStore dataStore, PageTitle title)
     {
         Options = options;
         DataStore = dataStore;
+        Title = title;
     }
 
     /// <summary>
@@ -38,7 +44,7 @@ public class WikiLinkExtension : IMarkdownExtension
     {
         if (!pipeline.InlineParsers.Contains<WikiLinkInlineParser>())
         {
-            pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new WikiLinkInlineParser(Options, DataStore));
+            pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new WikiLinkInlineParser(Options, DataStore, Title));
         }
     }
 

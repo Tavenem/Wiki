@@ -40,11 +40,11 @@
 /// </para>
 /// </param>
 /// <param name="DisplayTitle">
-/// The title to display (may be different than the actual <see cref="Article.Title"/>).
+/// The title to display (may be different than the actual <see cref="Page.Title"/>).
 /// </param>
 /// <param name="Item">
 /// <para>
-/// The <see cref="Article"/>, <see cref="Category"/>, or <see cref="WikiFile"/>.
+/// The <see cref="Page"/>.
 /// </para>
 /// <para>
 /// This may be set to <see langword="null"/> even if the item exists, when <paramref
@@ -69,6 +69,6 @@ public record WikiEditInfo(
     List<WikiUserInfo>? AllowedViewers,
     List<WikiUserInfo>? AllowedViewerGroups,
     string? DisplayTitle,
-    Article? Item,
+    Page? Item,
     WikiUserInfo? Owner,
     WikiPermission Permission);

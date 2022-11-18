@@ -2,6 +2,7 @@
 using System.Text.Json.Serialization.Metadata;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
+using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki.Test;
 
@@ -72,7 +73,6 @@ public class MarkdownItemTestSubclass : MarkdownItem
                 options,
                 dataStore,
                 null,
-                null,
                 markdown);
         var wikiLinks = GetWikiLinks(options, dataStore, md);
         return new MarkdownItemTestSubclass(
@@ -86,7 +86,6 @@ public class MarkdownItemTestSubclass : MarkdownItem
                     : await TransclusionParser.TranscludeAsync(
                         options,
                         dataStore,
-                        null,
                         null,
                         markdown,
                         isPreview: true)),

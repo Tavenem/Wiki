@@ -25,13 +25,10 @@ public static class TransclusionParser
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="title">The title of the top-level article being generated.</param>
-    /// <param name="fullTitle">
-    /// The full title of the top-level article being generated (including namespace if the
-    /// namespace is not <see cref="WikiOptions.DefaultNamespace"/>).
-    /// </param>
     /// <param name="markdown">A markdown string.</param>
     /// <param name="isTemplate">Whether the article is being rendered as a transclusion.</param>
     /// <param name="isPreview">Whether a preview is being rendered.</param>
+    /// <param name="isTalk">Whether the content is a message.</param>
     /// <param name="parameterValues">
     /// A collection of supplied parameter values, if the markdown is itself a transclusion.
     /// </param>
@@ -41,21 +38,21 @@ public static class TransclusionParser
     public static async ValueTask<string> TranscludeAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string? title,
-        string? fullTitle,
+        PageTitle? title,
         string markdown,
         bool isTemplate = false,
         bool isPreview = false,
+        bool isTalk = false,
         Dictionary<string, string>? parameterValues = null)
     {
         var (result, _) = await TranscludeInnerAsync(
             options,
             dataStore,
             title,
-            fullTitle,
             markdown,
             isTemplate,
             isPreview,
+            isTalk,
             parameterValues);
         return result;
     }
@@ -66,38 +63,35 @@ public static class TransclusionParser
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the top-level article being generated.</param>
-    /// <param name="fullTitle">
-    /// The full title of the top-level article being generated (including namespace if the
-    /// namespace is not <see cref="WikiOptions.DefaultNamespace"/>).
-    /// </param>
+    /// <param name="title">The title of the top-level page being generated.</param>
     /// <param name="markdown">A markdown string.</param>
-    /// <param name="isTemplate">Whether the article is being rendered as a
+    /// <param name="isTemplate">Whether the page is being rendered as a
     /// transclusion.</param>
     /// <param name="isPreview">Whether a preview is being rendered.</param>
+    /// <param name="isTalk">Whether the content is a message.</param>
     /// <param name="parameterValues">
     /// A collection of supplied parameter values, if the markdown is itself a transclusion.
     /// </param>
     /// <returns>
     /// A tuple containing the markdown with all transclusions substituted, and a <see
-    /// cref="List{T}"/> of the full titles of all articles referenced by the transclusions within
+    /// cref="List{T}"/> of the full titles of all pages referenced by the transclusions within
     /// the given <paramref name="markdown"/> (including nested transclusions).
     /// </returns>
-    internal static async ValueTask<(string markdown, List<Wiki.Transclusion> transcludedArticles)> TranscludeInnerAsync(
+    internal static async ValueTask<(string markdown, List<PageTitle> transcludedPages)> TranscludeInnerAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string? title,
-        string? fullTitle,
+        PageTitle? title,
         string markdown,
         bool isTemplate = false,
         bool isPreview = false,
+        bool isTalk = false,
         Dictionary<string, string>? parameterValues = null)
     {
-        var transcludedArticles = new List<Wiki.Transclusion>();
+        var transcludedPages = new List<PageTitle>();
 
         if (string.IsNullOrWhiteSpace(markdown))
         {
-            return (markdown, transcludedArticles);
+            return (markdown, transcludedPages);
         }
 
         var parameterInclusions = new List<Transclusion>();
@@ -138,21 +132,21 @@ public static class TransclusionParser
             lineTransclusions.Sort((x, y) => x.Start.CompareTo(y.Start));
             for (var i = 0; i < lineTransclusions.Count; i++)
             {
-                (lineTransclusions[i].Content, var lineArticles) = await GetContentAsync(
+                (lineTransclusions[i].Content, var linePages) = await GetContentAsync(
                     options,
                     dataStore,
                     title,
-                    fullTitle,
                     lineText.Text[lineTransclusions[i].Start..lineTransclusions[i].End],
                     offset: lineTransclusions[i].Start,
                     end: lineTransclusions[i].End - 2,
                     depth: 0,
                     isTemplate,
                     isPreview,
+                    isTalk,
                     lineTransclusions,
                     lineParameters,
                     parameterValues);
-                transcludedArticles = transcludedArticles.Union(lineArticles).ToList();
+                transcludedPages = transcludedPages.Union(linePages).ToList();
             }
 
             transclusions.AddRange(lineTransclusions);
@@ -160,25 +154,25 @@ public static class TransclusionParser
         }
 
         return (Render(markdown, 0, transclusions, parameterInclusions),
-            transcludedArticles);
+            transcludedPages);
     }
 
-    private static async ValueTask<(string, List<Wiki.Transclusion>)> GetContentAsync(
+    private static async ValueTask<(string, List<PageTitle>)> GetContentAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string? title,
-        string? fullTitle,
+        PageTitle? title,
         string markdown,
         int offset,
         int end,
         int depth,
         bool isTemplate,
         bool isPreview,
+        bool isTalk,
         List<Transclusion> transclusions,
         List<Transclusion> parameterInclusions,
         Dictionary<string, string>? passedParameterValues = null)
     {
-        var transcludedArticles = new List<Wiki.Transclusion>();
+        var transcludedPages = new List<PageTitle>();
 
         var includedTransclusions = new List<Transclusion>();
         var j = 0;
@@ -219,17 +213,17 @@ public static class TransclusionParser
                 options,
                 dataStore,
                 title,
-                fullTitle,
                 markdown[(includedTransclusions[i].Start - offset)..(includedTransclusions[i].End - offset)],
                 offset: includedTransclusions[i].Start,
                 end: includedTransclusions[i].End - 2,
                 depth + 1,
                 isTemplate,
                 isPreview,
+                isTalk,
                 includedTransclusions,
                 includedParameters,
                 passedParameterValues);
-            transcludedArticles = transcludedArticles.Union(nestedArticles).ToList();
+            transcludedPages = transcludedPages.Union(nestedArticles).ToList();
         }
 
         var template = Render(markdown, offset, includedTransclusions, includedParameters);
@@ -238,7 +232,7 @@ public static class TransclusionParser
         var separatorIndex = templateContent.IndexOfUnescaped(SeparatorChar);
         if (separatorIndex == 0)
         {
-            return (template, transcludedArticles);
+            return (template, transcludedPages);
         }
 
         string? reference;
@@ -275,7 +269,7 @@ public static class TransclusionParser
                 && x.Value[^1] == ParameterCloseChar
                 && x.Value[^2] == ParameterCloseChar))
             {
-                return (template, transcludedArticles);
+                return (template, transcludedPages);
             }
             if (passedParameterValues is not null
                 && (invariantReference == "eval"
@@ -309,65 +303,74 @@ public static class TransclusionParser
                 parameterValues.Remove("code");
                 if (!string.IsNullOrWhiteSpace(code))
                 {
-                    var (codeDomain, codeNamespace, codeTitle, _, codeIsDefault) = Article.GetTitleParts(options, code);
-                    var scriptArticle = await Article.GetArticleAsync(
-                        options,
-                        dataStore,
-                        codeTitle,
-                        codeIsDefault
-                            ? options.ScriptNamespace
-                            : codeNamespace,
-                        codeDomain);
-                    script = scriptArticle?.MarkdownContent;
+                    var codeTitle = PageTitle.Parse(code);
+                    if (string.IsNullOrEmpty(codeTitle.Namespace))
+                    {
+                        codeTitle = codeTitle.WithNamespace(options.ScriptNamespace);
+                    }
+                    if (string.CompareOrdinal(codeTitle.Namespace, options.ScriptNamespace) == 0)
+                    {
+                        var scriptPage = await IPage<Article>
+                            .GetExistingPageAsync<Article>(dataStore, codeTitle, true, false)
+                            .ConfigureAwait(false);
+                        script = scriptPage?.MarkdownContent;
+                    }
                 }
                 if (!string.IsNullOrWhiteSpace(script))
                 {
                     parameterValues["code"] = script;
                 }
             }
-            return (func.Invoke(options, parameterValues, title, fullTitle, isTemplate, isPreview),
-                transcludedArticles);
+            return (func.Invoke(options, parameterValues, title, isTemplate, isPreview, isTalk),
+                transcludedPages);
         }
 
         if (depth >= TransclusionMaxDepth)
         {
-            return (template, transcludedArticles);
+            return (template, transcludedPages);
         }
 
-        var (articleDomain, articleNamespace, articleTitle, isTalk, isDefault) = Article.GetTitleParts(options, reference);
-        if (isTalk)
+        var pageTitle = PageTitle.Parse(reference);
+        if (string.IsNullOrEmpty(pageTitle.Namespace))
         {
-            return (template, transcludedArticles);
+            pageTitle = pageTitle.WithNamespace(options.TransclusionNamespace);
         }
-        if (isDefault && !string.IsNullOrWhiteSpace(options.TransclusionNamespace))
+        else if (string.CompareOrdinal(pageTitle.Namespace, "-") == 0)
         {
-            articleNamespace = options.TransclusionNamespace;
+            pageTitle = pageTitle.WithNamespace(null);
         }
+        else if (string.CompareOrdinal(pageTitle.Namespace, "\\-") == 0)
+        {
+            pageTitle = pageTitle.WithNamespace("-");
+        }
+        transcludedPages.Add(pageTitle);
 
-        var article = await Article.GetArticleAsync(options, dataStore, articleTitle, articleNamespace, articleDomain);
-        if (article is null)
+        var page = await IPage<Page>.GetExistingPageAsync<Page>(
+            dataStore,
+            pageTitle,
+            true,
+            false)
+            .ConfigureAwait(false);
+        if (page is null)
         {
-            transcludedArticles.Add(new Wiki.Transclusion(articleTitle, articleNamespace, articleDomain));
-            return (template, transcludedArticles);
+            return (template, transcludedPages);
         }
-
-        transcludedArticles.Add(new Wiki.Transclusion(article.Title, article.WikiNamespace, article.Domain));
 
         parameterValues = ParseParameters(parameters);
 
-        var (articleContent, articleArticles) = await TranscludeInnerAsync(
+        var (pageContent, pageTransclusions) = await TranscludeInnerAsync(
             options,
             dataStore,
             title,
-            fullTitle,
-            article.MarkdownContent,
+            page.MarkdownContent,
             isTemplate: true,
             isPreview,
+            isTalk,
             parameterValues);
 
-        transcludedArticles = transcludedArticles.Union(articleArticles).ToList();
+        transcludedPages = transcludedPages.Union(pageTransclusions).ToList();
 
-        return (articleContent ?? string.Empty, transcludedArticles);
+        return (pageContent ?? string.Empty, transcludedPages);
     }
 
     private static List<Transclusion> Parse(StringSlice slice, out List<Transclusion> parameterInclusions, out bool isCodeFence)

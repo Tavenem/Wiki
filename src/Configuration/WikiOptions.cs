@@ -15,26 +15,26 @@ public delegate ValueTask<WikiPermission> GetDomainPermissionFunc(string userId,
 /// <summary>
 /// The delegate signature used by <see cref="WikiOptions.OnCreated"/>.
 /// </summary>
-/// <param name="article">The new article.</param>
-/// <param name="editor">The ID of the editor who created the article.</param>
-public delegate ValueTask OnCreatedFunc(Article article, string editor);
+/// <param name="page">The new page.</param>
+/// <param name="editor">The ID of the editor who created the page.</param>
+public delegate ValueTask OnCreatedFunc(Page page, string editor);
 
 /// <summary>
 /// The delegate signature used by <see cref="WikiOptions.OnDeleted"/>.
 /// </summary>
-/// <param name="article">The deleted article.</param>
-/// <param name="oldOwner">The original <see cref="Article.Owner"/>.</param>
-/// <param name="newOwner">The new <see cref="Article.Owner"/>.</param>
-public delegate ValueTask OnDeletedFunc(Article article, string? oldOwner, string? newOwner);
+/// <param name="page">The deleted page.</param>
+/// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
+/// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
+public delegate ValueTask OnDeletedFunc(Page page, string? oldOwner, string? newOwner);
 
 /// <summary>
 /// The delegate signature used by <see cref="WikiOptions.OnEdited"/>.
 /// </summary>
-/// <param name="article">The edited article.</param>
+/// <param name="page">The edited page.</param>
 /// <param name="revision">The revision applied.</param>
-/// <param name="oldOwner">The original <see cref="Article.Owner"/>.</param>
-/// <param name="newOwner">The new <see cref="Article.Owner"/>.</param>
-public delegate ValueTask OnEditedFunc(Article article, Revision revision, string? oldOwner, string? newOwner);
+/// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
+/// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
+public delegate ValueTask OnEditedFunc(Page page, Revision revision, string? oldOwner, string? newOwner);
 
 /// <summary>
 /// Various customization and configuration options for the wiki system.
@@ -42,15 +42,16 @@ public delegate ValueTask OnEditedFunc(Article article, Revision revision, strin
 public class WikiOptions
 {
     /// <summary>
-    /// The title of the main about page.
+    /// The title of the main about page (expected in the <see cref="SystemNamespace"/>, not in a
+    /// domain).
     /// </summary>
     /// <remarks>
     /// <para>
     /// Default is "About"
     /// </para>
     /// <para>
-    /// May be set to <see langword="null"/> or an empty <see cref="string"/>, which disables
-    /// the about page.
+    /// May be set to <see langword="null"/> or an empty <see cref="string"/>, which disables the
+    /// about page.
     /// </para>
     /// </remarks>
     public string? AboutPageTitle { get; set; } = "About";
@@ -63,7 +64,7 @@ public class WikiOptions
     /// The namespace assigned to <see cref="SystemNamespace"/> is included automatically.
     /// </para>
     /// <para>
-    /// Pages in these namespaces may have their <see cref="Article.AllowedEditors"/> set to include
+    /// Pages in these namespaces may have their <see cref="Page.AllowedEditors"/> set to include
     /// any users, but only admin users will be able to create new pages or delete existing pages,
     /// and no user may be assigned as the owner of pages in these namespaces; instead, all admin
     /// users have owenership priviledges.
@@ -107,7 +108,8 @@ public class WikiOptions
     }
 
     /// <summary>
-    /// The title of the main contact page.
+    /// The title of the main contact page (expected in the <see cref="SystemNamespace"/>, not in a
+    /// domain)..
     /// </summary>
     /// <remarks>
     /// <para>
@@ -121,7 +123,8 @@ public class WikiOptions
     public string? ContactPageTitle { get; set; } = "Contact";
 
     /// <summary>
-    /// The title of the main contents page.
+    /// The title of the main contents page (expected in the <see cref="SystemNamespace"/>, not in a
+    /// domain)..
     /// </summary>
     /// <remarks>
     /// <para>
@@ -135,7 +138,8 @@ public class WikiOptions
     public string? ContentsPageTitle { get; set; } = "Contents";
 
     /// <summary>
-    /// The title of the main copyright page.
+    /// The title of the main copyright page (expected in the <see cref="SystemNamespace"/>, not in a
+    /// domain)..
     /// </summary>
     /// <remarks>
     /// <para>
@@ -165,8 +169,8 @@ public class WikiOptions
     /// An optional collection of namespaces which may not be assigned to pages by users.
     /// </summary>
     /// <remarks>
-    /// Use <see cref="ReservedNamespaces"/> to get the full list, which includes the namespaces
-    /// assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/> automatically.
+    /// Use <see cref="ReservedNamespaces"/> to get the full list, which includes the namespace
+    /// assigned to <see cref="FileNamespace"/> automatically.
     /// </remarks>
     public List<string>? CustomReservedNamespaces { get; set; }
 
@@ -191,23 +195,6 @@ public class WikiOptions
     /// </para>
     /// </remarks>
     public WikiPermission DefaultAnonymousPermission { get; set; } = WikiPermission.Read;
-
-    private const string DefaultNamespaceDefault = "Wiki";
-    private string _defaultNamespace = DefaultNamespaceDefault;
-    /// <summary>
-    /// The name of the default namespace.
-    /// </summary>
-    /// <remarks>
-    /// If omitted "Wiki" will be used.
-    /// </remarks>
-    [AllowNull]
-    public string DefaultNamespace
-    {
-        get => _defaultNamespace;
-        set => _defaultNamespace = string.IsNullOrWhiteSpace(value)
-            ? DefaultNamespaceDefault
-            : value;
-    }
 
     /// <summary>
     /// The default permission granted to a registered user for wiki content with no configured
@@ -311,7 +298,8 @@ public class WikiOptions
     }
 
     /// <summary>
-    /// The title of the main help page.
+    /// The title of the main help page (expected in the <see cref="SystemNamespace"/>, not in a
+    /// domain)..
     /// </summary>
     /// <remarks>
     /// <para>
@@ -336,7 +324,8 @@ public class WikiOptions
     private const string MainPageTitleDefault = "Main";
     private string _mainPageTitle = MainPageTitleDefault;
     /// <summary>
-    /// The title of the main page (shown when no article title is given).
+    /// The title of the main page for any namespace (shown when no article title is explicitly
+    /// requested).
     /// </summary>
     /// <remarks>
     /// If omitted "Main" will be used.
@@ -385,41 +374,43 @@ public class WikiOptions
     public int MinimumTableOfContentsHeadings { get; set; } = 3;
 
     /// <summary>
-    /// An optional callback invoked when a new <see cref="Article"/> (including <see
-    /// cref="Category"/> and <see cref="WikiFile"/>) is created.
+    /// An optional callback invoked when a new page is created.
     /// </summary>
     /// <remarks>
-    /// Receives the new <see cref="Article"/> as a parameter.
+    /// <para>
+    /// Receives the new <see cref="Page"/> as a parameter.
+    /// </para>
+    /// <para>
+    /// This function is also invoked when a previously deleted article is re-created.
+    /// </para>
     /// </remarks>
     [JsonIgnore]
     public OnCreatedFunc? OnCreated { get; set; }
 
     /// <summary>
-    /// An optional callback invoked when a new <see cref="Article"/> (including <see
-    /// cref="Category"/> and <see cref="WikiFile"/>) is deleted.
+    /// An optional callback invoked when a page is deleted.
     /// </summary>
     /// <remarks>
-    /// Receives the deleted <see cref="Article"/>, the original <see cref="Article.Owner"/>,
-    /// and the new <see cref="Article.Owner"/> as parameters.
+    /// Receives the deleted <see cref="Page"/>, the original <see cref="Page.Owner"/>,
+    /// and the new <see cref="Page.Owner"/> as parameters.
     /// </remarks>
     [JsonIgnore]
     public OnDeletedFunc? OnDeleted { get; set; }
 
     /// <summary>
-    /// An optional callback invoked when a new <see cref="Article"/> (including <see
-    /// cref="Category"/> and <see cref="WikiFile"/>) is edited (not including deletion if <see
-    /// cref="OnDeleted"/> is provided).
+    /// An optional callback invoked when a <see cref="Page"/> is edited (not including deletion if
+    /// <see cref="OnDeleted"/> is provided).
     /// </summary>
     /// <remarks>
-    /// Receives the edited <see cref="Article"/>, the <see cref="Revision"/> which was applied,
-    /// the original <see cref="Article.Owner"/>, and the new <see cref="Article.Owner"/> as
-    /// parameters.
+    /// Receives the edited <see cref="Page"/>, the <see cref="Revision"/> which was applied, the
+    /// original <see cref="Page.Owner"/>, and the new <see cref="Page.Owner"/> as parameters.
     /// </remarks>
     [JsonIgnore]
     public OnEditedFunc? OnEdited { get; set; }
 
     /// <summary>
-    /// The title of the main policy page.
+    /// The title of the main policy page (expected in the <see cref="SystemNamespace"/>, not in a
+    /// domain)..
     /// </summary>
     /// <remarks>
     /// <para>
@@ -451,11 +442,10 @@ public class WikiOptions
     /// An optional collection of namespaces which may not be assigned to pages by users.
     /// </summary>
     /// <remarks>
-    /// The namespaces assigned to <see cref="FileNamespace"/> and <see cref="TalkNamespace"/> are
-    /// included automatically.
+    /// The namespace assigned to <see cref="FileNamespace"/> is included automatically.
     /// </remarks>
     public IEnumerable<string> ReservedNamespaces => (CustomReservedNamespaces ?? Enumerable.Empty<string>())
-        .Concat(new[] { FileNamespace, TalkNamespace });
+        .Concat(new[] { FileNamespace });
 
     internal const string ScriptNamespaceDefault = "Script";
     private string _scriptNamespace = ScriptNamespaceDefault;
@@ -463,7 +453,19 @@ public class WikiOptions
     /// The name of the script namespace.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// If omitted "Script" will be used.
+    /// </para>
+    /// <para>
+    /// When the <c>exec</c> transclusion function omits the namespace from the code parameter, this
+    /// namespace is assumed.
+    /// </para>
+    /// <para>
+    /// Note that only pages from this namespace may be used in the <c>exec</c> function. If any
+    /// other namespace is explicitly specified, the code parameter will be treated as empty. This
+    /// is done to prevent excessive errors when markdown content is accidentally used as script
+    /// source.
+    /// </para>
     /// </remarks>
     [AllowNull]
     public string ScriptNamespace
@@ -508,30 +510,22 @@ public class WikiOptions
             : value;
     }
 
-    private const string TalkNamespaceDefault = "Talk";
-    private string _talkNamespace = TalkNamespaceDefault;
-    /// <summary>
-    /// The name of the talk pseudo-namespace.
-    /// </summary>
-    /// <remarks>
-    /// If omitted "Talk" will be used.
-    /// </remarks>
-    [AllowNull]
-    public string TalkNamespace
-    {
-        get => _talkNamespace;
-        set => _talkNamespace = string.IsNullOrWhiteSpace(value)
-            ? TalkNamespaceDefault
-            : value;
-    }
-
     private const string TransclusionNamespaceDefault = "Transclusion";
     private string _transclusionNamespace = TransclusionNamespaceDefault;
     /// <summary>
     /// The name of the transclusion namespace.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// If omitted "Transclusion" will be used.
+    /// </para>
+    /// <para>
+    /// When a transclusion omits the namespace, this namespace is assumed. To transclude a page
+    /// from the default (empty) namespace, a transclusion may use a single hyphen as the namespace.
+    /// The hyphen will be replaced during transclusion by the empty namespace. If your wiki
+    /// actually has a namespace that uses a single hyphen as its name, pages may be transcluded
+    /// from it by escaping the hyphen with a backslash character: '\-'.
+    /// </para>
     /// </remarks>
     [AllowNull]
     public string TransclusionNamespace
@@ -578,48 +572,24 @@ public class WikiOptions
     /// </remarks>
     public bool UserDomains { get; set; }
 
-    private const string WikiLinkPrefixDefault = "Wiki";
-    private string _wikiLinkPrefix = WikiLinkPrefixDefault;
     /// <summary>
-    /// The prefix added before wiki links (to distinguish them from other pages on the same
-    /// server).
+    /// A prefix added before wiki links (to distinguish them from other pages on the same server).
     /// </summary>
     /// <remarks>
-    /// If omitted "Wiki" will be used.
+    /// <para>
+    /// Default is "Wiki".
+    /// </para>
+    /// <para>
+    /// May be set to <see langword="null"/> or an empty <see cref="string"/>, which omits any
+    /// prefix from generated URLs.
+    /// </para>
     /// </remarks>
-    [AllowNull]
-    public string WikiLinkPrefix
-    {
-        get => _wikiLinkPrefix;
-        set => _wikiLinkPrefix = string.IsNullOrWhiteSpace(value)
-            ? WikiLinkPrefixDefault
-            : value;
-    }
+    public string? WikiLinkPrefix { get; set; } = "Wiki";
 
     /// <summary>
     /// Builds a relative URL for a wiki page.
     /// </summary>
-    /// <param name="title">
-    /// <para>
-    /// The title of the page.
-    /// </para>
-    /// <para>
-    /// If omitted, and <paramref name="wikiNamespace"/> is either also omitted, or is the same as
-    /// <see cref="DefaultNamespace"/>, the <see cref="MainPageTitle"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the page.
-    /// </para>
-    /// <para>
-    /// If omitted, <see cref="DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the page (if any).</param>
-    /// <param name="talk">
-    /// Whether to generate a link for the talk page.
-    /// </param>
+    /// <param name="title">The title of the page.</param>
     /// <param name="route">
     /// <para>
     /// Any additional route which should be appended to the URL.
@@ -651,35 +621,18 @@ public class WikiOptions
     /// encoded.
     /// </returns>
     public string GetWikiPageUrl(
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        bool talk = false,
+        PageTitle title,
         string? route = null,
         string? query = null)
     {
         var writer = new StringWriter();
         writer.Write("./");
-        UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
-        writer.Write('/');
-        if (!string.IsNullOrEmpty(domain))
+        if (!string.IsNullOrEmpty(WikiLinkPrefix))
         {
-            writer.Write('(');
-            UrlEncoder.Default.Encode(writer, domain);
-            writer.Write("):");
+            UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
+            writer.Write('/');
         }
-        if (talk)
-        {
-            UrlEncoder.Default.Encode(writer, TalkNamespace);
-            writer.Write(':');
-        }
-        if (talk
-            || !string.Equals(wikiNamespace, DefaultNamespace, StringComparison.OrdinalIgnoreCase))
-        {
-            UrlEncoder.Default.Encode(writer, wikiNamespace ?? DefaultNamespace);
-            writer.Write(':');
-        }
-        UrlEncoder.Default.Encode(writer, title ?? MainPageTitle);
+        title.WriteUrl(writer);
         if (!string.IsNullOrEmpty(route))
         {
             writer.Write('/');
@@ -705,27 +658,7 @@ public class WikiOptions
     /// invoked.
     /// </para>
     /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The title of the page.
-    /// </para>
-    /// <para>
-    /// If omitted, and <paramref name="wikiNamespace"/> is either also omitted, or is the same as
-    /// <see cref="DefaultNamespace"/>, the <see cref="MainPageTitle"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// <para>
-    /// The namespace of the page.
-    /// </para>
-    /// <para>
-    /// If omitted, <see cref="DefaultNamespace"/> will be used.
-    /// </para>
-    /// </param>
-    /// <param name="domain">The domain of the page (if any).</param>
-    /// <param name="talk">
-    /// Whether to generate a link for the talk page.
-    /// </param>
+    /// <param name="title">The title of the page.</param>
     /// <param name="route">
     /// <para>
     /// Any additional route which should be appended to the URL.
@@ -744,33 +677,17 @@ public class WikiOptions
     /// </returns>
     public string GetWikiPageUrl(
         IReadOnlyDictionary<string, object?> queryParameters,
-        string? title = null,
-        string? wikiNamespace = null,
-        string? domain = null,
-        bool talk = false,
+        PageTitle title,
         string? route = null)
     {
         var writer = new StringWriter();
         writer.Write("./");
-        UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
-        writer.Write('/');
-        if (!string.IsNullOrEmpty(domain))
+        if (!string.IsNullOrEmpty(WikiLinkPrefix))
         {
-            UrlEncoder.Default.Encode(writer, domain);
-            writer.Write('-');
+            UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
+            writer.Write('/');
         }
-        if (talk)
-        {
-            UrlEncoder.Default.Encode(writer, TalkNamespace);
-            writer.Write(':');
-        }
-        if (talk
-            || !string.Equals(wikiNamespace, DefaultNamespace, StringComparison.OrdinalIgnoreCase))
-        {
-            UrlEncoder.Default.Encode(writer, wikiNamespace ?? DefaultNamespace);
-            writer.Write(':');
-        }
-        UrlEncoder.Default.Encode(writer, title ?? MainPageTitle);
+        title.WriteUrl(writer);
         if (!string.IsNullOrEmpty(route))
         {
             writer.Write('/');

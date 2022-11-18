@@ -12,7 +12,7 @@
 /// name="Permission"/> does not include <see cref="WikiPermission.Read"/>.
 /// </para>
 /// </param>
-/// <param name="Item">
+/// <param name="Page">
 /// <para>
 /// The <see cref="Article"/>.
 /// </para>
@@ -27,6 +27,6 @@
 /// <param name="Users">The users in this group.</param>
 public record GroupPageInfo(
     WikiUserInfo? Group,
-    Article? Item,
+    Article? Page,
     WikiPermission Permission,
     List<WikiUserInfo>? Users);

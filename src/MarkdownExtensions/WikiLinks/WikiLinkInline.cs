@@ -8,9 +8,9 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 public class WikiLinkInline : LinkInline
 {
     /// <summary>
-    /// The linked article (if any).
+    /// An action segment which follows the link.
     /// </summary>
-    public Article? Article { get; set; }
+    public string? Action { get; set; }
 
     /// <summary>
     /// The display text.
@@ -18,19 +18,14 @@ public class WikiLinkInline : LinkInline
     public string? Display { get; set; }
 
     /// <summary>
-    /// The domain of the linked article (if any).
-    /// </summary>
-    public string? Domain { get; set; }
-
-    /// <summary>
     /// The text outside the link which is to be included.
     /// </summary>
     public string? Endmatter { get; set; }
 
     /// <summary>
-    /// Whether this is a link to a missing page.
+    /// Any fragment which follows the link.
     /// </summary>
-    public bool Missing { get; set; }
+    public string? Fragment { get; set; }
 
     /// <summary>
     /// Whether this link has an explicit display label.
@@ -48,9 +43,14 @@ public class WikiLinkInline : LinkInline
     public bool IsCommons { get; set; }
 
     /// <summary>
-    /// Whether a leading ':' preceded the title.
+    /// Whether a leading ':' precedes the link.
     /// </summary>
-    public bool IsNamespaceEscaped { get; set; }
+    public bool IsEscaped { get; set; }
+
+    /// <summary>
+    /// Whether this is a link to a missing page.
+    /// </summary>
+    public bool IsMissing { get; set; }
 
     /// <summary>
     /// Whether this is a link to a discussion page.
@@ -63,7 +63,12 @@ public class WikiLinkInline : LinkInline
     public bool IsWikipedia { get; set; }
 
     /// <summary>
-    /// The namespace for the linked article (if any).
+    /// The linked page (if any).
     /// </summary>
-    public string? WikiNamespace { get; set; }
+    public Page? Page { get; set; }
+
+    /// <summary>
+    /// The title of the linked article.
+    /// </summary>
+    public PageTitle PageTitle { get; set; }
 }

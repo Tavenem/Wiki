@@ -4,6 +4,7 @@ using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
 using System.Text;
 using Tavenem.DataStorage;
+using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 
@@ -12,6 +13,8 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 /// </summary>
 public class WikiLinkInlineParser : InlineParser
 {
+    private const char ActionSeparatorChar = '/';
+
     internal const char LinkCloseChar = ']';
     internal const char LinkOpenChar = '[';
 
@@ -28,13 +31,19 @@ public class WikiLinkInlineParser : InlineParser
     public WikiOptions Options { get; }
 
     /// <summary>
+    /// The title of the page being parsed/rendered.
+    /// </summary>
+    public PageTitle Title { get; }
+
+    /// <summary>
     /// Initializes a new instance of <see cref="WikiLinkInlineParser"/>.
     /// </summary>
-    public WikiLinkInlineParser(WikiOptions options, IDataStore dataStore)
+    public WikiLinkInlineParser(WikiOptions options, IDataStore dataStore, PageTitle title)
     {
         DataStore = dataStore;
         OpeningCharacters = new[] { LinkOpenChar, LinkCloseChar, '!' };
         Options = options;
+        Title = title;
     }
 
     /// <summary>
@@ -68,11 +77,19 @@ public class WikiLinkInlineParser : InlineParser
                 }
                 var saved = slice;
                 var currentPosition = slice.Start;
-                if (TryParseLink(ref slice, out var title, out var display, out var hasDisplay, out var autoDisplay, out var endPosition))
+                if (TryParseLink(
+                    ref slice,
+                    out var title,
+                    out var display,
+                    out var action,
+                    out var hasDisplay,
+                    out var autoDisplay,
+                    out var endPosition))
                 {
                     processor.Inline = new WikiLinkDelimiterInline(this)
                     {
                         Type = DelimiterType.Open,
+                        Action = action,
                         AutoDisplay = autoDisplay,
                         Display = display,
                         HasDisplay = hasDisplay,
@@ -139,7 +156,14 @@ public class WikiLinkInlineParser : InlineParser
         return endmatter;
     }
 
-    private static bool TryParseLink(ref StringSlice lines, out string? title, out string? display, out bool hasDisplay, out bool autoDisplay, out int endPosition)
+    private static bool TryParseLink(
+        ref StringSlice lines,
+        out string? title,
+        out string? display,
+        out string? action,
+        out bool hasDisplay,
+        out bool autoDisplay,
+        out int endPosition)
     {
         lines.NextChar(); // skip second opening char, which has already been confirmed
 
@@ -148,6 +172,7 @@ public class WikiLinkInlineParser : InlineParser
         hasDisplay = false;
         title = null;
         display = null;
+        action = null;
         var buffer = new StringBuilder();
 
         char c;
@@ -155,6 +180,7 @@ public class WikiLinkInlineParser : InlineParser
         var previousWhitespace = true;
         var hasNonWhitespace = false;
         var hasSeparator = false;
+        var hasActionSeparator = false;
         var hasDoubleSeparator = false;
         var isValid = false;
         while (true)
@@ -170,6 +196,7 @@ public class WikiLinkInlineParser : InlineParser
                 if (c is not LinkOpenChar
                     and not LinkCloseChar
                     and not SeparatorChar
+                    and not ActionSeparatorChar
                     and not '\\')
                 {
                     break;
@@ -213,6 +240,55 @@ public class WikiLinkInlineParser : InlineParser
 
                     if (buffer.Length <= 999)
                     {
+                        if (hasActionSeparator)
+                        {
+                            action = buffer.ToString();
+                        }
+                        else
+                        {
+                            title = buffer.ToString();
+                        }
+                        buffer.Length = 0;
+                        hasNonWhitespace = false;
+                        previousWhitespace = true;
+                        isValid = true;
+                    }
+
+                    continue;
+                }
+
+                if (c == ActionSeparatorChar
+                    && (buffer.Length == 0
+                    || buffer[^1] != '<'))
+                {
+                    if (!hasNonWhitespace)
+                    {
+                        if (hasActionSeparator)
+                        {
+                            endPosition = lines.Start;
+                            break;
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                    if (!hasActionSeparator)
+                    {
+                        endPosition = lines.Start;
+                    }
+                    hasActionSeparator = true;
+                    for (var i = buffer.Length - 1; i >= 0; i--)
+                    {
+                        if (!buffer[i].IsWhitespace())
+                        {
+                            break;
+                        }
+                        buffer.Length = i;
+                    }
+
+                    if (buffer.Length <= 999)
+                    {
                         title = buffer.ToString();
                         buffer.Length = 0;
                         hasNonWhitespace = false;
@@ -240,7 +316,18 @@ public class WikiLinkInlineParser : InlineParser
 
                         if (buffer.Length <= 999)
                         {
-                            display = buffer.ToString();
+                            if (hasSeparator)
+                            {
+                                display = buffer.ToString();
+                            }
+                            else if (hasActionSeparator)
+                            {
+                                action = buffer.ToString();
+                            }
+                            else
+                            {
+                                title = buffer.ToString();
+                            }
                             isValid = true;
                         }
                     }
@@ -278,69 +365,70 @@ public class WikiLinkInlineParser : InlineParser
             previousWhitespace = isWhitespace;
         }
 
-        if (isValid)
+        if (!isValid)
         {
-            if (!hasSeparator)
-            {
-                title = display;
-            }
-            else
-            {
-                if (hasNonWhitespace)
-                {
-                    hasDisplay = true;
-                }
-                else if (!hasNonWhitespace && title != null)
-                {
-                    autoDisplay = true;
-                    hasDisplay = true;
-
-                    // Remove namespace(s).
-                    var startIndex = title.LastIndexOf(':') + 1;
-                    var endIndex = title.Length;
-
-                    // Remove anchor.
-                    var anchor = title.LastIndexOf('#');
-                    if (anchor != -1)
-                    {
-                        endIndex = anchor;
-                    }
-
-                    // Remove anything in parenthesis at the end.
-                    var openParen = title.IndexOf('(');
-                    if (openParen != -1
-                        && openParen < endIndex
-                        && title.TrimEnd()[^1] == ')')
-                    {
-                        endIndex = openParen;
-                    }
-
-                    display = title[startIndex..endIndex].Trim();
-
-                    if (anchor == 0)
-                    {
-                        display = openParen == -1 || openParen < anchor
-                            ? title[(anchor + 1)..]
-                            : title[(anchor + 1)..openParen];
-                    }
-                    else if (anchor > 0)
-                    {
-                        display = openParen == -1 || openParen < anchor
-                            ? $"{display} § {title[(anchor + 1)..]}"
-                            : $"{display} § {title[(anchor + 1)..openParen]}";
-                    }
-
-                    if (hasDoubleSeparator)
-                    {
-                        display = display.ToLower(System.Globalization.CultureInfo.CurrentCulture);
-                    }
-                }
-            }
+            return false;
         }
 
-        buffer.Length = 0;
+        if (!hasSeparator)
+        {
+            return true;
+        }
 
-        return isValid;
+        if (hasNonWhitespace)
+        {
+            hasDisplay = true;
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(title))
+        {
+            return true;
+        }
+
+        autoDisplay = true;
+        hasDisplay = true;
+
+        // Remove domain and namespace.
+        var pageTitle = PageTitle.Parse(title);
+        title = pageTitle.ToString(); // Normalize casing.
+        var titlePart = pageTitle.Title ?? string.Empty;
+        var endIndex = titlePart.Length;
+
+        // Remove fragment.
+        var fragmentIndex = titlePart.LastIndexOf('#');
+        if (fragmentIndex != -1)
+        {
+            endIndex = fragmentIndex;
+        }
+
+        // Remove anything in parenthesis at the end.
+        var openParen = titlePart.IndexOf('(');
+        if (openParen != -1
+            && openParen < endIndex
+            && titlePart.TrimEnd()[^1] == ')')
+        {
+            endIndex = openParen;
+        }
+
+        display = titlePart[..endIndex].Trim();
+
+        if (fragmentIndex >= 0)
+        {
+            var fragment = openParen == -1 || openParen < fragmentIndex
+                ? titlePart[(fragmentIndex + 1)..]
+                : titlePart[(fragmentIndex + 1)..openParen];
+            display = fragmentIndex == 0
+                ? fragment
+                : $"{display} § {fragment}";
+        }
+
+        if (hasDoubleSeparator)
+        {
+            display = display.ToLower(System.Globalization.CultureInfo.CurrentCulture);
+        }
+
+        return true;
     }
 
     private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
@@ -367,172 +455,198 @@ public class WikiLinkInlineParser : InlineParser
         var parentDelimiter = openParent.Parent;
         var savedText = text;
 
-        if (openParent.Title != null)
+        string? endmatter = null;
+        if (!openParent.HasDisplay || openParent.AutoDisplay)
         {
-            string? endmatter = null;
-            if (!openParent.HasDisplay || openParent.AutoDisplay)
+            endmatter = ParseEndmatter(ref text);
+            text = savedText;
+            if (endmatter?.Length > 0)
             {
-                endmatter = ParseEndmatter(ref text);
-                text = savedText;
-                if (endmatter?.Length > 0)
-                {
-                    text.Start += endmatter.Length;
-                }
+                text.Start += endmatter.Length;
             }
+        }
 
-            var title = openParent.Title;
-            var display = openParent.Display;
-            var isWikipedia = openParent.Title.StartsWith("w:", StringComparison.OrdinalIgnoreCase);
-            var isCommons = !isWikipedia && openParent.Title.StartsWith("cc:", StringComparison.OrdinalIgnoreCase);
-            var isCategory = false;
-            var isNamespaceEscaped = false;
-            var isTalk = false;
-            string? wikiNamespace = null;
-            string? domain = null;
-            var ignoreMissing = false;
+        var title = openParent.Title;
+        var display = openParent.Display;
+        string? fragment = null;
+        var isWikipedia = title?.StartsWith("w:", StringComparison.OrdinalIgnoreCase) == true;
+        var isCommons = !isWikipedia
+            && title?.StartsWith("cc:", StringComparison.OrdinalIgnoreCase) == true;
+        var isCategory = false;
+        var isGroupPage = false;
+        var isUserPage = false;
+        var isEscaped = false;
+        var ignoreMissing = !string.IsNullOrEmpty(openParent.Action);
+        var pageTitle = new PageTitle();
 
-            var mainTitle = title;
-            if (isWikipedia)
+        if (isWikipedia)
+        {
+            title = title![2..];
+            if (!openParent.HasDisplay)
             {
-                title = openParent.Title[2..];
-                if (!openParent.HasDisplay)
-                {
-                    display = display?[2..].Replace('_', ' ');
-                    openParent.HasDisplay = true;
-                }
-                else if (openParent.AutoDisplay)
-                {
-                    display = display?.Replace('_', ' ');
-                }
+                display = display?[2..].Replace('_', ' ');
+                openParent.HasDisplay = true;
             }
-            else if (isCommons)
+            else if (openParent.AutoDisplay)
             {
-                title = openParent.Title[3..];
+                display = display?.Replace('_', ' ');
+            }
+        }
+        else if (isCommons)
+        {
+            title = title![3..];
 
-                if (!openParent.HasDisplay)
+            if (!openParent.HasDisplay)
+            {
+                if (display is not null)
                 {
-                    if (display is not null)
+                    var extIndex = display.IndexOf('.');
                     {
-                        var extIndex = display.IndexOf('.');
+                        if (extIndex != -1)
                         {
-                            if (extIndex != -1)
-                            {
-                                display = display[3..extIndex].Replace('_', ' ');
-                                openParent.HasDisplay = true;
-                            }
+                            display = display[3..extIndex].Replace('_', ' ');
+                            openParent.HasDisplay = true;
                         }
                     }
                 }
-                else if (openParent.AutoDisplay)
+            }
+            else if (openParent.AutoDisplay)
+            {
+                display = display?.Replace('_', ' ');
+            }
+        }
+        else if (!string.IsNullOrWhiteSpace(title))
+        {
+            if (title[0] == '~')
+            {
+                ignoreMissing = true;
+                title = title[1..];
+            }
+
+            var fragmentIndex = title.IndexOf('#');
+            if (fragmentIndex >= 0)
+            {
+                fragment = title[(fragmentIndex + 1)..];
+            }
+            if (fragmentIndex == 0)
+            {
+                ignoreMissing = true;
+                if (string.IsNullOrEmpty(display))
                 {
-                    display = display?.Replace('_', ' ');
+                    display = title[1..];
+                    openParent.HasDisplay = true;
                 }
             }
             else
             {
-                if (title.Length > 0 && title[0] == '~')
+                isEscaped = title.StartsWith(':');
+                if (isEscaped)
                 {
-                    ignoreMissing = true;
                     title = title[1..];
-                    mainTitle = title;
                 }
 
-                var anchorIndex = title.IndexOf('#');
-                if (anchorIndex == 0)
+                var mainTitle = title;
+                if (fragmentIndex != -1)
                 {
-                    ignoreMissing = true;
-                    if (string.IsNullOrEmpty(display))
-                    {
-                        display = title[1..];
-                        openParent.HasDisplay = true;
-                    }
+                    mainTitle = title[..fragmentIndex];
+                }
+
+                pageTitle = PageTitle.Parse(HtmlHelper.Unescape(mainTitle));
+
+                isCategory = string.Equals(
+                    pageTitle.Namespace,
+                    Options.CategoryNamespace,
+                    StringComparison.OrdinalIgnoreCase);
+                if (isCategory)
+                {
+                    pageTitle = pageTitle.WithNamespace(Options.CategoryNamespace); // normalize casing
                 }
                 else
                 {
-                    if (anchorIndex != -1)
+                    isGroupPage = string.Equals(
+                        pageTitle.Namespace,
+                        Options.GroupNamespace,
+                        StringComparison.OrdinalIgnoreCase);
+                    if (isGroupPage)
                     {
-                        mainTitle = title[..anchorIndex];
+                        pageTitle = pageTitle.WithNamespace(Options.GroupNamespace);
                     }
-                    var (wDomain, wWikiNamespace, wTitle, wIsTalk, _) = Article.GetTitleParts(Options, mainTitle);
-                    isTalk = wIsTalk;
-                    wikiNamespace = wWikiNamespace;
-                    domain = wDomain;
-                    isCategory = string.Equals(wikiNamespace, Options.CategoryNamespace, StringComparison.CurrentCultureIgnoreCase);
-                    if (isCategory)
+                    else
                     {
-                        isNamespaceEscaped = title.StartsWith(':');
-                        wikiNamespace = Options.CategoryNamespace; // normalize casing
+                        isUserPage = string.Equals(
+                            pageTitle.Namespace,
+                            Options.UserNamespace,
+                            StringComparison.OrdinalIgnoreCase);
+                        if (isUserPage)
+                        {
+                            pageTitle = pageTitle.WithNamespace(Options.UserNamespace);
+                        }
                     }
-                    mainTitle = wTitle;
-
-                    title = anchorIndex == -1 || anchorIndex >= title.Length - 1
-                        ? wTitle
-                        : wTitle + title[anchorIndex..].ToLowerInvariant().Replace(' ', '-');
                 }
+
+                title = fragmentIndex == -1 || fragmentIndex >= title.Length - 1
+                    ? pageTitle.Title
+                    : pageTitle.Title + title[fragmentIndex..].ToLowerInvariant().Replace(' ', '-');
             }
-
-            var articleMissing = false;
-            if (!isCategory && !isWikipedia && !isCommons && !ignoreMissing)
-            {
-                var reference = PageReference.GetPageReference(
-                    DataStore,
-                    mainTitle,
-                    wikiNamespace ?? Options.DefaultNamespace,
-                    domain);
-                if (reference is null)
-                {
-                    articleMissing = true;
-                }
-                else
-                {
-                    var article = DataStore.GetItem<Article>(reference.Reference);
-                    articleMissing = article?.IsDeleted == true;
-                }
-            }
-
-            var wikiLink = new WikiLinkInline()
-            {
-                Title = HtmlHelper.Unescape(title),
-                Display = display,
-                Domain = domain,
-                HasDisplay = openParent.HasDisplay,
-                IsImage = openParent.IsImage,
-                IsCategory = isCategory,
-                IsCommons = isCommons,
-                IsWikipedia = isWikipedia,
-                IsNamespaceEscaped = isNamespaceEscaped,
-                IsTalk = isTalk,
-                Missing = articleMissing,
-                Endmatter = endmatter,
-                WikiNamespace = wikiNamespace ?? Options.DefaultNamespace,
-                Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),
-                Line = openParent.Line,
-                Column = openParent.Column,
-            };
-
-            openParent.ReplaceBy(wikiLink);
-            inlineState.Inline = wikiLink;
-
-            inlineState.PostProcessInlines(0, wikiLink, null, false);
-
-            if (!openParent.IsImage && parentDelimiter != null)
-            {
-                foreach (var parent in parentDelimiter.FindParentOfType<WikiLinkDelimiterInline>())
-                {
-                    if (parent.IsImage)
-                    {
-                        break;
-                    }
-
-                    parent.IsActive = false;
-                }
-            }
-
-            wikiLink.IsClosed = true;
-
-            return true;
         }
 
-        return false;
+        Page? page = null;
+        var pageMissing = false;
+        if (!isCategory
+            && !isGroupPage
+            && !isUserPage
+            && !isWikipedia
+            && !isCommons)
+        {
+            var id = IPage<Page>.GetId(pageTitle);
+            page = DataStore.GetItem<Page>(id);
+            if (!ignoreMissing && !pageTitle.Equals(Title))
+            {
+                pageMissing = page?.Revision?.IsDeleted != false;
+            }
+        }
+
+        var wikiLink = new WikiLinkInline()
+        {
+            Page = page,
+            PageTitle = pageTitle,
+            Action = openParent.Action,
+            Title = HtmlHelper.Unescape(title),
+            Display = display,
+            Fragment = fragment,
+            HasDisplay = openParent.HasDisplay,
+            IsImage = openParent.IsImage,
+            IsCategory = isCategory,
+            IsCommons = isCommons,
+            IsWikipedia = isWikipedia,
+            IsEscaped = isEscaped,
+            IsMissing = pageMissing,
+            Endmatter = endmatter,
+            Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),
+            Line = openParent.Line,
+            Column = openParent.Column,
+        };
+
+        openParent.ReplaceBy(wikiLink);
+        inlineState.Inline = wikiLink;
+
+        inlineState.PostProcessInlines(0, wikiLink, null, false);
+
+        if (!openParent.IsImage && parentDelimiter != null)
+        {
+            foreach (var parent in parentDelimiter.FindParentOfType<WikiLinkDelimiterInline>())
+            {
+                if (parent.IsImage)
+                {
+                    break;
+                }
+
+                parent.IsActive = false;
+            }
+        }
+
+        wikiLink.IsClosed = true;
+
+        return true;
     }
 }

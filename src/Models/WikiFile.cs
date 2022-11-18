@@ -1,7 +1,6 @@
-﻿using System.Collections.ObjectModel;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.MarkdownExtensions.Transclusions;
+using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -22,12 +21,12 @@ namespace Tavenem.Wiki;
 /// delivery, etc.
 /// </para>
 /// </remarks>
-public sealed class WikiFile : Article
+public sealed class WikiFile : Page, IPage<WikiFile>
 {
     /// <summary>
     /// The type discriminator for this type.
     /// </summary>
-    public const string WikiFileIdItemTypeName = ":Article:WikiFile:";
+    public const string WikiFileIdItemTypeName = ":Page:WikiFile:";
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
@@ -35,14 +34,14 @@ public sealed class WikiFile : Article
     public override string IdItemTypeName => WikiFileIdItemTypeName;
 
     /// <summary>
-    /// The size of the file (in bytes).
-    /// </summary>
-    public int FileSize { get; private set; }
-
-    /// <summary>
     /// The path to the physical file this entry represents.
     /// </summary>
     public string FilePath { get; private set; }
+
+    /// <summary>
+    /// The size of the file (in bytes).
+    /// </summary>
+    public int FileSize { get; private set; }
 
     /// <summary>
     /// The MIME type of the file.
@@ -55,779 +54,107 @@ public sealed class WikiFile : Article
     public string Uploader { get; set; }
 
     /// <summary>
-    /// Initializes a new instance of <see cref="WikiFile"/>.
+    /// Constructs a new instance of <see cref="WikiFile"/>.
     /// </summary>
-    /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="title">
-    /// The title of this article. Must be unique within its namespace, and non-empty.
-    /// </param>
-    /// <param name="filePath">
-    /// The path to the physical file this entry represents.
-    /// </param>
-    /// <param name="fileSize">
-    /// The size of the file (in bytes).
-    /// </param>
-    /// <param name="fileType">
-    /// The MIME type of the file.
-    /// </param>
-    /// <param name="uploader">
-    /// The ID of the user who uploaded the file.
-    /// </param>
-    /// <param name="html">The rendered HTML content.</param>
-    /// <param name="markdownContent">The raw markdown.</param>
-    /// <param name="preview">A preview of this item's rendered HTML.</param>
-    /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-    /// <param name="timestampTicks">
-    /// The timestamp when this message was sent, in UTC Ticks.
-    /// </param>
-    /// <param name="wikiNamespace">
-    /// The namespace to which this article belongs.
-    /// </param>
-    /// <param name="domain">
-    /// The domain to which this article belongs (if any).
-    /// </param>
-    /// <param name="isDeleted">
-    /// Indicates that this article has been marked as deleted.
-    /// </param>
-    /// <param name="owner">
-    /// <para>
-    /// The owner of this article.
-    /// </para>
-    /// <para>
-    /// May be a user, a group, or <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="allowedEditors">
-    /// <para>
-    /// The users allowed to edit this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// </param>
-    /// <param name="allowedViewers">
-    /// <para>
-    /// The users allowed to view this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the file.
-    /// </para>
-    /// </param>
-    /// <param name="allowedEditorGroups">
-    /// <para>
-    /// The groups allowed to edit this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// </param>
-    /// <param name="allowedViewerGroups">
-    /// <para>
-    /// The groups allowed to view this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the file.
-    /// </para>
-    /// </param>
-    /// <param name="categories">
-    /// The titles of the categories to which this article belongs.
-    /// </param>
-    /// <param name="transclusions">
-    /// The transclusions within this article.
-    /// </param>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers.
+    /// <para>
+    /// This constructor should only be used by deserializers or for testing purposes.
+    /// </para>
+    /// <para>
+    /// To create a new page as part of a normal user interaction, use the <see
+    /// cref="WikiExtensions.AddOrReviseWikiPageAsync(IDataStore, WikiOptions, IWikiUserManager,
+    /// IWikiGroupManager, IWikiUser, PageTitle, string?, string?, bool, string?,
+    /// IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?,
+    /// PageTitle?, PageTitle?)"/> method.
+    /// </para>
+    /// <para>
+    /// To create a page programmatically, you can use a combination of <see
+    /// cref="WikiExtensions.GetWikiPageAsync(IDataStore, WikiOptions, PageTitle, bool, bool)"/> (to
+    /// get the current page, or a new page if one does not already exist), and <see
+    /// cref="Page.UpdateAsync(WikiOptions, IDataStore, string, string?, string?, string?,
+    /// IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?,
+    /// PageTitle?)"/> to update the result with the intended properties.
+    /// </para>
     /// </remarks>
     [JsonConstructor]
     public WikiFile(
-        string id,
-        string title,
+        PageTitle title,
+        string html,
+        string preview,
+        IReadOnlyCollection<WikiLink> wikiLinks,
         string filePath,
         int fileSize,
         string fileType,
         string uploader,
-        string html,
-        string markdownContent,
-        string preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
-        long timestampTicks,
-        string wikiNamespace,
-        string? domain,
-        bool isDeleted,
-        string? owner,
-        IReadOnlyCollection<string>? allowedEditors,
-        IReadOnlyCollection<string>? allowedViewers,
-        IReadOnlyCollection<string>? allowedEditorGroups,
-        IReadOnlyCollection<string>? allowedViewerGroups,
-        IReadOnlyCollection<string> categories,
-        IReadOnlyList<Transclusion>? transclusions) : base(
-            id,
-            title,
-            html,
-            markdownContent,
-            preview,
-            wikiLinks,
-            timestampTicks,
-            wikiNamespace,
-            domain,
-            isDeleted,
-            owner,
-            allowedEditors,
-            allowedViewers,
-            allowedEditorGroups,
-            allowedViewerGroups,
-            null,
-            null,
-            null,
-            false,
-            false,
-            categories,
-            transclusions)
+        string? markdownContent = null,
+        string? owner = null,
+        Revision? revision = null,
+        IReadOnlyCollection<string>? allowedEditors = null,
+        IReadOnlyCollection<string>? allowedViewers = null,
+        IReadOnlyCollection<string>? allowedEditorGroups = null,
+        IReadOnlyCollection<string>? allowedViewerGroups = null,
+        IReadOnlyCollection<PageTitle>? categories = null,
+        IReadOnlyCollection<PageTitle>? redirectReferences = null,
+        IReadOnlyCollection<PageTitle>? references = null,
+        IReadOnlyCollection<PageTitle>? transclusionReferences = null,
+        IReadOnlyCollection<PageTitle>? transclusions = null,
+        bool isBrokenRedirect = false,
+        bool isDoubleRedirect = false,
+        PageTitle? redirectTitle = null) : base(
+        title,
+        html,
+        preview,
+        wikiLinks,
+        markdownContent,
+        owner,
+        revision,
+        allowedEditors,
+        allowedViewers,
+        allowedEditorGroups,
+        allowedViewerGroups,
+        categories,
+        redirectReferences,
+        references,
+        transclusionReferences,
+        transclusions,
+        isBrokenRedirect,
+        isDoubleRedirect,
+        redirectTitle)
     {
-        FilePath = filePath;
         FileSize = fileSize;
+        FilePath = filePath;
         FileType = fileType;
         Uploader = uploader;
     }
 
-    private WikiFile(
-        string id,
-        string title,
-        string filePath,
-        int fileSize,
-        string fileType,
-        string uploader,
-        string? markdown,
-        string html,
-        string preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
-        long timestampTicks,
-        string wikiNamespace,
-        string? domain,
-        bool isDeleted = false,
-        string? owner = null,
-        IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null,
-        IEnumerable<string>? allowedEditorGroups = null,
-        IEnumerable<string>? allowedViewerGroups = null,
-        IList<string>? categories = null,
-        IList<Transclusion>? transclusions = null) : base(
-            id,
-            title,
-            markdown,
-            html,
-            preview,
-            wikiLinks,
-            timestampTicks,
-            wikiNamespace,
-            domain,
-            isDeleted,
-            owner,
-            allowedEditors,
-            allowedViewers,
-            allowedEditorGroups,
-            allowedViewerGroups,
-            categories,
-            transclusions)
+    private WikiFile(PageTitle title) : base(title)
     {
-        FilePath = filePath;
-        FileSize = fileSize;
-        FileType = fileType;
-        Uploader = uploader;
+        FilePath = string.Empty;
+        FileType = string.Empty;
+        Uploader = string.Empty;
     }
 
     /// <summary>
-    /// Gets the latest revision for the file with the given title.
+    /// Gets an empty instance of <see cref="WikiFile"/>.
     /// </summary>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the file to retrieve.</param>
-    /// <param name="domain">The domain of the file to retrieve (if any).</param>
-    /// <returns>The latest revision for the file with the given title; or <see
-    /// langword="null"/> if no such file exists.</returns>
-    public static async Task<WikiFile?> GetFileAsync(
-        WikiOptions options,
-        IDataStore dataStore,
-        string? title,
-        string? domain = null)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            return null;
-        }
-
-        WikiFile? file = null;
-        var reference = await PageReference.GetPageReferenceAsync(dataStore, title, options.FileNamespace, domain);
-        if (reference is not null)
-        {
-            file = await dataStore.GetItemAsync<WikiFile>(reference.Reference);
-        }
-        // If no exact match exists, ignore case if only one such match exists.
-        if (file is null)
-        {
-            var normalizedReference = await NormalizedPageReference.GetNormalizedPageReferenceAsync(
-                dataStore,
-                title,
-                options.FileNamespace,
-                domain);
-            if (normalizedReference?.References.Count == 1)
-            {
-                file = await dataStore.GetItemAsync<WikiFile>(normalizedReference.References[0]);
-            }
-        }
-
-        return file;
-    }
+    /// <returns>An empty instance of <see cref="WikiFile"/>.</returns>
+    public static new WikiFile Empty(PageTitle title) => new(title);
 
     /// <summary>
-    /// Gets a new <see cref="WikiFile"/> instance.
+    /// Gets a copy of this instance.
     /// </summary>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the file. Must be unique and non-empty.</param>
-    /// <param name="editor">
-    /// The ID of the user who created this file.
-    /// </param>
-    /// <param name="filePath">The relative path to the file.</param>
-    /// <param name="fileSize">The size of the file, in bytes.</param>
-    /// <param name="type">
-    /// The MIME type of the file.
-    /// </param>
-    /// <param name="markdown">The raw markdown content.</param>
-    /// <param name="domain">The domain to which this file belongs (if any).</param>
-    /// <param name="revisionComment">
-    /// An optional comment supplied for this revision (e.g. to explain the upload).
-    /// </param>
-    /// <param name="owner">
-    /// <para>
-    /// The ID of the intended owner of the file.
-    /// </para>
-    /// <para>
-    /// May be a user, a group, or <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="allowedEditors">
-    /// <para>
-    /// The users allowed to edit this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// </param>
-    /// <param name="allowedViewers">
-    /// <para>
-    /// The users allowed to view this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the file.
-    /// </para>
-    /// </param>
-    /// <param name="allowedEditorGroups">
-    /// <para>
-    /// The groups allowed to edit this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// </param>
-    /// <param name="allowedViewerGroups">
-    /// <para>
-    /// The groups allowed to view this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the file.
-    /// </para>
-    /// </param>
-    public static async Task<WikiFile> NewAsync(
-        WikiOptions options,
-        IDataStore dataStore,
-        string title,
-        string editor,
-        string filePath,
-        int fileSize,
-        string type,
-        string? markdown = null,
-        string? domain = null,
-        string? revisionComment = null,
-        string? owner = null,
-        IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null,
-        IEnumerable<string>? allowedEditorGroups = null,
-        IEnumerable<string>? allowedViewerGroups = null)
+    /// <param name="newNamespace">A new namespace to assign to the copied page.</param>
+    /// <returns>
+    /// A new instance of <see cref="WikiFile"/> with the same properties as this instance.
+    /// </returns>
+    public override WikiFile Copy(string? newNamespace = null)
     {
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            throw new ArgumentException($"{nameof(title)} cannot be empty.", nameof(title));
-        }
-        title = title.ToWikiTitleCase();
-
-        var wikiId = dataStore.CreateNewIdFor<WikiFile>();
-
-        await CreatePageReferenceAsync(dataStore, wikiId, title, options.FileNamespace, domain)
-            .ConfigureAwait(false);
-
-        var revision = new Revision(
-            wikiId,
-            editor,
-            title,
-            options.FileNamespace,
-            domain,
-            null,
-            markdown,
-            revisionComment);
-        await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
-
-        var md = markdown;
-        List<Transclusion> transclusions;
-        if (string.IsNullOrEmpty(markdown))
-        {
-            transclusions = new List<Transclusion>();
-        }
-        else
-        {
-            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
-                options,
-                dataStore,
-                title,
-                $"{options.FileNamespace}:{title}",
-                markdown);
-        }
-
-        var wikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace, domain);
-
-        var categories = await UpdateCategoriesAsync(
-            options,
-            dataStore,
-            wikiId,
-            editor,
-            owner,
-            domain,
-            allowedEditors,
-            allowedViewers,
-            allowedEditorGroups,
-            allowedViewerGroups,
-            wikiLinks)
-            .ConfigureAwait(false);
-
-        var file = new WikiFile(
-            wikiId,
-            title,
-            filePath,
-            fileSize,
-            editor,
-            type,
-            markdown,
-            RenderHtml(
-                options,
-                dataStore,
-                await PostprocessArticleMarkdownAsync(
-                    options,
-                    dataStore,
-                    title,
-                    options.FileNamespace,
-                    domain,
-                    markdown)),
-            RenderPreview(
-                options,
-                dataStore,
-                await PostprocessArticleMarkdownAsync(
-                    options,
-                    dataStore,
-                    title,
-                    options.FileNamespace,
-                    domain,
-                    markdown,
-                    true)),
-            new ReadOnlyCollection<WikiLink>(wikiLinks),
-            revision.TimestampTicks,
-            options.FileNamespace,
-            domain,
-            isDeleted: false,
-            owner,
-            allowedEditors,
-            allowedViewers,
-            allowedEditorGroups,
-            allowedViewerGroups,
-            categories,
-            transclusions);
-        await dataStore.StoreItemAsync(file).ConfigureAwait(false);
-
-        await AddPageTransclusionsAsync(dataStore, wikiId, transclusions)
-            .ConfigureAwait(false);
-
-        await AddPageLinksAsync(dataStore, wikiId, wikiLinks)
-            .ConfigureAwait(false);
-
-        await UpdateReferencesAsync(
-            options,
-            dataStore,
-            title,
-            options.FileNamespace,
-            domain,
-            false,
-            true,
-            null,
-            null,
-            null,
-            false,
-            false)
-            .ConfigureAwait(false);
-
-        if (options.OnCreated is not null)
-        {
-            await options.OnCreated.Invoke(file, editor).ConfigureAwait(false);
-        }
-
-        return file;
-    }
-
-    /// <summary>
-    /// Revises this <see cref="WikiFile"/> instance.
-    /// </summary>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="editor">
-    /// The ID of the user who made this revision.
-    /// </param>
-    /// <param name="title">
-    /// <para>
-    /// The optional new title of the file. Must be unique within its namespace, and non-empty.
-    /// </para>
-    /// <para>
-    /// If left <see langword="null"/> the existing title will be retained.
-    /// </para>
-    /// </param>
-    /// <param name="path">The relative path to the file.</param>
-    /// <param name="fileSize">The size of the file, in bytes.</param>
-    /// <param name="type">
-    /// <para>
-    /// The MIME type of the file.
-    /// </para>
-    /// <para>
-    /// If left <see langword="null"/> the existing type will be retained.
-    /// </para>
-    /// </param>
-    /// <param name="markdown">The markdown.</param>
-    /// <param name="revisionComment">
-    /// An optional comment supplied for this revision (e.g. to explain the changes).
-    /// </param>
-    /// <param name="domain">
-    /// <para>
-    /// The optional new domain to which this article belongs.
-    /// </para>
-    /// <para>
-    /// If left <see langword="null"/> the existing domain will be retained (if any).
-    /// </para>
-    /// <para>
-    /// To clear the domain, set this to an empty string instead, which will assign <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="isDeleted">Indicates that this file has been marked as deleted.</param>
-    /// <param name="owner">
-    /// <para>
-    /// The new owner of the file.
-    /// </para>
-    /// <para>
-    /// May be a user, a group, or <see langword="null"/>.
-    /// </para>
-    /// </param>
-    /// <param name="allowedEditors">
-    /// <para>
-    /// The users allowed to edit this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// </param>
-    /// <param name="allowedViewers">
-    /// <para>
-    /// The users allowed to view this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the file.
-    /// </para>
-    /// </param>
-    /// <param name="allowedEditorGroups">
-    /// <para>
-    /// The groups allowed to edit this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be edited by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be edited by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to make edits.
-    /// </para>
-    /// </param>
-    /// <param name="allowedViewerGroups">
-    /// <para>
-    /// The groups allowed to view this file.
-    /// </para>
-    /// <para>
-    /// If <see langword="null"/> the file can be viewed by anyone.
-    /// </para>
-    /// <para>
-    /// If non-<see langword="null"/> the file can only be viewed by those listed, plus its
-    /// owner (regardless of whether the owner is explicitly listed). An empty (but non-<see
-    /// langword="null"/>) list allows only the owner to view the file.
-    /// </para>
-    /// </param>
-    public async Task ReviseAsync(
-        WikiOptions options,
-        IDataStore dataStore,
-        string editor,
-        string? title = null,
-        string? path = null,
-        int? fileSize = null,
-        string? type = null,
-        string? markdown = null,
-        string? revisionComment = null,
-        string? domain = null,
-        bool isDeleted = false,
-        string? owner = null,
-        IEnumerable<string>? allowedEditors = null,
-        IEnumerable<string>? allowedViewers = null,
-        IEnumerable<string>? allowedEditorGroups = null,
-        IEnumerable<string>? allowedViewerGroups = null)
-    {
-        title ??= title?.ToWikiTitleCase() ?? Title;
-        var previousTitle = Title;
-        Title = title;
-
-        if (domain is null)
-        {
-            domain = Domain;
-        }
-        else if (string.IsNullOrWhiteSpace(domain))
-        {
-            domain = null;
-        }
-        else
-        {
-            domain = domain.Trim();
-        }
-        var previousDomain = Domain;
-        Domain = domain;
-
-        var sameTitle = string.Equals(previousTitle, title, StringComparison.Ordinal)
-            && string.Equals(previousDomain, domain, StringComparison.Ordinal);
-
-        var newFile = false;
-        if (!string.IsNullOrWhiteSpace(path))
-        {
-            newFile = path != FilePath;
-            FilePath = path;
-        }
-        if (fileSize.HasValue)
-        {
-            newFile |= fileSize.Value != FileSize;
-            FileSize = fileSize.Value;
-        }
-        if (!string.IsNullOrEmpty(type))
-        {
-            newFile |= type != FileType;
-            FileType = type;
-        }
-
-        if (newFile)
-        {
-            Uploader = editor;
-        }
-
-        var previousMarkdown = MarkdownContent;
-        var wasDeleted = IsDeleted || string.IsNullOrWhiteSpace(previousMarkdown);
-
-        if (isDeleted || string.IsNullOrWhiteSpace(markdown))
-        {
-            if (!wasDeleted)
-            {
-                Html = string.Empty;
-                IsDeleted = true;
-                MarkdownContent = string.Empty;
-                Preview = string.Empty;
-                Categories = new List<string>().AsReadOnly();
-
-                if (Transclusions is not null)
-                {
-                    await RemovePageTransclusionsAsync(dataStore, Id, Transclusions)
-                        .ConfigureAwait(false);
-                }
-
-                await RemovePageLinksAsync(dataStore, Id, WikiLinks)
-                    .ConfigureAwait(false);
-
-                Transclusions = null;
-                WikiLinks = new List<WikiLink>().AsReadOnly();
-            }
-        }
-        else
-        {
-            IsDeleted = false;
-        }
-
-        if (!sameTitle && !IsDeleted)
-        {
-            await CreatePageReferenceAsync(dataStore, Id, title, options.FileNamespace, domain)
-                .ConfigureAwait(false);
-        }
-        if (!sameTitle)
-        {
-            await RemovePageReferenceAsync(dataStore, Id, previousTitle, options.FileNamespace, previousDomain)
-                .ConfigureAwait(false);
-        }
-
-        var changed = wasDeleted != IsDeleted
-            || !string.Equals(previousMarkdown, markdown, StringComparison.Ordinal);
-
-        if (!IsDeleted && changed)
-        {
-            MarkdownContent = markdown!;
-
-            var previousTransclusions = Transclusions?.ToList() ?? new List<Transclusion>();
-            var (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
-                options,
-                dataStore,
-                title,
-                GetFullTitle(options, title, options.FileNamespace, domain),
-                markdown!);
-            Transclusions = transclusions.Count == 0
-                ? null
-                : transclusions.AsReadOnly();
-            await RemovePageTransclusionsAsync(dataStore, Id, previousTransclusions.Except(transclusions))
-                .ConfigureAwait(false);
-            await AddPageTransclusionsAsync(dataStore, Id, transclusions.Except(previousTransclusions))
-                .ConfigureAwait(false);
-
-            var previousWikiLinks = WikiLinks.ToList();
-            WikiLinks = GetWikiLinks(options, dataStore, md, title, options.FileNamespace).AsReadOnly();
-            await RemovePageLinksAsync(dataStore, Id, previousWikiLinks.Except(WikiLinks))
-                .ConfigureAwait(false);
-            await AddPageLinksAsync(dataStore, Id, WikiLinks.Except(previousWikiLinks))
-                .ConfigureAwait(false);
-        }
-
-        if (changed)
-        {
-            Categories = (await UpdateCategoriesAsync(
-                options,
-                dataStore,
-                Id,
-                editor,
-                owner,
-                domain,
-                allowedEditors,
-                allowedViewers,
-                allowedEditorGroups,
-                allowedViewerGroups,
-                WikiLinks,
-                Categories)
-                .ConfigureAwait(false))
-                .AsReadOnly();
-
-            await UpdateAsync(options, dataStore);
-        }
-
-        var oldOwner = Owner;
-        Owner = owner;
-        AllowedEditors = allowedEditors?.ToList().AsReadOnly();
-        AllowedViewers = allowedViewers?.ToList().AsReadOnly();
-
-        var revision = new Revision(
-            Id,
-            editor,
-            title,
-            options.FileNamespace,
-            domain,
-            previousMarkdown,
-            MarkdownContent,
-            revisionComment);
-        await dataStore.StoreItemAsync(revision).ConfigureAwait(false);
-
-        TimestampTicks = revision.TimestampTicks;
-
-        await dataStore.StoreItemAsync(this).ConfigureAwait(false);
-
-        await UpdateReferencesAsync(
-            options,
-            dataStore,
-            title,
-            options.FileNamespace,
-            domain,
-            IsDeleted,
-            sameTitle,
-            previousTitle,
-            options.FileNamespace,
-            previousDomain,
-            false,
-            false)
-            .ConfigureAwait(false);
-
-        if (isDeleted && !wasDeleted)
-        {
-            if (options.OnDeleted is not null)
-            {
-                await options.OnDeleted(this, oldOwner, Owner).ConfigureAwait(false);
-            }
-            else if (options.OnEdited is not null)
-            {
-                await options.OnEdited(this, revision, oldOwner, Owner).ConfigureAwait(false);
-            }
-        }
-        else if (options.OnEdited is not null)
-        {
-            await options.OnEdited(this, revision, oldOwner, Owner).ConfigureAwait(false);
-        }
+        var newPage = Copy<WikiFile>(newNamespace);
+        newPage.FilePath = FilePath;
+        newPage.FileSize = FileSize;
+        newPage.FileType = FileType;
+        newPage.Uploader = Uploader;
+        return newPage;
     }
 
     /// <summary>
@@ -859,104 +186,270 @@ public sealed class WikiFile : Article
         }
     }
 
-    internal async Task RestoreAsync(
+    /// <summary>
+    /// Renames a <see cref="Page"/> instance, turns the previous title into a redirect to the new
+    /// one, updates the wiki accordingly, and saves both pages to the data store.
+    /// </summary>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="title">The new title of the page.</param>
+    /// <param name="editor">
+    /// The ID of the user who made this edit.
+    /// </param>
+    /// <param name="markdown">The raw markdown content for the renamed page.</param>
+    /// <param name="comment">
+    /// An optional comment supplied for this revision (e.g. to explain the changes).
+    /// </param>
+    /// <param name="owner">
+    /// <para>
+    /// The ID of the intended owner of both pages.
+    /// </para>
+    /// <para>
+    /// May be a user, a group, or <see langword="null"/>.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditors">
+    /// <para>
+    /// The users allowed to edit either page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewers">
+    /// <para>
+    /// The users allowed to view either page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the page.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit either page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view either page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the page.
+    /// </para>
+    /// </param>
+    /// <param name="redirectTitle">
+    /// If the new page will redirect to another, this indicates the title of the destination.
+    /// </param>
+    /// <remarks>
+    /// Note: any redirects which point to this page will be updated to point to the new, renamed
+    /// page instead.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">
+    /// <para>
+    /// The target namespace is reserved.
+    /// </para>
+    /// <para>
+    /// Or, the namespace of either the original or renamed page is the category, file, group,
+    /// script, or user namespace, and the namespaces of the original and renamed page do not match.
+    /// Moving a page to or from those namespaces is not permitted.
+    /// </para>
+    /// </exception>
+    public override Task RenameAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string editor)
-    {
-        WikiNamespace = options.FileNamespace;
-
-        var existing = await GetFileAsync(options, dataStore, Title, Domain);
-        if (existing is not null)
-        {
-            Id = existing.Id;
-        }
-
-        await CreatePageReferenceAsync(
-            dataStore,
-            Id,
-            Title,
-            WikiNamespace,
-            Domain)
-            .ConfigureAwait(false);
-
-        var md = MarkdownContent;
-        List<Transclusion> transclusions;
-        if (string.IsNullOrEmpty(MarkdownContent))
-        {
-            transclusions = new List<Transclusion>();
-        }
-        else
-        {
-            (md, transclusions) = await TransclusionParser.TranscludeInnerAsync(
-                options,
-                dataStore,
-                Title,
-                $"{options.FileNamespace}:{Title}",
-                MarkdownContent);
-        }
-
-        var wikiLinks = GetWikiLinks(options, dataStore, md, Title, options.FileNamespace, Domain);
-
-        var categories = await UpdateCategoriesAsync(
+        PageTitle title,
+        string editor,
+        string? markdown = null,
+        string? comment = null,
+        string? owner = null,
+        IEnumerable<string>? allowedEditors = null,
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null,
+        PageTitle? redirectTitle = null) => RenameAsync<WikiFile>(
             options,
             dataStore,
-            Id,
+            title,
             editor,
-            Owner,
-            Domain,
-            AllowedEditors,
-            AllowedViewers,
-            AllowedEditorGroups,
-            AllowedViewerGroups,
-            wikiLinks)
-            .ConfigureAwait(false);
+            markdown,
+            comment,
+            owner,
+            allowedEditors,
+            allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
+            redirectTitle);
 
-        Html = RenderHtml(
+    /// <summary>
+    /// <para>
+    /// Updates this page according to the given parameters.
+    /// </para>
+    /// <para>
+    /// This can either be used to create a new page, or update an existing page.
+    /// </para>
+    /// </summary>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="editor">
+    /// The ID of the user who made this edit.
+    /// </param>
+    /// <param name="path">The relative path to the file.</param>
+    /// <param name="fileSize">The size of the file, in bytes.</param>
+    /// <param name="type">The MIME type of the file.</param>
+    /// <param name="markdown">The raw markdown content.</param>
+    /// <param name="comment">
+    /// An optional comment supplied for this revision (e.g. to explain the changes).
+    /// </param>
+    /// <param name="owner">
+    /// <para>
+    /// The ID of the intended owner of the page.
+    /// </para>
+    /// <para>
+    /// May be a user, a group, or <see langword="null"/>.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditors">
+    /// <para>
+    /// The users allowed to edit this page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewers">
+    /// <para>
+    /// The users allowed to view this page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the page.
+    /// </para>
+    /// </param>
+    /// <param name="allowedEditorGroups">
+    /// <para>
+    /// The groups allowed to edit this page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be edited by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to make edits.
+    /// </para>
+    /// </param>
+    /// <param name="allowedViewerGroups">
+    /// <para>
+    /// The groups allowed to view this page.
+    /// </para>
+    /// <para>
+    /// If <see langword="null"/> the page can be viewed by anyone.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the page.
+    /// </para>
+    /// </param>
+    /// <param name="redirectTitle">
+    /// If this page will redirect to another, this indicates the title of the destination.
+    /// </param>
+    /// <exception cref="ArgumentException">
+    /// <para>
+    /// A <paramref name="redirectTitle"/> was provided for a page in the category, group, or user
+    /// namespaces. Redirects in those namespaces are not permitted.
+    /// </para>
+    /// <para>
+    /// Or, a page in the group or user namespaces was given a domain. Pages in those namespaces
+    /// cannot be given domains.
+    /// </para>
+    /// <para>
+    /// Or, file size was less than or equal to zero.
+    /// </para>
+    /// <para>
+    /// Or, <paramref name="path"/> was empty.
+    /// </para>
+    /// <para>
+    /// Or, <paramref name="type"/> was empty.
+    /// </para>
+    /// </exception>
+    public async Task UpdateAsync(
+        WikiOptions options,
+        IDataStore dataStore,
+        string editor,
+        string path,
+        int fileSize,
+        string type,
+        string? markdown = null,
+        string? comment = null,
+        string? owner = null,
+        IEnumerable<string>? allowedEditors = null,
+        IEnumerable<string>? allowedViewers = null,
+        IEnumerable<string>? allowedEditorGroups = null,
+        IEnumerable<string>? allowedViewerGroups = null,
+        PageTitle? redirectTitle = null)
+    {
+        if (fileSize <= 0)
+        {
+            throw new ArgumentException("File size must be greater than zero", nameof(fileSize));
+        }
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            throw new ArgumentException("Path cannot be empty", nameof(path));
+        }
+        if (string.IsNullOrWhiteSpace(type))
+        {
+            throw new ArgumentException("Type cannot be empty", nameof(type));
+        }
+
+        FilePath = path.Trim();
+        FileSize = fileSize;
+        FileType = type.Trim();
+
+        await UpdateAsync(
             options,
             dataStore,
-            await PostprocessArticleMarkdownAsync(
-                options,
-                dataStore,
-                Title,
-                options.FileNamespace,
-                Domain,
-                MarkdownContent));
-        Preview = RenderPreview(
-            options,
-            dataStore,
-            await PostprocessArticleMarkdownAsync(
-                options,
-                dataStore,
-                Title,
-                options.FileNamespace,
-                Domain,
-                MarkdownContent,
-                true));
-        WikiLinks = new ReadOnlyCollection<WikiLink>(wikiLinks);
-        Categories = categories;
-        Transclusions = transclusions;
-        await dataStore.StoreItemAsync(this).ConfigureAwait(false);
-
-        await AddPageTransclusionsAsync(dataStore, Id, transclusions)
-            .ConfigureAwait(false);
-
-        await AddPageLinksAsync(dataStore, Id, wikiLinks)
-            .ConfigureAwait(false);
-
-        await UpdateReferencesAsync(
-            options,
-            dataStore,
-            Title,
-            options.FileNamespace,
-            Domain,
-            IsDeleted,
-            true,
-            null,
-            null,
-            null,
-            false,
-            false)
+            editor,
+            markdown,
+            comment,
+            owner,
+            allowedEditors,
+            allowedViewers,
+            allowedEditorGroups,
+            allowedViewerGroups,
+            redirectTitle)
             .ConfigureAwait(false);
     }
 }

@@ -21,9 +21,9 @@ public enum SpecialListType
     All_Files = 2,
 
     /// <summary>
-    /// All pages.
+    /// All articles.
     /// </summary>
-    All_Pages = 3,
+    All_Articles = 3,
 
     /// <summary>
     /// All redirected pages.

@@ -4,7 +4,7 @@
 /// Information about a user page.
 /// </summary>
 /// <param name="Groups">The groups to which this user belongs.</param>
-/// <param name="Item">
+/// <param name="Page">
 /// <para>
 /// The <see cref="Article"/>.
 /// </para>
@@ -27,6 +27,6 @@
 /// </param>
 public record UserPageInfo(
     List<WikiUserInfo>? Groups,
-    Article? Item,
+    Article? Page,
     WikiPermission Permission,
     WikiUserInfo? User);
