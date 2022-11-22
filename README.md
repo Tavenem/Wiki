@@ -23,17 +23,18 @@ Most of the properties of this class are not expected to change once a wiki has 
 Doing so can cause existing wiki pages to become inaccessible, or to be formatted incorrectly.
 
 - `AboutPageTitle`*: The title of the main about page. Default is "About".
-- `AdminGroupName`: The name of the admin user group. Default is "Wiki Admins".
-- `AdminNamespaces`: An optional collection of namespaces which may not be assigned to pages by
-  non-admin users. The namespace assigned to `SystemNamespace` is included automatically.
-
-  Read-only. items can be added with the `AddAdminNamespace` method.
 - `CategoriesTitle`: The name of the article on categories in the main wiki. Default is
   "Categories".
 - `CategoryNamespace`: The name of the categories namespace. Default is "Category".
 - `ContactPageTitle`*: The title of the main contact page. Default is "Contact".
 - `ContentsPageTitle`*: The title of the main contents page. Default is "Contents".
 - `CopyrightPageTitle`*: The title of the main copyright page. Default is "Copyright".
+- `CustomAdminNamespaces`: An optional collection of namespaces which may not be assigned to pages by non-admin users.
+
+  The `AdminNamespaces` read-only property may be used to get the full list, which includes the namespace assigned to `SystemNamespace` automatically.
+- `CustomReservedNamespaces`: An optional collection of namespaces which may not be assigned to pages by users.
+
+  The `ReservedNamespaces` read-only property may be used to get the full list, which includes the namespace assigned to `FileNamespace` automatically.
 - `DefaultAnonymousPermission`: The default permission granted to an anonymous user for wiki content with no configured access control.
 
   This defaults to `Read`, which allows anonymous users to view any content for which no specific
@@ -86,22 +87,23 @@ Doing so can cause existing wiki pages to become inaccessible, or to be formatte
   is parsed from markdown but *before* it is sanitized.
 
   Processors are run in the order they are added to the collection.
-- `ReservedNamespaces`: An optional collection of namespaces which may not be assigned to pages by
-  users. The namespace assigned to `FileNamespace` is included automatically.
-
-  Read-only. Values can be added with the `AddReservedNamespace` method.
 - `ScriptNamespace`: The name of the script namespace. Default is "Script".
 - `SiteName`: The name of the wiki. Displayed as a subheading below each article title. Default is
   "a NeverFoundry wiki".
 - `SystemNamespace`: The name of the system namespace. Default is "System".
 - `TransclusionNamespace`: The name of the transclusion namespace. Default is "Transclusion".
+
+  When a transclusion omits the namespace, this namespace is assumed. To transclude a page from the default (empty) namespace, a transclusion may use a single hyphen as the namespace. The hyphen will be replaced during transclusion by the empty namespace. If your wiki actually has a namespace that uses a single hyphen as its name, pages may be transcluded from it by escaping the hyphen with a backslash character: '`\-`'.
 - `UserNamespace`: The name of the user namespace. Default is "User".
+- `UserDomains`: If set to `true` each user (and only that user) is automatically granted full permission in a domain with the same name as their user ID. The `GetDomainPermission` function, the `WikiUser.AllowedViewDomains` property, and the `WikiGroup.AllowedViewDomains` property will still be checked for other users attempting to access content in such domains, but the user with the matching ID will always be granted all permissions automatically. A possible use for user domains is as a "scratch-pad" area where articles can be drafted and tested prior to publication.
 - `WikiLinkPrefix`: A prefix added before wiki links (to distinguish them from other pages on the
   same server). Default is "Wiki".
   
   May be set to `null` or an empty `string`, which omits any prefix from generated URLs.
 
 **This property may be set to `null` or an empty `string` to disable the associated wiki page.*
+
+*The associated page is expected in the system namespace, and is not expected to be in a domain*
 
 ## Markup
 The Tavenem Wiki syntax is a custom flavor of markdown. It implements all the features of
