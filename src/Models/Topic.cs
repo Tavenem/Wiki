@@ -79,6 +79,18 @@ public class Topic : IdItem
         : $"({domain}):{wikiNamespace}:{title}:messages";
 
     /// <summary>
+    /// Gets the title of the wiki page associated with this <see cref="Topic"/>.
+    /// </summary>
+    /// <returns>
+    /// The title of the wiki page associated with this <see cref="Topic"/>, or an empty title if
+    /// this topic's <see cref="IdItem.Id"/> does not appear to refer to a wiki page.
+    /// </returns>
+    public PageTitle GetTitle() => string.IsNullOrEmpty(Id)
+        || Id.Length <= TopicIdItemTypeName.Length
+        ? new()
+        : PageTitle.Parse(Id[TopicIdItemTypeName.Length..]);
+
+    /// <summary>
     /// Gets the <see cref="Topic"/> that fits the given parameters.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
@@ -137,8 +149,4 @@ public class Topic : IdItem
                 .ConfigureAwait(false);
         }
     }
-
-    private PageTitle GetTitle() => string.IsNullOrEmpty(Id)
-        ? new()
-        : PageTitle.Parse(Id[TopicIdItemTypeName.Length..]);
 }

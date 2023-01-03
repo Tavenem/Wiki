@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.17.0-preview
+### Changed
+- Made `Topic.GetTitle` public
+
 ## 0.16.0-preview
 ### Changed
 - Archive topics
