@@ -1,4 +1,4 @@
-![build](https://img.shields.io/github/workflow/status/Tavenem/Wiki/publish/main) [![NuGet downloads](https://img.shields.io/nuget/dt/Tavenem.Wiki)](https://www.nuget.org/packages/Tavenem.Wiki/)
+![build](https://img.shields.io/github/actions/workflow/status/Tavenem/Wiki/publish.yml?branch=main) [![NuGet downloads](https://img.shields.io/nuget/dt/Tavenem.Wiki)](https://www.nuget.org/packages/Tavenem.Wiki/)
 
 Tavenem.Wiki
 ==
