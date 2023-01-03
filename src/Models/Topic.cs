@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -9,7 +8,7 @@ namespace Tavenem.Wiki;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Most wiki discussion topics are expected to be wiki pages,a nd support for pages as topics is
+/// Most wiki discussion topics are expected to be wiki pages, and support for pages as topics is
 /// built-in.
 /// </para>
 /// <para>

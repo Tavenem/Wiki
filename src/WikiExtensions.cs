@@ -1188,13 +1188,32 @@ public static class WikiExtensions
         {
             pages = pages.Where(x => x.Title.Domain == null);
         }
-        var allPages = await pages.ToListAsync().ConfigureAwait(false);
+        var allPages = await pages.ToListAsync()
+            .ConfigureAwait(false);
+
+        var topics = dataStore.Query<Topic>();
+        if (hasDomain)
+        {
+            topics = topics.Where(x => x.Id.Contains(domain!));
+        }
+        else if (!fullWiki)
+        {
+            topics = topics.Where(x => !x.Id.Contains('('));
+        }
+        var allTopics = await topics.ToListAsync()
+            .ConfigureAwait(false);
+
         if (allPages.Count > 0)
         {
             archive.Pages = new();
             foreach (var page in allPages)
             {
                 archive.Pages.Add(page.GetArchiveCopy());
+                var topic = allTopics.FirstOrDefault(x => x.Id == Topic.GetId(page.Title));
+                if (topic is not null)
+                {
+                    (archive.Topics ??= new()).Add(topic);
+                }
             }
         }
 

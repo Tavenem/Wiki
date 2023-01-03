@@ -46,6 +46,11 @@ public class Archive
     public List<Page>? Pages { get; set; }
 
     /// <summary>
+    /// All the topics for pages in the wiki/domain.
+    /// </summary>
+    public List<Topic>? Topics { get; set; }
+
+    /// <summary>
     /// Restores this <see cref="Archive"/> to the wiki in the given <see cref="IDataStore"/>.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
@@ -152,6 +157,14 @@ public class Archive
             else
             {
                 await Page.RestoreAsync(options, dataStore, page, editor, null, null)
+                    .ConfigureAwait(false);
+            }
+
+            var topic = await Topic.GetTopicAsync(dataStore, page.Title)
+                .ConfigureAwait(false);
+            if (topic is not null)
+            {
+                await topic.RestoreAsync(dataStore)
                     .ConfigureAwait(false);
             }
         }

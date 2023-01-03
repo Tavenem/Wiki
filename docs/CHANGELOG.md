@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.0-preview
+### Changed
+- Archive topics
+
 ## 0.15.0-preview
 ### Changed
 - Revisions are now based on a wiki domain, namespace, and title (rather than an article ID), and
