@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.2-preview
+### Changed
+- De-duplicate wikilink lists
+
 ## 0.18.1-preview
 ### Changed
 - Minimize archive serialization

@@ -450,7 +450,9 @@ public abstract class MarkdownItem : IdItem
                 x.IsCategory,
                 x.IsEscaped,
                 x.IsMissing,
-                x.PageTitle)).ToList();
+                x.PageTitle))
+            .Distinct()
+            .ToList();
 
     private static bool AnyPreviews(MarkdownObject obj)
     {
