@@ -16,9 +16,10 @@ namespace Tavenem.Wiki;
 /// </para>
 /// <para>
 /// Using archives is a tradeoff between storage size and restoration speed. If your goal is to save
-/// and restore a wiki as quickly as possible, the native save and restore options for your
-/// underlying data source are likely to be far superior. If your aim is to make the size of the
-/// storage item as small as possible, an archive object will likely be significantly more compact.
+/// and restore a wiki as quickly as possible, or to save and restore the complete state of the
+/// wiki, including all history and messages, the native save and restore options for your
+/// underlying data source are your best choice. If your aim is to make the size of the storage item
+/// as small as possible, an archive object will likely be significantly more compact.
 /// </para>
 /// <para>
 /// Another advantage of an archive is that it can be imported into an existing wiki in-place,
@@ -44,11 +45,6 @@ public class Archive
     /// All the pages in the wiki/domain.
     /// </summary>
     public List<Page>? Pages { get; set; }
-
-    /// <summary>
-    /// All the topics for pages in the wiki/domain.
-    /// </summary>
-    public List<Topic>? Topics { get; set; }
 
     /// <summary>
     /// Restores this <see cref="Archive"/> to the wiki in the given <see cref="IDataStore"/>.
@@ -157,14 +153,6 @@ public class Archive
             else
             {
                 await Page.RestoreAsync(options, dataStore, page, editor, null, null)
-                    .ConfigureAwait(false);
-            }
-
-            var topic = await Topic.GetTopicAsync(dataStore, page.Title)
-                .ConfigureAwait(false);
-            if (topic is not null)
-            {
-                await topic.RestoreAsync(dataStore)
                     .ConfigureAwait(false);
             }
         }

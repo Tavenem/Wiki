@@ -124,29 +124,4 @@ public class Topic : IdItem
             .ConfigureAwait(false);
         return result;
     }
-
-    internal async Task RestoreAsync(IDataStore dataStore)
-    {
-        if (!Id.StartsWith(TopicIdItemTypeName))
-        {
-            await dataStore.StoreItemAsync(this)
-                .ConfigureAwait(false);
-            return;
-        }
-
-        var title = GetTitle();
-
-        var existing = await GetTopicAsync(dataStore, title);
-        if (existing is null)
-        {
-            _ = await NewAsync(dataStore, title, Messages)
-                .ConfigureAwait(false);
-        }
-        else
-        {
-            existing.Messages = Messages;
-            await dataStore.StoreItemAsync(existing)
-                .ConfigureAwait(false);
-        }
-    }
 }

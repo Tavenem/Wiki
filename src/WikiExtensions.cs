@@ -1191,32 +1191,6 @@ public static class WikiExtensions
         var allPages = await pages.ToListAsync()
             .ConfigureAwait(false);
 
-        var topics = dataStore.Query<Topic>();
-        if (hasDomain)
-        {
-            topics = topics.Where(x => x.Id.Contains(domain!));
-        }
-        else if (!fullWiki)
-        {
-            topics = topics.Where(x => !x.Id.Contains('('));
-        }
-        var allTopics = await topics.ToListAsync()
-            .ConfigureAwait(false);
-
-        if (allPages.Count > 0)
-        {
-            archive.Pages = new();
-            foreach (var page in allPages)
-            {
-                archive.Pages.Add(page.GetArchiveCopy());
-                var topic = allTopics.FirstOrDefault(x => x.Id == Topic.GetId(page.Title));
-                if (topic is not null)
-                {
-                    (archive.Topics ??= new()).Add(topic);
-                }
-            }
-        }
-
         return archive;
     }
 
@@ -1399,6 +1373,10 @@ public static class WikiExtensions
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
+    /// <param name="timestamp">
+    /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
+    /// rather than the current state of the page.
+    /// </param>
     /// <param name="user">
     /// <para>
     /// An <see cref="IWikiUser"/>.
@@ -1410,10 +1388,6 @@ public static class WikiExtensions
     /// <param name="noRedirect">
     /// If <see langword="true"/> redirects will not be followed. The original matching item will be
     /// returned, even if it is a redirect.
-    /// </param>
-    /// <param name="timestamp">
-    /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
-    /// rather than the current state of the page.
     /// </param>
     /// <returns>
     /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
@@ -2384,8 +2358,7 @@ public static class WikiExtensions
         }
 
         List<IWikiGroup>? userGroups = null;
-        if (page.AllowedViewers is not null
-            && !page.AllowedViewers.Contains(user.Id)
+        if (page.AllowedViewers?.Contains(user.Id) == false
             && user.AllowedViewPages?.Contains(title) != true
             && (!isGroupPage
                 || string.IsNullOrEmpty(title.Title)
@@ -2425,8 +2398,7 @@ public static class WikiExtensions
                 : defaultPermission & WikiPermission.Read;
         }
 
-        var writePermission = page.AllowedEditors is null
-            || page.AllowedEditors.Contains(user.Id)
+        var writePermission = page.AllowedEditors?.Contains(user.Id) != false
             || user.AllowedEditPages?.Contains(title) == true
             || (page.AllowedEditorGroups is not null
                 && user.Groups is not null
