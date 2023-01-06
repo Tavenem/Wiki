@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.3-preview
+### Fixed
+- Implement `AllowedViewDomains` for groups
+
 ## 0.18.2-preview
 ### Changed
 - De-duplicate wikilink lists

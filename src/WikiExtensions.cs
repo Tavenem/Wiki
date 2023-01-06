@@ -2232,6 +2232,7 @@ public static class WikiExtensions
                 : options.DefaultRegisteredPermission;
         }
 
+        List<IWikiGroup>? userGroups = null;
         if (hasDomain
             && user is not null
             && !string.IsNullOrEmpty(title.Domain))
@@ -2248,6 +2249,25 @@ public static class WikiExtensions
             if (user.AllowedViewDomains?.Contains(title.Domain) == true)
             {
                 defaultPermission |= WikiPermission.Read;
+            }
+            if (!defaultPermission.HasFlag(WikiPermission.Read))
+            {
+                userGroups = new();
+                if (user.Groups is not null)
+                {
+                    foreach (var groupId in user.Groups)
+                    {
+                        var group = await groupManager.FindByIdAsync(groupId);
+                        if (group is not null)
+                        {
+                            userGroups.Add(group);
+                        }
+                    }
+                }
+                if (userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+                {
+                    defaultPermission |= WikiPermission.Read;
+                }
             }
         }
 
@@ -2357,7 +2377,6 @@ public static class WikiExtensions
             }
         }
 
-        List<IWikiGroup>? userGroups = null;
         if (page.AllowedViewers?.Contains(user.Id) == false
             && user.AllowedViewPages?.Contains(title) != true
             && (!isGroupPage
@@ -2367,15 +2386,18 @@ public static class WikiExtensions
                 || user.Groups is null
                 || !page.AllowedViewerGroups.Intersect(user.Groups).Any()))
         {
-            userGroups = new();
-            if (user.Groups is not null)
+            if (userGroups is null)
             {
-                foreach (var groupId in user.Groups)
+                userGroups = new();
+                if (user.Groups is not null)
                 {
-                    var group = await groupManager.FindByIdAsync(groupId);
-                    if (group is not null)
+                    foreach (var groupId in user.Groups)
                     {
-                        userGroups.Add(group);
+                        var group = await groupManager.FindByIdAsync(groupId);
+                        if (group is not null)
+                        {
+                            userGroups.Add(group);
+                        }
                     }
                 }
             }
