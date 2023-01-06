@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.1-preview
+### Changed
+- Minimize archive serialization
+
 ## 0.18.0-preview
 ### Changed
 - Do not archive topics

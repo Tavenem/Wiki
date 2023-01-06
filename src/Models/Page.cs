@@ -1413,6 +1413,17 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 .Invoke(this, Revision, oldOwner, Owner)
                 .ConfigureAwait(false);
         }
+
+        if (Revision.IsMilestone)
+        {
+            Revision = new Revision(
+                Revision.Editor,
+                null,
+                Revision.IsDeleted,
+                true,
+                Revision.Comment,
+                Revision.TimestampTicks);
+        }
     }
 
     internal static async Task RestoreAsync<T>(

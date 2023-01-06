@@ -15,13 +15,18 @@ public class Revision : IEquatable<Revision>
 
     /// <summary>
     /// <para>
-    /// A delta-formatted string representing the revision (except for milestones, which contain
-    /// the full text).
+    /// A delta-formatted string representing the revision (except for milestones, which contain the
+    /// full text).
     /// </para>
     /// <para>
     /// <see langword="null"/> when <see cref="IsDeleted"/> is <see langword="true"/>
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// The revision recorded directly on a <see cref="Page"/> has its <see cref="Delta"/> set to
+    /// <see langword="null"/> when <see cref="IsMilestone"/> is <see langword="true"/>, to avoid
+    /// duplicating the current content.
+    /// </remarks>
     public string? Delta { get; }
 
     /// <summary>

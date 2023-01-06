@@ -356,6 +356,7 @@ public class WikiOptions
     /// Gets a string representing the <see cref="MaxFileSize"/> in a reasonable unit (GiB for
     /// large sizes, down to bytes for small ones).
     /// </summary>
+    [JsonIgnore]
     public string MaxFileSizeString => MaxFileSize switch
     {
         >= 1024 * 1024 * 1024 => $"{MaxFileSize / (1024 * 1024 * 1024.0):N3} GiB",
