@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.5-preview
+### Fixed
+- Retrieval of main page when title is explicit
+
 ## 0.18.4-preview
 ### Fixed
 - URL generation for main titles

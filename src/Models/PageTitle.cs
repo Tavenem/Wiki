@@ -353,16 +353,16 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// Gets a copy of this instance with the specified default title, if <see cref="Title"/> is
     /// currently <see langword="null"/>.
     /// </summary>
-    /// <param name="defaultTitle">
-    /// The domain of the page (if any).
+    /// <param name="title">
+    /// The default title to supply if the currrent title is <see langword="null"/>.
     /// </param>
     /// <returns>
     /// A new <see cref="PageTitle"/> with <see cref="Title"/> set to the given default if it was
     /// previously <see langword="null"/>, and the same <see cref="Namespace"/> and <see
     /// cref="Domain"/> as this instance.
     /// </returns>
-    public PageTitle WithDefaultTitle(string defaultTitle)
-        => new(Title ?? defaultTitle, Namespace, Domain);
+    public PageTitle WithDefaultTitle(string title)
+        => new(Title ?? title, Namespace, Domain);
 
     /// <summary>
     /// Gets a copy of this instance with the specified <paramref name="domain"/>.
@@ -389,6 +389,19 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// instance.
     /// </returns>
     public PageTitle WithNamespace(string? @namespace) => new(Title, @namespace, Domain);
+
+    /// <summary>
+    /// Gets a copy of this instance with the specified title.
+    /// </summary>
+    /// <param name="title">
+    /// The title of the page (if any).
+    /// </param>
+    /// <returns>
+    /// A new <see cref="PageTitle"/> with <see cref="Title"/> set to the given value, and the same
+    /// <see cref="Namespace"/> and <see cref="Domain"/> as this instance.
+    /// </returns>
+    public PageTitle WithTitle(string? title)
+        => new(title, Namespace, Domain);
 
     internal void WriteUrl(StringWriter writer, WikiOptions wikiOptions)
     {

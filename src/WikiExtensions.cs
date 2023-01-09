@@ -1218,6 +1218,10 @@ public static class WikiExtensions
         bool noRedirect = false,
         bool exactMatchOnly = false)
     {
+        if (title.Title?.Equals(options.MainPageTitle) == true)
+        {
+            title = title.WithTitle(null);
+        }
         if (string.CompareOrdinal(title.Namespace, options.CategoryNamespace) == 0)
         {
             return await IPage<Category>
