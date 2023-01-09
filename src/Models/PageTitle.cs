@@ -17,6 +17,12 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     public string? Domain { get; }
 
     /// <summary>
+    /// Whether all the title's parts are empty.
+    /// </summary>
+    [JsonIgnore]
+    public bool IsEmpty { get; }
+
+    /// <summary>
     /// The namespace of the page (if any).
     /// </summary>
     [JsonPropertyName("@namespace")]
@@ -71,6 +77,10 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         NormalizedNamespace = @namespace?.ToLowerInvariant();
 
         Domain = domain;
+
+        IsEmpty = string.IsNullOrEmpty(Domain)
+            && string.IsNullOrEmpty(Namespace)
+            && string.IsNullOrEmpty(Title);
     }
 
     /// <summary>
@@ -380,7 +390,7 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// </returns>
     public PageTitle WithNamespace(string? @namespace) => new(Title, @namespace, Domain);
 
-    internal void WriteUrl(StringWriter writer)
+    internal void WriteUrl(StringWriter writer, WikiOptions wikiOptions)
     {
         if (!string.IsNullOrEmpty(Domain))
         {
@@ -393,9 +403,10 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
             UrlEncoder.Default.Encode(writer, Namespace);
             writer.Write(':');
         }
-        if (!string.IsNullOrEmpty(Title))
+        if (!string.IsNullOrEmpty(Title)
+            || string.IsNullOrEmpty(Namespace))
         {
-            UrlEncoder.Default.Encode(writer, Title);
+            UrlEncoder.Default.Encode(writer, Title ?? wikiOptions.MainPageTitle);
         }
     }
 

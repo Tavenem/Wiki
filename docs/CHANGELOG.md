@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.4-preview
+### Fixed
+- URL generation for main titles
+
 ## 0.18.3-preview
 ### Fixed
 - Implement `AllowedViewDomains` for groups

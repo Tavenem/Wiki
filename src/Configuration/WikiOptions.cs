@@ -633,10 +633,9 @@ public class WikiOptions
             UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
             writer.Write('/');
         }
-        title.WriteUrl(writer);
+        title.WriteUrl(writer, this);
         if (!string.IsNullOrEmpty(route))
         {
-            writer.Write('/');
             writer.Write(route);
         }
         if (!string.IsNullOrEmpty(query))
@@ -688,7 +687,7 @@ public class WikiOptions
             UrlEncoder.Default.Encode(writer, WikiLinkPrefix);
             writer.Write('/');
         }
-        title.WriteUrl(writer);
+        title.WriteUrl(writer, this);
         if (!string.IsNullOrEmpty(route))
         {
             writer.Write('/');
