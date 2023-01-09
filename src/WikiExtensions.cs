@@ -1190,6 +1190,14 @@ public static class WikiExtensions
         }
         var allPages = await pages.ToListAsync()
             .ConfigureAwait(false);
+        if (allPages.Count > 0)
+        {
+            archive.Pages = new();
+            foreach (var page in allPages)
+            {
+                archive.Pages.Add(page.GetArchiveCopy());
+            }
+        }
 
         return archive;
     }

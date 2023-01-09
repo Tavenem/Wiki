@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.18.6-preview
+### Fixed
+- Creating archives
+
 ## 0.18.5-preview
 ### Fixed
 - Retrieval of main page when title is explicit
