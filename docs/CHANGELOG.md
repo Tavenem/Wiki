@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.0-preview
+### Changed
+- Only pages which can be viewed by anyone can be transcluded
+
 ## 0.18.6-preview
 ### Fixed
 - Creating archives

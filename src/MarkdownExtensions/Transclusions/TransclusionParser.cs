@@ -351,7 +351,8 @@ public static class TransclusionParser
             true,
             false)
             .ConfigureAwait(false);
-        if (page is null)
+        if (page is null
+            || page.AllowedViewers?.Count > 0)
         {
             return (template, transcludedPages);
         }

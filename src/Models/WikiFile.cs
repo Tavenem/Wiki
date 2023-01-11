@@ -36,21 +36,37 @@ public sealed class WikiFile : Page, IPage<WikiFile>
     /// <summary>
     /// The path to the physical file this entry represents.
     /// </summary>
-    public string FilePath { get; private set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public string FilePath { get; set; }
 
     /// <summary>
     /// The size of the file (in bytes).
     /// </summary>
-    public int FileSize { get; private set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public int FileSize { get; set; }
 
     /// <summary>
     /// The MIME type of the file.
     /// </summary>
-    public string FileType { get; private set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public string FileType { get; set; }
 
     /// <summary>
     /// The ID of the user who uploaded the file.
     /// </summary>
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
     public string Uploader { get; set; }
 
     /// <summary>

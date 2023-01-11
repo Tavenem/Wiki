@@ -10,6 +10,7 @@ namespace Tavenem.Wiki;
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(MarkdownItem))]
 [JsonSerializable(typeof(List<MarkdownItem>))]
+[JsonSerializable(typeof(List<Page>))]
 [JsonSerializable(typeof(List<Article>))]
 [JsonSerializable(typeof(List<Category>))]
 [JsonSerializable(typeof(List<WikiFile>))]

@@ -43,10 +43,10 @@ public class IntegrationTests
         Assert.IsNotNull(archive.Pages);
         Assert.AreEqual(pageCount, archive.Pages.Count);
 
-        var json = System.Text.Json.JsonSerializer.Serialize(archive, WikiJsonSerializerContext.Default.Archive);
+        var json = System.Text.Json.JsonSerializer.Serialize(archive, WikiArchiveJsonSerializerContext.Default.Archive);
         Console.WriteLine(json);
 
-        var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.Archive);
+        var deserialized = System.Text.Json.JsonSerializer.Deserialize(json, WikiArchiveJsonSerializerContext.Default.Archive);
         Assert.IsNotNull(deserialized);
 
         Assert.IsNotNull(deserialized.Pages);

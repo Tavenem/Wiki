@@ -37,36 +37,30 @@ public abstract class MarkdownItem : IdItem
     private const int NewLineWeight = 4;
 
     /// <summary>
-    /// <para>
     /// The rendered HTML content.
-    /// </para>
-    /// <para>
+    /// </summary>
+    /// <remarks>
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
-    /// </para>
-    /// </summary>
+    /// </remarks>
     public string Html { get; set; }
 
     /// <summary>
-    /// <para>
     /// The markdown content.
-    /// </para>
-    /// <para>
+    /// </summary>
+    /// <remarks>
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
-    /// </para>
-    /// </summary>
+    /// </remarks>
     public string MarkdownContent { get; set; }
 
     /// <summary>
-    /// <para>
     /// A preview of this item's rendered HTML.
-    /// </para>
-    /// <para>
+    /// </summary>
+    /// <remarks>
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
-    /// </para>
-    /// </summary>
+    /// </remarks>
     public string Preview { get; set; }
 
     /// <summary>

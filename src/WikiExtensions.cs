@@ -2189,7 +2189,7 @@ public static class WikiExtensions
         }
         if (string.Equals(sort, "timestamp", StringComparison.OrdinalIgnoreCase))
         {
-            query = query.OrderBy(x => x.TimestampTicks, descending: descending);
+            query = query.OrderBy(x => x.Revision == null ? 0 : x.Revision.TimestampTicks, descending: descending);
         }
         else
         {

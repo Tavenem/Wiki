@@ -54,8 +54,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<string>? AllowedEditorGroups { get; private set; }
+    public IReadOnlyCollection<string>? AllowedEditorGroups { get; set; }
 
     /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of users allowed to edit this page.
@@ -91,8 +95,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<string>? AllowedEditors { get; private set; }
+    public IReadOnlyCollection<string>? AllowedEditors { get; set; }
 
     /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of groups allowed to view this page.
@@ -121,8 +129,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<string>? AllowedViewerGroups { get; private set; }
+    public IReadOnlyCollection<string>? AllowedViewerGroups { get; set; }
 
     /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of users allowed to view this page.
@@ -158,8 +170,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
     /// both, depending on the best fit for the implementation's access control use case.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<string>? AllowedViewers { get; private set; }
+    public IReadOnlyCollection<string>? AllowedViewers { get; set; }
 
     /// <summary>
     /// The categories to which this page belongs.
@@ -173,8 +189,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Updates to this list which are not due to changes in page content (e.g. due to changes in
     /// transcluded pages) do not count as revisions.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<PageTitle>? Categories { get; private set; }
+    public IReadOnlyCollection<PageTitle>? Categories { get; set; }
 
     /// <summary>
     /// Whether this page exists.
@@ -197,8 +217,15 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Note that a page which redirects to another page does <em>not</em> exist. A revision which
     /// makes a page a redirect will also mark it as deleted.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but setting it has no effect.
+    /// </para>
     /// </remarks>
-    public virtual bool Exists => Revision?.IsDeleted == false;
+    public virtual bool Exists
+    {
+        get => Revision?.IsDeleted == false;
+        set { }
+    }
 
     /// <summary>
     /// <para>
@@ -208,7 +235,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Updates to this property do not constitute a revision.
     /// </para>
     /// </summary>
-    public bool IsBrokenRedirect { get; private protected set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public bool IsBrokenRedirect { get; set; }
 
     /// <summary>
     /// <para>
@@ -218,7 +249,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Updates to this property do not constitute a revision.
     /// </para>
     /// </summary>
-    public bool IsDoubleRedirect { get; private protected set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public bool IsDoubleRedirect { get; set; }
 
     /// <summary>
     /// Whether this page is considered missing.
@@ -233,8 +268,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Categories, user pages, and group pages are never missing; they are considered to exist
     /// implicitly as enumerations of their members, even if they have no content.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public bool IsMissing { get; private set; }
+    public bool IsMissing { get; set; }
 
     /// <summary>
     /// The ID of the owner of this page.
@@ -254,21 +293,35 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <para>
     /// Only the current owner of an page may change its ownership.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public string? Owner { get; protected set; }
+    public string? Owner { get; set; }
 
     /// <summary>
     /// Other pages which redirect to this one.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Updates to this list (due to changes in redirecting pages) do not count as revisions.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<PageTitle>? RedirectReferences { get; private set; }
+    public IReadOnlyCollection<PageTitle>? RedirectReferences { get; set; }
 
     /// <summary>
     /// If this is a redirect, contains the title of the destination.
     /// </summary>
-    public PageTitle? RedirectTitle { get; private set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public PageTitle? RedirectTitle { get; set; }
 
     /// <summary>
     /// <para>
@@ -279,40 +332,46 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </para>
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Updates to this list (due to changes in linking pages) do not count as revisions.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<PageTitle>? References { get; private set; }
+    public IReadOnlyCollection<PageTitle>? References { get; set; }
 
     /// <summary>
     /// The latest revision of this page.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// If this is <see langword="null"/> the page has never been edited. This can be the case for
     /// pages which do not exist, but also for automatically generated pages such as categories
     /// which do not (yet) have manually-added content.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public Revision? Revision { get; private set; }
+    public Revision? Revision { get; set; }
 
     /// <summary>
     /// The timestamp of this revision, in UTC.
     /// </summary>
     [JsonIgnore]
-    public DateTimeOffset Timestamp => new(TimestampTicks, TimeSpan.Zero);
-
-    /// <summary>
-    /// <para>
-    /// The timestamp of the latest revision, in UTC Ticks.
-    /// </para>
-    /// <para>
-    /// Or zero, if this page has not had any revisions.
-    /// </para>
-    /// </summary>
-    public long TimestampTicks => Revision?.TimestampTicks ?? 0;
+    public DateTimeOffset Timestamp => new(Revision?.TimestampTicks ?? 0, TimeSpan.Zero);
 
     /// <summary>
     /// The title of this page.
     /// </summary>
-    public PageTitle Title { get; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public PageTitle Title { get; set; }
 
     /// <summary>
     /// <para>
@@ -322,7 +381,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Does not include transclusions in discussion messages.
     /// </para>
     /// </summary>
-    public IReadOnlyCollection<PageTitle>? TransclusionReferences { get; private set; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public IReadOnlyCollection<PageTitle>? TransclusionReferences { get; set; }
 
     /// <summary>
     /// The transclusions within this page.
@@ -336,18 +399,31 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// Updates to this list which are not due to changes in page content (e.g. due to changes in
     /// transcluded pages) do not count as revisions.
     /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<PageTitle>? Transclusions { get; private set; }
+    public IReadOnlyCollection<PageTitle>? Transclusions { get; set; }
 
     /// <summary>
-    /// Whether this page is uncategorized.
+    /// Whether this page is uncategorized. Read-only.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// A redirect does not count as uncategorized.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but setting it has no effect.
+    /// </para>
     /// </remarks>
-    public bool Uncategorized => !RedirectTitle.HasValue
-        && (Categories is null
-        || Categories.Count == 0);
+    public bool Uncategorized
+    {
+        get => !RedirectTitle.HasValue
+            && (Categories is null
+            || Categories.Count == 0);
+        set { } // empty setter to allow source-generated (de)serialization
+    }
 
     /// <summary>
     /// Constructs a new instance of <see cref="Page"/>.

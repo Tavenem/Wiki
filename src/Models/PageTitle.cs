@@ -9,12 +9,16 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// The title of a wiki page.
 /// </summary>
-public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
+public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
 {
     /// <summary>
     /// The domain of the page (if any).
     /// </summary>
-    public string? Domain { get; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public string? Domain { get; set; }
 
     /// <summary>
     /// Whether all the title's parts are empty.
@@ -25,8 +29,12 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// <summary>
     /// The namespace of the page (if any).
     /// </summary>
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
     [JsonPropertyName("@namespace")]
-    public string? Namespace { get; }
+    public string? Namespace { get; set; }
 
     /// <summary>
     /// The normalized (lowercase) namespace of the page (if any).
@@ -42,7 +50,11 @@ public readonly struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// May be null when referring to the default (i.e. home) page for the domain+namespace.
     /// </para>
     /// </summary>
-    public string? Title { get; }
+    /// <remarks>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </remarks>
+    public string? Title { get; set; }
 
     /// <summary>
     /// The normalized (lowercase) title of the page (if any).

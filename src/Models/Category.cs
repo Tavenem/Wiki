@@ -24,18 +24,33 @@ public sealed class Category : Page, IPage<Category>
     /// The pages which belong to this category (including child categories).
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Updates to this cache do not count as revisions.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
     /// </remarks>
-    public IReadOnlyCollection<PageTitle>? Children { get; private set; }
+    public IReadOnlyCollection<PageTitle>? Children { get; set; }
 
     /// <summary>
     /// Whether this page exists.
     /// </summary>
     /// <remarks>
+    /// <para>
     /// Categories are always considered to exist implicitly. They are enumerations of their members
     /// (even when they have no current members), even if they have no other content.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but setting it has no effect.
+    /// </para>
     /// </remarks>
-    public override bool Exists => true;
+    public override bool Exists
+    {
+        get => true;
+        set { }
+    }
 
     /// <summary>
     /// Whether this category contains no children.
