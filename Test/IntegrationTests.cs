@@ -22,6 +22,8 @@ public class IntegrationTests
 
     private static readonly string _ExpectedAbout = $"<p>{ExpectedWelcomeTransclusion}</p>\n<p>The <a href=\"https://github.com/Tavenem/Wiki\">Tavenem.Wiki</a> package is a <a href=\"https://dotnet.microsoft.com\">.NET</a> <a href=\"https://wikipedia.org/wiki/Wiki\">wiki</a> library.</p>\n<p>Unlike many wiki implementations, the main package (<code>Tavenem.Wiki</code>) is implementation-agnostic. It provides a set of core features which can be used to build a web-based wiki, a desktop application, a distributed cloud app with native clients, or any other architecture desired.</p>\n<p>See the <a href=\"./Wiki/System:Help\" class=\"wiki-link-missing\">Help</a> page for usage information.</p>\n<p></p>\n";
 
+    private static readonly string _ExpectedMain = $"<p>{ExpectedWelcomeTransclusion}</p>\n<p>See the <a href=\"./Wiki/System:About\" class=\"wiki-link-exists\">About</a> page for more information.</p>\n<p></p>\n";
+
     [TestMethod]
     public async Task ArchiveTest()
     {
@@ -57,6 +59,14 @@ public class IntegrationTests
 
         var newPageCount = dataStore2.Query<Page>().Count();
         Assert.AreEqual(pageCount, newPageCount);
+
+        var main = await dataStore.GetWikiPageAsync(
+            options,
+            new(),
+            true);
+        var missing = main.WikiLinks.FirstOrDefault(x => x.IsMissing);
+        Assert.IsNull(missing);
+        Assert.AreEqual(_ExpectedMain, main.Html);
     }
 
     [TestMethod]

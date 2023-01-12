@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.1-preview
+### Fixed
+- Preserve page histories when restoring an archive
+
 ## 0.19.0-preview
 ### Changed
 - Only pages which can be viewed by anyone can be transcluded

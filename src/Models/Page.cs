@@ -1514,7 +1514,10 @@ public abstract class Page : MarkdownItem, IPage<Page>
             newTitle ?? page.Title.Title,
             newNamespace ?? page.Title.Namespace,
             page.Title.Domain);
-        var newPage = T.Empty(title);
+
+        var newPage = await dataStore
+            .GetWikiPageAsync(options, title, true, true)
+            .ConfigureAwait(false);
 
         await newPage.UpdateAsync(
             options,
