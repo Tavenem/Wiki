@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.2-preview
+### Fixed
+- `PageTitle` parsing bug
+
 ## 0.19.1-preview
 ### Fixed
 - Preserve page histories when restoring an archive

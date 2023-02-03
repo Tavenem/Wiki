@@ -193,6 +193,11 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         }
 
         var parts = s.Split(':', StringSplitOptions.TrimEntries);
+        if (parts.Length == 0)
+        {
+            result = default;
+            return true;
+        }
 
         string? domain = null;
         if (parts[0].StartsWith('(')
@@ -203,7 +208,9 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
             {
                 domain = null;
             }
-            parts = parts[1..];
+            parts = parts.Length == 1
+                ? Array.Empty<string>()
+                : parts[1..];
         }
 
         if (parts.Length > 1)
@@ -220,9 +227,9 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         }
 
         result = new(
-            string.IsNullOrWhiteSpace(parts[0])
-                ? null
-                : parts[0].ToWikiTitleCase(),
+            parts.Length > 0 && !string.IsNullOrWhiteSpace(parts[0])
+                ? parts[0].ToWikiTitleCase()
+                : null,
             null,
             domain);
         return true;
