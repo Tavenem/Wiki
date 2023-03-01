@@ -114,12 +114,12 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// </para>
     /// <para>
     /// If the domain or namespace are <see langword="null"/> the entire segment, up to and
-    /// including the semicolon, may be omitted. They may also be included as an empty segment, with
-    /// the delimiting semicolon (and parenthesis for domain) but no content, or only whitespace.
+    /// including the colon, may be omitted. They may also be included as an empty segment, with
+    /// the delimiting colon (and parenthesis for domain) but no content, or only whitespace.
     /// </para>
     /// <para>
     /// If the title is <see langword="null"/> but not the domain or namespace, the string must
-    /// terminate in a semicolon, to remove any ambiguity with cases where the last part could also
+    /// terminate in a colon, to remove any ambiguity with cases where the last part could also
     /// be construed as a title.
     /// </para>
     /// <para>
@@ -128,7 +128,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// considered part of the text, and not a domain indicator.
     /// </para>
     /// <para>
-    /// Excess semicolons are interpreted as part of the title.
+    /// Excess colons are interpreted as part of the title.
     /// </para>
     /// </remarks>
     public static PageTitle Parse(string? s, IFormatProvider? provider = null)
@@ -160,12 +160,12 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// </para>
     /// <para>
     /// If the domain or namespace are <see langword="null"/> the entire segment, up to and
-    /// including the semicolon, may be omitted. They may also be included as an empty segment, with
-    /// the delimiting semicolon (and parenthesis for domain) but no content, or only whitespace.
+    /// including the colon, may be omitted. They may also be included as an empty segment, with
+    /// the delimiting colon (and parenthesis for domain) but no content, or only whitespace.
     /// </para>
     /// <para>
     /// If the title is <see langword="null"/> but not the domain or namespace, the string must
-    /// terminate in a semicolon, to remove any ambiguity with cases where the last part could also
+    /// terminate in a colon, to remove any ambiguity with cases where the last part could also
     /// be construed as a title.
     /// </para>
     /// <para>
@@ -174,7 +174,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// considered part of the text, and not a domain indicator.
     /// </para>
     /// <para>
-    /// Excess semicolons are interpreted as part of the title.
+    /// Excess colons are interpreted as part of the title.
     /// </para>
     /// <para>
     /// Note: this method always returns <see langword="true"/>; there is no string which cannot be
@@ -256,12 +256,12 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// </para>
     /// <para>
     /// If the domain or namespace are <see langword="null"/> the entire segment, up to and
-    /// including the semicolon, may be omitted. They may also be included as an empty segment, with
-    /// the delimiting semicolon (and parenthesis for domain) but no content, or only whitespace.
+    /// including the colon, may be omitted. They may also be included as an empty segment, with
+    /// the delimiting colon (and parenthesis for domain) but no content, or only whitespace.
     /// </para>
     /// <para>
     /// If the title is <see langword="null"/> but not the domain or namespace, the string must
-    /// terminate in a semicolon, to remove any ambiguity with cases where the last part could also
+    /// terminate in a colon, to remove any ambiguity with cases where the last part could also
     /// be construed as a title.
     /// </para>
     /// <para>
@@ -270,7 +270,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// considered part of the text, and not a domain indicator.
     /// </para>
     /// <para>
-    /// Excess semicolons are interpreted as part of the title.
+    /// Excess colons are interpreted as part of the title.
     /// </para>
     /// <para>
     /// Note: this method always returns <see langword="true"/>; there is no string which cannot be
@@ -332,18 +332,18 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// </para>
     /// <para>
     /// If the domain is <see langword="null"/> the entire segment, up to and including the
-    /// semicolon, will be omitted.
+    /// colon, will be omitted.
     /// </para>
     /// <para>
     /// If both the domain and namespace are <see langword="null"/> only the title will be shown,
-    /// with no semicolons.
+    /// with no colons.
     /// </para>
     /// <para>
     /// If all three parts are <see langword="null"/> an empty string will be returned.
     /// </para>
     /// <para>
     /// If the title is <see langword="null"/> but not the domain or namespace, the string will
-    /// terminate in a semicolon, to remove any ambiguity with cases where the last part could also
+    /// terminate in a colon, to remove any ambiguity with cases where the last part could also
     /// be construed as a title.
     /// </para>
     /// </remarks>

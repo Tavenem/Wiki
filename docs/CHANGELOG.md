@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.3-preview
+### Fixed
+- Match main title as if missing
+
 ## 0.19.2-preview
 ### Fixed
 - `PageTitle` parsing bug

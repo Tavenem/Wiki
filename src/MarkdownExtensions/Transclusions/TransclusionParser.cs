@@ -304,6 +304,10 @@ public static class TransclusionParser
                 if (!string.IsNullOrWhiteSpace(code))
                 {
                     var codeTitle = PageTitle.Parse(code);
+                    if (codeTitle.Title?.Equals(options.MainPageTitle) == true)
+                    {
+                        codeTitle = codeTitle.WithTitle(null);
+                    }
                     if (string.IsNullOrEmpty(codeTitle.Namespace))
                     {
                         codeTitle = codeTitle.WithNamespace(options.ScriptNamespace);
@@ -342,6 +346,10 @@ public static class TransclusionParser
         else if (string.CompareOrdinal(pageTitle.Namespace, "\\-") == 0)
         {
             pageTitle = pageTitle.WithNamespace("-");
+        }
+        if (pageTitle.Title?.Equals(options.MainPageTitle) == true)
+        {
+            pageTitle = pageTitle.WithTitle(null);
         }
         transcludedPages.Add(pageTitle);
 

@@ -1083,6 +1083,11 @@ public static class WikiExtensions
         WikiOptions options,
         WhatLinksHereRequest request)
     {
+        var title = request.Title;
+        if (title.Title?.Equals(options.MainPageTitle) == true)
+        {
+            title = title.WithTitle(null);
+        }
         var page = await IPage<Page>
             .GetExistingPageAsync<Page>(dataStore, request.Title)
             .ConfigureAwait(false);
