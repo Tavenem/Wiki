@@ -636,6 +636,7 @@ public class WikiOptions
         title.WriteUrl(writer, this);
         if (!string.IsNullOrEmpty(route))
         {
+            writer.Write('/');
             writer.Write(route);
         }
         if (!string.IsNullOrEmpty(query))

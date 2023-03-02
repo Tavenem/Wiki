@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.19.4-preview
+### Fixed
+- URL generation with route
+
 ## 0.19.3-preview
 ### Fixed
 - Match main title as if missing
