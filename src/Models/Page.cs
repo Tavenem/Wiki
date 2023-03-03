@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
+using Tavenem.Wiki.MarkdownExtensions.TableOfContents;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
 using Tavenem.Wiki.Models;
 
@@ -228,6 +229,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
     }
 
     /// <summary>
+    /// The headings on this wiki page, as defined by the table of contents options set for the
+    /// wiki, and within the markup of the page.
+    /// </summary>
+    public IReadOnlyCollection<Heading>? Headings { get; set; }
+
+    /// <summary>
     /// <para>
     /// Indicates whether this is a redirect to a page which does not exist.
     /// </para>
@@ -441,6 +448,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IReadOnlyCollection<string>? allowedEditorGroups = null,
         IReadOnlyCollection<string>? allowedViewerGroups = null,
         IReadOnlyCollection<PageTitle>? categories = null,
+        IReadOnlyCollection<Heading>? headings = null,
         IReadOnlyCollection<PageTitle>? redirectReferences = null,
         IReadOnlyCollection<PageTitle>? references = null,
         IReadOnlyCollection<PageTitle>? transclusionReferences = null,
@@ -457,6 +465,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             AllowedViewerGroups = allowedViewerGroups;
         }
         Categories = categories;
+        Headings = headings;
         IsBrokenRedirect = isBrokenRedirect;
         IsDoubleRedirect = isDoubleRedirect;
         Owner = owner;
@@ -1363,11 +1372,13 @@ public abstract class Page : MarkdownItem, IPage<Page>
         var isScript = string.CompareOrdinal(Title.Namespace, options.ScriptNamespace) == 0;
 
         List<PageTitle> transclusions;
+        List<Heading> headings;
         if (isScript
             || redirectTitle.HasValue
             || string.IsNullOrEmpty(md))
         {
             transclusions = new();
+            headings = new();
         }
         else
         {
@@ -1376,6 +1387,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 dataStore,
                 Title.WithDefaultTitle(options.MainPageTitle),
                 md);
+            headings = TableOfContentsParser.Parse(options, md);
         }
 
         if (Transclusions is not null)
@@ -1385,6 +1397,10 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
         Transclusions = transclusions.Count > 0
             ? transclusions.AsReadOnly()
+            : null;
+
+        Headings = headings.Count > 0
+            ? headings.AsReadOnly()
             : null;
 
         WikiLinks = (isScript || redirectTitle.HasValue
@@ -1538,6 +1554,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     {
         var page = Copy();
         page.Categories = null;
+        page.Headings = null;
         page.Html = string.Empty;
         page.Preview = string.Empty;
         page.RedirectReferences = null;

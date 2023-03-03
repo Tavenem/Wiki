@@ -86,6 +86,34 @@ internal static class WikiConfig
         .UseSmartyPants()
         .Build();
 
+    internal static MarkdownPipeline GetMarkdownPipelineWithoutLinks(WikiOptions options) =>
+        new MarkdownPipelineBuilder()
+        .UseAbbreviations()
+        .UseAutoIdentifiers()
+        .UseTableOfContents(new MarkdownExtensions.TableOfContents.TableOfContentsOptions
+        {
+            DefaultDepth = options.DefaultTableOfContentsDepth,
+            DefaultStartingLevel = 1,
+            MinimumTopLevel = options.MinimumTableOfContentsHeadings,
+            DefaultTitle = options.DefaultTableOfContentsTitle,
+        })
+        .UseCitations()
+        .UseCustomContainers()
+        .UseDefinitionLists()
+        .UseEmphasisExtras()
+        .UseFigures()
+        .UseFooters()
+        .UseFootnotes()
+        .UseGridTables()
+        .UseMathematics()
+        .UsePipeTables()
+        .UseListExtras()
+        .UseTaskLists()
+        .UseAutoLinks()
+        .UseGenericAttributes()
+        .UseSmartyPants()
+        .Build();
+
     internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore, PageTitle title) =>
         new MarkdownPipelineBuilder()
         .UseWikiLinks(options, dataStore, title)

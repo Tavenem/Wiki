@@ -86,6 +86,38 @@ Fourth section text";
     }
 
     [TestMethod]
+    public async Task HeadingsTest()
+    {
+        var dataStore = new InMemoryDataStore();
+        var article = await GetArticleAsync(dataStore, LongArticle);
+        Assert.IsNotNull(article);
+        Assert.IsNotNull(article.Headings);
+        Assert.AreEqual(article.Headings.Count, 4);
+
+        var headings = article.Headings.ToList();
+
+        Assert.AreEqual(headings[0].Id, "first-heading");
+        Assert.AreEqual(headings[0].Level, 1);
+        Assert.AreEqual(headings[0].OffsetLevel, 1);
+        Assert.AreEqual(headings[0].Text, "First heading");
+
+        Assert.AreEqual(headings[1].Id, "nested-heading");
+        Assert.AreEqual(headings[1].Level, 2);
+        Assert.AreEqual(headings[1].OffsetLevel, 2);
+        Assert.AreEqual(headings[1].Text, "Nested heading");
+
+        Assert.AreEqual(headings[2].Id, "second-heading");
+        Assert.AreEqual(headings[2].Level, 1);
+        Assert.AreEqual(headings[2].OffsetLevel, 1);
+        Assert.AreEqual(headings[2].Text, "Second heading");
+
+        Assert.AreEqual(headings[3].Id, "third-heading");
+        Assert.AreEqual(headings[3].Level, 1);
+        Assert.AreEqual(headings[3].OffsetLevel, 1);
+        Assert.AreEqual(headings[3].Text, "Third heading");
+    }
+
+    [TestMethod]
     public async Task IfTest()
     {
         var dataStore = new InMemoryDataStore();

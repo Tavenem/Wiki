@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.0-preview
+### Added
+- Headings
+
 ## 0.19.4-preview
 ### Fixed
 - URL generation with route
