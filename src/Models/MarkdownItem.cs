@@ -738,6 +738,29 @@ public abstract class MarkdownItem : IdItem
     }
 
     /// <summary>
+    /// Sets the content of this <see cref="MarkdownItem"/>.
+    /// </summary>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="markdown">The markdown.</param>
+    /// <param name="title">The title of the page, if this is a page.</param>
+    protected ValueTask SetContentAsync(
+        WikiOptions options,
+        IDataStore dataStore,
+        string? markdown,
+        PageTitle title = default)
+    {
+        MarkdownContent = markdown ?? string.Empty;
+        return UpdateContentAsync(options, dataStore, title);
+    }
+
+    private protected virtual ValueTask<string> PostprocessMarkdownAsync(
+        WikiOptions options,
+        IDataStore dataStore,
+        string? markdown,
+        bool isPreview = false) => ValueTask.FromResult(markdown ?? string.Empty);
+
+    /// <summary>
     /// Updates <see cref="Html"/> and <see cref="Preview"/>.
     /// </summary>
     /// <remarks>
@@ -750,7 +773,7 @@ public abstract class MarkdownItem : IdItem
         Preview = await GetPreviewAsync(options, dataStore);
     }
 
-    internal ValueTask UpdateWithLinksAsync(
+    internal ValueTask UpdateContentAsync(
         WikiOptions options,
         IDataStore dataStore,
         PageTitle title = default)
@@ -758,10 +781,4 @@ public abstract class MarkdownItem : IdItem
         WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title).AsReadOnly();
         return UpdateAsync(options, dataStore);
     }
-
-    private protected virtual ValueTask<string> PostprocessMarkdownAsync(
-        WikiOptions options,
-        IDataStore dataStore,
-        string? markdown,
-        bool isPreview = false) => ValueTask.FromResult(markdown ?? string.Empty);
 }

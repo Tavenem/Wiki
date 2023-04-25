@@ -2129,7 +2129,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 }
                 else
                 {
-                    await referringArticle.UpdateWithLinksAsync(
+                    await referringArticle.UpdateContentAsync(
                         options,
                         dataStore,
                         referringArticle.Title);

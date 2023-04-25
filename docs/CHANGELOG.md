@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.20.1-preview
+### Added
+- `SetContentAsync` to `MarkdownItem`
+
 ## 0.20.0-preview
 ### Added
 - Headings
@@ -257,7 +261,7 @@
 
 ## 0.2.0-preview
 ### Added
-- Add creation, deleteion, and edit callbacks.
+- Add creation, deletion, and edit callbacks.
 
 ## 0.1.0-preview
 ### Added
