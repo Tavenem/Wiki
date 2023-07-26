@@ -5,7 +5,7 @@ using Tavenem.Wiki.Queries;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A source gererated serializer context for <c>Tavenem.Wiki</c> types.
+/// A source generated serializer context for <c>Tavenem.Wiki</c> types.
 /// </summary>
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(MarkdownItem))]
@@ -43,7 +43,7 @@ namespace Tavenem.Wiki;
 public partial class WikiJsonSerializerContext : JsonSerializerContext { }
 
 /// <summary>
-/// A source gererated serializer context for <see cref="Wiki.Archive"/> which minimizes the size of the payload.
+/// A source generated serializer context for <see cref="Wiki.Archive"/> which minimizes the size of the payload.
 /// </summary>
 [JsonSourceGenerationOptions(
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault,

@@ -598,7 +598,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="other">The other <see cref="MarkdownItem"/> insteance.</param>
+    /// <param name="other">The other <see cref="MarkdownItem"/> instance.</param>
     /// <returns>
     /// A string representing the diff between this instance and the <paramref name="other"/>
     /// instance, as rendered HTML.
@@ -883,7 +883,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <returns>
     /// An <see cref="IPagedList{T}"/> of <see cref="Wiki.Revision"/> instances.
     /// </returns>
-    public async Task<IPagedList<Revision>> GetHistoryAsync(
+    public async Task<PagedList<Revision>> GetHistoryAsync(
         IDataStore dataStore,
         int pageNumber = 1,
         int pageSize = 50,
@@ -896,7 +896,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             .ConfigureAwait(false);
         if (history?.Revisions is null)
         {
-            return new PagedList<Revision>(null, pageNumber, pageSize, 0);
+            return new(null, pageNumber, pageSize, 0);
         }
 
         Expression<Func<Revision, bool>>? exp = null;

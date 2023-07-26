@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.21.0-preview
+### Changed
+- Update to .NET 8 preview
+
 ## 0.20.1-preview
 ### Added
 - `SetContentAsync` to `MarkdownItem`

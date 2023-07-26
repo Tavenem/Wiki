@@ -695,7 +695,7 @@ public static class WikiExtensions
         return new PagedRevisionInfo(
             editors,
             page.Permission,
-            new PagedListDTO<Revision>(history));
+            history);
     }
 
     /// <summary>
@@ -897,7 +897,7 @@ public static class WikiExtensions
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="request">A record with information about the request.</param>
     /// <returns>
-    /// A <see cref="PagedListDTO{T}"/> with <see cref="LinkInfo"/> records for all the pages that
+    /// A <see cref="PagedList{T}"/> with <see cref="LinkInfo"/> records for all the pages that
     /// satisfy the request.
     /// </returns>
     /// <remarks>
@@ -907,7 +907,7 @@ public static class WikiExtensions
     /// method is called with <see cref="SpecialListType.What_Links_Here"/> as the value of <see
     /// cref="SpecialListRequest.Type"/>, the result will always be empty.
     /// </remarks>
-    public static async Task<PagedListDTO<LinkInfo>> GetSpecialListAsync(
+    public static async Task<PagedList<LinkInfo>> GetSpecialListAsync(
         this IDataStore dataStore,
         SpecialListRequest request)
     {
@@ -917,11 +917,11 @@ public static class WikiExtensions
         }
         else if (request.Type == SpecialListType.What_Links_Here)
         {
-            return new(new PagedList<LinkInfo>(null, 1, request.PageSize, 0));
+            return new(null, 1, request.PageSize, 0);
         }
 
         var items = await GetSpecialListInnerAsync(request, dataStore);
-        return new(new PagedList<LinkInfo>(
+        return new(
             items.Select(x => new LinkInfo(
                 x.Title,
                 x is Category category ? category.Children?.Count ?? 0 : 0,
@@ -929,7 +929,7 @@ public static class WikiExtensions
                 x is WikiFile file2 ? file2.FileType : null)),
             items.PageNumber,
             items.PageSize,
-            items.TotalCount));
+            items.TotalCount);
     }
 
     /// <summary>
@@ -1075,10 +1075,10 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="request">A record with information about the request.</param>
     /// <returns>
-    /// A <see cref="PagedListDTO{T}"/> with <see cref="LinkInfo"/> records for all the pages that
+    /// A <see cref="PagedList{T}"/> with <see cref="LinkInfo"/> records for all the pages that
     /// link to the given item.
     /// </returns>
-    public static async Task<PagedListDTO<LinkInfo>> GetWhatLinksHereAsync(
+    public static async Task<PagedList<LinkInfo>> GetWhatLinksHereAsync(
         this IDataStore dataStore,
         WikiOptions options,
         WhatLinksHereRequest request)
@@ -1096,11 +1096,11 @@ public static class WikiExtensions
             && page.TransclusionReferences is null
             && page.RedirectReferences is null))
         {
-            return new(new PagedList<LinkInfo>(
+            return new(
                 null,
                 1,
                 request.PageSize,
-                0));
+                0);
         }
 
         var allReferences = new HashSet<PageTitle>();
@@ -1147,7 +1147,7 @@ public static class WikiExtensions
             pages.Reverse();
         }
 
-        return new(new PagedList<LinkInfo>(
+        return new(
             pages
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
@@ -1158,7 +1158,7 @@ public static class WikiExtensions
                     x is WikiFile file2 ? file2.FileType : null)),
             request.PageNumber,
             request.PageSize,
-            pages.Count));
+            pages.Count);
     }
 
     /// <summary>
@@ -1167,7 +1167,7 @@ public static class WikiExtensions
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="domain">
-    /// The domain to archive; or an empty string to archive content wihout a domain; or <see
+    /// The domain to archive; or an empty string to archive content without a domain; or <see
     /// langword="null"/> to archive the entire wiki.
     /// </param>
     /// <returns>An <see cref="Archive"/> instance.</returns>
@@ -2204,7 +2204,7 @@ public static class WikiExtensions
         return await query.GetPageAsync(pageNumber, pageSize);
     }
 
-    private static async Task<PagedListDTO<LinkInfo>> GetMissingPagesAsync(
+    private static async Task<PagedList<LinkInfo>> GetMissingPagesAsync(
         IDataStore dataStore,
         SpecialListRequest request)
     {
