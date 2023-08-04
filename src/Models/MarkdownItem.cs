@@ -220,6 +220,47 @@ public abstract class MarkdownItem : IdItem
     }
 
     /// <summary>
+    /// Identifies the <see cref="WikiLink"/>s in the given <paramref name="markdown"/>.
+    /// </summary>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="markdown">The markdown.</param>
+    /// <param name="title">The title of the page, if this is a page.</param>
+    /// <returns>
+    /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
+    /// </returns>
+    public static List<WikiLink> GetWikiLinks(
+        WikiOptions options,
+        IDataStore dataStore,
+        string? markdown,
+        PageTitle title = default) => string.IsNullOrEmpty(markdown)
+        ? new List<WikiLink>()
+        : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title))
+            .Descendants<WikiLinkInline>()
+            .Where(x => !x.IsWikipedia
+                && !x.IsCommons
+                && (string.IsNullOrEmpty(x.Title)
+                || x.Title.Length < 5
+                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
+                || x.Title[1] != TransclusionParser.TransclusionOpenChar
+                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
+                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
+                && (x.Title[0] != TransclusionParser.ParameterOpenChar
+                || x.Title[1] != TransclusionParser.ParameterOpenChar
+                || x.Title[^1] != TransclusionParser.ParameterCloseChar
+                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
+            .Select(x => new WikiLink(
+                x.Page,
+                x.Action,
+                x.Fragment,
+                x.IsCategory,
+                x.IsEscaped,
+                x.IsMissing,
+                x.PageTitle))
+            .Distinct()
+            .ToList();
+
+    /// <summary>
     /// Renders the given <paramref name="markdown"/> as HTML.
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -406,47 +447,6 @@ public abstract class MarkdownItem : IdItem
     /// <returns>A preview of this item's rendered HTML.</returns>
     public async ValueTask<string> GetPreviewAsync(WikiOptions options, IDataStore dataStore)
         => RenderPreview(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent, isPreview: true));
-
-    /// <summary>
-    /// Identifies the <see cref="WikiLink"/>s in the given <paramref name="markdown"/>.
-    /// </summary>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="markdown">The markdown.</param>
-    /// <param name="title">The title of the page, if this is a page.</param>
-    /// <returns>
-    /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
-    /// </returns>
-    protected static List<WikiLink> GetWikiLinks(
-        WikiOptions options,
-        IDataStore dataStore,
-        string? markdown,
-        PageTitle title = default) => string.IsNullOrEmpty(markdown)
-        ? new List<WikiLink>()
-        : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title))
-            .Descendants<WikiLinkInline>()
-            .Where(x => !x.IsWikipedia
-                && !x.IsCommons
-                && (string.IsNullOrEmpty(x.Title)
-                || x.Title.Length < 5
-                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
-                || x.Title[1] != TransclusionParser.TransclusionOpenChar
-                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
-                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
-                && (x.Title[0] != TransclusionParser.ParameterOpenChar
-                || x.Title[1] != TransclusionParser.ParameterOpenChar
-                || x.Title[^1] != TransclusionParser.ParameterCloseChar
-                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
-            .Select(x => new WikiLink(
-                x.Page,
-                x.Action,
-                x.Fragment,
-                x.IsCategory,
-                x.IsEscaped,
-                x.IsMissing,
-                x.PageTitle))
-            .Distinct()
-            .ToList();
 
     private static bool AnyPreviews(MarkdownObject obj)
     {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.22.0-preview
+### Changed
+- Made `GetWikiLinks` in `MarkdownItem` public
+
 ## 0.21.0-preview
 ### Changed
 - Update to .NET 8 preview
