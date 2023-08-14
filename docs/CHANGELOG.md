@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.22.2-preview
+### Added
+- `TitleRequest`
+- `GetTitleAsync` to `WikiExtensions`
+
 ## 0.22.1-preview
 ### Updated
 - Update dependencies

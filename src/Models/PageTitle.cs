@@ -65,6 +65,22 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// <summary>
     /// Constructs a new instance of <see cref="PageTitle"/>.
     /// </summary>
+    public PageTitle()
+    {
+        Title = null;
+        NormalizedTitle = null;
+
+        Namespace = null;
+        NormalizedNamespace = null;
+
+        Domain = null;
+
+        IsEmpty = true;
+    }
+
+    /// <summary>
+    /// Constructs a new instance of <see cref="PageTitle"/>.
+    /// </summary>
     /// <param name="title">
     /// <para>
     /// The title of the page.
@@ -299,7 +315,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// <param name="domain">
     /// The domain of the page (if any).
     /// </param>
-    public void Deconstruct(out string? title, out string? @namespace, out string? domain)
+    public readonly void Deconstruct(out string? title, out string? @namespace, out string? domain)
     {
         title = Title;
         @namespace = Namespace;
@@ -307,15 +323,15 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     }
 
     /// <inheritdoc/>
-    public bool Equals(PageTitle other) => string.CompareOrdinal(Domain, other.Domain) == 0
+    public readonly bool Equals(PageTitle other) => string.CompareOrdinal(Domain, other.Domain) == 0
         && string.CompareOrdinal(Namespace, other.Namespace) == 0
         && string.CompareOrdinal(Title, other.Title) == 0;
 
     /// <inheritdoc/>
-    public override bool Equals(object? obj) => obj is PageTitle other && Equals(other);
+    public override readonly bool Equals(object? obj) => obj is PageTitle other && Equals(other);
 
     /// <inheritdoc/>
-    public override int GetHashCode() => HashCode.Combine(Domain, Namespace, Title);
+    public override readonly int GetHashCode() => HashCode.Combine(Domain, Namespace, Title);
 
     /// <summary>
     /// Gets a string representation of the current instance.
@@ -347,7 +363,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// be construed as a title.
     /// </para>
     /// </remarks>
-    public override string ToString()
+    public override readonly string ToString()
     {
         var sb = new StringBuilder();
         if (!string.IsNullOrEmpty(Domain))
@@ -373,14 +389,14 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// currently <see langword="null"/>.
     /// </summary>
     /// <param name="title">
-    /// The default title to supply if the currrent title is <see langword="null"/>.
+    /// The default title to supply if the current title is <see langword="null"/>.
     /// </param>
     /// <returns>
     /// A new <see cref="PageTitle"/> with <see cref="Title"/> set to the given default if it was
     /// previously <see langword="null"/>, and the same <see cref="Namespace"/> and <see
     /// cref="Domain"/> as this instance.
     /// </returns>
-    public PageTitle WithDefaultTitle(string title)
+    public readonly PageTitle WithDefaultTitle(string title)
         => new(Title ?? title, Namespace, Domain);
 
     /// <summary>
@@ -394,7 +410,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// name="domain"/>, and the same <see cref="Namespace"/> and <see cref="Title"/> as this
     /// instance.
     /// </returns>
-    public PageTitle WithDomain(string? domain) => new(Title, Namespace, domain);
+    public readonly PageTitle WithDomain(string? domain) => new(Title, Namespace, domain);
 
     /// <summary>
     /// Gets a copy of this instance with the specified <paramref name="namespace"/>.
@@ -407,7 +423,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// name="namespace"/>, and the same <see cref="Domain"/> and <see cref="Title"/> as this
     /// instance.
     /// </returns>
-    public PageTitle WithNamespace(string? @namespace) => new(Title, @namespace, Domain);
+    public readonly PageTitle WithNamespace(string? @namespace) => new(Title, @namespace, Domain);
 
     /// <summary>
     /// Gets a copy of this instance with the specified title.
@@ -419,10 +435,70 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// A new <see cref="PageTitle"/> with <see cref="Title"/> set to the given value, and the same
     /// <see cref="Namespace"/> and <see cref="Domain"/> as this instance.
     /// </returns>
-    public PageTitle WithTitle(string? title)
+    public readonly PageTitle WithTitle(string? title)
         => new(title, Namespace, Domain);
 
-    internal void WriteUrl(StringWriter writer, WikiOptions wikiOptions)
+    internal readonly bool IsMatch(PageTitle other)
+    {
+        if (string.IsNullOrEmpty(Domain))
+        {
+            if (!string.IsNullOrEmpty(other.Domain))
+            {
+                return false;
+            }
+        }
+        else if (string.IsNullOrEmpty(other.Domain))
+        {
+            return false;
+        }
+        else if (!string.Equals(
+            Domain,
+            other.Domain,
+            StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(NormalizedNamespace))
+        {
+            if (!string.IsNullOrEmpty(other.NormalizedNamespace))
+            {
+                return false;
+            }
+        }
+        else if (string.IsNullOrEmpty(other.NormalizedNamespace))
+        {
+            return false;
+        }
+        else if (!string.Equals(
+            NormalizedNamespace,
+            other.NormalizedNamespace,
+            StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(other.NormalizedTitle))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(NormalizedTitle))
+        {
+            return false;
+        }
+        if (!string.Equals(
+            NormalizedTitle,
+            other.NormalizedTitle,
+            StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    internal readonly void WriteUrl(StringWriter writer, WikiOptions wikiOptions)
     {
         if (!string.IsNullOrEmpty(Domain))
         {

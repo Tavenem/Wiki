@@ -933,6 +933,38 @@ public static class WikiExtensions
     }
 
     /// <summary>
+    /// Gets a page of wiki pages which share the given title parts.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="request">A <see cref="TitleRequest"/> instance.</param>
+    /// <returns>
+    /// A <see cref="PagedList{T}"/> with <see cref="LinkInfo"/> records for all the pages that
+    /// satisfy the request.
+    /// </returns>
+    public static async Task<PagedList<LinkInfo>> GetTitleAsync(
+        this IDataStore dataStore,
+        TitleRequest request)
+    {
+        var items = await GetListAsync<Page>(
+            dataStore,
+            request.PageNumber,
+            request.PageSize,
+            request.Sort,
+            request.Descending,
+            request.Filter,
+            x => x.Title.IsMatch(request.Title));
+        return new(
+            items.Select(x => new LinkInfo(
+                x.Title,
+                x is Category category ? category.Children?.Count ?? 0 : 0,
+                x is WikiFile file1 ? file1.FileSize : 0,
+                x is WikiFile file2 ? file2.FileType : null)),
+            items.PageNumber,
+            items.PageSize,
+            items.TotalCount);
+    }
+
+    /// <summary>
     /// Gets the user page with the given group ID.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
