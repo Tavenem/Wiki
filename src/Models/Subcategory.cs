@@ -1,6 +1,4 @@
-﻿using Tavenem.Wiki.Models;
-
-namespace Tavenem.Wiki.Queries;
+﻿namespace Tavenem.Wiki;
 
 /// <summary>
 /// A subcategory in a category.

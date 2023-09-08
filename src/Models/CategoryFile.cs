@@ -1,6 +1,4 @@
-﻿using Tavenem.Wiki.Models;
-
-namespace Tavenem.Wiki.Queries;
+﻿namespace Tavenem.Wiki;
 
 /// <summary>
 /// A file in a category.

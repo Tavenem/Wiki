@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.23.0-preview
+### Added
+- `OwnerPage` subclass `Article`
+- `GroupPage` and `UserPage` subclasses of `OwnerPage`
+- `AllowedViewer/Editor(Group)Objects`, `CanRename`, `DisplayHtml`, `DisplayTitle`, `IsDiff`, `OwnerObject`, `Permission`, `RevisionHtml` properties to `Page`
+- `Files`, `Pages`, `Subcategories` properties to `Category`
+### Removed
+- Most query record types; the additional properties these added to the main `Page` result were added directly to `Page` (see above)
+
 ## 0.22.2-preview
 ### Added
 - `TitleRequest`

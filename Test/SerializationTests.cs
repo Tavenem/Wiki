@@ -3,7 +3,6 @@ using System.Collections.ObjectModel;
 using System.Text.Json;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Models;
-using Tavenem.Wiki.Queries;
 
 namespace Tavenem.Wiki.Test;
 
@@ -568,31 +567,6 @@ public class SerializationTests
         Assert.IsNotNull(deserialized);
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
-    }
-
-    [TestMethod]
-    public async Task WikiItemInfoTest()
-    {
-        var dataStore = new InMemoryDataStore();
-        var page = Article.Empty(new("Test title"));
-        await page.UpdateAsync(
-            _Options,
-            dataStore,
-            TEST_OWNER_ID,
-            "Test markdown",
-            "Test comment",
-            TEST_OWNER_ID);
-        var value = new WikiPageInfo("Display Title", page.Html, false, page, WikiPermission.All);
-
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiPageInfo);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiPageInfo);
-        Assert.AreEqual(value, deserialized);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(
-            deserialized,
-            WikiJsonSerializerContext.Default.WikiPageInfo));
     }
 
     [TestMethod]

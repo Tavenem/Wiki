@@ -63,6 +63,48 @@ public abstract class Page : MarkdownItem, IPage<Page>
     public IReadOnlyCollection<string>? AllowedEditorGroups { get; set; }
 
     /// <summary>
+    /// A list of the <see cref="IWikiGroup"/>s allowed to edit this page.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This list complements <see cref="AllowedEditors"/>. A user may edit a page if they are a
+    /// member of a group in this list, <em>or</em> if they have permission to edit the page
+    /// according to the rules determined by <see cref="AllowedEditors"/>.
+    /// </para>
+    /// <para>
+    /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// A user who cannot edit a page is still able to see that a page by that title exists (to
+    /// avoid confusion about creating a new page with that title).
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedEditPages"/> list. Rather, the two lists are expected to be
+    /// complementary. Pages may list users with permission to edit them, and users may also have a
+    /// separate list of articles which they may edit.
+    /// </para>
+    /// <para>
+    /// When a user attempts to edit a page, if either the page indicates that the editor has
+    /// permission to edit it, or the user indicates that it has permission to edit the page, then
+    /// permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved for
+    /// editing.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<IWikiGroup>? AllowedEditorGroupObjects { get; set; }
+
+    /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of users allowed to edit this page.
     /// </summary>
     /// <remarks>
@@ -104,6 +146,51 @@ public abstract class Page : MarkdownItem, IPage<Page>
     public IReadOnlyCollection<string>? AllowedEditors { get; set; }
 
     /// <summary>
+    /// A list of the <see cref="IWikiUser"/>s allowed to edit this page.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If <see langword="null"/> the page can be edited by anyone, including anonymous users.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be edited by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to edit the page.
+    /// </para>
+    /// <para>
+    /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// A user who cannot edit a page is still able to see that a page by that title exists
+    /// (to avoid confusion about creating a new page with that title).
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedEditPages"/> list. Rather, the two lists are expected to be
+    /// complementary. Pages may list users with permission to edit them, and users may also have
+    /// a separate list of articles which they may edit.
+    /// </para>
+    /// <para>
+    /// When a user attempts to edit a page, if either the page indicates that the editor has
+    /// permission to edit it, or the user indicates that it has permission to edit the page,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved for
+    /// editing.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<IWikiUser>? AllowedEditorObjects { get; set; }
+
+    /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of groups allowed to view this page.
     /// </summary>
     /// <remarks>
@@ -136,6 +223,44 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </para>
     /// </remarks>
     public IReadOnlyCollection<string>? AllowedViewerGroups { get; set; }
+
+    /// <summary>
+    /// A list of the <see cref="IWikiGroup"/>s allowed to view this page.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This list complements <see cref="AllowedViewers"/>. A user may view a page if they are a
+    /// member of a group in this list, <em>or</em> if they have permission to view the page
+    /// according to the rules determined by <see cref="AllowedViewers"/>.
+    /// </para>
+    /// <para>
+    /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedViewPages"/> list. Rather, the two lists are expected to be
+    /// complementary. Pages may list groups with permission to view them, and groups may also
+    /// have a separate list of articles which they may view.
+    /// </para>
+    /// <para>
+    /// When a user attempts to view a page, if either the page indicates that the viewer has
+    /// permission to view it, or the user indicates that it has permission to view the page,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved for
+    /// editing.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<IWikiGroup>? AllowedViewerGroupObjects { get; set; }
 
     /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of users allowed to view this page.
@@ -179,6 +304,66 @@ public abstract class Page : MarkdownItem, IPage<Page>
     public IReadOnlyCollection<string>? AllowedViewers { get; set; }
 
     /// <summary>
+    /// A list of the <see cref="IWikiUser"/>s allowed to view this page.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// If <see langword="null"/> the page can be viewed by anyone, including anonymous users.
+    /// </para>
+    /// <para>
+    /// If non-<see langword="null"/> the page can only be viewed by those listed, plus its owner
+    /// (regardless of whether the owner is explicitly listed). An empty (but non-<see
+    /// langword="null"/>) list allows only the owner to view the page.
+    /// </para>
+    /// <para>
+    /// Cannot be set if the <see cref="Owner"/> is <see langword="null"/>.
+    /// </para>
+    /// <para>
+    /// A user who cannot view a page is still able to see that a page by that title exists
+    /// (to avoid confusion about creating a new page with that title).
+    /// </para>
+    /// <para>
+    /// Note that this list is not intended to have duplicate information for the <see
+    /// cref="IWikiOwner.AllowedViewPages"/> list. Rather, the two lists are expected to be
+    /// complementary. Pages may list users with permission to view them, and users may also have
+    /// a separate list of articles which they may view.
+    /// </para>
+    /// <para>
+    /// When a user attempts to view a page, if either the page indicates that the viewer has
+    /// permission to view it, or the user indicates that it has permission to view the page,
+    /// then permission is granted.
+    /// </para>
+    /// <para>
+    /// A particular implementation of <c>Tavenem.Wiki</c> may use only one of these systems, or
+    /// both, depending on the best fit for the implementation's access control use case.
+    /// </para>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved for
+    /// editing.
+    /// </para>
+    /// </remarks>
+    public IReadOnlyCollection<IWikiUser>? AllowedViewerObjects { get; set; }
+
+    /// <summary>
+    /// Whether this page can be renamed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Defaults to <see langword="true"/>, and is read-only. Intended for use by inheriting classes
+    /// which use special values for titles (and therefore should not be renamed by users).
+    /// </para>
+    /// <para>
+    /// Not persisted to storage.
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
+    public virtual bool CanRename => true;
+
+    /// <summary>
     /// The categories to which this page belongs.
     /// </summary>
     /// <remarks>
@@ -196,6 +381,23 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </para>
     /// </remarks>
     public IReadOnlyCollection<PageTitle>? Categories { get; set; }
+
+    /// <summary>
+    /// <para>
+    /// The HTML content to display.
+    /// </para>
+    /// <para>
+    /// This is either <see cref="RevisionHtml"/> (if set) or <see cref="MarkdownItem.Html"/>.
+    /// </para>
+    /// </summary>
+    [JsonIgnore]
+    public string DisplayHtml => RevisionHtml ?? Html;
+
+    /// <summary>
+    /// An optional display title for this page, which would override its <see cref="Title"/>'s <see
+    /// cref="PageTitle.Title"/> for display purposes.
+    /// </summary>
+    public virtual string? DisplayTitle { get; set; }
 
     /// <summary>
     /// Whether this page exists.
@@ -247,6 +449,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// by non-library code.
     /// </remarks>
     public bool IsBrokenRedirect { get; set; }
+
+    /// <summary>
+    /// Whether this represents a diff between two versions of the page.
+    /// </summary>
+    public bool IsDiff { get; set; }
 
     /// <summary>
     /// <para>
@@ -308,6 +515,16 @@ public abstract class Page : MarkdownItem, IPage<Page>
     public string? Owner { get; set; }
 
     /// <summary>
+    /// The <see cref="IWikiOwner"/> associated with this page.
+    /// </summary>
+    public IWikiOwner? OwnerObject { get; set; }
+
+    /// <summary>
+    /// The permission that the current user has to access this page.
+    /// </summary>
+    public WikiPermission Permission { get; set; }
+
+    /// <summary>
     /// Other pages which redirect to this one.
     /// </summary>
     /// <remarks>
@@ -364,6 +581,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </para>
     /// </remarks>
     public Revision? Revision { get; set; }
+
+    /// <summary>
+    /// The HTML of the requested revision at time of retrieval.
+    /// </summary>
+    public string? RevisionHtml { get; set; }
 
     /// <summary>
     /// The timestamp of this revision, in UTC.
@@ -1137,6 +1359,10 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null) where T : Page, IPage<T>
     {
+        if (!CanRename)
+        {
+            throw new InvalidOperationException("This type of page cannot be renamed");
+        }
         if ((string.CompareOrdinal(title.Namespace, options.CategoryNamespace) == 0
             && this is not Category)
             || (string.CompareOrdinal(title.Namespace, options.FileNamespace) == 0
@@ -1333,6 +1559,10 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null)
     {
+        if (!CanRename)
+        {
+            throw new InvalidOperationException("Cannot redirect this type of page");
+        }
         if (redirectTitle.HasValue
             && (string.CompareOrdinal(Title.Namespace, options.CategoryNamespace) == 0
             || string.CompareOrdinal(Title.Namespace, options.GroupNamespace) == 0

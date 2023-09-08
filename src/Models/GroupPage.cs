@@ -1,88 +1,31 @@
-﻿using System.Collections.Immutable;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// A wiki category revision.
+/// A group page.
 /// </summary>
-public sealed class Category : Page, IPage<Category>
+public class GroupPage : OwnerPage, IPage<GroupPage>
 {
     /// <summary>
     /// The type discriminator for this type.
     /// </summary>
-    public const string CategoryIdItemTypeName = ":Page:Category:";
+    public const string GroupPageIdItemTypeName = ":Page:Article:OwnerPage:GroupPage:";
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
     [JsonIgnore]
-    public override string IdItemTypeName => CategoryIdItemTypeName;
+    public override string IdItemTypeName => GroupPageIdItemTypeName;
 
     /// <summary>
-    /// The pages which belong to this category (including child categories).
+    /// The users which belong to the associated group (if any).
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Updates to this cache do not count as revisions.
-    /// </para>
-    /// <para>
-    /// This property has a public setter for serialization support, but should not be directly set
-    /// by non-library code.
-    /// </para>
-    /// </remarks>
-    public IReadOnlyCollection<PageTitle>? Children { get; set; }
+    public List<IWikiUser>? Users { get; set; }
 
     /// <summary>
-    /// Whether this page exists.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Categories are always considered to exist implicitly. They are enumerations of their members
-    /// (even when they have no current members), even if they have no other content.
-    /// </para>
-    /// <para>
-    /// This property has a public setter for serialization support, but setting it has no effect.
-    /// </para>
-    /// </remarks>
-    public override bool Exists
-    {
-        get => true;
-        set { }
-    }
-
-    /// <summary>
-    /// The files contained directly in this category.
-    /// </summary>
-    /// <remarks>
-    /// Note: this property is not persisted. It is dynamically built when the category is retrieved.
-    /// </remarks>
-    public Dictionary<string, List<CategoryFile>>? Files { get; set; }
-
-    /// <summary>
-    /// Whether this category contains no children.
-    /// </summary>
-    public bool IsEmpty => Children is null || Children.Count == 0;
-
-    /// <summary>
-    /// The pages contained directly within this category.
-    /// </summary>
-    /// <remarks>
-    /// Note: this property is not persisted. It is dynamically built when the category is retrieved.
-    /// </remarks>
-    public Dictionary<string, List<PageTitle>>? Pages { get; set; }
-
-    /// <summary>
-    /// The categories contained directly in this category.
-    /// </summary>
-    /// <remarks>
-    /// Note: this property is not persisted. It is dynamically built when the category is retrieved.
-    /// </remarks>
-    public Dictionary<string, List<Subcategory>>? Subcategories { get; set; }
-
-    /// <summary>
-    /// Constructs a new instance of <see cref="Category"/>.
+    /// Constructs a new instance of <see cref="GroupPage"/>.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -105,7 +48,7 @@ public sealed class Category : Page, IPage<Category>
     /// </para>
     /// </remarks>
     [JsonConstructor]
-    public Category(
+    public GroupPage(
         PageTitle title,
         string html,
         string preview,
@@ -125,8 +68,7 @@ public sealed class Category : Page, IPage<Category>
         IReadOnlyCollection<PageTitle>? transclusions = null,
         bool isBrokenRedirect = false,
         bool isDoubleRedirect = false,
-        PageTitle? redirectTitle = null,
-        IReadOnlyCollection<PageTitle>? children = null) : base(
+        PageTitle? redirectTitle = null) : base(
         title,
         html,
         preview,
@@ -146,25 +88,26 @@ public sealed class Category : Page, IPage<Category>
         transclusions,
         isBrokenRedirect,
         isDoubleRedirect,
-        redirectTitle) => Children = children;
+        redirectTitle)
+    { }
 
-    private Category(PageTitle title) : base(title) { }
+    private protected GroupPage(PageTitle title) : base(title) { }
 
     /// <summary>
-    /// Gets an empty instance of <see cref="Category"/>.
+    /// Gets an empty instance of <see cref="GroupPage"/>.
     /// </summary>
-    /// <returns>An empty instance of <see cref="Category"/>.</returns>
-    public static new Category Empty(PageTitle title) => new(title);
+    /// <returns>An empty instance of <see cref="GroupPage"/>.</returns>
+    public static new GroupPage Empty(PageTitle title) => new(title);
 
     /// <summary>
     /// Gets a copy of this instance.
     /// </summary>
     /// <param name="newNamespace">A new namespace to assign to the copied page.</param>
     /// <returns>
-    /// A new instance of <see cref="Category"/> with the same properties as this instance.
+    /// A new instance of <see cref="GroupPage"/> with the same properties as this instance.
     /// </returns>
-    public override Category Copy(string? newNamespace = null)
-        => Copy<Category>(newNamespace);
+    public override GroupPage Copy(string? newNamespace = null)
+        => Copy<GroupPage>(newNamespace);
 
     /// <summary>
     /// Renames a <see cref="Page"/> instance, turns the previous title into a redirect to the new
@@ -269,7 +212,7 @@ public sealed class Category : Page, IPage<Category>
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        PageTitle? redirectTitle = null) => RenameAsync<Category>(
+        PageTitle? redirectTitle = null) => RenameAsync<GroupPage>(
             options,
             dataStore,
             title,
@@ -282,41 +225,4 @@ public sealed class Category : Page, IPage<Category>
             allowedEditorGroups,
             allowedViewerGroups,
             redirectTitle);
-
-    internal async ValueTask AddPageAsync(IDataStore dataStore, PageTitle title)
-    {
-        if (Children?.Contains(title) == true)
-        {
-            return;
-        }
-
-        var children = Children?.ToList() ?? new();
-        children.Add(title);
-        Children = children.AsReadOnly();
-        await dataStore.StoreItemAsync(this)
-            .ConfigureAwait(false);
-    }
-
-    internal override Category GetArchiveCopy()
-    {
-        var page = base.GetArchiveCopy();
-        if (page is Category category)
-        {
-            category.Children = null;
-            return category;
-        }
-        throw new InvalidOperationException();
-    }
-
-    internal async ValueTask RemovePageAsync(IDataStore dataStore, PageTitle title)
-    {
-        if (Children?.Contains(title) != true)
-        {
-            return;
-        }
-
-        Children = Children.ToImmutableList().Remove(title);
-        await dataStore.StoreItemAsync(this)
-            .ConfigureAwait(false);
-    }
 }

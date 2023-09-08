@@ -181,12 +181,12 @@ public static class WikiExtensions
             allowedViewers,
             allowedEditorGroups,
             allowedViewerGroups);
-        if (!hasPermission || page.Page is null)
+        if (!hasPermission)
         {
             return false;
         }
 
-        WikiPageInfo? originalPage = null;
+        Page? originalPage = null;
         if (originalTitle.HasValue
             && !originalTitle.Equals(title))
         {
@@ -208,20 +208,20 @@ public static class WikiExtensions
                 allowedViewers,
                 allowedEditorGroups,
                 allowedViewerGroups);
-            if (!hasOriginalPermission || originalPage.Page is null)
+            if (!hasOriginalPermission)
             {
                 return false;
             }
         }
 
-        if (originalPage?.Page is not null)
+        if (originalPage is not null)
         {
-            await originalPage.Page.RenameAsync(
+            await originalPage.RenameAsync(
                 options,
                 dataStore,
                 title,
                 editor.Id,
-                isDeleted ? null : markdown ?? originalPage.Page.MarkdownContent,
+                isDeleted ? null : markdown ?? originalPage.MarkdownContent,
                 revisionComment,
                 owner,
                 allowedEditors,
@@ -233,7 +233,7 @@ public static class WikiExtensions
         }
         else if (isDeleted)
         {
-            await page.Page.UpdateAsync(
+            await page.UpdateAsync(
                 options,
                 dataStore,
                 editor.Id,
@@ -249,11 +249,11 @@ public static class WikiExtensions
         }
         else
         {
-            await page.Page.UpdateAsync(
+            await page.UpdateAsync(
                 options,
                 dataStore,
                 editor.Id,
-                markdown ?? page.Page.MarkdownContent,
+                markdown ?? page.MarkdownContent,
                 revisionComment,
                 owner,
                 allowedEditors,
@@ -308,9 +308,9 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="CategoryInfo"/> object which corresponds to the <paramref name="title"/> given.
+    /// A <see cref="Category"/> which corresponds to the <paramref name="title"/> given.
     /// </returns>
-    public static async Task<CategoryInfo> GetCategoryAsync(
+    public static async Task<Category> GetCategoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -328,10 +328,16 @@ public static class WikiExtensions
             true)
             .ConfigureAwait(false);
 
-        if (page.Page is not Category category
+        if (page is not Category category
             || !page.Permission.HasFlag(WikiPermission.Read))
         {
-            return new(null, page.Permission, null, null, null);
+            var empty = Category.Empty(title);
+            empty.Permission = page.Permission;
+            if (string.IsNullOrEmpty(empty.Title.Title))
+            {
+                empty.DisplayTitle ??= options.MainPageTitle;
+            }
+            return empty;
         }
 
         var pages = new List<Page>();
@@ -362,27 +368,26 @@ public static class WikiExtensions
             }
         }
 
-        return new(
-            category,
-            page.Permission,
-            pages
-                .Select(x => x.Title)
-                .GroupBy(x => StringInfo.GetNextTextElement(x.Title ?? string.Empty, 0))
-                .ToDictionary(
-                    x => x.Key,
-                    x => x.OrderBy(y => y.Title).ToList()),
-            files
-                .Select(x => new CategoryFile(x.Title, x.FileSize))
-                .GroupBy(x => StringInfo.GetNextTextElement(x.Title.Title ?? string.Empty, 0))
-                .ToDictionary(
-                    x => x.Key,
-                    x => x.OrderBy(y => y.Title).ToList()),
-            subcategories
-                .Select(x => new Subcategory(x.Title, x.Children?.Count ?? 0))
-                .GroupBy(x => StringInfo.GetNextTextElement(x.Title.Title ?? string.Empty, 0))
-                .ToDictionary(
-                    x => x.Key,
-                    x => x.OrderBy(y => y.Title.Title).ToList()));
+        category.Files = files
+            .Select(x => new CategoryFile(x.Title, x.FileSize))
+            .GroupBy(x => StringInfo.GetNextTextElement(x.Title.Title ?? string.Empty, 0))
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderBy(y => y.Title).ToList());
+        category.Pages = pages
+            .Select(x => x.Title)
+            .GroupBy(x => StringInfo.GetNextTextElement(x.Title ?? string.Empty, 0))
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderBy(y => y.Title).ToList());
+        category.Subcategories = subcategories
+            .Select(x => new Subcategory(x.Title, x.Children?.Count ?? 0))
+            .GroupBy(x => StringInfo.GetNextTextElement(x.Title.Title ?? string.Empty, 0))
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderBy(y => y.Title.Title).ToList());
+
+        return category;
     }
 
     /// <summary>
@@ -402,15 +407,15 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="CategoryInfo"/> object which corresponds to the <paramref name="title"/> given.
+    /// A <see cref="Category"/> which corresponds to the <paramref name="title"/> given.
     /// </returns>
-    public static async Task<CategoryInfo> GetCategoryAsync(
+    public static async Task<Category> GetCategoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         PageTitle title,
-        string? userId = null) => await GetCategoryAsync(
+        string userId) => await GetCategoryAsync(
             dataStore,
             options,
             userManager,
@@ -445,16 +450,13 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// <para>
-    /// A <see cref="GroupPageInfo"/> which corresponds to the group ID given; or <see
-    /// langword="null"/> if no such group exists.
+    /// A <see cref="GroupPage"/> which corresponds to the group ID given.
     /// </para>
     /// <para>
-    /// Note that a result is still returned if the group <em>page</em> does not exist, but the
-    /// group itself does. In this case, the <see cref="GroupPageInfo.Page"/> will be <see
-    /// langword="null"/> but the record's other properties will be set appropriately.
+    /// Note that a result is still returned if the group or page does not exist.
     /// </para>
     /// </returns>
-    public static async Task<GroupPageInfo?> GetGroupPageAsync(
+    public static async Task<GroupPage> GetGroupPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -462,24 +464,30 @@ public static class WikiExtensions
         string groupId,
         IWikiUser? user = null)
     {
-        Page page;
+        GroupPage page;
         var articleGroup = await groupManager.FindByIdAsync(groupId)
             .ConfigureAwait(false);
         if (articleGroup is null)
         {
             articleGroup = await groupManager.FindByNameAsync(groupId);
-            page = await dataStore
-                .GetWikiPageAsync(options, new(articleGroup?.Id, options.GroupNamespace))
+            page = await dataStore.GetWikiPageAsync<GroupPage>(
+                options,
+                new(articleGroup?.Id, options.GroupNamespace),
+                true,
+                true)
                 .ConfigureAwait(false);
         }
         else
         {
-            page = await dataStore
-                .GetWikiPageAsync(options, new(articleGroup.Id, options.GroupNamespace))
+            page = await dataStore.GetWikiPageAsync<GroupPage>(
+                options,
+                new(articleGroup.Id, options.GroupNamespace),
+                true,
+                true)
                 .ConfigureAwait(false);
         }
 
-        var permission = await GetPermissionInnerAsync(
+        page.Permission = await GetPermissionInnerAsync(
             user,
             options,
             dataStore,
@@ -489,27 +497,28 @@ public static class WikiExtensions
             page)
             .ConfigureAwait(false);
 
-        if (!permission.HasFlag(WikiPermission.Read))
+        if (!page.Permission.HasFlag(WikiPermission.Read))
         {
-            return new(
-                null,
-                null,
-                permission,
-                null);
+            var empty = GroupPage.Empty(new(groupId, options.GroupNamespace));
+            empty.Permission = page.Permission;
+            if (string.IsNullOrEmpty(empty.Title.Title))
+            {
+                empty.DisplayTitle ??= options.MainPageTitle;
+            }
+            return empty;
         }
 
-        IWikiGroup? group = null;
         if (user is not null && articleGroup is not null)
         {
             if (user is not null
                 && (user.IsWikiAdmin
                 || user.Groups?.Contains(articleGroup.Id) == true))
             {
-                group = articleGroup;
+                page.OwnerObject = articleGroup;
             }
             else
             {
-                group = new WikiGroup
+                page.OwnerObject = new WikiGroup
                 {
                     DisplayName = articleGroup.DisplayName,
                     Id = articleGroup.Id,
@@ -518,25 +527,12 @@ public static class WikiExtensions
         }
 
         var users = await groupManager.GetUsersInGroupAsync(articleGroup);
-        List<WikiUserInfo>? userInfo = null;
         if (users.Count > 0)
         {
-            userInfo = new List<WikiUserInfo>();
-            foreach (var groupUser in users)
-            {
-                userInfo.Add(new WikiUserInfo(
-                    groupUser.Id,
-                    groupUser));
-            }
+            page.Users = users.ToList();
         }
 
-        return new(
-            group is null
-                ? null
-                : new WikiUserInfo(group.Id, group),
-            page as Article,
-            permission,
-            userInfo);
+        return page;
     }
 
     /// <summary>
@@ -565,22 +561,19 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// <para>
-    /// A <see cref="GroupPageInfo"/> which corresponds to the group ID given; or <see
-    /// langword="null"/> if no such group exists.
+    /// A <see cref="GroupPage"/> which corresponds to the group ID given.
     /// </para>
     /// <para>
-    /// Note that a result is still returned if the group <em>page</em> does not exist, but the
-    /// group itself does. In this case, the <see cref="GroupPageInfo.Page"/> will be <see
-    /// langword="null"/> but the record's other properties will be set appropriately.
+    /// Note that a result is still returned if the group or page does not exist.
     /// </para>
     /// </returns>
-    public static async Task<GroupPageInfo?> GetGroupPageAsync(
+    public static async Task<GroupPage> GetGroupPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         string groupId,
-        string? userId = null) => await GetGroupPageAsync(
+        string userId) => await GetGroupPageAsync(
             dataStore,
             options,
             userManager,
@@ -628,13 +621,12 @@ public static class WikiExtensions
             true)
             .ConfigureAwait(false);
         if (request.Start > request.End
-            || !page.Permission.HasFlag(WikiPermission.Read)
-            || page.Page is null)
+            || !page.Permission.HasFlag(WikiPermission.Read))
         {
             return new(null, page.Permission, null);
         }
 
-        var history = await page.Page.GetHistoryAsync(
+        var history = await page.GetHistoryAsync(
             dataStore,
             request.PageNumber,
             request.PageSize,
@@ -645,7 +637,7 @@ public static class WikiExtensions
                 ? new DateTimeOffset(request.End.Value, TimeSpan.Zero)
                 : null);
 
-        List<WikiUserInfo>? editors = null;
+        List<IWikiUser>? editors = null;
         var editorIds = new HashSet<string>();
         foreach (var revision in history)
         {
@@ -663,33 +655,28 @@ public static class WikiExtensions
 
             editorIds.Add(editor.Id);
 
-            IWikiUser editorUser;
             if (user is not null
                 && (user.IsWikiAdmin
                 || string.CompareOrdinal(user.Id, editor.Id) == 0))
             {
-                editorUser = editor;
+                (editors ??= new()).Add(editor);
             }
             else if (editor.IsDeleted)
             {
-                editorUser = new WikiUser
+                (editors ??= new()).Add(new WikiUser
                 {
                     Id = editor.Id,
-                };
+                });
             }
             else
             {
-                editorUser = new WikiUser
+                (editors ??= new()).Add(new WikiUser
                 {
                     DisplayName = editor.DisplayName,
                     Id = editor.Id,
                     IsWikiAdmin = editor.IsWikiAdmin,
-                };
+                });
             }
-
-            (editors ??= new()).Add(new WikiUserInfo(
-                editor.Id,
-                editorUser));
         }
 
         return new PagedRevisionInfo(
@@ -903,7 +890,7 @@ public static class WikiExtensions
     /// <remarks>
     /// This method should not be used for <see cref="SpecialListType.What_Links_Here"/>, which has
     /// its own call that takes a different type of request record (<see
-    /// cref="GetWhatLinksHereAsync(IDataStore, WikiOptions, WhatLinksHereRequest)"/>). If this
+    /// cref="GetWhatLinksHereAsync(IDataStore, WikiOptions, TitleRequest)"/>). If this
     /// method is called with <see cref="SpecialListType.What_Links_Here"/> as the value of <see
     /// cref="SpecialListRequest.Type"/>, the result will always be empty.
     /// </remarks>
@@ -965,7 +952,136 @@ public static class WikiExtensions
     }
 
     /// <summary>
-    /// Gets the user page with the given group ID.
+    /// Gets the user page with the given user ID.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of the user.
+    /// </para>
+    /// <para>
+    /// If no user with the given ID is found, an attempt will be made to find a user with a
+    /// matching <see cref="IWikiOwner.DisplayName"/>.
+    /// </para>
+    /// </param>
+    /// <param name="requestingUser">
+    /// <para>
+    /// The requesting <see cref="IWikiUser"/>.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// <para>
+    /// A <see cref="UserPage"/> which corresponds to the user ID given.
+    /// </para>
+    /// <para>
+    /// Note that a result is still returned if the user or page does not exist.
+    /// </para>
+    /// </returns>
+    public static async Task<UserPage> GetUserPageAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        string userId,
+        IWikiUser? requestingUser = null)
+    {
+        UserPage page;
+        var articleUser = await userManager.FindByIdAsync(userId)
+            .ConfigureAwait(false);
+        if (articleUser is null)
+        {
+            articleUser = await userManager.FindByNameAsync(userId)
+                .ConfigureAwait(false);
+            page = await dataStore.GetWikiPageAsync<UserPage>(
+                options,
+                new(articleUser?.Id, options.UserNamespace),
+                true,
+                true)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            page = await dataStore.GetWikiPageAsync<UserPage>
+                (options,
+                new(articleUser.Id, options.UserNamespace),
+                true,
+                true)
+                .ConfigureAwait(false);
+        }
+
+        var permission = await GetPermissionInnerAsync(
+            requestingUser,
+            options,
+            dataStore,
+            userManager,
+            groupManager,
+            page.Title,
+            page)
+            .ConfigureAwait(false);
+
+        if (!permission.HasFlag(WikiPermission.Read)
+            || articleUser is null)
+        {
+            var empty = UserPage.Empty(new(userId, options.UserNamespace));
+            empty.Permission = permission;
+            if (string.IsNullOrEmpty(empty.Title.Title))
+            {
+                empty.DisplayTitle ??= options.MainPageTitle;
+            }
+            return empty;
+        }
+        page.Permission = permission;
+
+        if (requestingUser is not null
+            && (requestingUser.IsWikiAdmin
+            || string.Equals(requestingUser.Id, articleUser.Id)))
+        {
+            page.OwnerObject = articleUser;
+        }
+        else if (articleUser.IsDeleted)
+        {
+            page.OwnerObject = new WikiUser
+            {
+                Id = articleUser.Id,
+                IsWikiAdmin = articleUser.IsWikiAdmin,
+            };
+        }
+        else
+        {
+            page.OwnerObject = new WikiUser
+            {
+                DisplayName = articleUser.DisplayName,
+                Id = articleUser.Id,
+                IsWikiAdmin = articleUser.IsWikiAdmin,
+            };
+        }
+
+        if (articleUser.Groups is not null)
+        {
+            page.Groups = new();
+            foreach (var id in articleUser.Groups)
+            {
+                var group = await groupManager.FindByIdAsync(id);
+                if (group is null
+                    || string.IsNullOrEmpty(group.OwnerId))
+                {
+                    continue;
+                }
+                page.Groups.Add(group);
+            }
+        }
+
+        return page;
+    }
+
+    /// <summary>
+    /// Gets the user page with the given user ID.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
@@ -990,115 +1106,25 @@ public static class WikiExtensions
     /// </param>
     /// <returns>
     /// <para>
-    /// A <see cref="UserPageInfo"/> which corresponds to the user ID given; or <see
-    /// langword="null"/> if no such user exists.
+    /// A <see cref="UserPage"/> which corresponds to the user ID given.
     /// </para>
     /// <para>
-    /// Note that a result is still returned if the user <em>page</em> does not exist, but the
-    /// user itself does. In this case, the <see cref="UserPageInfo.Page"/> will be <see
-    /// langword="null"/> but the record's other properties will be set appropriately.
+    /// Note that a result is still returned if the user or page does not exist.
     /// </para>
     /// </returns>
-    public static async Task<UserPageInfo?> GetUserPageAsync(
+    public static async Task<UserPage> GetUserPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         string userId,
-        string? requestingUserId = null)
-    {
-        Page page;
-        var articleUser = await userManager.FindByIdAsync(userId)
-            .ConfigureAwait(false);
-        if (articleUser is null)
-        {
-            articleUser = await userManager.FindByNameAsync(userId)
-                .ConfigureAwait(false);
-            page = await dataStore
-                .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
-                .ConfigureAwait(false);
-        }
-        else
-        {
-            page = await dataStore
-                .GetWikiPageAsync(options, new(articleUser.Id, options.UserNamespace))
-                .ConfigureAwait(false);
-        }
-
-        var requestingUser = await userManager.FindByIdAsync(requestingUserId)
-            .ConfigureAwait(false);
-
-        var permission = await GetPermissionInnerAsync(
-            requestingUser,
-            options,
+        string requestingUserId) => await GetUserPageAsync(
             dataStore,
+            options,
             userManager,
             groupManager,
-            page.Title,
-            page)
-            .ConfigureAwait(false);
-
-        if (!permission.HasFlag(WikiPermission.Read)
-            || articleUser is null)
-        {
-            return new(
-                null,
-                null,
-                permission,
-                null);
-        }
-
-        IWikiUser? user;
-        if (requestingUser is not null
-            && (requestingUser.IsWikiAdmin
-            || string.Equals(requestingUser.Id, articleUser.Id)))
-        {
-            user = articleUser;
-        }
-        else if (articleUser.IsDeleted)
-        {
-            user = new WikiUser
-            {
-                Id = articleUser.Id,
-                IsWikiAdmin = articleUser.IsWikiAdmin,
-            };
-        }
-        else
-        {
-            user = new WikiUser
-            {
-                DisplayName = articleUser.DisplayName,
-                Id = articleUser.Id,
-                IsWikiAdmin = articleUser.IsWikiAdmin,
-            };
-        }
-
-        List<WikiUserInfo>? groupInfo = null;
-        if (articleUser.Groups is not null)
-        {
-            groupInfo = new List<WikiUserInfo>();
-            foreach (var id in articleUser.Groups)
-            {
-                var group = await groupManager.FindByIdAsync(id);
-                if (group is null
-                    || string.IsNullOrEmpty(group.OwnerId))
-                {
-                    continue;
-                }
-                groupInfo.Add(new WikiUserInfo(
-                    id,
-                    group));
-            }
-        }
-
-        return new(
-            groupInfo,
-            page as Article,
-            permission,
-            user is null
-                ? null
-                : new WikiUserInfo(user.Id, user));
-    }
+            userId,
+            await userManager.FindByIdAsync(requestingUserId));
 
     /// <summary>
     /// Gets a page of the wiki pages which link to the given title and namespace.
@@ -1113,7 +1139,7 @@ public static class WikiExtensions
     public static async Task<PagedList<LinkInfo>> GetWhatLinksHereAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        WhatLinksHereRequest request)
+        TitleRequest request)
     {
         var title = request.Title;
         if (title.Title?.Equals(options.MainPageTitle) == true)
@@ -1254,6 +1280,39 @@ public static class WikiExtensions
     /// is not found.
     /// </param>
     /// <returns>
+    /// The <see cref="IPage{T}"/> which corresponds to the given <paramref name="title"/>.
+    /// </returns>
+    public static async Task<T> GetWikiPageAsync<T>(
+        this IDataStore dataStore,
+        WikiOptions options,
+        PageTitle title,
+        bool noRedirect = false,
+        bool exactMatchOnly = false) where T : class, IIdItem, IPage<T>
+    {
+        if (title.Title?.Equals(options.MainPageTitle) == true)
+        {
+            title = title.WithTitle(null);
+        }
+        return await IPage<T>
+            .GetPageAsync<T>(dataStore, title, exactMatchOnly, noRedirect)
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Gets the wiki page with the given <paramref name="title"/>.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <param name="noRedirect">
+    /// If <see langword="true"/> redirects will not be followed. The original matching item will be
+    /// returned, even if it is a redirect.
+    /// </param>
+    /// <param name="exactMatchOnly">
+    /// If <see langword="true"/> a case-insensitive match will not be attempted if an exact match
+    /// is not found.
+    /// </param>
+    /// <returns>
     /// The <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
     public static async Task<Page> GetWikiPageAsync(
@@ -1269,18 +1328,25 @@ public static class WikiExtensions
         }
         if (string.CompareOrdinal(title.Namespace, options.CategoryNamespace) == 0)
         {
-            return await IPage<Category>
-                .GetPageAsync<Category>(dataStore, title, exactMatchOnly, true)
+            return await GetWikiPageAsync<Category>(dataStore, options, title, noRedirect, exactMatchOnly)
                 .ConfigureAwait(false);
         }
         if (string.CompareOrdinal(title.Namespace, options.FileNamespace) == 0)
         {
-            return await IPage<WikiFile>
-                .GetPageAsync<WikiFile>(dataStore, title, exactMatchOnly, noRedirect)
+            return await GetWikiPageAsync<WikiFile>(dataStore, options, title, noRedirect, exactMatchOnly)
                 .ConfigureAwait(false);
         }
-        return await IPage<Article>
-            .GetPageAsync<Article>(dataStore, title, exactMatchOnly, noRedirect)
+        if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0)
+        {
+            return await GetWikiPageAsync<UserPage>(dataStore, options, title, true, true)
+                .ConfigureAwait(false);
+        }
+        if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0)
+        {
+            return await GetWikiPageAsync<GroupPage>(dataStore, options, title, true, true)
+                .ConfigureAwait(false);
+        }
+        return await GetWikiPageAsync<Article>(dataStore, options, title, noRedirect, exactMatchOnly)
             .ConfigureAwait(false);
     }
 
@@ -1309,9 +1375,9 @@ public static class WikiExtensions
     /// rather than the current state of the page.
     /// </param>
     /// <returns>
-    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiPageInfo> GetWikiPageAsync(
+    public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1321,27 +1387,22 @@ public static class WikiExtensions
         bool noRedirect = false,
         DateTimeOffset? time = null)
     {
-        Page? page = null;
-        IWikiUser? articleUser = null;
         if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            articleUser = await userManager.FindByIdAsync(title.Title)
-                .ConfigureAwait(false);
-            if (articleUser is null)
-            {
-                articleUser = await userManager.FindByNameAsync(title.Title)
-                    .ConfigureAwait(false);
-                page = await dataStore
-                    .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
-                    .ConfigureAwait(false);
-            }
+            return await GetUserPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
         }
-        page ??= await dataStore
+        else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            return await GetGroupPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+        }
+
+        var page = await dataStore
             .GetWikiPageAsync(options, title, noRedirect)
             .ConfigureAwait(false);
 
-        var permission = await GetPermissionInnerAsync(
+        page.Permission = await GetPermissionInnerAsync(
             user,
             options,
             dataStore,
@@ -1351,21 +1412,27 @@ public static class WikiExtensions
             page)
             .ConfigureAwait(false);
 
-        string? html = null;
-        if (permission.HasFlag(WikiPermission.Read))
+        if (page.Permission.HasFlag(WikiPermission.Read))
         {
-            html = time.HasValue
-                ? await page.GetHtmlAsync(options, dataStore, time.Value)
-                    .ConfigureAwait(false)
-                : page.Html;
+            if (time.HasValue)
+            {
+                page.Html = await page.GetHtmlAsync(options, dataStore, time.Value)
+                    .ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            var permission = page.Permission;
+            page = Page.Empty(title);
+            page.Permission = permission;
         }
 
-        return new(
-            articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
-            html,
-            false,
-            permission.HasFlag(WikiPermission.Read) ? page : null,
-            permission);
+        if (string.IsNullOrEmpty(page.Title.Title))
+        {
+            page.DisplayTitle ??= options.MainPageTitle;
+        }
+
+        return page;
     }
 
     /// <summary>
@@ -1393,9 +1460,9 @@ public static class WikiExtensions
     /// rather than the current state of the page.
     /// </param>
     /// <returns>
-    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiPageInfo> GetWikiPageAsync(
+    public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1439,9 +1506,9 @@ public static class WikiExtensions
     /// returned, even if it is a redirect.
     /// </param>
     /// <returns>
-    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiPageInfo> GetWikiPageAsync(
+    public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1484,9 +1551,9 @@ public static class WikiExtensions
     /// returned, even if it is a redirect.
     /// </param>
     /// <returns>
-    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiPageInfo> GetWikiPageAsync(
+    public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1548,9 +1615,9 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="WikiPageInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
-    public static async Task<WikiPageInfo> GetWikiPageDiffAsync(
+    public static async Task<Page> GetWikiPageDiffAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1561,43 +1628,41 @@ public static class WikiExtensions
         IWikiUser? user = null)
     {
         Page? page = null;
-        IWikiUser? articleUser = null;
         if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            articleUser = await userManager.FindByIdAsync(title.Title)
-                .ConfigureAwait(false);
-            if (articleUser is null)
-            {
-                articleUser = await userManager.FindByNameAsync(title.Title)
-                    .ConfigureAwait(false);
-                page = await dataStore
-                    .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
-                    .ConfigureAwait(false);
-            }
+            page = await GetUserPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
         }
-        page ??= await dataStore
-            .GetWikiPageAsync(options, title, true)
-            .ConfigureAwait(false);
+        else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            page = await GetGroupPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+        }
 
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            title,
-            page)
-            .ConfigureAwait(false);
+        if (page is null)
+        {
+            page = await dataStore
+                .GetWikiPageAsync(options, title, true)
+                .ConfigureAwait(false);
 
-        string? html = null;
-        if (permission.HasFlag(WikiPermission.Read))
+            page.Permission = await GetPermissionInnerAsync(
+                user,
+                options,
+                dataStore,
+                userManager,
+                groupManager,
+                title,
+                page)
+                .ConfigureAwait(false);
+        }
+
+        if (page.Permission.HasFlag(WikiPermission.Read))
         {
             if (firstTime.HasValue)
             {
                 if (secondTime.HasValue)
                 {
-                    html = await page.GetDiffWithOtherHtmlAsync(
+                    page.Html = await page.GetDiffWithOtherHtmlAsync(
                         options,
                         dataStore,
                         firstTime.Value,
@@ -1606,7 +1671,7 @@ public static class WikiExtensions
                 }
                 else
                 {
-                    html = await page.GetDiffWithCurrentHtmlAsync(
+                    page.Html = await page.GetDiffWithCurrentHtmlAsync(
                         options,
                         dataStore,
                         firstTime.Value)
@@ -1615,7 +1680,7 @@ public static class WikiExtensions
             }
             else if (secondTime.HasValue)
             {
-                html = await page.GetDiffHtmlAsync(
+                page.Html = await page.GetDiffHtmlAsync(
                     options,
                     dataStore,
                     secondTime.Value)
@@ -1623,20 +1688,28 @@ public static class WikiExtensions
             }
             else
             {
-                html = await page.GetDiffHtmlAsync(
+                page.Html = await page.GetDiffHtmlAsync(
                     options,
                     dataStore,
                     DateTimeOffset.UtcNow)
                     .ConfigureAwait(false);
             }
+
+            page.IsDiff = true;
+        }
+        else
+        {
+            var permission = page.Permission;
+            page = Page.Empty(title);
+            page.Permission = permission;
         }
 
-        return new(
-            articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
-            html,
-            true,
-            permission.HasFlag(WikiPermission.Read) ? page : null,
-            permission);
+        if (string.IsNullOrEmpty(page.Title.Title))
+        {
+            page.DisplayTitle ??= options.MainPageTitle;
+        }
+
+        return page;
     }
 
     /// <summary>
@@ -1657,9 +1730,10 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="WikiEditInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>, with
+    /// properties configured for editing.
     /// </returns>
-    public static async Task<WikiEditInfo> GetWikiPageForEditingAsync(
+    public static async Task<Page> GetWikiPageForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
@@ -1668,63 +1742,65 @@ public static class WikiExtensions
         IWikiUser? user = null)
     {
         Page? page = null;
-        IWikiUser? articleUser = null;
         if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            articleUser = await userManager.FindByIdAsync(title.Title)
-                .ConfigureAwait(false);
-            if (articleUser is null)
-            {
-                articleUser = await userManager.FindByNameAsync(title.Title)
-                    .ConfigureAwait(false);
-                page = await dataStore
-                    .GetWikiPageAsync(options, new(articleUser?.Id, options.UserNamespace))
-                    .ConfigureAwait(false);
-            }
+            page = await GetUserPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
         }
-        page ??= await dataStore
-            .GetWikiPageAsync(options, title, true)
-            .ConfigureAwait(false);
-
-        var permission = await GetPermissionInnerAsync(
-            user,
-            options,
-            dataStore,
-            userManager,
-            groupManager,
-            title,
-            page)
-            .ConfigureAwait(false);
-        if (!permission.HasFlag(WikiPermission.Read))
+        else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
+            && !string.IsNullOrEmpty(title.Title))
         {
-            return new(
-                null,
-                null,
-                null,
-                null,
-                articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
-                null,
-                null,
-                permission);
+            page = await GetGroupPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+        }
+
+        if (page is null)
+        {
+            page = await dataStore
+                .GetWikiPageAsync(options, title, true)
+                .ConfigureAwait(false);
+
+            page.Permission = await GetPermissionInnerAsync(
+                user,
+                options,
+                dataStore,
+                userManager,
+                groupManager,
+                title,
+                page)
+                .ConfigureAwait(false);
+        }
+
+        if (!page.Permission.HasFlag(WikiPermission.Read))
+        {
+            var empty = Page.Empty(title);
+            empty.Permission = page.Permission;
+            if (string.IsNullOrEmpty(empty.Title.Title))
+            {
+                empty.DisplayTitle ??= options.MainPageTitle;
+            }
+            return empty;
+        }
+
+        if (string.IsNullOrEmpty(page.Title.Title))
+        {
+            page.DisplayTitle ??= options.MainPageTitle;
         }
 
         var owner = string.IsNullOrEmpty(page.Owner)
             ? null
             : await userManager.FindByIdAsync(page.Owner)
                 .ConfigureAwait(false);
-        IWikiUser? ownerUser = null;
         if (owner is not null)
         {
             if (user is not null
                 && (user.IsWikiAdmin
                 || string.Equals(user.Id, owner.Id)))
             {
-                ownerUser = owner;
+                page.OwnerObject = owner;
             }
             else if (owner.IsDeleted)
             {
-                ownerUser = new WikiUser
+                page.OwnerObject = new WikiUser
                 {
                     Id = owner.Id,
                     IsWikiAdmin = owner.IsWikiAdmin,
@@ -1732,7 +1808,7 @@ public static class WikiExtensions
             }
             else
             {
-                ownerUser = new WikiUser
+                page.OwnerObject = new WikiUser
                 {
                     DisplayName = owner.DisplayName,
                     Id = owner.Id,
@@ -1740,199 +1816,151 @@ public static class WikiExtensions
                 };
             }
         }
-        WikiUserInfo? ownerInfo = null;
-        if (ownerUser is null)
-        {
-            if (!string.IsNullOrEmpty(page.Owner))
-            {
-                ownerInfo = new WikiUserInfo(page.Owner, null);
-            }
-        }
-        else
-        {
-            ownerInfo = new WikiUserInfo(ownerUser.Id, ownerUser);
-        }
 
-        List<WikiUserInfo>? allowedEditors = null;
         if (page.AllowedEditors is not null)
         {
+            var allowedEditors = new List<IWikiUser>();
             foreach (var id in page.AllowedEditors)
             {
-                allowedEditors ??= new();
-
                 var editorUser = await userManager.FindByIdAsync(id)
                     .ConfigureAwait(false);
-                IWikiUser? userItem = null;
-                if (editorUser is not null)
+                if (editorUser is null)
                 {
-                    if (user is not null
-                        && (user.IsWikiAdmin
-                        || string.Equals(user.Id, editorUser.Id)))
-                    {
-                        userItem = editorUser;
-                    }
-                    else if (editorUser.IsDeleted)
-                    {
-                        userItem = new WikiUser
-                        {
-                            Id = editorUser.Id,
-                            IsWikiAdmin = editorUser.IsWikiAdmin,
-                        };
-                    }
-                    else
-                    {
-                        userItem = new WikiUser
-                        {
-                            DisplayName = editorUser.DisplayName,
-                            Id = editorUser.Id,
-                            IsWikiAdmin = editorUser.IsWikiAdmin,
-                        };
-                    }
+                    continue;
                 }
-                if (userItem is null)
+
+                if (user is not null
+                    && (user.IsWikiAdmin
+                    || string.Equals(user.Id, editorUser.Id)))
                 {
-                    allowedEditors.Add(new(id, null));
+                    allowedEditors.Add(editorUser);
+                }
+                else if (editorUser.IsDeleted)
+                {
+                    allowedEditors.Add(new WikiUser
+                    {
+                        Id = editorUser.Id,
+                        IsWikiAdmin = editorUser.IsWikiAdmin,
+                    });
                 }
                 else
                 {
-                    allowedEditors.Add(new(userItem.Id, userItem));
+                    allowedEditors.Add(new WikiUser
+                    {
+                        DisplayName = editorUser.DisplayName,
+                        Id = editorUser.Id,
+                        IsWikiAdmin = editorUser.IsWikiAdmin,
+                    });
                 }
+            }
+            if (allowedEditors.Count > 0)
+            {
+                page.AllowedEditorObjects = allowedEditors.AsReadOnly();
             }
         }
 
-        List<WikiUserInfo>? allowedViewers = null;
         if (page.AllowedViewers is not null)
         {
+            var allowedViewers = new List<IWikiUser>();
             foreach (var id in page.AllowedViewers)
             {
-                allowedViewers ??= new();
-
                 var viewerUser = await userManager.FindByIdAsync(id)
                     .ConfigureAwait(false);
-                IWikiUser? userItem = null;
                 if (viewerUser is not null)
                 {
                     if (user is not null
                         && (user.IsWikiAdmin
                         || string.Equals(user.Id, viewerUser.Id)))
                     {
-                        userItem = viewerUser;
+                        allowedViewers.Add(viewerUser);
                     }
                     else if (viewerUser.IsDeleted)
                     {
-                        userItem = new WikiUser
+                        allowedViewers.Add(new WikiUser
                         {
                             Id = viewerUser.Id,
                             IsWikiAdmin = viewerUser.IsWikiAdmin,
-                        };
+                        });
                     }
                     else
                     {
-                        userItem = new WikiUser
+                        allowedViewers.Add(new WikiUser
                         {
                             DisplayName = viewerUser.DisplayName,
                             Id = viewerUser.Id,
                             IsWikiAdmin = viewerUser.IsWikiAdmin,
-                        };
+                        });
                     }
                 }
-                if (userItem is null)
-                {
-                    allowedViewers.Add(new(id, null));
-                }
-                else
-                {
-                    allowedViewers.Add(new(userItem.Id, userItem));
-                }
+            }
+            if (allowedViewers.Count > 0)
+            {
+                page.AllowedViewerObjects = allowedViewers.AsReadOnly();
             }
         }
 
-        List<WikiUserInfo>? allowedEditorGroups = null;
         if (page.AllowedEditorGroups is not null)
         {
+            var allowedEditorGroups = new List<IWikiGroup>();
             foreach (var id in page.AllowedEditorGroups)
             {
-                allowedEditorGroups ??= new();
-
                 var group = await groupManager.FindByIdAsync(id)
                     .ConfigureAwait(false);
-                IWikiGroup? groupItem = null;
                 if (group is not null)
                 {
                     if (user is not null
                         && (user.IsWikiAdmin
                         || user.Groups?.Contains(group.Id) == true))
                     {
-                        groupItem = group;
+                        allowedEditorGroups.Add(group);
                     }
                     else
                     {
-                        groupItem = new WikiGroup
+                        allowedEditorGroups.Add(new WikiGroup
                         {
                             DisplayName = group.DisplayName,
                             Id = group.Id,
-                        };
+                        });
                     }
                 }
-
-                if (groupItem is null)
-                {
-                    allowedEditorGroups.Add(new(id, null));
-                }
-                else
-                {
-                    allowedEditorGroups.Add(new(groupItem.Id, groupItem));
-                }
+            }
+            if (allowedEditorGroups.Count > 0)
+            {
+                page.AllowedEditorGroupObjects = allowedEditorGroups.AsReadOnly();
             }
         }
 
-        List<WikiUserInfo>? allowedViewerGroups = null;
         if (page.AllowedViewerGroups is not null)
         {
+            var allowedViewerGroups = new List<IWikiGroup>();
             foreach (var id in page.AllowedViewerGroups)
             {
-                allowedViewerGroups ??= new();
-
                 var group = await groupManager.FindByIdAsync(id);
-                IWikiGroup? groupItem = null;
                 if (group is not null)
                 {
                     if (user is not null
                         && (user.IsWikiAdmin
                         || user.Groups?.Contains(group.Id) == true))
                     {
-                        groupItem = group;
+                        allowedViewerGroups.Add(group);
                     }
                     else
                     {
-                        groupItem = new WikiGroup
+                        allowedViewerGroups.Add(new WikiGroup
                         {
                             DisplayName = group.DisplayName,
                             Id = group.Id,
-                        };
+                        });
                     }
                 }
-
-                if (groupItem is null)
-                {
-                    allowedViewerGroups.Add(new(id, null));
-                }
-                else
-                {
-                    allowedViewerGroups.Add(new(groupItem.Id, groupItem));
-                }
+            }
+            if (allowedViewerGroups.Count > 0)
+            {
+                page.AllowedViewerGroupObjects = allowedViewerGroups.AsReadOnly();
             }
         }
 
-        return new(
-            allowedEditors,
-            allowedEditorGroups,
-            allowedViewers,
-            allowedViewerGroups,
-            articleUser?.DisplayName ?? title.Title ?? options.MainPageTitle,
-            page,
-            ownerInfo,
-            permission);
+        return page;
     }
 
     /// <summary>
@@ -1953,15 +1981,16 @@ public static class WikiExtensions
     /// </para>
     /// </param>
     /// <returns>
-    /// A <see cref="WikiEditInfo"/> which corresponds to the given <paramref name="title"/>.
+    /// A <see cref="Page"/> which corresponds to the given <paramref name="title"/>, with
+    /// properties configured for editing.
     /// </returns>
-    public static async Task<WikiEditInfo> GetWikiPageForEditingAsync(
+    public static async Task<Page> GetWikiPageForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
         IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         PageTitle title,
-        string? userId = null) => await GetWikiPageForEditingAsync(
+        string userId) => await GetWikiPageForEditingAsync(
             dataStore,
             options,
             userManager,
@@ -2095,30 +2124,29 @@ public static class WikiExtensions
 
     private static bool CheckEditPermissions(
         WikiOptions options,
-        WikiPageInfo page,
+        Page page,
         bool isDeletedOrRenamed = false,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null)
     {
-        if (page.Page is null
-            || !page.Permission.HasFlag(WikiPermission.Write))
+        if (!page.Permission.HasFlag(WikiPermission.Write))
         {
             return false;
         }
-        if (!page.Page.Exists)
+        if (!page.Exists)
         {
             if (!page.Permission.HasFlag(WikiPermission.Create))
             {
                 return false;
             }
-            if (options.ReservedNamespaces.Any(x => string.CompareOrdinal(page.Page.Title.Namespace, x) == 0))
+            if (options.ReservedNamespaces.Any(x => string.CompareOrdinal(page.Title.Namespace, x) == 0))
             {
                 return false;
             }
         }
-        if (!string.IsNullOrEmpty(page.Page.Owner)
+        if (!string.IsNullOrEmpty(page.Owner)
             && !page.Permission.HasFlag(WikiPermission.SetOwner))
         {
             return false;
@@ -2132,7 +2160,7 @@ public static class WikiExtensions
 
         if (!page.Permission.HasFlag(WikiPermission.SetPermissions))
         {
-            if (!page.Page.Exists)
+            if (!page.Exists)
             {
                 if (allowedEditors is not null
                     || allowedEditorGroups is not null
@@ -2144,7 +2172,7 @@ public static class WikiExtensions
             }
             else
             {
-                if (page.Page.AllowedEditors is null)
+                if (page.AllowedEditors is null)
                 {
                     if (allowedEditors is not null)
                     {
@@ -2152,12 +2180,12 @@ public static class WikiExtensions
                     }
                 }
                 else if (allowedEditors is null
-                    || !page.Page.AllowedEditors.Order().SequenceEqual(allowedEditors.Order()))
+                    || !page.AllowedEditors.Order().SequenceEqual(allowedEditors.Order()))
                 {
                     return false;
                 }
 
-                if (page.Page.AllowedEditorGroups is null)
+                if (page.AllowedEditorGroups is null)
                 {
                     if (allowedEditorGroups is not null)
                     {
@@ -2165,12 +2193,12 @@ public static class WikiExtensions
                     }
                 }
                 else if (allowedEditorGroups is null
-                    || !page.Page.AllowedEditorGroups.Order().SequenceEqual(allowedEditorGroups.Order()))
+                    || !page.AllowedEditorGroups.Order().SequenceEqual(allowedEditorGroups.Order()))
                 {
                     return false;
                 }
 
-                if (page.Page.AllowedViewers is null)
+                if (page.AllowedViewers is null)
                 {
                     if (allowedViewers is not null)
                     {
@@ -2178,12 +2206,12 @@ public static class WikiExtensions
                     }
                 }
                 else if (allowedViewers is null
-                    || !page.Page.AllowedViewers.Order().SequenceEqual(allowedViewers.Order()))
+                    || !page.AllowedViewers.Order().SequenceEqual(allowedViewers.Order()))
                 {
                     return false;
                 }
 
-                if (page.Page.AllowedViewerGroups is null)
+                if (page.AllowedViewerGroups is null)
                 {
                     if (allowedViewerGroups is not null)
                     {
@@ -2191,7 +2219,7 @@ public static class WikiExtensions
                     }
                 }
                 else if (allowedViewerGroups is null
-                    || !page.Page.AllowedViewerGroups.Order().SequenceEqual(allowedViewerGroups.Order()))
+                    || !page.AllowedViewerGroups.Order().SequenceEqual(allowedViewerGroups.Order()))
                 {
                     return false;
                 }
