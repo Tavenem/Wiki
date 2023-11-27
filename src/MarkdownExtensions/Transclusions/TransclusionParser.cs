@@ -386,7 +386,7 @@ public static class TransclusionParser
     {
         isCodeFence = false;
 
-        parameterInclusions = new List<Transclusion>();
+        parameterInclusions = [];
         var transclusions = new List<Transclusion>();
         if (slice.IsEmptyOrWhitespace())
         {

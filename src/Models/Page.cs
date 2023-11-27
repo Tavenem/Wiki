@@ -1607,8 +1607,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
             || redirectTitle.HasValue
             || string.IsNullOrEmpty(md))
         {
-            transclusions = new();
-            headings = new();
+            transclusions = [];
+            headings = [];
         }
         else
         {
@@ -1634,7 +1634,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             : null;
 
         WikiLinks = (isScript || redirectTitle.HasValue
-            ? new List<WikiLink>()
+            ? []
             : GetWikiLinks(options, dataStore, md, Title))
             .AsReadOnly();
         if (References is not null)
@@ -1872,7 +1872,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             return;
         }
 
-        var references = RedirectReferences?.ToList() ?? new();
+        var references = RedirectReferences?.ToList() ?? [];
         references.Add(title);
         RedirectReferences = references.AsReadOnly();
         await dataStore.StoreItemAsync(this)
@@ -1897,7 +1897,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             return;
         }
 
-        var references = References?.ToList() ?? new();
+        var references = References?.ToList() ?? [];
         references.Add(title);
         References = references.AsReadOnly();
 
@@ -1941,7 +1941,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
         else
         {
-            var revisions = history.Revisions?.ToList() ?? new();
+            var revisions = history.Revisions?.ToList() ?? [];
             revisions.Insert(0, revision);
             await dataStore.StoreItemAsync(history)
                 .ConfigureAwait(false);
@@ -1962,7 +1962,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             return;
         }
 
-        var references = TransclusionReferences?.ToList() ?? new();
+        var references = TransclusionReferences?.ToList() ?? [];
         references.Add(title);
         TransclusionReferences = references.AsReadOnly();
         await dataStore.StoreItemAsync(this)

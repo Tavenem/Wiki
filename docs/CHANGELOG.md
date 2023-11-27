@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.0-preview
+### Changed
+- Update to .NET 8
+
 ## 0.23.0-preview
 ### Added
 - `OwnerPage` subclass `Article`

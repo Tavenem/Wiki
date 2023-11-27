@@ -33,14 +33,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.1.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="HtmlSanitizer" Version="8.0.692" />
-    <PackageReference Include="Jint" Version="3.0.0-beta-2050" />
-    <PackageReference Include="Markdig" Version="0.32.0" />
-    <PackageReference Include="Tavenem.DataStore" Version="0.38.1-preview" />
+    <PackageReference Include="HtmlSanitizer" Version="8.0.795" />
+    <PackageReference Include="Jint" Version="3.0.0-beta-2056" />
+    <PackageReference Include="Markdig" Version="0.33.0" />
+    <PackageReference Include="Tavenem.DataStore" Version="1.0.2" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>
 

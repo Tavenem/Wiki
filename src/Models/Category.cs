@@ -290,7 +290,7 @@ public sealed class Category : Page, IPage<Category>
             return;
         }
 
-        var children = Children?.ToList() ?? new();
+        var children = Children?.ToList() ?? [];
         children.Add(title);
         Children = children.AsReadOnly();
         await dataStore.StoreItemAsync(this)

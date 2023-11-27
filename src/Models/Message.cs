@@ -165,7 +165,7 @@ public class Message : MarkdownItem
         }
         else
         {
-            var messages = topic.Messages?.ToList() ?? new();
+            var messages = topic.Messages?.ToList() ?? [];
             messages.Add(message);
             topic.Messages = messages;
         }

@@ -234,7 +234,7 @@ public abstract class MarkdownItem : IdItem
         IDataStore dataStore,
         string? markdown,
         PageTitle title = default) => string.IsNullOrEmpty(markdown)
-        ? new List<WikiLink>()
+        ? []
         : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title))
             .Descendants<WikiLinkInline>()
             .Where(x => !x.IsWikipedia

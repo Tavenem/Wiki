@@ -138,7 +138,7 @@ public class TableOfContentsExtension : IMarkdownExtension
             toC.LevelOffset = levelOffset;
 
             var headings = toC.Parent is null
-                ? new List<HeadingBlock>()
+                ? []
                 : toC.Parent.Descendants<HeadingBlock>()
                     .Where(x => x.Line > toC.Line)
                     .OrderBy(x => x.Line)

@@ -22,7 +22,7 @@ public static class TableOfContentsParser
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
-            return new();
+            return [];
         }
 
         var document = Markdig.Markdown.Parse(markdown, WikiConfig.GetMarkdownPipelineWithoutLinks(options));
@@ -51,7 +51,7 @@ public static class TableOfContentsParser
             toC.LevelOffset = levelOffset;
 
             var toCHeadingBlocks = toC.Parent is null
-                ? new List<HeadingBlock>()
+                ? []
                 : toC.Parent.Descendants<HeadingBlock>()
                     .Where(x => x.Line > toC.Line)
                     .OrderBy(x => x.Line)
@@ -93,7 +93,7 @@ public static class TableOfContentsParser
         }
         if (headingLines.Count == 0)
         {
-            return new();
+            return [];
         }
         headingLines.Sort((x, y) => x.line.CompareTo(y.line));
         return headingLines.Select(x => x.heading).ToList();

@@ -659,18 +659,18 @@ public static class WikiExtensions
                 && (user.IsWikiAdmin
                 || string.CompareOrdinal(user.Id, editor.Id) == 0))
             {
-                (editors ??= new()).Add(editor);
+                (editors ??= []).Add(editor);
             }
             else if (editor.IsDeleted)
             {
-                (editors ??= new()).Add(new WikiUser
+                (editors ??= []).Add(new WikiUser
                 {
                     Id = editor.Id,
                 });
             }
             else
             {
-                (editors ??= new()).Add(new WikiUser
+                (editors ??= []).Add(new WikiUser
                 {
                     DisplayName = editor.DisplayName,
                     Id = editor.Id,
@@ -1064,7 +1064,7 @@ public static class WikiExtensions
 
         if (articleUser.Groups is not null)
         {
-            page.Groups = new();
+            page.Groups = [];
             foreach (var id in articleUser.Groups)
             {
                 var group = await groupManager.FindByIdAsync(id);
@@ -1255,7 +1255,7 @@ public static class WikiExtensions
             .ConfigureAwait(false);
         if (allPages.Count > 0)
         {
-            archive.Pages = new();
+            archive.Pages = [];
             foreach (var page in allPages)
             {
                 archive.Pages.Add(page.GetArchiveCopy());
@@ -2329,7 +2329,7 @@ public static class WikiExtensions
             }
             if (!defaultPermission.HasFlag(WikiPermission.Read))
             {
-                userGroups = new();
+                userGroups = [];
                 if (user.Groups is not null)
                 {
                     foreach (var groupId in user.Groups)
@@ -2465,7 +2465,7 @@ public static class WikiExtensions
         {
             if (userGroups is null)
             {
-                userGroups = new();
+                userGroups = [];
                 if (user.Groups is not null)
                 {
                     foreach (var groupId in user.Groups)
@@ -2506,7 +2506,7 @@ public static class WikiExtensions
         {
             if (userGroups is null)
             {
-                userGroups = new();
+                userGroups = [];
                 if (user.Groups is not null)
                 {
                     foreach (var groupId in user.Groups)
