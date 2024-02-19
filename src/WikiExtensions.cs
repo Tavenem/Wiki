@@ -529,7 +529,7 @@ public static class WikiExtensions
         var users = await groupManager.GetUsersInGroupAsync(articleGroup);
         if (users.Count > 0)
         {
-            page.Users = users.ToList();
+            page.Users = [.. users];
         }
 
         return page;
@@ -1251,15 +1251,10 @@ public static class WikiExtensions
         {
             pages = pages.Where(x => x.Title.Domain == null);
         }
-        var allPages = await pages.ToListAsync()
-            .ConfigureAwait(false);
-        if (allPages.Count > 0)
+        await foreach (var page in pages.AsAsyncEnumerable())
         {
-            archive.Pages = [];
-            foreach (var page in allPages)
-            {
-                archive.Pages.Add(page.GetArchiveCopy());
-            }
+            archive.Pages ??= [];
+            archive.Pages.Add(page.GetArchiveCopy());
         }
 
         return archive;

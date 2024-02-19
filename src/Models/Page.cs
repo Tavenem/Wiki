@@ -1936,7 +1936,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         if (history is null)
         {
             await PageHistory
-                .NewAsync(dataStore, Title, new[] { revision })
+                .NewAsync(dataStore, Title, [revision])
                 .ConfigureAwait(false);
         }
         else
@@ -2028,7 +2028,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             .FirstOrDefault(x => x.TimestampTicks <= ticks && x.IsMilestone);
         if (lastMilestone is null)
         {
-            return new List<Revision>();
+            return [];
         }
         return history!
             .Revisions!
@@ -2370,9 +2370,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 titlesUpdated.Add(titleToUpdate);
             }
 
-            if (titlesToUpdateRecursively.Contains(titleToUpdate))
+            if (titlesToUpdateRecursively.Remove(titleToUpdate))
             {
-                titlesToUpdateRecursively.Remove(titleToUpdate);
                 titlesUpdatedRecursively.Add(titleToUpdate);
 
                 var (childTitlesToUpdate,
