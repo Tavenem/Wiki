@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.1-preview
+### Fixed
+- Topic serialization
+
 ## 0.24.0-preview
 ### Changed
 - Update to .NET 8

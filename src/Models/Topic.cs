@@ -14,8 +14,21 @@ namespace Tavenem.Wiki;
 /// <para>
 /// Other message topics are possible as well, by using custom IDs.
 /// </para>
+/// <para>
+/// Note: the constructor is most useful for deserialization. The static <see
+/// cref="NewAsync(IDataStore, PageTitle, IReadOnlyCollection{Message}?)"/> method is expected to be
+/// used otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns the ID
+/// dynamically.
+/// </para>
 /// </remarks>
-public class Topic : IdItem
+/// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+/// <param name="messages">
+/// The collection of messages associated with this topic, in chronological order.
+/// </param>
+[method: JsonConstructor]
+public class Topic(
+    string id,
+    IReadOnlyCollection<Message>? messages) : IdItem(id)
 {
     /// <summary>
     /// The type discriminator for this type.
@@ -24,36 +37,13 @@ public class Topic : IdItem
     /// <summary>
     /// A built-in, read-only type discriminator.
     /// </summary>
-    [JsonPropertyName("$type"), JsonPropertyOrder(-2)]
-    public override string IdItemTypeName
-    {
-        get => TopicIdItemTypeName;
-        set { }
-    }
+    [JsonIgnore]
+    public override string IdItemTypeName => TopicIdItemTypeName;
 
     /// <summary>
     /// The collection of messages associated with this topic, in chronological order.
     /// </summary>
-    public IReadOnlyCollection<Message>? Messages { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="Topic"/>.
-    /// </summary>
-    /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="messages">
-    /// The collection of messages associated with this topic, in chronological order.
-    /// </param>
-    /// <remarks>
-    /// Note: this constructor is most useful for deserializers. The static <see
-    /// cref="NewAsync(IDataStore, PageTitle, IReadOnlyCollection{Message}?)"/> method is expected
-    /// to be used otherwise, as it persists instances to the <see cref="IDataStore"/> and assigns
-    /// the ID dynamically.
-    /// </remarks>
-    [JsonConstructor]
-    public Topic(
-        string id,
-        IReadOnlyCollection<Message>? messages) : base(id)
-        => Messages = messages;
+    public IReadOnlyCollection<Message>? Messages { get; set; } = messages;
 
     /// <summary>
     /// Gets an ID for a <see cref="Topic"/> given the parameters.

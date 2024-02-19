@@ -38,7 +38,7 @@
 /// </param>
 public record TitleRequest(
     PageTitle Title,
-    int PageNumber = 0,
+    int PageNumber = 1,
     int PageSize = 50,
     bool Descending = false,
     string? Sort = null,

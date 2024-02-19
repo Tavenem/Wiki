@@ -2231,7 +2231,7 @@ public static class WikiExtensions
 
     private static async Task<IPagedList<T>> GetListAsync<T>(
         IDataStore dataStore,
-        int pageNumber = 0,
+        int pageNumber = 1,
         int pageSize = 50,
         string? sort = null,
         bool descending = false,
