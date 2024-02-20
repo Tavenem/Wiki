@@ -43,7 +43,7 @@ public delegate ValueTask OnEditedFunc(Page page, Revision revision, string? old
 /// <param name="oldTitle">The original title.</param>
 /// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
 /// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
-public delegate ValueTask<bool> OnRenamedFunc(Page page, PageTitle oldTitle, string? oldOwner, string? newOwner);
+public delegate ValueTask OnRenamedFunc(Page page, PageTitle oldTitle, string? oldOwner, string? newOwner);
 
 /// <summary>
 /// Various customization and configuration options for the wiki system.

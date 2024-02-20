@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.3-preview
+### Changed
+- Remove unused return type for `OnRenamed`
+
 ## 0.24.2-preview
 ### Added
 - `OnRenamed` function in `WikiOptions`
