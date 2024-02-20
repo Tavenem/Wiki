@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.2-preview
+### Added
+- `OnRenamed` function in `WikiOptions`
+
 ## 0.24.1-preview
 ### Fixed
 - Topic serialization

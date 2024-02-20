@@ -1405,6 +1405,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             redirectTitle)
             .ConfigureAwait(false);
 
+        var oldOwner = Owner;
         await UpdateAsync(
             options,
             dataStore,
@@ -1431,6 +1432,16 @@ public abstract class Page : MarkdownItem, IPage<Page>
                         .ConfigureAwait(false);
                 }
             }
+        }
+
+        if (options.OnRenamed is not null
+            && this is not Category
+            && string.CompareOrdinal(Title.Namespace, options.GroupNamespace) != 0
+            && string.CompareOrdinal(Title.Namespace, options.UserNamespace) != 0)
+        {
+            await options.OnRenamed
+                .Invoke(newPage, Title, oldOwner, Owner)
+                .ConfigureAwait(false);
         }
     }
 

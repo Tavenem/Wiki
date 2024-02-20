@@ -37,6 +37,15 @@ public delegate ValueTask OnDeletedFunc(Page page, string? oldOwner, string? new
 public delegate ValueTask OnEditedFunc(Page page, Revision revision, string? oldOwner, string? newOwner);
 
 /// <summary>
+/// The delegate signature used by <see cref="WikiOptions.OnRenamed"/>.
+/// </summary>
+/// <param name="page">The renamed page.</param>
+/// <param name="oldTitle">The original title.</param>
+/// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
+/// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
+public delegate ValueTask<bool> OnRenamedFunc(Page page, PageTitle oldTitle, string? oldOwner, string? newOwner);
+
+/// <summary>
 /// Various customization and configuration options for the wiki system.
 /// </summary>
 public class WikiOptions
@@ -408,6 +417,24 @@ public class WikiOptions
     /// </remarks>
     [JsonIgnore]
     public OnEditedFunc? OnEdited { get; set; }
+
+    /// <summary>
+    /// An optional callback invoked when a <see cref="Page"/> is renamed.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Receives the <see cref="Page"/> which has been renamed (with the new title), the original
+    /// <see cref="PageTitle"/>, the original <see cref="Page.Owner"/>, and the new <see
+    /// cref="Page.Owner"/> as parameters.
+    /// </para>
+    /// <para>
+    /// Note that this is called in addition to <see cref="OnDeleted"/> for the original page, since
+    /// a rename is actually the deletion of the original page, plus the creation of a new page with
+    /// a new title.
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
+    public OnRenamedFunc? OnRenamed { get; set; }
 
     /// <summary>
     /// The title of the main policy page (expected in the <see cref="SystemNamespace"/>, not in a
