@@ -61,6 +61,9 @@ public class Archive
     /// This will be listed as the editor of all restored pages.
     /// </para>
     /// </param>
+    /// <param name="domain">
+    /// An optional new domain to assign to all restored pages.
+    /// </param>
     /// <remarks>
     /// <para>
     /// Pages in the target wiki with the same domain, namespace, and title will be overwritten.
@@ -75,7 +78,8 @@ public class Archive
     public async Task RestoreAsync(
         IDataStore dataStore,
         WikiOptions options,
-        string editor)
+        string editor,
+        string? domain = null)
     {
         if (Pages is null)
         {
@@ -86,12 +90,26 @@ public class Archive
         {
             if (page is Category category)
             {
-                await Page.RestoreAsync(options, dataStore, category, editor, null, options.CategoryNamespace)
+                await Page.RestoreAsync(
+                    options,
+                    dataStore,
+                    category,
+                    editor,
+                    null,
+                    options.CategoryNamespace,
+                    domain)
                     .ConfigureAwait(false);
             }
             else if (page is WikiFile file)
             {
-                await Page.RestoreAsync(options, dataStore, file, editor, null, options.FileNamespace)
+                await Page.RestoreAsync(
+                    options,
+                    dataStore,
+                    file,
+                    editor,
+                    null,
+                    options.FileNamespace,
+                    domain)
                     .ConfigureAwait(false);
             }
             else if (page is Article article)
@@ -147,12 +165,26 @@ public class Archive
                         }
                     }
                 }
-                await Page.RestoreAsync(options, dataStore, article, editor, newTitle, newNamespace)
+                await Page.RestoreAsync(
+                    options,
+                    dataStore,
+                    article,
+                    editor,
+                    newTitle,
+                    newNamespace,
+                    domain)
                     .ConfigureAwait(false);
             }
             else
             {
-                await Page.RestoreAsync(options, dataStore, page, editor, null, null)
+                await Page.RestoreAsync(
+                    options,
+                    dataStore,
+                    page,
+                    editor,
+                    null,
+                    null,
+                    domain)
                     .ConfigureAwait(false);
             }
         }

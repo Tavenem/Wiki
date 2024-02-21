@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.4-preview
+### Added
+- Allow restoring an archive to a new domain
+
 ## 0.24.3-preview
 ### Changed
 - Remove unused return type for `OnRenamed`

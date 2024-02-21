@@ -1765,12 +1765,13 @@ public abstract class Page : MarkdownItem, IPage<Page>
         T page,
         string editor,
         string? newTitle,
-        string? newNamespace) where T : Page, IPage<T>
+        string? newNamespace,
+        string? newDomain) where T : Page, IPage<T>
     {
         var title = new PageTitle(
             newTitle ?? page.Title.Title,
             newNamespace ?? page.Title.Namespace,
-            page.Title.Domain);
+            newDomain ?? page.Title.Domain);
 
         var newPage = await dataStore
             .GetWikiPageAsync(options, title, true, true)
