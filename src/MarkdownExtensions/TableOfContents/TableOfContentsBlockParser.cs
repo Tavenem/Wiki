@@ -24,7 +24,7 @@ public class TableOfContentsBlockParser : BlockParser
     {
         Options = options;
 
-        OpeningCharacters = new[] { '<', '>' };
+        OpeningCharacters = ['<', '>'];
     }
 
     /// <summary>

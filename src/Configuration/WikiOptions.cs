@@ -80,7 +80,7 @@ public class WikiOptions
     /// </para>
     /// </remarks>
     public IEnumerable<string> AdminNamespaces => (CustomAdminNamespaces ?? Enumerable.Empty<string>())
-        .Concat(new[] { SystemNamespace });
+        .Concat([SystemNamespace]);
 
     private const string CategoriesTitleDefault = "Categories";
     private string _categoriesTitle = CategoriesTitleDefault;
@@ -473,7 +473,7 @@ public class WikiOptions
     /// The namespace assigned to <see cref="FileNamespace"/> is included automatically.
     /// </remarks>
     public IEnumerable<string> ReservedNamespaces => (CustomReservedNamespaces ?? Enumerable.Empty<string>())
-        .Concat(new[] { FileNamespace });
+        .Concat([FileNamespace]);
 
     internal const string ScriptNamespaceDefault = "Script";
     private string _scriptNamespace = ScriptNamespaceDefault;

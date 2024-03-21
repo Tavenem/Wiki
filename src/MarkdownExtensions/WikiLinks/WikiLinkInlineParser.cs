@@ -41,7 +41,7 @@ public class WikiLinkInlineParser : InlineParser
     public WikiLinkInlineParser(WikiOptions options, IDataStore dataStore, PageTitle title)
     {
         DataStore = dataStore;
-        OpeningCharacters = new[] { LinkOpenChar, LinkCloseChar, '!' };
+        OpeningCharacters = [LinkOpenChar, LinkCloseChar, '!'];
         Options = options;
         Title = title;
     }

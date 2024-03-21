@@ -129,13 +129,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+            new ReadOnlyCollection<WikiLink>([ new WikiLink(
                 null,
                 null,
                 false,
                 false,
                 false,
-                new("Test Title", "Test Namespace")) }));
+                new("Test Title", "Test Namespace")) ]));
 
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -161,41 +161,47 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+            new ReadOnlyCollection<WikiLink>([ new WikiLink(
                 null,
                 null,
                 false,
                 false,
                 false,
-                new("Test Title", "Test Namespace")) }));
+                new("Test Title", "Test Namespace")) ]));
 
+        var serializerOptions = new JsonSerializerOptions()
+        {
+            TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver(),
+        };
         var json = JsonSerializer.Serialize(
             value,
-            new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() });
+            serializerOptions);
         Console.WriteLine();
         Console.WriteLine(json);
         var deserialized = JsonSerializer.Deserialize<MarkdownItemTestSubclass>(
             json,
-            new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() });
+            serializerOptions);
+        Assert.IsNotNull(deserialized);
         Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(
+        Assert.AreEqual(json, JsonSerializer.Serialize<MarkdownItemTestSubclass>(
             deserialized,
-            new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() }));
+            serializerOptions));
 
         value = await MarkdownItemTestSubclass.NewAsync(_Options, new InMemoryDataStore(), "Test markdown");
 
         json = JsonSerializer.Serialize(
             value,
-            new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() });
+            serializerOptions);
         Console.WriteLine();
         Console.WriteLine(json);
         deserialized = JsonSerializer.Deserialize<MarkdownItemTestSubclass>(
             json,
-            new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() });
+            serializerOptions);
+        Assert.IsNotNull(deserialized);
         Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(
+        Assert.AreEqual(json, JsonSerializer.Serialize<MarkdownItemTestSubclass>(
             deserialized,
-            new JsonSerializerOptions() { TypeInfoResolver = new MarkdownItemPolymorphicTypeResolver() }));
+            serializerOptions));
     }
 
     [TestMethod]
@@ -206,13 +212,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+            new ReadOnlyCollection<WikiLink>([ new WikiLink(
                 null,
                 null,
                 false,
                 false,
                 false,
-                new("Test Title", "Test Namespace")) }),
+                new("Test Title", "Test Namespace")) ]),
             TEST_OWNER_ID,
             false,
             "Test Sender Name",
@@ -235,13 +241,13 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>(new[] { new WikiLink(
+            new ReadOnlyCollection<WikiLink>([ new WikiLink(
                 null,
                 null,
                 false,
                 false,
                 false,
-                new("Test Title", "Test Namespace")) }),
+                new("Test Title", "Test Namespace")) ]),
             TEST_OWNER_ID,
             false,
             "Test Sender Name",

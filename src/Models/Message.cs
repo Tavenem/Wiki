@@ -161,7 +161,7 @@ public class Message : MarkdownItem
         {
             topic = new Topic(
                 topicId,
-                new[] { message });
+                [message]);
         }
         else
         {

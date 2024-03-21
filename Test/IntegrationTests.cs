@@ -148,7 +148,7 @@ public class IntegrationTests
         null,
         false,
         AdminId,
-        new[] { AdminId });
+        [AdminId]);
 
     private static Task<bool> GetDefaultMainAsync(
         WikiOptions options,
@@ -170,7 +170,7 @@ public class IntegrationTests
         null,
         false,
         AdminId,
-        new[] { AdminId });
+        [AdminId]);
 
     private static Task<bool> GetDefaultWelcomeAsync(
         WikiOptions options,
@@ -190,7 +190,7 @@ public class IntegrationTests
         null,
         false,
         AdminId,
-        new[] { AdminId });
+        [AdminId]);
 
     private static Task<bool> UpdateCategoryAsync(
         WikiOptions options,
@@ -206,5 +206,5 @@ public class IntegrationTests
         "Provide a description",
         false,
         AdminId,
-        new[] { AdminId });
+        [AdminId]);
 }
