@@ -25,6 +25,11 @@ namespace Tavenem.Wiki;
 public abstract class Page : MarkdownItem, IPage<Page>
 {
     /// <summary>
+    /// The type discriminator for this type.
+    /// </summary>
+    public const string PageIdItemTypeName = ":Page:";
+
+    /// <summary>
     /// A key used with a <see cref="IMemoryCache"/> to cache <see cref="EmbeddingI1"/> values for
     /// wiki pages.
     /// </summary>
@@ -36,10 +41,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </summary>
     public static readonly object SearchTitleCacheKey = new();
 
-    /// <summary>
-    /// The type discriminator for this type.
-    /// </summary>
-    public const string PageIdItemTypeName = ":Page:";
+    internal static readonly char[] LineSplitCharacters = ['\r', '\n'];
 
     /// <summary>
     /// A list of the <see cref="IWikiOwner.Id"/> values of groups allowed to edit this page.
@@ -1876,7 +1878,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             var lines = string.IsNullOrWhiteSpace(Text)
                 ? []
                 : Text
-                    .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                    .Split(LineSplitCharacters, StringSplitOptions.RemoveEmptyEntries)
                     .Select((x, i) => (Embedding: workingEmbedder.Embed<EmbeddingI1>(x), Line: i))
                     .ToList();
             if (embedder is null)

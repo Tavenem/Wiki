@@ -18,6 +18,8 @@ public static partial class WikiExtensions
 {
     private const int SearchExcerptCharacterLimit = 50;
 
+    private static readonly char[] TermSplitCharacters = [' ', ',', ';'];
+
     /// <summary>
     /// Creates or revises a <see cref="Page"/>.
     /// </summary>
@@ -2943,7 +2945,7 @@ public static partial class WikiExtensions
 
         var terms = parts
             .Where(x => x.Length > 0 && (x[0] != '"' || x[^1] != '"'))
-            .SelectMany(x => x.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+            .SelectMany(x => x.Split(TermSplitCharacters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
         var forbiddenTerms = terms
             .Where(x => x[0] == '-')
             .Select(x => x[1..])
@@ -3016,7 +3018,7 @@ public static partial class WikiExtensions
                 return null;
             }
 
-            var text = page.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            var text = page.Text.Split(Page.LineSplitCharacters, StringSplitOptions.RemoveEmptyEntries);
             if (text.Length <= info.Line
                 || string.IsNullOrEmpty(text[info.Line]))
             {
