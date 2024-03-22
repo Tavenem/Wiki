@@ -1,4 +1,7 @@
-﻿using Tavenem.DataStorage;
+﻿using Microsoft.Extensions.Caching.Memory;
+using SmartComponents.LocalEmbeddings;
+using System.Text.Json.Serialization.Metadata;
+using Tavenem.DataStorage;
 using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
@@ -67,6 +70,9 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
     /// If <see langword="true"/>, redirects will be ignored, and the literal content of a redirect
     /// article will be returned.
     /// </param>
+    /// <param name="typeInfo">
+    /// <see cref="JsonTypeInfo{T}"/> for <typeparamref name="T"/>.
+    /// </param>
     /// <returns>
     /// The latest revision for the page with the given title.
     /// </returns>
@@ -80,7 +86,7 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
     /// where data formerly existed but has been removed.
     /// </para>
     /// <para>
-    /// Use <see cref="GetPageAsync{T}(IDataStore, PageTitle, bool, bool)"/> to retrieve a
+    /// Use <see cref="GetPageAsync{T}(IDataStore, PageTitle, bool, bool, JsonTypeInfo{T}?)"/> to retrieve a
     /// placeholder object even if no data has ever existed for a page.
     /// </para>
     /// </remarks>
@@ -88,8 +94,9 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
         IDataStore dataStore,
         PageTitle title,
         bool exactMatch = true,
-        bool noRedirect = true) where T : class, IIdItem, IPage<T>
-        => GetPageAsync<T>(dataStore, title, false, exactMatch, noRedirect);
+        bool noRedirect = true,
+        JsonTypeInfo<T>? typeInfo = null) where T : class, IIdItem, IPage<T>
+        => GetPageAsync(dataStore, title, false, exactMatch, noRedirect, typeInfo);
 
     /// <summary>
     /// Gets the latest revision for the page with the given title.
@@ -104,6 +111,9 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
     /// If <see langword="true"/>, redirects will be ignored, and the literal content of a
     /// redirect article will be returned.
     /// </param>
+    /// <param name="typeInfo">
+    /// <see cref="JsonTypeInfo{T}"/> for <typeparamref name="T"/>.
+    /// </param>
     /// <returns>
     /// The latest revision for the page with the given title.
     /// </returns>
@@ -117,8 +127,9 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
         IDataStore dataStore,
         PageTitle title,
         bool exactMatch = false,
-        bool noRedirect = false) where T : class, IIdItem, IPage<T>
-        => GetPageAsync<T>(dataStore, title, true, exactMatch, noRedirect)!;
+        bool noRedirect = false,
+        JsonTypeInfo<T>? typeInfo = null) where T : class, IIdItem, IPage<T>
+        => GetPageAsync<T>(dataStore, title, true, exactMatch, noRedirect, typeInfo)!;
 
     /// <summary>
     /// Gets an empty instance of the current type.
@@ -131,7 +142,8 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
         PageTitle title,
         bool usePlaceholder,
         bool exactMatch,
-        bool noRedirect) where T : class, IIdItem, IPage<T>
+        bool noRedirect,
+        JsonTypeInfo<T>? typeInfo = null) where T : class, IIdItem, IPage<T>
     {
         var id = GetId(title);
 
@@ -142,7 +154,7 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
         do
         {
             redirect = false;
-            page = await dataStore.GetItemAsync<T>(id)
+            page = await dataStore.GetItemAsync<T>(id, typeInfo)
                 .ConfigureAwait(false);
 
             // If no exact match exists, ignore case if only one such match exists.
@@ -154,7 +166,7 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
                 if (normalizedReference?.References.Count == 1)
                 {
                     page = await dataStore
-                        .GetItemAsync<T>(normalizedReference.References[0])
+                        .GetItemAsync(normalizedReference.References[0], typeInfo)
                         .ConfigureAwait(false);
                 }
             }
@@ -270,6 +282,30 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// The cache will only be updated if it has been built (lazily, as a result of a search).
+    /// </para>
+    /// </param>
     /// <remarks>
     /// Note: any redirects which point to this page will be updated to point to the new, renamed
     /// page instead.
@@ -296,5 +332,7 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        PageTitle? redirectTitle = null);
+        PageTitle? redirectTitle = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null);
 }

@@ -18,6 +18,8 @@ namespace Tavenem.Wiki;
 [JsonSerializable(typeof(List<Message>))]
 [JsonSerializable(typeof(List<Revision>))]
 [JsonSerializable(typeof(List<Topic>))]
+[JsonSerializable(typeof(NormalizedPageReference))]
+[JsonSerializable(typeof(PageHistory))]
 [JsonSerializable(typeof(List<IWikiOwner>))]
 [JsonSerializable(typeof(List<IWikiGroup>))]
 [JsonSerializable(typeof(List<WikiGroup>))]
@@ -28,7 +30,7 @@ namespace Tavenem.Wiki;
 [JsonSerializable(typeof(PagedRevisionInfo))]
 [JsonSerializable(typeof(SpecialListRequest))]
 [JsonSerializable(typeof(TitleRequest))]
-public partial class WikiJsonSerializerContext : JsonSerializerContext { }
+public partial class WikiJsonSerializerContext : JsonSerializerContext;
 
 /// <summary>
 /// A source generated serializer context for <see cref="Wiki.Archive"/> which minimizes the size of the payload.
@@ -39,4 +41,4 @@ public partial class WikiJsonSerializerContext : JsonSerializerContext { }
     IgnoreReadOnlyProperties = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(Archive))]
-public partial class WikiArchiveJsonSerializerContext : JsonSerializerContext { }
+public partial class WikiArchiveJsonSerializerContext : JsonSerializerContext;

@@ -18,11 +18,10 @@ internal static class WikiConfig
     {
         get
         {
-            if (_HtmlSanitizerFull is null)
+            _HtmlSanitizerFull ??= new HtmlSanitizer(new HtmlSanitizerOptions())
             {
-                _HtmlSanitizerFull = new HtmlSanitizer(new HtmlSanitizerOptions());
-                _HtmlSanitizerFull.KeepChildNodes = true;
-            }
+                KeepChildNodes = true
+            };
             return _HtmlSanitizerFull;
         }
     }
@@ -57,8 +56,8 @@ internal static class WikiConfig
         return htmlSanitizer;
     }
 
-    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options, IDataStore dataStore, PageTitle title) =>
-        new MarkdownPipelineBuilder()
+    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options, IDataStore dataStore, PageTitle title)
+        => new MarkdownPipelineBuilder()
         .UseWikiLinks(options, dataStore, title)
         .UseAbbreviations()
         .UseAutoIdentifiers()
@@ -86,8 +85,8 @@ internal static class WikiConfig
         .UseSmartyPants()
         .Build();
 
-    internal static MarkdownPipeline GetMarkdownPipelineWithoutLinks(WikiOptions options) =>
-        new MarkdownPipelineBuilder()
+    internal static MarkdownPipeline GetMarkdownPipelineWithoutLinks(WikiOptions options)
+        => new MarkdownPipelineBuilder()
         .UseAbbreviations()
         .UseAutoIdentifiers()
         .UseTableOfContents(new MarkdownExtensions.TableOfContents.TableOfContentsOptions
@@ -114,8 +113,8 @@ internal static class WikiConfig
         .UseSmartyPants()
         .Build();
 
-    internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore, PageTitle title) =>
-        new MarkdownPipelineBuilder()
+    internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore, PageTitle title)
+        => new MarkdownPipelineBuilder()
         .UseWikiLinks(options, dataStore, title)
         .UseAbbreviations()
         .UseAutoIdentifiers()

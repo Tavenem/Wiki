@@ -1,4 +1,6 @@
-﻿using Tavenem.DataStorage;
+﻿using Microsoft.Extensions.Caching.Memory;
+using SmartComponents.LocalEmbeddings;
+using Tavenem.DataStorage;
 
 namespace Tavenem.Wiki;
 
@@ -64,6 +66,30 @@ public class Archive
     /// <param name="domain">
     /// An optional new domain to assign to all restored pages.
     /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// The cache will only be updated if it has been built (lazily, as a result of a search).
+    /// </para>
+    /// </param>
     /// <remarks>
     /// <para>
     /// Pages in the target wiki with the same domain, namespace, and title will be overwritten.
@@ -79,7 +105,9 @@ public class Archive
         IDataStore dataStore,
         WikiOptions options,
         string editor,
-        string? domain = null)
+        string? domain = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null)
     {
         if (Pages is null)
         {
@@ -97,7 +125,9 @@ public class Archive
                     editor,
                     null,
                     options.CategoryNamespace,
-                    domain)
+                    domain,
+                    embedder,
+                    cache)
                     .ConfigureAwait(false);
             }
             else if (page is WikiFile file)
@@ -109,7 +139,9 @@ public class Archive
                     editor,
                     null,
                     options.FileNamespace,
-                    domain)
+                    domain,
+                    embedder,
+                    cache)
                     .ConfigureAwait(false);
             }
             else if (page is Article article)
@@ -172,7 +204,9 @@ public class Archive
                     editor,
                     newTitle,
                     newNamespace,
-                    domain)
+                    domain,
+                    embedder,
+                    cache)
                     .ConfigureAwait(false);
             }
             else
@@ -184,7 +218,9 @@ public class Archive
                     editor,
                     null,
                     null,
-                    domain)
+                    domain,
+                    embedder,
+                    cache)
                     .ConfigureAwait(false);
             }
         }

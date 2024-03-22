@@ -599,7 +599,7 @@ public class WikiLinkInlineParser : InlineParser
             && !isCommons)
         {
             var id = IPage<Page>.GetId(pageTitle);
-            page = DataStore.GetItem<Page>(id);
+            page = DataStore.GetItem(id, WikiJsonSerializerContext.Default.Page);
             if (!ignoreMissing && !pageTitle.Equals(Title))
             {
                 pageMissing = page?.Revision?.IsDeleted != false;

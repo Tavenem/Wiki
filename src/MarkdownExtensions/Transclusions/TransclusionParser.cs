@@ -54,7 +54,7 @@ public static class TransclusionParser
             isPreview,
             isTalk,
             parameterValues);
-        return result;
+        return result!;
     }
 
     /// <summary>
@@ -77,11 +77,11 @@ public static class TransclusionParser
     /// cref="List{T}"/> of the full titles of all pages referenced by the transclusions within
     /// the given <paramref name="markdown"/> (including nested transclusions).
     /// </returns>
-    internal static async ValueTask<(string markdown, List<PageTitle> transcludedPages)> TranscludeInnerAsync(
+    internal static async ValueTask<(string? markdown, List<PageTitle> transcludedPages)> TranscludeInnerAsync(
         WikiOptions options,
         IDataStore dataStore,
         PageTitle? title,
-        string markdown,
+        string? markdown,
         bool isTemplate = false,
         bool isPreview = false,
         bool isTalk = false,
@@ -157,7 +157,7 @@ public static class TransclusionParser
             transcludedPages);
     }
 
-    private static async ValueTask<(string, List<PageTitle>)> GetContentAsync(
+    private static async ValueTask<(string?, List<PageTitle>)> GetContentAsync(
         WikiOptions options,
         IDataStore dataStore,
         PageTitle? title,
@@ -278,11 +278,8 @@ public static class TransclusionParser
                 var index = 1;
                 foreach (var (key, value) in passedParameterValues)
                 {
-                    if (!parameterValues.ContainsKey(key))
-                    {
-                        parameterValues.Add(key, value);
-                    }
-                    else if (int.TryParse(key, out var i))
+                    if (!parameterValues.TryAdd(key, value)
+                        && int.TryParse(key, out var i))
                     {
                         while (parameterValues.ContainsKey(index.ToString()))
                         {
@@ -315,7 +312,12 @@ public static class TransclusionParser
                     if (string.CompareOrdinal(codeTitle.Namespace, options.ScriptNamespace) == 0)
                     {
                         var scriptPage = await IPage<Article>
-                            .GetExistingPageAsync<Article>(dataStore, codeTitle, true, false)
+                            .GetExistingPageAsync(
+                                dataStore,
+                                codeTitle,
+                                true,
+                                false,
+                                WikiJsonSerializerContext.Default.Article)
                             .ConfigureAwait(false);
                         script = scriptPage?.MarkdownContent;
                     }
@@ -353,11 +355,12 @@ public static class TransclusionParser
         }
         transcludedPages.Add(pageTitle);
 
-        var page = await IPage<Page>.GetExistingPageAsync<Page>(
+        var page = await IPage<Page>.GetExistingPageAsync(
             dataStore,
             pageTitle,
             true,
-            false)
+            false,
+            WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
         if (page is null
             || page.AllowedViewers?.Count > 0)
@@ -379,7 +382,7 @@ public static class TransclusionParser
 
         transcludedPages = transcludedPages.Union(pageTransclusions).ToList();
 
-        return (pageContent ?? string.Empty, transcludedPages);
+        return (pageContent, transcludedPages);
     }
 
     private static List<Transclusion> Parse(StringSlice slice, out List<Transclusion> parameterInclusions, out bool isCodeFence)

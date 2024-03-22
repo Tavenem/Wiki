@@ -1,5 +1,10 @@
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using SmartComponents.LocalEmbeddings;
 using Tavenem.DataStorage;
+using Tavenem.Wiki.Models;
+using Tavenem.Wiki.Queries;
 
 namespace Tavenem.Wiki.Test;
 
@@ -64,7 +69,12 @@ public class IntegrationTests
             options,
             new(),
             true);
-        var missing = main.WikiLinks.FirstOrDefault(x => x.IsMissing);
+        var wikiLinks = MarkdownItem.GetWikiLinks(
+            options,
+            dataStore,
+            main.MarkdownContent,
+            main.Title);
+        var missing = wikiLinks.Find(x => x.IsMissing);
         Assert.IsNull(missing);
         Assert.AreEqual(_ExpectedMain, main.Html);
     }
@@ -92,16 +102,29 @@ public class IntegrationTests
             options,
             new(),
             true);
-        var missing = main.WikiLinks.FirstOrDefault(x => x.IsMissing);
+        var wikiLinks = MarkdownItem.GetWikiLinks(
+            options,
+            dataStore,
+            main.MarkdownContent,
+            main.Title);
+        var missing = wikiLinks.Find(x => x.IsMissing);
         Assert.IsNotNull(missing);
 
         var category = await IPage<Category>
-            .GetExistingPageAsync<Category>(dataStore, new(CategoryTitle, options.CategoryNamespace));
+            .GetExistingPageAsync(
+            dataStore,
+            new(CategoryTitle, options.CategoryNamespace),
+            typeInfo: WikiJsonSerializerContext.Default.Category);
         Assert.IsNotNull(category);
         await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
         category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
         Assert.IsNotNull(category);
-        missing = category.WikiLinks.FirstOrDefault(x => x.IsMissing);
+        wikiLinks = MarkdownItem.GetWikiLinks(
+            options,
+            dataStore,
+            category.MarkdownContent,
+            category.Title);
+        missing = wikiLinks.Find(x => x.IsMissing);
         Assert.IsNotNull(missing);
 
         success = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
@@ -109,12 +132,22 @@ public class IntegrationTests
 
         main = dataStore.GetItem<Article>(main.Id, TimeSpan.Zero);
         Assert.IsNotNull(main);
-        missing = main.WikiLinks.FirstOrDefault(x => x.IsMissing);
+        wikiLinks = MarkdownItem.GetWikiLinks(
+            options,
+            dataStore,
+            main.MarkdownContent,
+            main.Title);
+        missing = wikiLinks.Find(x => x.IsMissing);
         Assert.IsNull(missing);
 
         category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
         Assert.IsNotNull(category);
-        missing = category.WikiLinks.FirstOrDefault(x => x.IsMissing);
+        wikiLinks = MarkdownItem.GetWikiLinks(
+            options,
+            dataStore,
+            category.MarkdownContent,
+            category.Title);
+        missing = wikiLinks.Find(x => x.IsMissing);
         Assert.IsNull(missing);
 
         var about = await dataStore.GetWikiPageAsync(
@@ -122,6 +155,99 @@ public class IntegrationTests
             new(options.AboutPageTitle, options.SystemNamespace),
             true);
         Assert.AreEqual(_ExpectedAbout, about.Html, ignoreCase: false);
+    }
+
+    [TestMethod]
+    public async Task SearchTest()
+    {
+        var options = new WikiOptions();
+        var dataStore = new InMemoryDataStore();
+        var userManager = new WikiUserManager(dataStore);
+        dataStore.StoreItem(Admin);
+        var groupManager = new WikiGroupManager(dataStore, userManager);
+
+        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager);
+        _ = await GetDefaultMainAsync(options, dataStore, userManager, groupManager);
+        _ = await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
+        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
+
+        using var embedder = new LocalEmbedder();
+        using var cache = new MemoryCache(Options.Create<MemoryCacheOptions>(new()));
+
+        var searchRequest = new SearchRequest("wiki");
+        var searchResults = await dataStore.SearchWikiAsync(
+            options,
+            groupManager,
+            searchRequest,
+            Admin,
+            embedder,
+            cache);
+
+        Assert.AreEqual(3, searchResults.TotalCount);
+        Assert.IsTrue(searchResults.Any(x => x.Title == new PageTitle()));
+        Assert.IsTrue(searchResults.Any(x => x.Title == new PageTitle(options.AboutPageTitle, options.SystemNamespace)));
+        Assert.IsTrue(searchResults.Any(x => x.Title == new PageTitle(CategoryTitle, options.CategoryNamespace)));
+
+        searchRequest = new SearchRequest("wiki", Namespace: string.Empty);
+        searchResults = await dataStore.SearchWikiAsync(
+            options,
+            groupManager,
+            searchRequest,
+            Admin,
+            embedder,
+            cache);
+
+        Assert.AreEqual(1, searchResults.TotalCount);
+        Assert.IsNull(searchResults[0].Title.Title);
+
+        searchRequest = new SearchRequest("wiki", Namespace: options.SystemNamespace);
+        searchResults = await dataStore.SearchWikiAsync(
+            options,
+            groupManager,
+            searchRequest,
+            Admin,
+            embedder,
+            cache);
+
+        Assert.AreEqual(1, searchResults.TotalCount);
+        Assert.AreEqual(options.AboutPageTitle, searchResults[0].Title.Title);
+
+        searchRequest = new SearchRequest("desire");
+        searchResults = await dataStore.SearchWikiAsync(
+            options,
+            groupManager,
+            searchRequest,
+            Admin,
+            embedder,
+            cache);
+
+        Assert.AreEqual(1, searchResults.TotalCount);
+        Assert.AreEqual(options.AboutPageTitle, searchResults[0].Title.Title);
+
+        searchRequest = new SearchRequest("\"native\"");
+        searchResults = await dataStore.SearchWikiAsync(
+            options,
+            groupManager,
+            searchRequest,
+            Admin,
+            embedder,
+            cache);
+
+        Assert.AreEqual(1, searchResults.TotalCount);
+        Assert.AreEqual(options.AboutPageTitle, searchResults[0].Title.Title);
+
+        searchRequest = new SearchRequest("wiki -native");
+        searchResults = await dataStore.SearchWikiAsync(
+            options,
+            groupManager,
+            searchRequest,
+            Admin,
+            embedder,
+            cache);
+
+        Assert.AreEqual(2, searchResults.TotalCount);
+        Assert.IsTrue(searchResults.Any(x => x.Title == new PageTitle()));
+        Assert.IsTrue(searchResults.Any(x => x.Title == new PageTitle(CategoryTitle, options.CategoryNamespace)));
     }
 
     private static Task<bool> GetDefaultAboutAsync(

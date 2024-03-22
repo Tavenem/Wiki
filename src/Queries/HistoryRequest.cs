@@ -1,6 +1,4 @@
-﻿using Tavenem.Wiki.Models;
-
-namespace Tavenem.Wiki.Queries;
+﻿namespace Tavenem.Wiki.Queries;
 
 /// <summary>
 /// A request record for a page of revision information for a wiki item.

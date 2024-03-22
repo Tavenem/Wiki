@@ -25,12 +25,12 @@ namespace Tavenem.Wiki.Models;
 public abstract class MarkdownItem : IdItem
 {
     /// <summary>
-    /// The mininum number of characters taken when generating a preview.
+    /// The minimum number of characters taken when generating a preview.
     /// </summary>
     public const int PreviewCharacterMin = 100;
 
     /// <summary>
-    /// The maxinum number of characters taken when generating a preview.
+    /// The maximum number of characters taken when generating a preview.
     /// </summary>
     public const int PreviewCharacterMax = 500;
 
@@ -43,7 +43,7 @@ public abstract class MarkdownItem : IdItem
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
     /// </remarks>
-    public string Html { get; set; }
+    public string? Html { get; set; }
 
     /// <summary>
     /// The markdown content.
@@ -52,7 +52,7 @@ public abstract class MarkdownItem : IdItem
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
     /// </remarks>
-    public string MarkdownContent { get; set; }
+    public string? MarkdownContent { get; set; }
 
     /// <summary>
     /// A preview of this item's rendered HTML.
@@ -61,45 +61,43 @@ public abstract class MarkdownItem : IdItem
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
     /// </remarks>
-    public string Preview { get; set; }
+    public string? Preview { get; set; }
 
     /// <summary>
-    /// <para>
-    /// The wiki links within this content.
-    /// </para>
-    /// <para>
+    /// A plain text version of the content.
+    /// </summary>
+    /// <remarks>
     /// This property has a public setter for serialization support, but should not be directly set
     /// by non-library code.
-    /// </para>
-    /// </summary>
-    public IReadOnlyCollection<WikiLink> WikiLinks { get; set; } = new List<WikiLink>().AsReadOnly();
+    /// </remarks>
+    public string? Text { get; set; }
 
     /// <summary>
     /// Initializes a new instance of <see cref="MarkdownItem"/>.
     /// </summary>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers.
+    /// Note: this constructor is most useful for deserialization.
     /// </remarks>
     protected MarkdownItem()
     {
         Html = string.Empty;
         MarkdownContent = string.Empty;
         Preview = string.Empty;
-        WikiLinks = new List<WikiLink>().AsReadOnly();
+        Text = string.Empty;
     }
 
     /// <summary>
     /// Initializes a new instance of <see cref="MarkdownItem"/>.
     /// </summary>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers.
+    /// Note: this constructor is most useful for deserialization.
     /// </remarks>
     protected MarkdownItem(string id) : base(id)
     {
         Html = string.Empty;
         MarkdownContent = string.Empty;
         Preview = string.Empty;
-        WikiLinks = new List<WikiLink>().AsReadOnly();
+        Text = string.Empty;
     }
 
     /// <summary>
@@ -109,35 +107,31 @@ public abstract class MarkdownItem : IdItem
     /// <param name="markdownContent">The raw markdown.</param>
     /// <param name="html">The rendered HTML content.</param>
     /// <param name="preview">A preview of this item's rendered HTML.</param>
-    /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+    /// <param name="text">A plain text version of the content.</param>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers.
+    /// Note: this constructor is most useful for deserialization.
     /// </remarks>
-    protected MarkdownItem(string id, string? markdownContent, string html, string preview, IReadOnlyCollection<WikiLink> wikiLinks) : base(id)
+    protected MarkdownItem(string id, string? markdownContent, string? html, string? preview, string? text) : base(id)
     {
         Html = html;
-        MarkdownContent = markdownContent ?? string.Empty;
+        MarkdownContent = markdownContent;
         Preview = preview;
-        WikiLinks = wikiLinks;
+        Text = text;
     }
 
     /// <summary>
     /// Initializes a new instance of <see cref="MarkdownItem"/>.
     /// </summary>
     /// <param name="markdown">The raw markdown.</param>
-    /// <param name="html">
-    /// The rendered HTML content.
-    /// </param>
-    /// <param name="preview">
-    /// A preview of this item's rendered HTML.
-    /// </param>
-    /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-    protected MarkdownItem(string? markdown, string? html, string? preview, IReadOnlyCollection<WikiLink> wikiLinks)
+    /// <param name="html">The rendered HTML content.</param>
+    /// <param name="preview">A preview of this item's rendered HTML.</param>
+    /// <param name="text">A plain text version of the content.</param>
+    protected MarkdownItem(string? markdown, string? html, string? preview, string? text)
     {
-        MarkdownContent = markdown ?? string.Empty;
-        Html = html ?? string.Empty;
-        Preview = preview ?? string.Empty;
-        WikiLinks = wikiLinks;
+        MarkdownContent = markdown;
+        Html = html;
+        Preview = preview;
+        Text = text;
     }
 
     /// <summary>
@@ -195,28 +189,10 @@ public abstract class MarkdownItem : IdItem
             }
         }
 
-        var sanitized = WikiConfig.HtmlSanitizerFull.Sanitize(html);
-        if (characterLimit.HasValue && sanitized.Length > characterLimit)
-        {
-            var substring = sanitized[..characterLimit.Value];
-            var i = substring.Length - 1;
-            var whitespace = false;
-            for (; i > 0; i--)
-            {
-                if (substring[i].IsWhiteSpaceOrZero())
-                {
-                    whitespace = true;
-                }
-                else if (whitespace)
-                {
-                    break;
-                }
-            }
-            sanitized = whitespace
-                ? substring[..(i + 1)]
-                : substring;
-        }
-        return sanitized;
+        return WikiConfig
+            .HtmlSanitizerFull
+            .Sanitize(html)
+            .TruncateString(characterLimit, out _);
     }
 
     /// <summary>
@@ -291,7 +267,7 @@ public abstract class MarkdownItem : IdItem
             }
         }
 
-        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html);
+        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html).Trim();
     }
 
     /// <summary>
@@ -341,13 +317,13 @@ public abstract class MarkdownItem : IdItem
             }
         }
 
-        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html) ?? string.Empty;
+        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html).Trim();
     }
 
     /// <summary>
     /// Gets a diff between the <see cref="MarkdownContent"/> of this item and the given one.
     /// </summary>
-    /// <param name="other">The other <see cref="MarkdownItem"/> insteance.</param>
+    /// <param name="other">The other <see cref="MarkdownItem"/> instance.</param>
     /// <param name="format">
     /// <para>
     /// The format used.
@@ -381,8 +357,20 @@ public abstract class MarkdownItem : IdItem
     /// A string representing the diff between this instance and the <paramref name="other"/>
     /// instance.
     /// </returns>
-    public string GetDiff(MarkdownItem other, string format = "md")
-        => Diff.GetWordDiff(MarkdownContent, other.MarkdownContent).ToString(format);
+    public string? GetDiff(MarkdownItem other, string format = "md")
+    {
+        if (string.IsNullOrEmpty(MarkdownContent)
+            && string.IsNullOrEmpty(other.MarkdownContent))
+        {
+            return null;
+        }
+
+        return Diff
+            .GetWordDiff(
+                MarkdownContent ?? string.Empty,
+                other.MarkdownContent ?? string.Empty)
+            .ToString(format);
+    }
 
     /// <summary>
     /// Gets a diff between the <see cref="MarkdownContent"/> of this item and the given one, as
@@ -390,7 +378,7 @@ public abstract class MarkdownItem : IdItem
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="other">The other <see cref="MarkdownItem"/> insteance.</param>
+    /// <param name="other">The other <see cref="MarkdownItem"/> instance.</param>
     /// <returns>
     /// A string representing the diff between this instance and the <paramref name="other"/>
     /// instance, as rendered HTML.
@@ -743,15 +731,13 @@ public abstract class MarkdownItem : IdItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown.</param>
-    /// <param name="title">The title of the page, if this is a page.</param>
     protected ValueTask SetContentAsync(
         WikiOptions options,
         IDataStore dataStore,
-        string? markdown,
-        PageTitle title = default)
+        string? markdown)
     {
         MarkdownContent = markdown ?? string.Empty;
-        return UpdateContentAsync(options, dataStore, title);
+        return UpdateAsync(options, dataStore);
     }
 
     private protected virtual ValueTask<string> PostprocessMarkdownAsync(
@@ -771,14 +757,5 @@ public abstract class MarkdownItem : IdItem
     {
         Html = await GetHtmlAsync(options, dataStore);
         Preview = await GetPreviewAsync(options, dataStore);
-    }
-
-    internal ValueTask UpdateContentAsync(
-        WikiOptions options,
-        IDataStore dataStore,
-        PageTitle title = default)
-    {
-        WikiLinks = GetWikiLinks(options, dataStore, MarkdownContent, title).AsReadOnly();
-        return UpdateAsync(options, dataStore);
     }
 }

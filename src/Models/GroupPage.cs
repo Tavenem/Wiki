@@ -1,6 +1,7 @@
-﻿using System.Text.Json.Serialization;
+﻿using Microsoft.Extensions.Caching.Memory;
+using SmartComponents.LocalEmbeddings;
+using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -29,30 +30,25 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This constructor should only be used by deserializers or for testing purposes.
+    /// This constructor should only be used for deserialization or for testing purposes.
     /// </para>
     /// <para>
     /// To create a new page as part of a normal user interaction, use the <see
-    /// cref="WikiExtensions.AddOrReviseWikiPageAsync(IDataStore, WikiOptions, IWikiUserManager,
-    /// IWikiGroupManager, IWikiUser, PageTitle, string?, string?, bool, string?,
-    /// IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?,
-    /// PageTitle?, PageTitle?)"/> method.
+    /// cref="WikiExtensions.AddOrReviseWikiPageAsync"/> method.
     /// </para>
     /// <para>
     /// To create a page programmatically, you can use a combination of <see
     /// cref="WikiExtensions.GetWikiPageAsync(IDataStore, WikiOptions, PageTitle, bool, bool)"/> (to
     /// get the current page, or a new page if one does not already exist), and <see
-    /// cref="Page.UpdateAsync(WikiOptions, IDataStore, string, string?, string?, string?,
-    /// IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?,
-    /// PageTitle?)"/> to update the result with the intended properties.
+    /// cref="Page.UpdateAsync"/> to update the result with the intended properties.
     /// </para>
     /// </remarks>
     [JsonConstructor]
     public GroupPage(
         PageTitle title,
-        string html,
-        string preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
+        string? html = null,
+        string? preview = null,
+        string? text = null,
         string? markdownContent = null,
         string? owner = null,
         Revision? revision = null,
@@ -61,9 +57,11 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
         IReadOnlyCollection<string>? allowedEditorGroups = null,
         IReadOnlyCollection<string>? allowedViewerGroups = null,
         IReadOnlyCollection<PageTitle>? categories = null,
+        IReadOnlyCollection<IReadOnlyCollection<byte>>? embeddingI1Bytes = null,
         IReadOnlyCollection<Heading>? headings = null,
         IReadOnlyCollection<PageTitle>? redirectReferences = null,
         IReadOnlyCollection<PageTitle>? references = null,
+        IReadOnlyCollection<byte>? titleEmbeddingI1Bytes = null,
         IReadOnlyCollection<PageTitle>? transclusionReferences = null,
         IReadOnlyCollection<PageTitle>? transclusions = null,
         bool isBrokenRedirect = false,
@@ -72,7 +70,7 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
         title,
         html,
         preview,
-        wikiLinks,
+        text,
         markdownContent,
         owner,
         revision,
@@ -81,9 +79,11 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
         allowedEditorGroups,
         allowedViewerGroups,
         categories,
+        embeddingI1Bytes,
         headings,
         redirectReferences,
         references,
+        titleEmbeddingI1Bytes,
         transclusionReferences,
         transclusions,
         isBrokenRedirect,
@@ -186,6 +186,30 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// The cache will only be updated if it has been built (lazily, as a result of a search).
+    /// </para>
+    /// </param>
     /// <remarks>
     /// Note: any redirects which point to this page will be updated to point to the new, renamed
     /// page instead.
@@ -212,7 +236,9 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        PageTitle? redirectTitle = null) => RenameAsync<GroupPage>(
+        PageTitle? redirectTitle = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null) => RenameAsync(
             options,
             dataStore,
             title,
@@ -224,5 +250,8 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
             allowedViewers,
             allowedEditorGroups,
             allowedViewerGroups,
-            redirectTitle);
+            redirectTitle,
+            WikiJsonSerializerContext.Default.GroupPage,
+            embedder,
+            cache);
 }

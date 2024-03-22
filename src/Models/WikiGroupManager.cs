@@ -6,28 +6,16 @@ namespace Tavenem.Wiki;
 /// A default group manager for <see cref="WikiGroup"/>s, which keeps its data in an <see
 /// cref="IDataStore"/>.
 /// </summary>
-public class WikiGroupManager : IWikiGroupManager
+/// <param name="dataStore">
+/// The <see cref="IDataStore"/> to use.
+/// </param>
+/// <param name="userManager">
+/// An <see cref="IWikiUserManager"/> instance.
+/// </param>
+public class WikiGroupManager(
+    IDataStore dataStore,
+    IWikiUserManager userManager) : IWikiGroupManager
 {
-    private readonly IDataStore _dataStore;
-    private readonly IWikiUserManager _userManager;
-
-    /// <summary>
-    /// Constructs a new instance of <see cref="WikiGroupManager"/>.
-    /// </summary>
-    /// <param name="dataStore">
-    /// The <see cref="IDataStore"/> to use.
-    /// </param>
-    /// <param name="userManager">
-    /// An <see cref="IWikiUserManager"/> instance.
-    /// </param>
-    public WikiGroupManager(
-        IDataStore dataStore,
-        IWikiUserManager userManager)
-    {
-        _dataStore = dataStore;
-        _userManager = userManager;
-    }
-
     /// <summary>
     /// Finds and returns a group, if any, which has the specified <paramref name="groupId"/>.
     /// </summary>
@@ -42,7 +30,7 @@ public class WikiGroupManager : IWikiGroupManager
         {
             return null;
         }
-        return await _dataStore.GetItemAsync<WikiGroup>(groupId);
+        return await dataStore.GetItemAsync(groupId, WikiJsonSerializerContext.Default.WikiGroup);
     }
 
     /// <summary>
@@ -65,7 +53,8 @@ public class WikiGroupManager : IWikiGroupManager
         {
             return null;
         }
-        var matches = await _dataStore.Query<WikiGroup>()
+        var matches = await dataStore
+            .Query(WikiJsonSerializerContext.Default.WikiGroup)
             .Where(x => string.Equals(x.DisplayName, groupName, StringComparison.Ordinal))
             .ToListAsync();
         return matches.Count == 1
@@ -93,7 +82,7 @@ public class WikiGroupManager : IWikiGroupManager
         {
             return null;
         }
-        return await _userManager.FindByIdAsync(group.OwnerId);
+        return await userManager.FindByIdAsync(group.OwnerId);
     }
 
     /// <summary>
@@ -108,7 +97,7 @@ public class WikiGroupManager : IWikiGroupManager
     public async ValueTask<IWikiUser?> GetGroupOwnerAsync(IWikiGroup? group)
         => string.IsNullOrWhiteSpace(group?.OwnerId)
         ? null
-        : await _userManager.FindByIdAsync(group.OwnerId);
+        : await userManager.FindByIdAsync(group.OwnerId);
 
     /// <summary>
     /// Returns the ID of the wiki user who is the owner of the group with the given ID.
@@ -139,9 +128,10 @@ public class WikiGroupManager : IWikiGroupManager
     {
         if (string.IsNullOrWhiteSpace(groupId))
         {
-            return new List<IWikiUser>();
+            return [];
         }
-        return await _dataStore.Query<WikiUser>()
+        return await dataStore
+            .Query(WikiJsonSerializerContext.Default.WikiUser)
             .Where(x => x.Groups != null && x.Groups.Contains(groupId))
             .ToListAsync();
     }
@@ -158,9 +148,10 @@ public class WikiGroupManager : IWikiGroupManager
     {
         if (group is null)
         {
-            return new List<IWikiUser>();
+            return [];
         }
-        return await _dataStore.Query<WikiUser>()
+        return await dataStore
+            .Query(WikiJsonSerializerContext.Default.WikiUser)
             .Where(x => x.Groups != null && x.Groups.Contains(group.Id))
             .ToListAsync();
     }
@@ -232,7 +223,7 @@ public class WikiGroupManager : IWikiGroupManager
         {
             return false;
         }
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
             return false;
@@ -258,7 +249,7 @@ public class WikiGroupManager : IWikiGroupManager
         {
             return false;
         }
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         if (user is null)
         {
             return false;
@@ -313,7 +304,7 @@ public class WikiGroupManager : IWikiGroupManager
         {
             return 0;
         }
-        var user = await _userManager.FindByIdAsync(userId);
+        var user = await userManager.FindByIdAsync(userId);
         return await UserMaxUploadLimit(user);
     }
 
@@ -329,8 +320,7 @@ public class WikiGroupManager : IWikiGroupManager
     /// </returns>
     public async ValueTask<int> UserMaxUploadLimit(IWikiUser? user)
     {
-        if (user is null
-            || user.IsDeleted
+        if (user?.IsDeleted != false
             || user.IsDisabled)
         {
             return 0;

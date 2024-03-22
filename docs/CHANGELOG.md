@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.0-preview
+### Added
+- `Text` property to `MarkdownItem` for plain text representation of the content
+### Changed
+- Made `Html`, `MarkdownContent`, and `Preview` properties on `MarkdownItem` nullable
+### Removed
+- `WikiLinks` property on `MarkdownItem`
+
 ## 0.24.4-preview
 ### Added
 - Allow restoring an archive to a new domain

@@ -1,13 +1,26 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
 /// <summary>
 /// The collected history of a wiki page.
 /// </summary>
-public class PageHistory : IdItem
+/// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+/// <param name="revisions">
+/// The history of revisions to the referenced wiki page, in reverse chronological order (most
+/// recent first).
+/// </param>
+/// <remarks>
+/// Note: this constructor is most useful for deserialization. The static <see
+/// cref="NewAsync(IDataStore, PageTitle, IReadOnlyCollection{Revision}?)"/> method
+/// is expected to be used otherwise, as it persists instances to the <see cref="IDataStore"/>
+/// and assigns the ID dynamically.
+/// </remarks>
+[method: JsonConstructor]
+public class PageHistory(
+    string id,
+    IReadOnlyCollection<Revision>? revisions) : IdItem(id)
 {
     /// <summary>
     /// The type discriminator for this type.
@@ -27,27 +40,7 @@ public class PageHistory : IdItem
     /// The history of revisions to the referenced wiki page, in reverse chronological order (most
     /// recent first).
     /// </summary>
-    public IReadOnlyCollection<Revision>? Revisions { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="PageHistory"/>.
-    /// </summary>
-    /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="revisions">
-    /// The history of revisions to the referenced wiki page, in reverse chronological order (most
-    /// recent first).
-    /// </param>
-    /// <remarks>
-    /// Note: this constructor is most useful for deserializers. The static <see
-    /// cref="NewAsync(IDataStore, PageTitle, IReadOnlyCollection{Revision}?)"/> method
-    /// is expected to be used otherwise, as it persists instances to the <see cref="IDataStore"/>
-    /// and assigns the ID dynamically.
-    /// </remarks>
-    [JsonConstructor]
-    public PageHistory(
-        string id,
-        IReadOnlyCollection<Revision>? revisions) : base(id)
-        => Revisions = revisions;
+    public IReadOnlyCollection<Revision>? Revisions { get; set; } = revisions;
 
     /// <summary>
     /// Gets the ID for a <see cref="PageHistory"/> given its <paramref name="title"/>.
@@ -72,7 +65,7 @@ public class PageHistory : IdItem
     public static ValueTask<PageHistory?> GetPageHistoryAsync(
         IDataStore dataStore,
         PageTitle title)
-        => dataStore.GetItemAsync<PageHistory>(GetId(title));
+        => dataStore.GetItemAsync(GetId(title), WikiJsonSerializerContext.Default.PageHistory);
 
     /// <summary>
     /// Get a new instance of <see cref="PageHistory"/>.
@@ -93,7 +86,9 @@ public class PageHistory : IdItem
         var result = new PageHistory(
             GetId(title),
             revisions);
-        await dataStore.StoreItemAsync(result).ConfigureAwait(false);
+        await dataStore
+            .StoreItemAsync(result, WikiJsonSerializerContext.Default.PageHistory)
+            .ConfigureAwait(false);
         return result;
     }
 
@@ -109,7 +104,9 @@ public class PageHistory : IdItem
         else
         {
             existing.Revisions = Revisions;
-            await dataStore.StoreItemAsync(existing).ConfigureAwait(false);
+            await dataStore
+                .StoreItemAsync(existing, WikiJsonSerializerContext.Default.PageHistory)
+                .ConfigureAwait(false);
         }
     }
 

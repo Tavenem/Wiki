@@ -1,5 +1,11 @@
-﻿using System.Globalization;
+﻿using Markdig.Helpers;
+using Microsoft.Extensions.Caching.Memory;
+using SmartComponents.LocalEmbeddings;
+using System.Globalization;
 using System.Linq.Expressions;
+using System.Text;
+using System.Text.Json.Serialization.Metadata;
+using System.Text.RegularExpressions;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Queries;
 
@@ -8,8 +14,10 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// Extension methods.
 /// </summary>
-public static class WikiExtensions
+public static partial class WikiExtensions
 {
+    private const int SearchExcerptCharacterLimit = 50;
+
     /// <summary>
     /// Creates or revises a <see cref="Page"/>.
     /// </summary>
@@ -101,6 +109,30 @@ public static class WikiExtensions
     /// <param name="originalTitle">
     /// The original title of the page, if it is being renamed.
     /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// The cache will only be updated if it has been built (lazily, as a result of a search).
+    /// </para>
+    /// </param>
     /// <returns>
     /// <see langword="true"/> if the page was revised; <see langword="false"/> if the page could
     /// not be revised (usually because the editor did not have permission to make an associated
@@ -145,7 +177,9 @@ public static class WikiExtensions
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
-        PageTitle? originalTitle = null)
+        PageTitle? originalTitle = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null)
     {
         if (string.Equals(
             title.Namespace,
@@ -228,7 +262,9 @@ public static class WikiExtensions
                 allowedViewers,
                 allowedEditorGroups,
                 allowedViewerGroups,
-                redirectTitle)
+                redirectTitle,
+                embedder,
+                cache)
                 .ConfigureAwait(false);
         }
         else if (isDeleted)
@@ -244,7 +280,9 @@ public static class WikiExtensions
                 allowedViewers,
                 allowedEditorGroups,
                 allowedViewerGroups,
-                null)
+                null,
+                embedder,
+                cache)
                 .ConfigureAwait(false);
         }
         else
@@ -260,7 +298,9 @@ public static class WikiExtensions
                 allowedViewers,
                 allowedEditorGroups,
                 allowedViewerGroups,
-                redirectTitle)
+                redirectTitle,
+                embedder,
+                cache)
                 .ConfigureAwait(false);
         }
 
@@ -429,7 +469,6 @@ public static class WikiExtensions
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="groupId">
     /// <para>
@@ -459,7 +498,6 @@ public static class WikiExtensions
     public static async Task<GroupPage> GetGroupPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         string groupId,
         IWikiUser? user = null)
@@ -491,7 +529,6 @@ public static class WikiExtensions
             user,
             options,
             dataStore,
-            userManager,
             groupManager,
             page.Title,
             page)
@@ -576,7 +613,6 @@ public static class WikiExtensions
         string userId) => await GetGroupPageAsync(
             dataStore,
             options,
-            userManager,
             groupManager,
             groupId,
             await userManager.FindByIdAsync(userId)
@@ -725,9 +761,8 @@ public static class WikiExtensions
     /// Determines the permission the given user has for the wiki page with the given <paramref
     /// name="title"/>.
     /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="user">
@@ -743,9 +778,8 @@ public static class WikiExtensions
     /// permissions.
     /// </returns>
     public static ValueTask<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
+        this IDataStore dataStore,
         WikiOptions options,
-        IDataStore dataStore,
         IWikiGroupManager groupManager,
         PageTitle title,
         IWikiUser? user)
@@ -760,15 +794,14 @@ public static class WikiExtensions
             return ValueTask.FromResult(WikiPermission.All);
         }
 
-        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, title);
+        return GetPermissionInnerAsync(user, options, dataStore, groupManager, title);
     }
 
     /// <summary>
     /// Determines the permission the given user has for the given page.
     /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="page">The wiki page.</param>
     /// <param name="user">
@@ -784,9 +817,8 @@ public static class WikiExtensions
     /// permissions.
     /// </returns>
     public static ValueTask<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
+        this IDataStore dataStore,
         WikiOptions options,
-        IDataStore dataStore,
         IWikiGroupManager groupManager,
         Page page,
         IWikiUser? user)
@@ -801,15 +833,15 @@ public static class WikiExtensions
             return ValueTask.FromResult(WikiPermission.All);
         }
 
-        return GetPermissionInnerAsync(user, options, dataStore, userManager, groupManager, page.Title, page);
+        return GetPermissionInnerAsync(user, options, dataStore, groupManager, page.Title, page);
     }
 
     /// <summary>
     /// Determines the permission the user with the given ID has for the given page.
     /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="page">The wiki page.</param>
     /// <param name="userId">
@@ -825,15 +857,14 @@ public static class WikiExtensions
     /// permissions.
     /// </returns>
     public static async Task<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
+        this IDataStore dataStore,
         WikiOptions options,
-        IDataStore dataStore,
+        IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         Page page,
         string? userId = null) => await GetPermissionAsync(
-            userManager,
-            options,
             dataStore,
+            options,
             groupManager,
             page,
             await userManager.FindByIdAsync(userId)
@@ -844,9 +875,9 @@ public static class WikiExtensions
     /// Determines the permission the user with the given ID has for the wiki page with the given
     /// <paramref name="title"/>.
     /// </summary>
-    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
-    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="userId">
@@ -862,15 +893,14 @@ public static class WikiExtensions
     /// permissions.
     /// </returns>
     public static async Task<WikiPermission> GetPermissionAsync(
-        this IWikiUserManager userManager,
+        this IDataStore dataStore,
         WikiOptions options,
-        IDataStore dataStore,
+        IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         PageTitle title,
         string? userId = null) => await GetPermissionAsync(
-            userManager,
-            options,
             dataStore,
+            options,
             groupManager,
             title,
             await userManager.FindByIdAsync(userId)
@@ -932,14 +962,15 @@ public static class WikiExtensions
         this IDataStore dataStore,
         TitleRequest request)
     {
-        var items = await GetListAsync<Page>(
+        var items = await GetListAsync(
             dataStore,
             request.PageNumber,
             request.PageSize,
             request.Sort,
             request.Descending,
             request.Filter,
-            x => x.Title.IsMatch(request.Title));
+            x => x.Title.IsMatch(request.Title),
+            WikiJsonSerializerContext.Default.Page);
         return new(
             items.Select(x => new LinkInfo(
                 x.Title,
@@ -1019,7 +1050,6 @@ public static class WikiExtensions
             requestingUser,
             options,
             dataStore,
-            userManager,
             groupManager,
             page.Title,
             page)
@@ -1147,7 +1177,7 @@ public static class WikiExtensions
             title = title.WithTitle(null);
         }
         var page = await IPage<Page>
-            .GetExistingPageAsync<Page>(dataStore, request.Title)
+            .GetExistingPageAsync(dataStore, request.Title, typeInfo: WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
         if (page is null
             || (page.References is null
@@ -1242,7 +1272,7 @@ public static class WikiExtensions
             Options = options,
         };
 
-        var pages = dataStore.Query<Page>();
+        var pages = dataStore.Query(WikiJsonSerializerContext.Default.Page);
         if (hasDomain)
         {
             pages = pages.Where(x => x.Title.Domain == domain);
@@ -1274,6 +1304,9 @@ public static class WikiExtensions
     /// If <see langword="true"/> a case-insensitive match will not be attempted if an exact match
     /// is not found.
     /// </param>
+    /// <param name="typeInfo">
+    /// <see cref="JsonTypeInfo{T}"/> for <typeparamref name="T"/>.
+    /// </param>
     /// <returns>
     /// The <see cref="IPage{T}"/> which corresponds to the given <paramref name="title"/>.
     /// </returns>
@@ -1282,14 +1315,15 @@ public static class WikiExtensions
         WikiOptions options,
         PageTitle title,
         bool noRedirect = false,
-        bool exactMatchOnly = false) where T : class, IIdItem, IPage<T>
+        bool exactMatchOnly = false,
+        JsonTypeInfo<T>? typeInfo = null) where T : class, IIdItem, IPage<T>
     {
         if (title.Title?.Equals(options.MainPageTitle) == true)
         {
             title = title.WithTitle(null);
         }
         return await IPage<T>
-            .GetPageAsync<T>(dataStore, title, exactMatchOnly, noRedirect)
+            .GetPageAsync(dataStore, title, exactMatchOnly, noRedirect, typeInfo)
             .ConfigureAwait(false);
     }
 
@@ -1390,7 +1424,7 @@ public static class WikiExtensions
         else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            return await GetGroupPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+            return await GetGroupPageAsync(dataStore, options, groupManager, title.Title, user);
         }
 
         var page = await dataStore
@@ -1401,7 +1435,6 @@ public static class WikiExtensions
             user,
             options,
             dataStore,
-            userManager,
             groupManager,
             title,
             page)
@@ -1631,7 +1664,7 @@ public static class WikiExtensions
         else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            page = await GetGroupPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+            page = await GetGroupPageAsync(dataStore, options, groupManager, title.Title, user);
         }
 
         if (page is null)
@@ -1644,7 +1677,6 @@ public static class WikiExtensions
                 user,
                 options,
                 dataStore,
-                userManager,
                 groupManager,
                 title,
                 page)
@@ -1745,7 +1777,7 @@ public static class WikiExtensions
         else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            page = await GetGroupPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+            page = await GetGroupPageAsync(dataStore, options, groupManager, title.Title, user);
         }
 
         if (page is null)
@@ -1758,7 +1790,6 @@ public static class WikiExtensions
                 user,
                 options,
                 dataStore,
-                userManager,
                 groupManager,
                 title,
                 page)
@@ -1995,6 +2026,168 @@ public static class WikiExtensions
                 .ConfigureAwait(false));
 
     /// <summary>
+    /// Perform a search of the wiki.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="request">A <see cref="SearchRequest"/> instance.</param>
+    /// <param name="user">
+    /// <para>
+    /// An <see cref="IWikiUser"/>.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// It is not necessarily to invalidate the cache. Once initialized (lazily, the first time this
+    /// method is called), it will be updated whenever pages are updated (if it is supplied as a
+    /// parameter to the appropriate methods).
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="PagedList{T}"/> with <see cref="SearchHit"/> records for all the pages that
+    /// match the search request.
+    /// </returns>
+    public static async Task<PagedList<SearchHit>> SearchWikiAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiGroupManager groupManager,
+        SearchRequest request,
+        IWikiUser? user = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null)
+    {
+        if (string.IsNullOrWhiteSpace(request.Query))
+        {
+            return new(null, 1, request.PageSize, 0);
+        }
+
+        var exactTitleMatch = await dataStore.GetWikiPageAsync(
+            options,
+            new(request.Query, request.Namespace, request.Domain),
+            true);
+
+        var candidates = request.TitleMatchOnly
+            ? await GetSearchTitleCacheAsync(dataStore, cache)
+            : await GetSearchCacheAsync(dataStore, cache);
+        if (candidates.Count == 0)
+        {
+            return new(null, 1, request.PageSize, 0);
+        }
+
+        var workingEmbedder = embedder ?? new LocalEmbedder();
+        var query = workingEmbedder.Embed<EmbeddingI1>(request.Query);
+        if (embedder is null)
+        {
+            workingEmbedder?.Dispose();
+        }
+
+        var (scores, totalCount) = await GetSearchPageAsync(
+            query,
+            request,
+            dataStore,
+            options,
+            user,
+            groupManager,
+            candidates);
+        return new(
+            scores
+                .Select(x => new SearchHit(
+                    x.Info.Title,
+                    x.Excerpt)),
+            scores.Count == 0 ? 1 : request.PageNumber,
+            request.PageSize,
+            totalCount);
+    }
+
+    /// <summary>
+    /// Perform a search of the wiki.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="request">A <see cref="SearchRequest"/> instance.</param>
+    /// <param name="userId">
+    /// <para>
+    /// The <see cref="IWikiOwner.Id"/> of a wiki user.
+    /// </para>
+    /// <para>
+    /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
+    /// </para>
+    /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// It is not necessarily to invalidate the cache. Once initialized (lazily, the first time this
+    /// method is called), it will be updated whenever pages are updated (if it is supplied as a
+    /// parameter to the appropriate methods).
+    /// </para>
+    /// </param>
+    /// <returns>
+    /// A <see cref="PagedList{T}"/> with <see cref="SearchHit"/> records for all the pages that
+    /// match the search request.
+    /// </returns>
+    public static async Task<PagedList<SearchHit>> SearchWikiAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IWikiUserManager userManager,
+        IWikiGroupManager groupManager,
+        SearchRequest request,
+        string userId,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null) => await SearchWikiAsync(
+            dataStore,
+            options,
+            groupManager,
+            request,
+            await userManager
+                .FindByIdAsync(userId)
+                .ConfigureAwait(false),
+            embedder,
+            cache);
+
+    /// <summary>
     /// Converts a <see cref="DateTimeOffset"/> to a formatted display string.
     /// </summary>
     /// <param name="timestamp">The <see cref="DateTimeOffset"/> to format.</param>
@@ -2049,17 +2242,17 @@ public static class WikiExtensions
         if (string.CompareOrdinal(title.Namespace, options.CategoryNamespace) == 0)
         {
             return await IPage<Category>
-                .GetExistingPageAsync<Category>(dataStore, title)
+                .GetExistingPageAsync(dataStore, title, typeInfo: WikiJsonSerializerContext.Default.Category)
                 .ConfigureAwait(false);
         }
         if (string.CompareOrdinal(title.Namespace, options.FileNamespace) == 0)
         {
             return await IPage<WikiFile>
-                .GetExistingPageAsync<WikiFile>(dataStore, title, noRedirect: noRedirect)
+                .GetExistingPageAsync(dataStore, title, noRedirect: noRedirect, typeInfo: WikiJsonSerializerContext.Default.WikiFile)
                 .ConfigureAwait(false);
         }
         return await IPage<Article>
-            .GetExistingPageAsync<Article>(dataStore, title, noRedirect: noRedirect)
+            .GetExistingPageAsync(dataStore, title, noRedirect: noRedirect, typeInfo: WikiJsonSerializerContext.Default.Article)
             .ConfigureAwait(false);
     }
 
@@ -2115,6 +2308,36 @@ public static class WikiExtensions
             escapes++;
         }
         return escapes == 0 || escapes % 2 == 1;
+    }
+
+    internal static string TruncateString(this string str, int? characterLimit, out bool truncated)
+    {
+        if (!characterLimit.HasValue
+            || str.Length <= characterLimit)
+        {
+            truncated = false;
+            return str.Trim();
+        }
+
+        var substring = str[..characterLimit.Value];
+        var i = substring.Length - 1;
+        var whitespace = false;
+        for (; i > 0; i--)
+        {
+            if (substring[i].IsWhiteSpaceOrZero())
+            {
+                whitespace = true;
+            }
+            else if (whitespace)
+            {
+                break;
+            }
+        }
+
+        truncated = true;
+        return whitespace
+            ? substring[..(i + 1)]
+            : substring;
     }
 
     private static bool CheckEditPermissions(
@@ -2231,7 +2454,8 @@ public static class WikiExtensions
         string? sort = null,
         bool descending = false,
         string? filter = null,
-        Expression<Func<T, bool>>? condition = null) where T : Page
+        Expression<Func<T, bool>>? condition = null,
+        JsonTypeInfo<T>? typeInfo = null) where T : Page
     {
         var pageCondition = condition is null
             ? (T x) => x.Exists
@@ -2242,7 +2466,7 @@ public static class WikiExtensions
                 && x.Title.Title.Contains(filter));
         }
 
-        var query = dataStore.Query<T>();
+        var query = dataStore.Query(typeInfo);
         if (pageCondition is not null)
         {
             query = query.Where(pageCondition);
@@ -2290,35 +2514,70 @@ public static class WikiExtensions
         IWikiUser? user,
         WikiOptions options,
         IDataStore dataStore,
-        IWikiUserManager userManager,
         IWikiGroupManager groupManager,
         PageTitle title,
         Page? page = null)
     {
+        if (!string.IsNullOrEmpty(title.Domain)
+            && user is not null
+            && options.UserDomains
+            && string.CompareOrdinal(title.Domain, user.Id) == 0)
+        {
+            return WikiPermission.All;
+        }
+
+        var isReservedNamespace = options
+            .ReservedNamespaces
+            .Any(x => string.CompareOrdinal(
+                x,
+                title.Namespace) == 0);
+
+        if (user?.IsWikiAdmin == true)
+        {
+            return isReservedNamespace
+                ? WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions
+                : WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+        }
+
+        var isUserPage = string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0;
+        if (isUserPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title)
+            && string.Equals(user.Id, title.Title))
+        {
+            return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+        }
+
+        var isGroupPage = !isUserPage && string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0;
+        if (isGroupPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            var ownerId = await groupManager
+                .GetGroupOwnerIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (string.Equals(user.Id, ownerId))
+            {
+                return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+            }
+        }
+
+        List<IWikiGroup>? userGroups = null;
         var defaultPermission = WikiPermission.None;
-        var hasDomain = !string.IsNullOrEmpty(title.Domain);
-        if (!hasDomain)
+        if (string.IsNullOrEmpty(title.Domain))
         {
             defaultPermission = user is null
                 ? options.DefaultAnonymousPermission
                 : options.DefaultRegisteredPermission;
         }
-
-        List<IWikiGroup>? userGroups = null;
-        if (hasDomain
-            && user is not null
-            && !string.IsNullOrEmpty(title.Domain))
+        else if (user is not null)
         {
-            if (options.UserDomains
-                && string.CompareOrdinal(title.Domain, user.Id) == 0)
-            {
-                return WikiPermission.All;
-            }
             if (options.GetDomainPermission is not null)
             {
                 defaultPermission = await options.GetDomainPermission(user.Id, title.Domain);
             }
-            if (user.AllowedViewDomains?.Contains(title.Domain) == true)
+            if (!defaultPermission.HasFlag(WikiPermission.Read)
+                && user.AllowedViewDomains?.Contains(title.Domain) == true)
             {
                 defaultPermission |= WikiPermission.Read;
             }
@@ -2343,33 +2602,11 @@ public static class WikiExtensions
             }
         }
 
-        page ??= await dataStore.GetWikiPageAsync(options, title, true)
+        page ??= await dataStore
+            .GetWikiPageAsync(options, title, true)
             .ConfigureAwait(false);
 
-        var isUserPage = string.CompareOrdinal(page.Title.Namespace, options.UserNamespace) == 0;
-        if (isUserPage
-            && user is not null
-            && !string.IsNullOrEmpty(title.Title)
-            && string.Equals(user.Id, title.Title))
-        {
-            return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
-        }
-
-        var isGroupPage = string.CompareOrdinal(page.Title.Namespace, options.GroupNamespace) == 0;
-        if (isGroupPage
-            && user is not null
-            && !string.IsNullOrEmpty(title.Title))
-        {
-            var ownerId = await groupManager
-                .GetGroupOwnerIdAsync(title.Title)
-                .ConfigureAwait(false);
-            if (string.Equals(user.Id, ownerId))
-            {
-                return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
-            }
-        }
-
-        if (page is null)
+        if (!page.Exists)
         {
             if (isUserPage)
             {
@@ -2391,19 +2628,10 @@ public static class WikiExtensions
                 ? defaultPermission & WikiPermission.Read
                 : WikiPermission.None;
         }
-        var isReservedNamespace = options
-            .ReservedNamespaces
-            .Any(x => string.CompareOrdinal(
-                x,
-                title.Namespace) == 0);
 
-        IWikiUser? owner = null;
         if (!string.IsNullOrEmpty(page.Owner))
         {
-            owner = await userManager.FindByIdAsync(page.Owner);
-
-            if (owner is not null
-                && string.Equals(user.Id, owner.Id))
+            if (string.Equals(user.Id, page.Owner))
             {
                 return isReservedNamespace
                     ? WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner
@@ -2418,23 +2646,15 @@ public static class WikiExtensions
             }
         }
 
-        var isAdminNamespace = options
-            .AdminNamespaces
-            .Any(x => string.CompareOrdinal(
-                x,
-                title.Namespace) == 0);
-        if (isAdminNamespace
-            && user.IsWikiAdmin)
-        {
-            return isReservedNamespace
-                ? WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions
-                : WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
-        }
-
         if (!isUserPage
             && !isGroupPage
             && string.IsNullOrEmpty(page.Owner))
         {
+            var isAdminNamespace = options
+                .AdminNamespaces
+                .Any(x => string.CompareOrdinal(
+                    x,
+                    title.Namespace) == 0);
             if (isAdminNamespace)
             {
                 return defaultPermission & WikiPermission.ReadWrite;
@@ -2525,107 +2745,753 @@ public static class WikiExtensions
             : defaultPermission & WikiPermission.Read;
     }
 
+    private static async Task<List<PageSearchInfo>> GetSearchCacheAsync(IDataStore dataStore, IMemoryCache? cache)
+    {
+        if (cache?.TryGetValue<List<PageSearchInfo>>(
+            Page.SearchCacheKey,
+            out var info) == true
+            && info?.Count > 0)
+        {
+            return info;
+        }
+
+        info = [];
+        await foreach (var page in dataStore
+            .Query(WikiJsonSerializerContext.Default.Page)
+            .Where(x => x.TitleEmbeddingI1.HasValue || x.EmbeddingI1Bytes != null)
+            .AsAsyncEnumerable())
+        {
+            if (page.TitleEmbeddingI1.HasValue)
+            {
+                info.Add(new PageSearchInfo(
+                    page.Title,
+                    page.TitleEmbeddingI1.Value,
+                    -1,
+                    page.Owner,
+                    page is WikiFile file ? file.Uploader : null));
+            }
+
+            if (page.EmbeddingI1s is null)
+            {
+                continue;
+            }
+            foreach (var (embedding, i) in page.EmbeddingI1s.Select((x, i) => (x, i)))
+            {
+                info.Add(new PageSearchInfo(
+                    page.Title,
+                    embedding,
+                    i,
+                    page.Owner,
+                    page is WikiFile file ? file.Uploader : null));
+            }
+        }
+
+        cache?.Set(Page.SearchCacheKey, info);
+
+        return info;
+    }
+
+    private static async Task<List<PageSearchInfo>> GetSearchTitleCacheAsync(IDataStore dataStore, IMemoryCache? cache)
+    {
+        if (cache?.TryGetValue<List<PageSearchInfo>>(
+            Page.SearchTitleCacheKey,
+            out var info) == true
+            && info?.Count > 0)
+        {
+            return info;
+        }
+
+        info = [];
+        await foreach (var page in dataStore
+            .Query(WikiJsonSerializerContext.Default.Page)
+            .Where(x => x.TitleEmbeddingI1.HasValue)
+            .AsAsyncEnumerable())
+        {
+            info.Add(new PageSearchInfo(
+                page.Title,
+                page.TitleEmbeddingI1!.Value,
+                -1,
+                page.Owner,
+                page is WikiFile file ? file.Uploader : null));
+        }
+
+        cache?.Set(Page.SearchTitleCacheKey, info);
+
+        return info;
+    }
+
+    private static async Task<(List<SearchScore> Scores, long TotalCount)> GetSearchPageAsync(
+        EmbeddingI1 query,
+        SearchRequest request,
+        IDataStore dataStore,
+        WikiOptions options,
+        IWikiUser? user,
+        IWikiGroupManager groupManager,
+        List<PageSearchInfo> candidates)
+    {
+        const float MinSimilarity = 0.625f;
+
+        var requestOwners = string.IsNullOrEmpty(request.Owner)
+            ? null
+            : request.Owner.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var requiredOwners = requestOwners?.Length > 0
+            ? requestOwners
+                .Where(x => x[0] != '!')
+                .ToList()
+            : null;
+        var forbiddenOwners = requestOwners?.Length > 0
+            ? requestOwners
+                .Where(x => x.Length > 1 && x[0] == '!')
+                .Select(x => x[1..])
+                .ToList()
+            : null;
+
+        var requestUploaders = string.IsNullOrEmpty(request.Uploader)
+            ? null
+            : request.Uploader.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var requiredUploaders = requestUploaders?.Length > 0
+            ? requestUploaders
+                .Where(x => x[0] != '!')
+                .ToList()
+            : null;
+        var forbiddenUploaders = requestUploaders?.Length > 0
+            ? requestUploaders
+                .Where(x => x.Length > 1 && x[0] == '!')
+                .Select(x => x[1..])
+                .ToList()
+            : null;
+
+        var queryRequiresValidation = requiredOwners?.Count > 0
+            || forbiddenOwners?.Count > 0
+            || requiredUploaders?.Count > 0
+            || forbiddenUploaders?.Count > 0
+            || request.Domain is not null
+            || request.Namespace is not null;
+
+        var pageResults = new HashSet<PageTitle>();
+
+        bool ValidateResult(PageSearchInfo info)
+        {
+            if (request.Domain is not null)
+            {
+                if (request.Domain.Length > 0)
+                {
+                    if (info.Title.Domain?.Equals(request.Domain, StringComparison.OrdinalIgnoreCase) != true)
+                    {
+                        return false;
+                    }
+                }
+                else if (!string.IsNullOrEmpty(info.Title.Domain))
+                {
+                    return false;
+                }
+            }
+
+            if (request.Namespace is not null)
+            {
+                if (request.Namespace.Length > 0)
+                {
+                    if (string.CompareOrdinal(info.Title.NormalizedNamespace, request.Namespace.ToLowerInvariant()) != 0)
+                    {
+                        return false;
+                    }
+                }
+                else if (!string.IsNullOrEmpty(info.Title.Namespace))
+                {
+                    return false;
+                }
+            }
+
+            if (requiredOwners?.Count > 0
+                && (string.IsNullOrEmpty(info.Owner)
+                || !requiredOwners.Contains(info.Owner)))
+            {
+                return false;
+            }
+
+            if (forbiddenOwners?.Count > 0
+                && !string.IsNullOrEmpty(info.Owner)
+                && forbiddenOwners.Contains(info.Owner))
+            {
+                return false;
+            }
+
+            if (requiredUploaders?.Count > 0
+                && (string.IsNullOrEmpty(info.Uploader)
+                || !requiredUploaders.Contains(info.Uploader)))
+            {
+                return false;
+            }
+
+            if (forbiddenUploaders?.Count > 0
+                && !string.IsNullOrEmpty(info.Uploader)
+                && forbiddenUploaders.Contains(info.Uploader))
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        var parts = QuotedStringsRegex()
+            .Split(request.Query);
+
+        var exactTerms = parts
+            .Where(x => x.Length > 0 && x[0] == '"' && x[^1] == '"')
+            .Select(x => x[1..^1])
+            .ToList();
+
+        var terms = parts
+            .Where(x => x.Length > 0 && (x[0] != '"' || x[^1] != '"'))
+            .SelectMany(x => x.Split([' ', ',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
+        var forbiddenTerms = terms
+            .Where(x => x[0] == '-')
+            .Select(x => x[1..])
+            .ToList();
+
+        var queryRequiresTextValidation = exactTerms.Count > 0
+            || forbiddenTerms.Count > 0;
+
+        var userGroups = new List<IWikiGroup>();
+
+        async ValueTask<(bool IsValid, Page? Page)> ValidatePageAsync(PageSearchInfo info)
+        {
+            var pages = new List<Page>();
+
+            if (!await HasReadPermissionAsync(
+                user,
+                userGroups,
+                options,
+                dataStore,
+                groupManager,
+                info.Title,
+                info.Owner,
+                pages))
+            {
+                return (false, null);
+            }
+
+            if (!queryRequiresTextValidation)
+            {
+                return (true, null);
+            }
+
+            if (pages.Count == 0)
+            {
+                pages.Add(await dataStore
+                    .GetWikiPageAsync(options, info.Title, true)
+                    .ConfigureAwait(false));
+            }
+
+            var page = pages[0];
+
+            if (exactTerms.Count > 0
+                && !exactTerms.All(x => page.Text?.Contains(x) == true))
+            {
+                return (false, null);
+            }
+
+            if (forbiddenTerms.Count > 0
+                && forbiddenTerms.Any(x => page.Text?.Contains(x) == true))
+            {
+                return (false, null);
+            }
+
+            return (true, page);
+        }
+
+        async ValueTask<string?> GetExcerptAsync(PageSearchInfo info, Page? page)
+        {
+            if (request.TitleMatchOnly
+                || info.Line < 0)
+            {
+                return null;
+            }
+
+            page ??= await dataStore
+                .GetWikiPageAsync(options, info.Title, true)
+                .ConfigureAwait(false);
+            if (string.IsNullOrEmpty(page.Text))
+            {
+                return null;
+            }
+
+            var text = page.Text.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
+            if (text.Length <= info.Line
+                || string.IsNullOrEmpty(text[info.Line]))
+            {
+                return null;
+            }
+
+            var words = text[info.Line]
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(x => (
+                    Word: x,
+                    IsMatch: terms.Contains(x, StringComparer.OrdinalIgnoreCase)))
+                .ToList();
+
+            var sb = new StringBuilder();
+
+            var firstIndex = words.FindIndex(x => x.IsMatch);
+            if (firstIndex == -1)
+            {
+                sb.Append(page.Text.TruncateString(SearchExcerptCharacterLimit, out var truncated));
+                if (truncated)
+                {
+                    sb.Append("...");
+                }
+                return sb.ToString();
+            }
+
+            if (firstIndex > 0)
+            {
+                firstIndex--;
+            }
+
+            if (firstIndex > 0)
+            {
+                sb.Append("...");
+            }
+
+            var i = 0;
+            for (; i < words.Count; i++)
+            {
+                if (sb.Length + words[i].Word.Length > SearchExcerptCharacterLimit)
+                {
+                    break;
+                }
+                if (sb.Length > 0)
+                {
+                    sb.Append(' ');
+                }
+                if (words[i].IsMatch)
+                {
+                    sb.Append("<em>");
+                }
+                sb.Append(words[i]);
+                if (words[i].IsMatch)
+                {
+                    sb.Append("</em>");
+                }
+            }
+            if (i < words.Count)
+            {
+                sb.Append("...");
+            }
+
+            return sb.ToString();
+        }
+
+        var sortedSet = new SortedSet<SearchScore>(SearchScore.Comparer);
+        var enumerator = candidates.GetEnumerator();
+        var num = 0L;
+        var count = int.MaxValue / request.PageNumber < request.PageSize
+            ? int.MaxValue
+            : request.PageNumber * request.PageSize;
+        while (sortedSet.Count < count
+            && enumerator.MoveNext())
+        {
+            var info = enumerator.Current;
+
+            if (pageResults.Contains(info.Title))
+            {
+                continue;
+            }
+
+            var similarity = query.Similarity(info.Embedding);
+            if (similarity < MinSimilarity)
+            {
+                continue;
+            }
+
+            pageResults.Add(info.Title);
+
+            if (queryRequiresValidation && !ValidateResult(info))
+            {
+                continue;
+            }
+
+            var (isValid, page) = await ValidatePageAsync(info);
+            if (!isValid)
+            {
+                continue;
+            }
+
+            sortedSet.Add(new SearchScore(
+                similarity,
+                info,
+                await GetExcerptAsync(info, page),
+                num++));
+        }
+
+        var totalCount = sortedSet.Count;
+
+        while (enumerator.MoveNext())
+        {
+            var info = enumerator.Current;
+
+            if (pageResults.Contains(info.Title))
+            {
+                continue;
+            }
+
+            var similarity = query.Similarity(info.Embedding);
+            if (similarity < MinSimilarity)
+            {
+                continue;
+            }
+
+            pageResults.Add(info.Title);
+
+            if (queryRequiresValidation && !ValidateResult(info))
+            {
+                continue;
+            }
+
+            var (isValid, page) = await ValidatePageAsync(info);
+            if (!isValid)
+            {
+                continue;
+            }
+
+            totalCount++;
+
+            if (similarity > sortedSet.Min.Similarity)
+            {
+                sortedSet.Remove(sortedSet.Min);
+                sortedSet.Add(new SearchScore(
+                    similarity,
+                    info,
+                    await GetExcerptAsync(info, page),
+                    num++));
+            }
+        }
+
+        return (sortedSet
+            .Skip((request.PageNumber - 1) * request.PageSize)
+            .Take(request.PageSize)
+            .ToList(),
+            totalCount);
+    }
+
+    private static async ValueTask<bool> HasReadPermissionAsync(
+        IWikiUser? user,
+        List<IWikiGroup> userGroups,
+        WikiOptions options,
+        IDataStore dataStore,
+        IWikiGroupManager groupManager,
+        PageTitle title,
+        string? ownerId,
+        List<Page> pages)
+    {
+        if (user?.IsWikiAdmin == true)
+        {
+            return true;
+        }
+
+        if (!string.IsNullOrEmpty(title.Domain)
+            && user is not null
+            && options.UserDomains
+            && string.CompareOrdinal(title.Domain, user.Id) == 0)
+        {
+            return true;
+        }
+
+        var isUserPage = string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0;
+        if (isUserPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title)
+            && string.Equals(user.Id, title.Title))
+        {
+            return true;
+        }
+
+        var isGroupPage = !isUserPage && string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0;
+
+        if (user is not null
+            && !string.IsNullOrEmpty(ownerId))
+        {
+            if (string.Equals(user.Id, ownerId))
+            {
+                return true;
+            }
+
+            if (!isGroupPage && user.Groups?.Contains(ownerId) == true)
+            {
+                return true;
+            }
+        }
+
+        if (isGroupPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            if (user.Groups?.Contains(title.Title) == true)
+            {
+                return true;
+            }
+
+            var groupOwnerId = await groupManager
+                .GetGroupOwnerIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (string.Equals(user.Id, groupOwnerId))
+            {
+                return true;
+            }
+        }
+
+        var canReadByDefault = false;
+        if (string.IsNullOrEmpty(title.Domain))
+        {
+            canReadByDefault = (user is null
+                ? options.DefaultAnonymousPermission
+                : options.DefaultRegisteredPermission)
+                .HasFlag(WikiPermission.Read);
+        }
+        else if (user is not null)
+        {
+            if (options.GetDomainPermission is not null)
+            {
+                canReadByDefault = (await options
+                    .GetDomainPermission(user.Id, title.Domain))
+                    .HasFlag(WikiPermission.Read);
+            }
+            if (user.AllowedViewDomains?.Contains(title.Domain) == true)
+            {
+                canReadByDefault = true;
+            }
+            if (!canReadByDefault)
+            {
+                if (userGroups.Count == 0
+                    && user.Groups?.Count > 0)
+                {
+                    foreach (var groupId in user.Groups)
+                    {
+                        var group = await groupManager.FindByIdAsync(groupId);
+                        if (group is not null)
+                        {
+                            userGroups.Add(group);
+                        }
+                    }
+                }
+                if (userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+                {
+                    canReadByDefault = true;
+                }
+            }
+        }
+
+        if (user is null
+            && !canReadByDefault)
+        {
+            return false;
+        }
+
+        if (!isUserPage
+            && !isGroupPage
+            && string.IsNullOrEmpty(ownerId))
+        {
+            return canReadByDefault;
+        }
+
+        var page = await dataStore
+            .GetWikiPageAsync(options, title, true)
+            .ConfigureAwait(false);
+        pages.Add(page);
+
+        if (!page.Exists)
+        {
+            if (isUserPage)
+            {
+                return canReadByDefault;
+            }
+            else if (isGroupPage
+                && !string.IsNullOrEmpty(title.Title))
+            {
+                return canReadByDefault
+                    || user?.Groups?.Contains(title.Title) == true;
+            }
+            return canReadByDefault;
+        }
+
+        if (user is null)
+        {
+            return page.AllowedViewers is null;
+        }
+
+        if (page.AllowedViewers?.Contains(user.Id) == false
+            && user.AllowedViewPages?.Contains(title) != true
+            && (!isGroupPage
+                || string.IsNullOrEmpty(title.Title)
+                || user.Groups?.Contains(title.Title) != true)
+            && (page.AllowedViewerGroups is null
+                || user.Groups is null
+                || !page.AllowedViewerGroups.Intersect(user.Groups).Any()))
+        {
+            if (userGroups.Count == 0
+                && user.Groups?.Count > 0)
+            {
+                foreach (var groupId in user.Groups)
+                {
+                    var group = await groupManager.FindByIdAsync(groupId);
+                    if (group is not null)
+                    {
+                        userGroups.Add(group);
+                    }
+                }
+            }
+            if (!userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+            {
+                return false;
+            }
+        }
+
+        if (isUserPage
+            || (isGroupPage
+            && !string.IsNullOrEmpty(title.Title)))
+        {
+            return canReadByDefault;
+        }
+
+        if (canReadByDefault
+            || page.AllowedEditors?.Contains(user.Id) != false
+            || user.AllowedEditPages?.Contains(title) == true
+            || (page.AllowedEditorGroups is not null
+                && user.Groups is not null
+                && page.AllowedEditorGroups.Intersect(user.Groups).Any()))
+        {
+            return true;
+        }
+
+        if (userGroups.Count == 0
+            && user.Groups?.Count > 0)
+        {
+            foreach (var groupId in user.Groups)
+            {
+                var group = await groupManager.FindByIdAsync(groupId);
+                if (group is not null)
+                {
+                    userGroups.Add(group);
+                }
+            }
+        }
+        return userGroups.Any(x => x.AllowedEditPages?.Contains(title) == true);
+    }
+
     private static async Task<IPagedList<Page>> GetSpecialListInnerAsync(
         SpecialListRequest request,
         IDataStore dataStore) => request.Type switch
         {
-            SpecialListType.All_Categories => await GetListAsync<Category>(
-                dataStore,
-                request.PageNumber,
-                request.PageSize,
-                request.Sort,
-                request.Descending,
-                request.Filter)
-                .ConfigureAwait(false),
-
-            SpecialListType.All_Files => await GetListAsync<WikiFile>(
-                dataStore,
-                request.PageNumber,
-                request.PageSize,
-                request.Sort,
-                request.Descending,
-                request.Filter)
-                .ConfigureAwait(false),
-
-            SpecialListType.All_Articles => await GetListAsync<Article>(
-                dataStore,
-                request.PageNumber,
-                request.PageSize,
-                request.Sort,
-                request.Descending,
-                request.Filter)
-                .ConfigureAwait(false),
-
-            SpecialListType.All_Redirects => await GetListAsync<Page>(
+            SpecialListType.All_Categories => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.RedirectTitle.HasValue)
+                typeInfo: WikiJsonSerializerContext.Default.Category)
                 .ConfigureAwait(false),
 
-            SpecialListType.Broken_Redirects => await GetListAsync<Page>(
+            SpecialListType.All_Files => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.IsBrokenRedirect)
+                typeInfo: WikiJsonSerializerContext.Default.WikiFile)
                 .ConfigureAwait(false),
 
-            SpecialListType.Double_Redirects => await GetListAsync<Page>(
+            SpecialListType.All_Articles => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.IsDoubleRedirect)
+                typeInfo: WikiJsonSerializerContext.Default.Article)
                 .ConfigureAwait(false),
 
-            SpecialListType.Uncategorized_Articles => await GetListAsync<Article>(
+            SpecialListType.All_Redirects => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.Uncategorized)
+                x => x.RedirectTitle.HasValue,
+                WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false),
 
-            SpecialListType.Uncategorized_Categories => await GetListAsync<Category>(
+            SpecialListType.Broken_Redirects => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.Uncategorized)
+                x => x.IsBrokenRedirect,
+                WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false),
 
-            SpecialListType.Uncategorized_Files => await GetListAsync<WikiFile>(
+            SpecialListType.Double_Redirects => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.Uncategorized)
+                x => x.IsDoubleRedirect,
+                WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false),
 
-            SpecialListType.Unused_Categories => await GetListAsync<Category>(
+            SpecialListType.Uncategorized_Articles => await GetListAsync(
                 dataStore,
                 request.PageNumber,
                 request.PageSize,
                 request.Sort,
                 request.Descending,
                 request.Filter,
-                x => x.IsEmpty)
+                x => x.Uncategorized,
+                WikiJsonSerializerContext.Default.Article)
+                .ConfigureAwait(false),
+
+            SpecialListType.Uncategorized_Categories => await GetListAsync(
+                dataStore,
+                request.PageNumber,
+                request.PageSize,
+                request.Sort,
+                request.Descending,
+                request.Filter,
+                x => x.Uncategorized,
+                WikiJsonSerializerContext.Default.Category)
+                .ConfigureAwait(false),
+
+            SpecialListType.Uncategorized_Files => await GetListAsync(
+                dataStore,
+                request.PageNumber,
+                request.PageSize,
+                request.Sort,
+                request.Descending,
+                request.Filter,
+                x => x.Uncategorized,
+                WikiJsonSerializerContext.Default.WikiFile)
+                .ConfigureAwait(false),
+
+            SpecialListType.Unused_Categories => await GetListAsync(
+                dataStore,
+                request.PageNumber,
+                request.PageSize,
+                request.Sort,
+                request.Descending,
+                request.Filter,
+                x => x.IsEmpty,
+                WikiJsonSerializerContext.Default.Category)
                 .ConfigureAwait(false),
 
             _ => new PagedList<Page>(null, 1, request.PageSize, 0),
         };
+
+    [GeneratedRegex("((?<!\\\\)\"[^\" ].*?[^\\\\]\")")]
+    private static partial Regex QuotedStringsRegex();
 }

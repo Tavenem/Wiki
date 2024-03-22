@@ -225,7 +225,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
                 domain = null;
             }
             parts = parts.Length == 1
-                ? Array.Empty<string>()
+                ? []
                 : parts[1..];
         }
 

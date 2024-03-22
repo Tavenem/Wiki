@@ -446,7 +446,7 @@ Fourth section text";
     {
         var pageTitle = new PageTitle(title ?? Title, @namespace);
         var id = IPage<Page>.GetId(pageTitle);
-        var article = dataStore.GetItem<Article>(id, TimeSpan.Zero);
+        var article = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Article, TimeSpan.Zero);
         if (article is null)
         {
             article = Article.Empty(pageTitle);
@@ -464,7 +464,7 @@ Fourth section text";
                 TEST_OWNER_ID,
                 markdown);
         }
-        article = dataStore.GetItem<Article>(id, TimeSpan.Zero);
+        article = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Article, TimeSpan.Zero);
         Assert.IsNotNull(article);
         return article;
     }

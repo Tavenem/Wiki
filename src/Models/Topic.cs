@@ -92,7 +92,7 @@ public class Topic(
     public static ValueTask<Topic?> GetTopicAsync(
         IDataStore dataStore,
         PageTitle title)
-        => dataStore.GetItemAsync<Topic>(GetId(title));
+        => dataStore.GetItemAsync(GetId(title), WikiJsonSerializerContext.Default.Topic);
 
     /// <summary>
     /// Get a new instance of <see cref="Topic"/>.
@@ -110,7 +110,8 @@ public class Topic(
         IReadOnlyCollection<Message>? messages)
     {
         var result = new Topic(GetId(title), messages);
-        await dataStore.StoreItemAsync(result)
+        await dataStore
+            .StoreItemAsync(result, WikiJsonSerializerContext.Default.Topic)
             .ConfigureAwait(false);
         return result;
     }

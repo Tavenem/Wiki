@@ -1,5 +1,4 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using System.Collections.ObjectModel;
 using System.Text.Json;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Models;
@@ -129,13 +128,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>([ new WikiLink(
-                null,
-                null,
-                false,
-                false,
-                false,
-                new("Test Title", "Test Namespace")) ]));
+            "Test markdown");
 
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -161,13 +154,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>([ new WikiLink(
-                null,
-                null,
-                false,
-                false,
-                false,
-                new("Test Title", "Test Namespace")) ]));
+            "Test markdown");
 
         var serializerOptions = new JsonSerializerOptions()
         {
@@ -212,13 +199,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>([ new WikiLink(
-                null,
-                null,
-                false,
-                false,
-                false,
-                new("Test Title", "Test Namespace")) ]),
+            "Test markdown",
             TEST_OWNER_ID,
             false,
             "Test Sender Name",
@@ -241,13 +222,7 @@ public class SerializationTests
             "Test markdown",
             "Test markdown",
             "Test markdown",
-            new ReadOnlyCollection<WikiLink>([ new WikiLink(
-                null,
-                null,
-                false,
-                false,
-                false,
-                new("Test Title", "Test Namespace")) ]),
+            "Test markdown",
             TEST_OWNER_ID,
             false,
             "Test Sender Name",
@@ -494,85 +469,6 @@ public class SerializationTests
         deserialized = JsonSerializer.Deserialize<WikiLink>(json);
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
-    }
-
-    [TestMethod]
-    public void WikiLinkTest_Context()
-    {
-        var value = new WikiLink(
-            null,
-            null,
-            false,
-            false,
-            false,
-            new("Test Title", "Test Namespace", "Test Domain"));
-        var json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        var deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiLink);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
-
-        value = new WikiLink(
-            null,
-            null,
-            false,
-            false,
-            true,
-            new("Test Title", "Test Namespace", "Test Domain"));
-        json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiLink);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
-
-        value = new WikiLink(
-            null,
-            null,
-            true,
-            false,
-            false,
-            new("Test Title", _Options.CategoryNamespace, "Test Domain"));
-        json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiLink);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
-
-        value = new WikiLink(
-            null,
-            null,
-            true,
-            true,
-            false,
-            new("Test Title", _Options.CategoryNamespace, "Test Domain"));
-        json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiLink);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
-
-        value = new WikiLink(
-            null,
-            "talk",
-            false,
-            false,
-            false,
-            new("Test Title", "Test Namespace", "Test Domain"));
-        json = JsonSerializer.Serialize(value, WikiJsonSerializerContext.Default.WikiLink);
-        Console.WriteLine();
-        Console.WriteLine(json);
-        deserialized = JsonSerializer.Deserialize(json, WikiJsonSerializerContext.Default.WikiLink);
-        Assert.IsNotNull(deserialized);
-        Assert.AreEqual(value, deserialized);
-        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.WikiLink));
     }
 
     [TestMethod]

@@ -1,5 +1,4 @@
-﻿using System.Collections.ObjectModel;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
 using Tavenem.Wiki.Models;
@@ -60,7 +59,7 @@ public class Message : MarkdownItem
     /// <param name="markdownContent">The raw markdown.</param>
     /// <param name="html">The rendered HTML content.</param>
     /// <param name="preview">A preview of this item's rendered HTML.</param>
-    /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+    /// <param name="text">A plain text version of the content.</param>
     /// <param name="senderId">The ID of the sender of this message.</param>
     /// <param name="senderIsAdmin">Whether the sender of this message is an admin.</param>
     /// <param name="senderName">The name of the sender of this message.</param>
@@ -72,20 +71,20 @@ public class Message : MarkdownItem
     /// messages addressed directly to a topic).
     /// </param>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers.
+    /// Note: this constructor is most useful for deserialization.
     /// </remarks>
     [JsonConstructor]
     public Message(
         string id,
-        string markdownContent,
-        string html,
-        string preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
+        string? markdownContent,
+        string? html,
+        string? preview,
+        string? text,
         string senderId,
         bool senderIsAdmin,
         string senderName,
         long timestampTicks,
-        string? replyMessageId = null) : base(id, markdownContent, html, preview, wikiLinks)
+        string? replyMessageId = null) : base(id, markdownContent, html, preview, text)
     {
         ReplyMessageId = replyMessageId;
         SenderId = senderId;
@@ -101,9 +100,9 @@ public class Message : MarkdownItem
         string? markdown,
         string? html,
         string? preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
+        string? text,
         long timestampTicks,
-        string? replyMessageId = null) : base(markdown, html, preview, wikiLinks)
+        string? replyMessageId = null) : base(markdown, html, preview, text)
     {
         ReplyMessageId = replyMessageId;
         SenderId = senderId;
@@ -152,11 +151,13 @@ public class Message : MarkdownItem
             markdown,
             RenderHtml(options, dataStore, markdown),
             RenderPreview(options, dataStore, await PostprocessMessageMarkdownAsync(options, dataStore, markdown, true)),
-            new ReadOnlyCollection<WikiLink>(GetWikiLinks(options, dataStore, markdown)),
+            FormatPlainText(options, dataStore, markdown, null, false),
             DateTimeOffset.UtcNow.Ticks,
             replyMessageId);
 
-        var topic = await dataStore.GetItemAsync<Topic>(topicId).ConfigureAwait(false);
+        var topic = await dataStore
+            .GetItemAsync(topicId, WikiJsonSerializerContext.Default.Topic)
+            .ConfigureAwait(false);
         if (topic is null)
         {
             topic = new Topic(
@@ -169,7 +170,9 @@ public class Message : MarkdownItem
             messages.Add(message);
             topic.Messages = messages;
         }
-        await dataStore.StoreItemAsync(topic).ConfigureAwait(false);
+        await dataStore
+            .StoreItemAsync(topic, WikiJsonSerializerContext.Default.Topic)
+            .ConfigureAwait(false);
 
         return message;
     }

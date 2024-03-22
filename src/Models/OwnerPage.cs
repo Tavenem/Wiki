@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -50,30 +49,25 @@ public abstract class OwnerPage : Article
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This constructor should only be used by deserializers or for testing purposes.
+    /// This constructor should only be used for deserialization or for testing purposes.
     /// </para>
     /// <para>
     /// To create a new page as part of a normal user interaction, use the <see
-    /// cref="WikiExtensions.AddOrReviseWikiPageAsync(IDataStore, WikiOptions, IWikiUserManager,
-    /// IWikiGroupManager, IWikiUser, PageTitle, string?, string?, bool, string?,
-    /// IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?,
-    /// PageTitle?, PageTitle?)"/> method.
+    /// cref="WikiExtensions.AddOrReviseWikiPageAsync"/> method.
     /// </para>
     /// <para>
     /// To create a page programmatically, you can use a combination of <see
     /// cref="WikiExtensions.GetWikiPageAsync(IDataStore, WikiOptions, PageTitle, bool, bool)"/> (to
     /// get the current page, or a new page if one does not already exist), and <see
-    /// cref="Page.UpdateAsync(WikiOptions, IDataStore, string, string?, string?, string?,
-    /// IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?, IEnumerable{string}?,
-    /// PageTitle?)"/> to update the result with the intended properties.
+    /// cref="Page.UpdateAsync"/> to update the result with the intended properties.
     /// </para>
     /// </remarks>
     [JsonConstructor]
     protected OwnerPage(
         PageTitle title,
-        string html,
-        string preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
+        string? html = null,
+        string? preview = null,
+        string? text = null,
         string? markdownContent = null,
         string? owner = null,
         Revision? revision = null,
@@ -82,9 +76,11 @@ public abstract class OwnerPage : Article
         IReadOnlyCollection<string>? allowedEditorGroups = null,
         IReadOnlyCollection<string>? allowedViewerGroups = null,
         IReadOnlyCollection<PageTitle>? categories = null,
+        IReadOnlyCollection<IReadOnlyCollection<byte>>? embeddingI1Bytes = null,
         IReadOnlyCollection<Heading>? headings = null,
         IReadOnlyCollection<PageTitle>? redirectReferences = null,
         IReadOnlyCollection<PageTitle>? references = null,
+        IReadOnlyCollection<byte>? titleEmbeddingI1Bytes = null,
         IReadOnlyCollection<PageTitle>? transclusionReferences = null,
         IReadOnlyCollection<PageTitle>? transclusions = null,
         bool isBrokenRedirect = false,
@@ -93,7 +89,7 @@ public abstract class OwnerPage : Article
         title,
         html,
         preview,
-        wikiLinks,
+        text,
         markdownContent,
         owner,
         revision,
@@ -102,9 +98,11 @@ public abstract class OwnerPage : Article
         allowedEditorGroups,
         allowedViewerGroups,
         categories,
+        embeddingI1Bytes,
         headings,
         redirectReferences,
         references,
+        titleEmbeddingI1Bytes,
         transclusionReferences,
         transclusions,
         isBrokenRedirect,

@@ -9,7 +9,7 @@
 /// </para>
 /// <para>
 /// If <see cref="PageTitle.Domain"/> or <see cref="PageTitle.Namespace"/> are <see
-/// langword="null"/> or empty, only pages with <see langword="null"/> or and empty value for that
+/// langword="null"/> or empty, only pages with <see langword="null"/> or an empty value for that
 /// part are returned (i.e. not pages with any value).
 /// </para>
 /// <para>

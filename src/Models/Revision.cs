@@ -163,7 +163,7 @@ public class Revision : IEquatable<Revision>
     /// The timestamp of this revision, in UTC Ticks.
     /// </param>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers. The other constructors are more
+    /// Note: this constructor is most useful for deserialization. The other constructors are more
     /// suited to creating a new instance, as they will automatically generate an appropriate ID.
     /// </remarks>
     [JsonConstructor]

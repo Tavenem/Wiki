@@ -1,13 +1,18 @@
 ﻿using AngleSharp.Dom;
+using Microsoft.Extensions.Caching.Memory;
+using SmartComponents.LocalEmbeddings;
+using System.Collections.Frozen;
 using System.Collections.Immutable;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using Tavenem.DataStorage;
 using Tavenem.DiffPatchMerge;
 using Tavenem.Wiki.MarkdownExtensions.TableOfContents;
 using Tavenem.Wiki.MarkdownExtensions.Transclusions;
 using Tavenem.Wiki.Models;
+using Tavenem.Wiki.Queries;
 
 namespace Tavenem.Wiki;
 
@@ -19,6 +24,18 @@ namespace Tavenem.Wiki;
 [JsonDerivedType(typeof(WikiFile), WikiFile.WikiFileIdItemTypeName)]
 public abstract class Page : MarkdownItem, IPage<Page>
 {
+    /// <summary>
+    /// A key used with a <see cref="IMemoryCache"/> to cache <see cref="EmbeddingI1"/> values for
+    /// wiki pages.
+    /// </summary>
+    public static readonly object SearchCacheKey = new();
+
+    /// <summary>
+    /// A key used with a <see cref="IMemoryCache"/> to cache <see cref="EmbeddingI1"/> values for
+    /// wiki page titles.
+    /// </summary>
+    public static readonly object SearchTitleCacheKey = new();
+
     /// <summary>
     /// The type discriminator for this type.
     /// </summary>
@@ -391,13 +408,42 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </para>
     /// </summary>
     [JsonIgnore]
-    public string DisplayHtml => RevisionHtml ?? Html;
+    public string? DisplayHtml => RevisionHtml ?? Html;
 
     /// <summary>
     /// An optional display title for this page, which would override its <see cref="Title"/>'s <see
     /// cref="PageTitle.Title"/> for display purposes.
     /// </summary>
     public virtual string? DisplayTitle { get; set; }
+
+    /// <summary>
+    /// Cached <see cref="EmbeddingI1"/> quantized embedding values for the lines in the <see
+    /// cref="MarkdownItem.MarkdownContent"/> of this page.
+    /// </summary>
+    /// <remarks>
+    /// These values are determined on creation, and when a revision is made, and can be leveraged
+    /// for efficient semantic searches.
+    /// </remarks>
+    [JsonIgnore]
+    public IReadOnlySet<EmbeddingI1>? EmbeddingI1s { get; set; }
+
+    /// <summary>
+    /// Raw byte values for <see cref="EmbeddingI1s"/>.
+    /// </summary>
+    /// <remarks>
+    /// Used for (de)serialization.
+    /// </remarks>
+    public IReadOnlyCollection<IReadOnlyCollection<byte>>? EmbeddingI1Bytes
+    {
+        get => EmbeddingI1s?
+            .Select(x => x.Buffer.ToArray().AsReadOnly())
+            .ToArray()
+            .AsReadOnly();
+        set => EmbeddingI1s = value?
+            .Select(x => new EmbeddingI1(x.ToArray()))
+            .ToHashSet()
+            .ToFrozenSet();
+    }
 
     /// <summary>
     /// Whether this page exists.
@@ -488,6 +534,25 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </para>
     /// </remarks>
     public bool IsMissing { get; set; }
+
+    /// <summary>
+    /// Whether this page can be searched.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Defaults to <see langword="true"/> and is read-only. Intended for use by inheriting classes
+    /// which are not intended to be found in search results.
+    /// </para>
+    /// <para>
+    /// Not persisted to storage.
+    /// </para>
+    /// <para>
+    /// Note that pages in the <see cref="WikiOptions.ScriptNamespace"/> and <see
+    /// cref="WikiOptions.TransclusionNamespace"/> are never searchable.
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
+    public virtual bool IsSearchable => true;
 
     /// <summary>
     /// The ID of the owner of this page.
@@ -603,6 +668,31 @@ public abstract class Page : MarkdownItem, IPage<Page>
     public PageTitle Title { get; set; }
 
     /// <summary>
+    /// Cached <see cref="EmbeddingI1"/> quantized embedding values for the <see cref="Title"/> of
+    /// this page.
+    /// </summary>
+    /// <remarks>
+    /// This value is determined on creation, and when a revision is made, and can be leveraged for
+    /// efficient semantic searches.
+    /// </remarks>
+    [JsonIgnore]
+    public EmbeddingI1? TitleEmbeddingI1 { get; set; }
+
+    /// <summary>
+    /// Raw byte values for <see cref="TitleEmbeddingI1"/>.
+    /// </summary>
+    /// <remarks>
+    /// Used for (de)serialization.
+    /// </remarks>
+    public IReadOnlyCollection<byte>? TitleEmbeddingI1Bytes
+    {
+        get => TitleEmbeddingI1?.Buffer.ToArray().AsReadOnly();
+        set => TitleEmbeddingI1 = value is null
+            ? null
+            : new EmbeddingI1(value.ToArray());
+    }
+
+    /// <summary>
     /// <para>
     /// Other pages which transclude this one.
     /// </para>
@@ -659,9 +749,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </summary>
     protected Page(
         PageTitle title,
-        string html,
-        string preview,
-        IReadOnlyCollection<WikiLink> wikiLinks,
+        string? html = null,
+        string? preview = null,
+        string? text = null,
         string? markdownContent = null,
         string? owner = null,
         Revision? revision = null,
@@ -670,14 +760,16 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IReadOnlyCollection<string>? allowedEditorGroups = null,
         IReadOnlyCollection<string>? allowedViewerGroups = null,
         IReadOnlyCollection<PageTitle>? categories = null,
+        IReadOnlyCollection<IReadOnlyCollection<byte>>? embeddingI1Bytes = null,
         IReadOnlyCollection<Heading>? headings = null,
         IReadOnlyCollection<PageTitle>? redirectReferences = null,
         IReadOnlyCollection<PageTitle>? references = null,
+        IReadOnlyCollection<byte>? titleEmbeddingI1Bytes = null,
         IReadOnlyCollection<PageTitle>? transclusionReferences = null,
         IReadOnlyCollection<PageTitle>? transclusions = null,
         bool isBrokenRedirect = false,
         bool isDoubleRedirect = false,
-        PageTitle? redirectTitle = null) : base(IPage<Page>.GetId(title), markdownContent, html, preview, wikiLinks)
+        PageTitle? redirectTitle = null) : base(IPage<Page>.GetId(title), markdownContent, html, preview, text)
     {
         if (!string.IsNullOrEmpty(owner))
         {
@@ -687,6 +779,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             AllowedViewerGroups = allowedViewerGroups;
         }
         Categories = categories;
+        EmbeddingI1Bytes = embeddingI1Bytes;
         Headings = headings;
         IsBrokenRedirect = isBrokenRedirect;
         IsDoubleRedirect = isDoubleRedirect;
@@ -696,6 +789,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         References = references;
         Revision = revision;
         Title = title;
+        TitleEmbeddingI1Bytes = titleEmbeddingI1Bytes;
         TransclusionReferences = transclusionReferences;
         Transclusions = transclusions;
     }
@@ -707,7 +801,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         title,
         string.Empty,
         string.Empty,
-        new List<WikiLink>().AsReadOnly())
+        string.Empty)
     { }
 
     /// <summary>
@@ -927,7 +1021,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         var revisions = await GetRevisionsUntilAsync(dataStore, time)
             .ConfigureAwait(false);
         return Diff
-            .GetWordDiff(Revision.GetText(revisions), MarkdownContent)
+            .GetWordDiff(Revision.GetText(revisions), MarkdownContent ?? string.Empty)
             .ToString(format);
     }
 
@@ -963,7 +1057,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         var revisions = await GetRevisionsUntilAsync(dataStore, time)
             .ConfigureAwait(false);
         var diff = Diff
-            .GetWordDiff(Revision.GetText(revisions), MarkdownContent)
+            .GetWordDiff(Revision.GetText(revisions), MarkdownContent ?? string.Empty)
             .ToString("html");
         return RenderHtml(options, dataStore, await TransclusionParser.TranscludeAsync(
             options,
@@ -1331,6 +1425,33 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="typeInfo">
+    /// <see cref="JsonTypeInfo{T}"/> for <typeparamref name="T"/>.
+    /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// The cache will only be updated if it has been built (lazily, as a result of a search).
+    /// </para>
+    /// </param>
     /// <remarks>
     /// Note: any redirects which point to this page will be updated to point to the new, renamed
     /// page instead.
@@ -1357,7 +1478,10 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        PageTitle? redirectTitle = null) where T : Page, IPage<T>
+        PageTitle? redirectTitle = null,
+        JsonTypeInfo<T>? typeInfo = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null) where T : Page, IPage<T>
     {
         if (!CanRename)
         {
@@ -1402,7 +1526,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
             allowedViewers,
             allowedEditorGroups,
             allowedViewerGroups,
-            redirectTitle)
+            redirectTitle,
+            embedder,
+            cache)
             .ConfigureAwait(false);
 
         var oldOwner = Owner;
@@ -1417,14 +1543,16 @@ public abstract class Page : MarkdownItem, IPage<Page>
             allowedViewers,
             allowedEditorGroups,
             allowedViewerGroups,
-            title)
+            title,
+            embedder,
+            cache)
             .ConfigureAwait(false);
         if (RedirectReferences is not null)
         {
             foreach (var reference in RedirectReferences)
             {
                 var redirect = await IPage<T>
-                    .GetExistingPageAsync<T>(dataStore, reference)
+                    .GetExistingPageAsync<T>(dataStore, reference, typeInfo: typeInfo)
                     .ConfigureAwait(false);
                 if (redirect is not null)
                 {
@@ -1478,7 +1606,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        PageTitle? redirectTitle = null)
+        PageTitle? redirectTitle = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null)
         => throw new InvalidOperationException();
 
     /// <summary>
@@ -1557,6 +1687,30 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <param name="redirectTitle">
     /// If this page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="embedder">
+    /// <para>
+    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
+    /// </para>
+    /// <para>
+    /// If omitted, a default static instance will be created, used, and then disposed. This is
+    /// highly inefficient and can slow performance considerably. A singleton instance should be
+    /// passed whenever possible.
+    /// </para>
+    /// </param>
+    /// <param name="cache">
+    /// <para>
+    /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
+    /// embeddings. This should normally be a singleton instance supplied by dependency injection.
+    /// </para>
+    /// <para>
+    /// If no cache is supplied, the entire database of wiki pages will be read and its contents
+    /// parsed for embeddings on every search. For very small wikis with highly responsive data
+    /// persistence mechanisms, this may be desirable.
+    /// </para>
+    /// <para>
+    /// The cache will only be updated if it has been built (lazily, as a result of a search).
+    /// </para>
+    /// </param>
     public async Task UpdateAsync(
         WikiOptions options,
         IDataStore dataStore,
@@ -1568,19 +1722,23 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
-        PageTitle? redirectTitle = null)
+        PageTitle? redirectTitle = null,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null)
     {
-        if (!CanRename)
+        if (redirectTitle.HasValue)
         {
-            throw new InvalidOperationException("Cannot redirect this type of page");
-        }
-        if (redirectTitle.HasValue
-            && (string.CompareOrdinal(Title.Namespace, options.CategoryNamespace) == 0
-            || string.CompareOrdinal(Title.Namespace, options.GroupNamespace) == 0
-            || string.CompareOrdinal(Title.Namespace, options.ScriptNamespace) == 0
-            || string.CompareOrdinal(Title.Namespace, options.UserNamespace) == 0))
-        {
-            throw new ArgumentException($"Cannot redirect a page in the {Title.Namespace} namespace", nameof(redirectTitle));
+            if (!CanRename)
+            {
+                throw new InvalidOperationException("Cannot redirect this type of page");
+            }
+            if (string.CompareOrdinal(Title.Namespace, options.CategoryNamespace) == 0
+                || string.CompareOrdinal(Title.Namespace, options.GroupNamespace) == 0
+                || string.CompareOrdinal(Title.Namespace, options.ScriptNamespace) == 0
+                || string.CompareOrdinal(Title.Namespace, options.UserNamespace) == 0)
+            {
+                throw new ArgumentException($"Cannot redirect a page in the {Title.Namespace} namespace", nameof(redirectTitle));
+            }
         }
         var md = redirectTitle.HasValue ? null : markdown;
         var previousRevision = Revision;
@@ -1644,13 +1802,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
             ? headings.AsReadOnly()
             : null;
 
-        WikiLinks = (isScript || redirectTitle.HasValue
+        var wikiLinks = isScript || redirectTitle.HasValue
             ? []
-            : GetWikiLinks(options, dataStore, md, Title))
-            .AsReadOnly();
+            : GetWikiLinks(options, dataStore, md, Title);
         if (References is not null)
         {
-            await RemoveReferencesAsync(dataStore)
+            await RemoveReferencesAsync(dataStore, wikiLinks)
                 .ConfigureAwait(false);
         }
 
@@ -1659,12 +1816,14 @@ public abstract class Page : MarkdownItem, IPage<Page>
             Html = string.Empty;
             MarkdownContent = string.Empty;
             Preview = string.Empty;
+            Text = string.Empty;
         }
         else if (isScript)
         {
             Html = MarkdownContent;
             MarkdownContent = markdown ?? string.Empty;
             Preview = GetScriptPreview(md);
+            Text = MarkdownContent;
         }
         else
         {
@@ -1680,9 +1839,82 @@ public abstract class Page : MarkdownItem, IPage<Page>
                     markdown,
                     true),
                 Title);
+            Text = FormatPlainText(
+                options,
+                dataStore,
+                md,
+                null,
+                false,
+                Title);
         }
 
-        await UpdateCategoriesAsync(dataStore)
+        if (IsSearchable
+            && !isScript
+            && string.CompareOrdinal(Title.Namespace, options.TransclusionNamespace) != 0)
+        {
+            var workingEmbedder = embedder ?? new LocalEmbedder();
+
+            TitleEmbeddingI1 = string.IsNullOrEmpty(Title.Title)
+                ? null
+                : workingEmbedder.Embed<EmbeddingI1>(Title.Title);
+
+            if (TitleEmbeddingI1.HasValue
+                && cache?.TryGetValue<List<PageSearchInfo>>(
+                    SearchTitleCacheKey,
+                    out var titleCache) == true
+                && titleCache?.Count > 0)
+            {
+                titleCache.RemoveAll(x => x.Title == Title);
+                titleCache.Add(new PageSearchInfo(
+                    Title,
+                    TitleEmbeddingI1.Value,
+                    -1,
+                    Owner,
+                    this is WikiFile file ? file.Uploader : null));
+            }
+
+            var lines = string.IsNullOrWhiteSpace(Text)
+                ? []
+                : Text
+                    .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+                    .Select((x, i) => (Embedding: workingEmbedder.Embed<EmbeddingI1>(x), Line: i))
+                    .ToList();
+            if (embedder is null)
+            {
+                workingEmbedder?.Dispose();
+            }
+            if (TitleEmbeddingI1.HasValue)
+            {
+                lines.Add((TitleEmbeddingI1.Value, -1));
+            }
+            EmbeddingI1s = lines.Count == 0
+                ? null
+                : lines
+                    .Select(x => x.Embedding)
+                    .ToFrozenSet();
+
+            if (cache?.TryGetValue<List<PageSearchInfo>>(
+                SearchCacheKey,
+                out var searchCache) == true
+                && searchCache?.Count > 0)
+            {
+                searchCache.RemoveAll(x => x.Title == Title);
+                searchCache.AddRange(lines
+                    .Select(x => new PageSearchInfo(
+                        Title,
+                        x.Embedding,
+                        x.Line,
+                        Owner,
+                        this is WikiFile file ? file.Uploader : null)));
+            }
+        }
+        else
+        {
+            TitleEmbeddingI1 = null;
+            EmbeddingI1s = null;
+        }
+
+        await UpdateCategoriesAsync(dataStore, wikiLinks)
             .ConfigureAwait(false);
 
         var oldOwner = Owner;
@@ -1698,13 +1930,14 @@ public abstract class Page : MarkdownItem, IPage<Page>
         await UpdateRedirectAsync(options, dataStore, redirectTitle)
             .ConfigureAwait(false);
 
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
 
         await AddTransclusionReferencesAsync(options, dataStore)
             .ConfigureAwait(false);
 
-        await AddReferencesAsync(options, dataStore)
+        await AddReferencesAsync(options, dataStore, wikiLinks)
             .ConfigureAwait(false);
 
         await UpdateReferencesAsync(options, dataStore)
@@ -1766,7 +1999,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
         string editor,
         string? newTitle,
         string? newNamespace,
-        string? newDomain) where T : Page, IPage<T>
+        string? newDomain,
+        LocalEmbedder? embedder = null,
+        IMemoryCache? cache = null) where T : Page, IPage<T>
     {
         var title = new PageTitle(
             newTitle ?? page.Title.Title,
@@ -1788,7 +2023,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
             page.AllowedViewers,
             page.AllowedEditorGroups,
             page.AllowedViewerGroups,
-            page.RedirectTitle)
+            page.RedirectTitle,
+            embedder,
+            cache)
             .ConfigureAwait(false);
     }
 
@@ -1796,6 +2033,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     {
         var page = Copy();
         page.Categories = null;
+        page.EmbeddingI1s = null;
         page.Headings = null;
         page.Html = string.Empty;
         page.Preview = string.Empty;
@@ -1804,7 +2042,6 @@ public abstract class Page : MarkdownItem, IPage<Page>
         page.Revision = null;
         page.TransclusionReferences = null;
         page.Transclusions = null;
-        page.WikiLinks = new List<WikiLink>().AsReadOnly();
         return page;
     }
 
@@ -1826,6 +2063,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             : Title.WithNamespace(newNamespace));
         newPage.MarkdownContent = MarkdownContent;
         newPage.Owner = Owner;
+        newPage.EmbeddingI1s = EmbeddingI1s?.ToFrozenSet();
         newPage.AllowedEditors = AllowedEditors?.ToList().AsReadOnly();
         newPage.AllowedViewers = AllowedViewers?.ToList().AsReadOnly();
         newPage.AllowedEditorGroups = AllowedEditorGroups?.ToList().AsReadOnly();
@@ -1887,7 +2125,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
         var references = RedirectReferences?.ToList() ?? [];
         references.Add(title);
         RedirectReferences = references.AsReadOnly();
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
     }
 
@@ -1923,19 +2162,23 @@ public abstract class Page : MarkdownItem, IPage<Page>
             IsMissing = true;
         }
 
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
     }
 
     private protected async Task AddReferencesAsync(
         WikiOptions options,
-        IDataStore dataStore)
+        IDataStore dataStore,
+        List<WikiLink> wikiLinks)
     {
-        foreach (var link in WikiLinks.Where(x => !x.IsCategory))
+        foreach (var link in wikiLinks.Where(x => !x.IsCategory))
         {
-            var reference = await dataStore.GetWikiPageAsync(options, link.Title, true)
+            var reference = await dataStore
+                .GetWikiPageAsync(options, link.Title, true)
                 .ConfigureAwait(false);
-            await reference.AddReferenceAsync(options, dataStore, Title)
+            await reference
+                .AddReferenceAsync(options, dataStore, Title)
                 .ConfigureAwait(false);
         }
     }
@@ -1955,7 +2198,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
         {
             var revisions = history.Revisions?.ToList() ?? [];
             revisions.Insert(0, revision);
-            await dataStore.StoreItemAsync(history)
+            await dataStore
+                .StoreItemAsync(history, WikiJsonSerializerContext.Default.PageHistory)
                 .ConfigureAwait(false);
         }
     }
@@ -1977,7 +2221,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
         var references = TransclusionReferences?.ToList() ?? [];
         references.Add(title);
         TransclusionReferences = references.AsReadOnly();
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
     }
 
@@ -1991,9 +2236,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
         foreach (var transclusion in Transclusions)
         {
-            var reference = await dataStore.GetWikiPageAsync(options, transclusion, true, true)
+            var reference = await dataStore
+                .GetWikiPageAsync(options, transclusion, true, true)
                 .ConfigureAwait(false);
-            await reference.AddTransclusionReferenceAsync(dataStore, Title)
+            await reference
+                .AddTransclusionReferenceAsync(dataStore, Title)
                 .ConfigureAwait(false);
         }
     }
@@ -2080,7 +2327,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
             RedirectReferences = null;
         }
 
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
     }
 
@@ -2109,27 +2357,29 @@ public abstract class Page : MarkdownItem, IPage<Page>
             }
         }
 
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
     }
 
-    private async ValueTask RemoveReferencesAsync(IDataStore dataStore)
+    private async ValueTask RemoveReferencesAsync(IDataStore dataStore, List<WikiLink> wikiLinks)
     {
         if (References is null)
         {
             return;
         }
         foreach (var title in References
-            .Except(WikiLinks
+            .Except(wikiLinks
                 .Where(x => !x.IsCategory)
                 .Select(x => x.Title)))
         {
             var reference = await IPage<Page>
-                .GetExistingPageAsync<Page>(dataStore, title)
+                .GetExistingPageAsync(dataStore, title, typeInfo: WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false);
             if (reference is not null)
             {
-                await reference.RemoveReferenceAsync(dataStore, Title)
+                await reference
+                    .RemoveReferenceAsync(dataStore, Title)
                     .ConfigureAwait(false);
             }
         }
@@ -2150,7 +2400,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
 
         TransclusionReferences = TransclusionReferences.ToImmutableList().Remove(title);
-        await dataStore.StoreItemAsync(this)
+        await dataStore
+            .StoreItemAsync(this, WikiJsonSerializerContext.Default.Page)
             .ConfigureAwait(false);
     }
 
@@ -2165,20 +2416,21 @@ public abstract class Page : MarkdownItem, IPage<Page>
         foreach (var title in Transclusions.Except(newTransclusions))
         {
             var reference = await IPage<Page>
-                .GetExistingPageAsync<Page>(dataStore, title)
+                .GetExistingPageAsync(dataStore, title, typeInfo: WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false);
             if (reference is not null)
             {
-                await reference.RemoveTransclusionReferenceAsync(dataStore, Title)
+                await reference
+                    .RemoveTransclusionReferenceAsync(dataStore, Title)
                     .ConfigureAwait(false);
             }
         }
     }
 
-    private async Task UpdateCategoriesAsync(IDataStore dataStore)
+    private async Task UpdateCategoriesAsync(IDataStore dataStore, List<WikiLink> wikiLinks)
     {
         // An article can only be categorized by categories in its own domain, or none
-        var currentCategories = WikiLinks
+        var currentCategories = wikiLinks
             .Where(x => x.IsCategory
                 && !x.IsEscaped
                 && (string.IsNullOrEmpty(x.Title.Domain)
@@ -2201,9 +2453,15 @@ public abstract class Page : MarkdownItem, IPage<Page>
         foreach (var categoryTitle in newCategories)
         {
             var category = await IPage<Category>
-                .GetPageAsync<Category>(dataStore, categoryTitle, true, true)
+                .GetPageAsync(
+                    dataStore,
+                    categoryTitle,
+                    true,
+                    true,
+                    WikiJsonSerializerContext.Default.Category)
                 .ConfigureAwait(false);
-            await category.AddPageAsync(dataStore, categoryTitle)
+            await category
+                .AddPageAsync(dataStore, categoryTitle)
                 .ConfigureAwait(false);
         }
 
@@ -2214,11 +2472,12 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 if (!retainedCategories.Contains(categoryTitle))
                 {
                     var category = await IPage<Category>
-                        .GetExistingPageAsync<Category>(dataStore, categoryTitle)
+                        .GetExistingPageAsync(dataStore, categoryTitle, typeInfo: WikiJsonSerializerContext.Default.Category)
                         .ConfigureAwait(false);
                     if (category is not null)
                     {
-                        await category.RemovePageAsync(dataStore, categoryTitle)
+                        await category
+                            .RemovePageAsync(dataStore, categoryTitle)
                             .ConfigureAwait(false);
                     }
                 }
@@ -2249,7 +2508,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
 
         var previousRedirect = RedirectTitle.HasValue
             ? await IPage<Page>
-                .GetExistingPageAsync<Page>(dataStore, RedirectTitle.Value)
+                .GetExistingPageAsync(dataStore, RedirectTitle.Value, typeInfo: WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false)
             : null;
         if (previousRedirect is not null)
@@ -2324,7 +2583,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IsBrokenRedirect = redirect.Exists;
         IsDoubleRedirect = redirect.RedirectTitle.HasValue;
 
-        await redirect.AddRedirectReferenceAsync(dataStore, Title)
+        await redirect
+            .AddRedirectReferenceAsync(dataStore, Title)
             .ConfigureAwait(false);
     }
 
@@ -2345,7 +2605,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             titlesToUpdate.Remove(titleToUpdate);
 
             var referringArticle = await IPage<Page>
-                .GetExistingPageAsync<Page>(dataStore, titleToUpdate)
+                .GetExistingPageAsync(dataStore, titleToUpdate, typeInfo: WikiJsonSerializerContext.Default.Page)
                 .ConfigureAwait(false);
             if (referringArticle is null)
             {
@@ -2363,20 +2623,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
                     redirectsToUpdate.Remove(titleToUpdate);
                 }
 
-                if (string.CompareOrdinal(
-                    referringArticle.Title.Namespace,
-                    options.ScriptNamespace) == 0)
-                {
-                    await referringArticle.UpdateAsync(options, dataStore);
-                }
-                else
-                {
-                    await referringArticle.UpdateContentAsync(
-                        options,
-                        dataStore,
-                        referringArticle.Title);
-                }
-                await dataStore.StoreItemAsync(referringArticle)
+                await referringArticle.UpdateAsync(options, dataStore);
+                await dataStore
+                    .StoreItemAsync(referringArticle, WikiJsonSerializerContext.Default.Page)
                     .ConfigureAwait(false);
 
                 titlesUpdated.Add(titleToUpdate);

@@ -8,7 +8,13 @@ namespace Tavenem.Wiki.Models;
 /// A reference from a normalized (case-insensitive) full wiki page title to the current page
 /// IDs assigned to that title.
 /// </summary>
-public class NormalizedPageReference : IdItem
+/// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
+/// <param name="references">
+/// The IDs of the wiki pages which are currently assigned to the referenced full title.
+/// </param>
+public class NormalizedPageReference(
+    string id,
+    IReadOnlyList<string> references) : IdItem(id)
 {
     /// <summary>
     /// The type discriminator for this type.
@@ -32,19 +38,7 @@ public class NormalizedPageReference : IdItem
     /// <summary>
     /// The IDs of the wiki pages which are currently assigned to the referenced full title.
     /// </summary>
-    public IReadOnlyList<string> References { get; set; }
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="NormalizedPageReference"/>.
-    /// </summary>
-    /// <param name="id">The item's <see cref="IdItem.Id"/>.</param>
-    /// <param name="references">
-    /// The IDs of the wiki pages which are currently assigned to the referenced full title.
-    /// </param>
-    public NormalizedPageReference(
-        string id,
-        IReadOnlyList<string> references) : base(id)
-        => References = references;
+    public IReadOnlyList<string> References { get; set; } = references;
 
     /// <summary>
     /// Gets the ID for a <see cref="NormalizedPageReference"/> given its <paramref name="title"/>.
@@ -71,7 +65,7 @@ public class NormalizedPageReference : IdItem
         string id)
     {
         var reference = await dataStore
-            .GetItemAsync<NormalizedPageReference>(GetId(title))
+            .GetItemAsync(GetId(title), WikiJsonSerializerContext.Default.NormalizedPageReference)
             .ConfigureAwait(false);
         if (reference is null)
         {
@@ -88,7 +82,7 @@ public class NormalizedPageReference : IdItem
             reference.References = reference.References.ToImmutableList().Add(id);
         }
 
-        await dataStore.StoreItemAsync(reference)
+        await dataStore.StoreItemAsync(reference, WikiJsonSerializerContext.Default.NormalizedPageReference)
             .ConfigureAwait(false);
     }
 
@@ -104,7 +98,7 @@ public class NormalizedPageReference : IdItem
     public static ValueTask<NormalizedPageReference?> GetNormalizedPageReferenceAsync(
         IDataStore dataStore,
         PageTitle title)
-        => dataStore.GetItemAsync<NormalizedPageReference>(GetId(title));
+        => dataStore.GetItemAsync(GetId(title), WikiJsonSerializerContext.Default.NormalizedPageReference);
 
     /// <summary>
     /// Removes a page from the reference for the given <paramref name="title"/>.
@@ -120,10 +114,9 @@ public class NormalizedPageReference : IdItem
         string id)
     {
         var reference = await dataStore
-            .GetItemAsync<NormalizedPageReference>(GetId(title))
+            .GetItemAsync(GetId(title), WikiJsonSerializerContext.Default.NormalizedPageReference)
             .ConfigureAwait(false);
-        if (reference is null
-            || !reference.References.Contains(id))
+        if (reference?.References.Contains(id) != true)
         {
             return;
         }
@@ -135,7 +128,8 @@ public class NormalizedPageReference : IdItem
         else
         {
             reference.References = reference.References.ToImmutableList().Remove(id);
-            await dataStore.StoreItemAsync(reference)
+            await dataStore
+                .StoreItemAsync(reference, WikiJsonSerializerContext.Default.NormalizedPageReference)
                 .ConfigureAwait(false);
         }
     }

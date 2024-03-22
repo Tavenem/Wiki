@@ -9,32 +9,22 @@ namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 /// <summary>
 /// An extension for wiki links.
 /// </summary>
-public class WikiLinkExtension : IMarkdownExtension
+public class WikiLinkExtension(WikiOptions options, IDataStore dataStore, PageTitle title) : IMarkdownExtension
 {
     /// <summary>
     /// The <see cref="IDataStore"/> used by this instance.
     /// </summary>
-    public IDataStore DataStore { get; }
+    public IDataStore DataStore { get; } = dataStore;
 
     /// <summary>
     /// The options for this instance.
     /// </summary>
-    public WikiOptions Options { get; }
+    public WikiOptions Options { get; } = options;
 
     /// <summary>
     /// The title of the page being parsed/rendered.
     /// </summary>
-    public PageTitle Title { get; }
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="WikiLinkExtension"/>.
-    /// </summary>
-    public WikiLinkExtension(WikiOptions options, IDataStore dataStore, PageTitle title)
-    {
-        Options = options;
-        DataStore = dataStore;
-        Title = title;
-    }
+    public PageTitle Title { get; } = title;
 
     /// <summary>
     /// Setups this extension for the specified pipeline.

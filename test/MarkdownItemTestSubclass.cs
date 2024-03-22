@@ -42,27 +42,23 @@ public class MarkdownItemTestSubclass : MarkdownItem
     /// <param name="markdownContent">The raw markdown.</param>
     /// <param name="html">The rendered HTML content.</param>
     /// <param name="preview">A preview of this item's rendered HTML.</param>
-    /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
+    /// <param name="text">A plain text version of the content.</param>
     /// <remarks>
-    /// Note: this constructor is most useful for deserializers.
+    /// Note: this constructor is most useful for deserialization.
     /// </remarks>
-    public MarkdownItemTestSubclass(string id, string? markdownContent, string html, string preview, IReadOnlyCollection<WikiLink> wikiLinks)
-        : base(id, markdownContent, html, preview, wikiLinks)
+    public MarkdownItemTestSubclass(string id, string? markdownContent, string? html, string? preview, string? text)
+        : base(id, markdownContent, html, preview, text)
     { }
 
     /// <summary>
     /// Initializes a new instance of <see cref="MarkdownItemTestSubclass"/>.
     /// </summary>
     /// <param name="markdown">The raw markdown.</param>
-    /// <param name="html">
-    /// The rendered HTML content.
-    /// </param>
-    /// <param name="preview">
-    /// A preview of this item's rendered HTML.
-    /// </param>
-    /// <param name="wikiLinks">The included <see cref="WikiLink"/> objects.</param>
-    public MarkdownItemTestSubclass(string? markdown, string? html, string? preview, IReadOnlyCollection<WikiLink> wikiLinks)
-        : base(markdown, html, preview, wikiLinks)
+    /// <param name="html">The rendered HTML content.</param>
+    /// <param name="preview">A preview of this item's rendered HTML.</param>
+    /// <param name="text">A plain text version of the content.</param>
+    public MarkdownItemTestSubclass(string? markdown, string? html, string? preview, string? text)
+        : base(markdown, html, preview, text)
     { }
 
     public static async Task<MarkdownItemTestSubclass> NewAsync(WikiOptions options, IDataStore dataStore, string? markdown)
@@ -74,7 +70,6 @@ public class MarkdownItemTestSubclass : MarkdownItem
                 dataStore,
                 null,
                 markdown);
-        var wikiLinks = GetWikiLinks(options, dataStore, md);
         return new MarkdownItemTestSubclass(
             md,
             RenderHtml(options, dataStore, md),
@@ -89,6 +84,6 @@ public class MarkdownItemTestSubclass : MarkdownItem
                         null,
                         markdown,
                         isPreview: true)),
-            wikiLinks);
+            FormatPlainText(options, dataStore, md, null, false));
     }
 }

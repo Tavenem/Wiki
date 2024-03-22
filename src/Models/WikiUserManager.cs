@@ -7,18 +7,11 @@ namespace Tavenem.Wiki;
 /// A default user manager for <see cref="WikiUser"/>s, which keeps its data in an <see
 /// cref="IDataStore"/>.
 /// </summary>
-public class WikiUserManager : IWikiUserManager
+/// <param name="dataStore">
+/// The <see cref="IDataStore"/> to use.
+/// </param>
+public class WikiUserManager(IDataStore dataStore) : IWikiUserManager
 {
-    private readonly IDataStore _dataStore;
-
-    /// <summary>
-    /// Constructs a new instance of <see cref="WikiUserManager"/>.
-    /// </summary>
-    /// <param name="dataStore">
-    /// The <see cref="IDataStore"/> to use.
-    /// </param>
-    public WikiUserManager(IDataStore dataStore) => _dataStore = dataStore;
-
     /// <summary>
     /// Finds and returns a user, if any, who has the specified <paramref name="userId"/>.
     /// </summary>
@@ -33,7 +26,7 @@ public class WikiUserManager : IWikiUserManager
         {
             return null;
         }
-        return await _dataStore.GetItemAsync<WikiUser>(userId);
+        return await dataStore.GetItemAsync(userId, WikiJsonSerializerContext.Default.WikiUser);
     }
 
     /// <summary>
@@ -56,7 +49,8 @@ public class WikiUserManager : IWikiUserManager
         {
             return null;
         }
-        var matches = await _dataStore.Query<WikiUser>()
+        var matches = await dataStore
+            .Query(WikiJsonSerializerContext.Default.WikiUser)
             .Where(x => string.Equals(x.DisplayName, userName, StringComparison.Ordinal))
             .ToListAsync();
         return matches.Count == 1
