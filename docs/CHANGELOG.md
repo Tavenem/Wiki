@@ -3,6 +3,7 @@
 ## 0.25.0-preview
 ### Added
 - `Text` property to `MarkdownItem` for plain text representation of the content
+- Semantic search capabilities
 ### Changed
 - Made `Html`, `MarkdownContent`, and `Preview` properties on `MarkdownItem` nullable
 ### Removed
