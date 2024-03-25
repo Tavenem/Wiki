@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.2-preview
+### Added
+- `WikiArchiveJsonSerializerOptions`: singleton `JsonSerializerOptions` for `Archive`
+
 ## 0.25.1-preview
 ### Changed
 - Added more types to `WikiJsonSerializerContext`
