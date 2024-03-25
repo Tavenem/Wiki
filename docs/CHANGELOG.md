@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.1-preview
+### Changed
+- Added more types to `WikiJsonSerializerContext`
+
 ## 0.25.0-preview
 ### Added
 - `Text` property to `MarkdownItem` for plain text representation of the content

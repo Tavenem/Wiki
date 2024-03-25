@@ -30,6 +30,8 @@ namespace Tavenem.Wiki;
 [JsonSerializable(typeof(PagedRevisionInfo))]
 [JsonSerializable(typeof(SpecialListRequest))]
 [JsonSerializable(typeof(TitleRequest))]
+[JsonSerializable(typeof(SearchRequest))]
+[JsonSerializable(typeof(List<SearchHit>))]
 public partial class WikiJsonSerializerContext : JsonSerializerContext;
 
 /// <summary>
