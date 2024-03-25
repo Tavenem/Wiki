@@ -37,7 +37,9 @@
     <PackageReference Include="Jint" Version="3.0.1" />
     <PackageReference Include="Markdig" Version="0.36.2" />
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
-    <PackageReference Include="SmartComponents.LocalEmbeddings" Version="0.1.0-preview10146" />
+    <PackageReference Include="SmartComponents.LocalEmbeddings" Version="0.1.0-preview10146">
+      <PrivateAssets>Analyzers</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Tavenem.DataStore" Version="2.0.4" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>

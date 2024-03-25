@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.3-preview
+### Fixed
+- Allow build targets from `SmartComponents.LocalEmbeddings`
+
 ## 0.25.2-preview
 ### Added
 - `WikiArchiveJsonSerializerOptions`: singleton `JsonSerializerOptions` for `Archive`
