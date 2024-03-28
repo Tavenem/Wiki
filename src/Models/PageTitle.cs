@@ -347,6 +347,57 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// (<c>domain</c>):<c>namespace</c>:title
     /// </para>
     /// <para>
+    /// If the domain is <see langword="null"/> the entire segment, up to and including the colon,
+    /// will be omitted.
+    /// </para>
+    /// <para>
+    /// If both the domain and namespace are <see langword="null"/> only the title will be shown,
+    /// with no colons.
+    /// </para>
+    /// <para>
+    /// If the title is <see langword="null"/>, the <see cref="WikiOptions.MainPageTitle"/> from the
+    /// provided <paramref name="options"/> will be used.
+    /// </para>
+    /// </remarks>
+    public readonly string ToString(WikiOptions options)
+    {
+        var sb = new StringBuilder();
+        if (!string.IsNullOrEmpty(Domain))
+        {
+            sb.Append('(')
+                .Append(Domain)
+                .Append("):");
+        }
+        if (!string.IsNullOrEmpty(Namespace))
+        {
+            sb.Append(Namespace)
+                .Append(':');
+        }
+        if (string.IsNullOrEmpty(Title))
+        {
+            sb.Append(options.MainPageTitle);
+        }
+        else
+        {
+            sb.Append(Title);
+        }
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Gets a string representation of the current instance.
+    /// </summary>
+    /// <returns>
+    /// A string representation of the current instance.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="PageTitle"/> has the following format:
+    /// </para>
+    /// <para>
+    /// (<c>domain</c>):<c>namespace</c>:title
+    /// </para>
+    /// <para>
     /// If the domain is <see langword="null"/> the entire segment, up to and including the
     /// colon, will be omitted.
     /// </para>

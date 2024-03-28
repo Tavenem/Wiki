@@ -32,7 +32,7 @@ Third section text
 # Third heading
 
 Fourth section text";
-    private const string LongArticleExpected = "<p>First paragraph text</p>\n{0}<p>Second paragraph text</p>\n<h1 id=\"first-heading\">First heading</h1>\n<p>Second section text</p>\n<h2 id=\"nested-heading\">Nested heading</h2>\n<p>Nested section text</p>\n<h1 id=\"second-heading\">Second heading</h1>\n<p>Third section text</p>\n<h1 id=\"third-heading\">Third heading</h1>\n<p>Fourth section text</p>\n";
+    private const string LongArticleExpected = "<p>First paragraph text</p>\n{0}<p>Second paragraph text</p>\n<h1 id=\"first-heading\">First heading</h1>\n<p>Second section text</p>\n<h2 id=\"nested-heading\">Nested heading</h2>\n<p>Nested section text</p>\n<h1 id=\"second-heading\">Second heading</h1>\n<p>Third section text</p>\n<h1 id=\"third-heading\">Third heading</h1>\n<p>Fourth section text</p>";
 
     private static readonly WikiOptions _Options = new();
 
@@ -81,7 +81,7 @@ Fourth section text";
         await TestTemplateAsync(dataStore, "{{fullpagename}}", Title);
 
         var nested = await GetArticleAsync(dataStore, "{{fullpagename}}", NestedTitle, _Options.TransclusionNamespace);
-        Assert.AreEqual($"<p>{_Options.TransclusionNamespace}:{NestedTitle}</p>\n", nested.Html);
+        Assert.AreEqual($"<p>{_Options.TransclusionNamespace}:{NestedTitle}</p>", nested.Html);
         await TestTemplateAsync(dataStore, $$$"""{{{{{NestedTitle}}}}}""", Title);
     }
 
@@ -149,7 +149,7 @@ Fourth section text";
             Markdown);
         var category = dataStore.GetItem<Category>(page.Id, TimeSpan.Zero);
         Assert.IsNotNull(category);
-        Assert.AreEqual("<p>yes</p>\n", category.Html);
+        Assert.AreEqual("<p>yes</p>", category.Html);
     }
 
     [TestMethod]
@@ -247,16 +247,16 @@ Fourth section text";
     {
         var dataStore = new InMemoryDataStore();
         var article = await GetArticleAsync(dataStore, "content");
-        Assert.AreEqual("<p>content</p>\n", article.Html);
-        Assert.AreEqual("<p>content</p>\n", article.Preview);
+        Assert.AreEqual("<p>content</p>", article.Html);
+        Assert.AreEqual("<p>content</p>", article.Preview);
 
         article = await GetArticleAsync(
             dataStore,
 @"content
 
 {{preview|hidden}}");
-        Assert.AreEqual("<p>content</p>\n", article.Html);
-        Assert.AreEqual("<p><span class=\"wiki-preview\">hidden</span></p>\n", article.Preview);
+        Assert.AreEqual("<p>content</p>", article.Html);
+        Assert.AreEqual("<p><span class=\"wiki-preview\">hidden</span></p>", article.Preview);
     }
 
     [TestMethod]
@@ -264,9 +264,9 @@ Fourth section text";
     {
         var dataStore = new InMemoryDataStore();
         var article = await GetArticleAsync(dataStore, "Article with [[link]]");
-        Assert.AreEqual("<p>Article with <a href=\"./Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>\n", article.Html);
+        Assert.AreEqual("<p>Article with <a href=\"./Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>", article.Html);
         article = await GetArticleAsync(dataStore, "Revised article with [[link]]");
-        Assert.AreEqual("<p>Revised article with <a href=\"./Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>\n", article.Html);
+        Assert.AreEqual("<p>Revised article with <a href=\"./Wiki/Link\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Link</span></a></p>", article.Html);
     }
 
     [TestMethod]
@@ -278,7 +278,7 @@ Fourth section text";
         var revision = await article
             .GetHtmlAsync(_Options, dataStore, timestamp)
             .ConfigureAwait(false);
-        Assert.AreEqual("<p>Test content</p>\n", revision);
+        Assert.AreEqual("<p>Test content</p>", revision);
     }
 
     [TestMethod]
@@ -418,27 +418,27 @@ Fourth section text";
         await TestTemplateAsync(
             dataStore,
             $"{{{{{NestedTitle}}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>",
             false);
         await TestTemplateAsync(
             dataStore,
             $"{{{{{NestedTitle}|For stuff}}}}",
-            "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"./Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For stuff, see <a href=\"./Wiki/Title%20(disambiguation)\" class=\"wiki-link-missing\">Title</a></p>\n</div>",
             false);
         await TestTemplateAsync(
             dataStore,
             $"{{{{{NestedTitle}||Title}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a></p>\n</div>",
             false);
         await TestTemplateAsync(
             dataStore,
             $"{{{{{NestedTitle}||Title|Other}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"./Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a> and <a href=\"./Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a></p>\n</div>",
             false);
         await TestTemplateAsync(
             dataStore,
             $"{{{{{NestedTitle}||Title|Other|Misc}}}}",
-            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"./Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"./Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>\n",
+            "<div class=\"wiki-article-ref\"><p>For other uses, see <a href=\"./Wiki/Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-title\">Title</span></a>, <a href=\"./Wiki/Other\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Other</span></a>, and <a href=\"./Wiki/Misc\" class=\"wiki-link-missing\"><span class=\"wiki-link-title\">Misc</span></a></p>\n</div>",
             false);
     }
 
@@ -477,6 +477,6 @@ Fourth section text";
         string? @namespace = null)
     {
         var article = await GetArticleAsync(dataStore, markdown, null, @namespace);
-        Assert.AreEqual(paragraph ? $"<p>{expected}</p>\n" : expected, article.Html);
+        Assert.AreEqual(paragraph ? $"<p>{expected}</p>" : expected, article.Html);
     }
 }

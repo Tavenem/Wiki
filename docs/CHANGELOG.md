@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.4-preview
+### Added
+- `PageTitle.ToString` overload which accepts a `WikiOptions` parameter, and uses the configured `MainPageTitle` when the title is empty
+
 ## 0.25.3-preview
 ### Fixed
 - Allow build targets from `SmartComponents.LocalEmbeddings`
