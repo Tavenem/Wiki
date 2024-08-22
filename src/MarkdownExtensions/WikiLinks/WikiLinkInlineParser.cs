@@ -1,60 +1,24 @@
 ﻿using Markdig.Helpers;
 using Markdig.Parsers;
+using Markdig.Parsers.Inlines;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
-using System.Text;
-using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 
 /// <summary>
-/// An inline parser for <see cref="WikiLink"/> items.
+/// An inline parser for <see cref="WikiLinkInline"/>.
 /// </summary>
-public class WikiLinkInlineParser : InlineParser
+public class WikiLinkInlineParser : LinkInlineParser
 {
-    private const char ActionSeparatorChar = '/';
-
-    internal const char LinkCloseChar = ']';
-    internal const char LinkOpenChar = '[';
-
-    private const char SeparatorChar = '|';
-
-    /// <summary>
-    /// The <see cref="IDataStore"/> used by this instance.
-    /// </summary>
-    public IDataStore DataStore { get; }
-
-    /// <summary>
-    /// The options for this instance.
-    /// </summary>
-    public WikiOptions Options { get; }
-
-    /// <summary>
-    /// The title of the page being parsed/rendered.
-    /// </summary>
-    public PageTitle Title { get; }
-
-    /// <summary>
-    /// Initializes a new instance of <see cref="WikiLinkInlineParser"/>.
-    /// </summary>
-    public WikiLinkInlineParser(WikiOptions options, IDataStore dataStore, PageTitle title)
-    {
-        DataStore = dataStore;
-        OpeningCharacters = [LinkOpenChar, LinkCloseChar, '!'];
-        Options = options;
-        Title = title;
-    }
-
-    /// <summary>
-    /// Tries to match the specified slice.
-    /// </summary>
-    /// <param name="processor">The parser processor.</param>
-    /// <param name="slice">The text slice.</param>
-    /// <returns><c>true</c> if this parser found a match; <c>false</c> otherwise</returns>
+    /// <inheritdoc />
     public override bool Match(InlineProcessor processor, ref StringSlice slice)
     {
+        // The following methods are inspired by the "An algorithm for parsing nested emphasis and links"
+        // at the end of the CommonMark specs.
+
         var c = slice.CurrentChar;
+
         var startPosition = processor.GetSourcePosition(slice.Start, out var line, out var column);
 
         var isImage = false;
@@ -62,388 +26,185 @@ public class WikiLinkInlineParser : InlineParser
         {
             isImage = true;
             c = slice.NextChar();
-            if (c != LinkOpenChar)
+            if (c != '[')
             {
                 return false;
             }
         }
-
+        string? label;
+        var labelWithTriviaSpan = SourceSpan.Empty;
         switch (c)
         {
-            case LinkOpenChar:
-                if (slice.PeekChar() != LinkOpenChar)
-                {
-                    return false;
-                }
+            case '[':
+                // If this is not an image, we may have a reference link shortcut
+                // so we try to resolve it here
                 var saved = slice;
-                var currentPosition = slice.Start;
-                if (TryParseLink(
-                    ref slice,
-                    out var title,
-                    out var display,
-                    out var action,
-                    out var hasDisplay,
-                    out var autoDisplay,
-                    out var endPosition))
+
+                SourceSpan labelSpan;
+                // If the label is followed by either a ( or a [, this is not a shortcut
+                if (processor.TrackTrivia)
                 {
-                    processor.Inline = new WikiLinkDelimiterInline(this)
+                    if (LinkHelper.TryParseLabelTrivia(ref slice, out label, out labelSpan))
                     {
-                        Type = DelimiterType.Open,
-                        Action = action,
-                        AutoDisplay = autoDisplay,
-                        Display = display,
-                        HasDisplay = hasDisplay,
-                        Title = title,
-                        IsImage = isImage,
-                        Span = new SourceSpan(startPosition, processor.GetSourcePosition(slice.Start - 1)),
-                        Line = line,
-                        Column = column,
-                    };
-                    slice = saved;
-                    if (endPosition == currentPosition)
-                    {
-                        slice.NextChar();
-                        slice.NextChar();
-                    }
-                    else
-                    {
-                        slice.Start = endPosition;
-                        slice.NextChar();
+                        labelWithTriviaSpan.Start = labelSpan.Start; // skip opening [
+                        labelWithTriviaSpan.End = labelSpan.End; // skip closing ]
                     }
                 }
                 else
                 {
-                    slice = saved;
-                    return false;
+                    _ = LinkHelper.TryParseLabel(ref slice, out label, out labelSpan);
                 }
-                return true;
-            case LinkCloseChar:
-                if (slice.PeekChar() != LinkCloseChar)
+                slice = saved;
+
+                // Else we insert a LinkDelimiter
+                slice.SkipChar();
+                var linkDelimiter = new LinkDelimiterInline(this)
                 {
-                    return false;
+                    Type = DelimiterType.Open,
+                    Label = label,
+                    LabelSpan = processor.GetSourcePositionFromLocalSpan(labelSpan),
+                    IsImage = isImage,
+                    Span = new SourceSpan(startPosition, processor.GetSourcePosition(slice.Start - 1)),
+                    Line = line,
+                    Column = column
+                };
+
+                if (processor.TrackTrivia)
+                {
+                    linkDelimiter.LabelWithTrivia = new StringSlice(slice.Text, labelWithTriviaSpan.Start, labelWithTriviaSpan.End);
                 }
-                slice.NextChar();
-                slice.NextChar();
-                return processor.Inline != null && TryProcessLinkOrImage(processor, ref slice);
+
+                processor.Inline = linkDelimiter;
+                return true;
+
+            case ']':
+                slice.SkipChar();
+                if (processor.Inline is not null
+                    && TryProcessLinkOrImage(processor, ref slice))
+                {
+                    return true;
+                }
+
+                // If we don’t find one, we return a literal slice node ].
+                // (Done after by the LiteralInline parser)
+                return false;
         }
 
+        // We don't have an emphasis
         return false;
     }
 
-    private static string? ParseEndmatter(ref StringSlice lines)
+    private static void MarkParentAsInactive(Inline? inline)
     {
-        string? endmatter = null;
-        var buffer = new StringBuilder();
-
-        var c = lines.CurrentChar;
-        while (true)
+        while (inline is not null)
         {
-            if (!c.IsAlphaNumeric())
+            if (inline is LinkDelimiterInline linkInline)
             {
-                if (buffer.Length is > 0 and <= 999)
+                if (linkInline.IsImage)
                 {
-                    endmatter = buffer.ToString();
+                    break;
                 }
-                break;
+
+                linkInline.IsActive = false;
             }
 
-            buffer.Append(c);
-            c = lines.NextChar();
+            inline = inline.Parent;
         }
-
-        buffer.Length = 0;
-
-        return endmatter;
     }
 
-    private static bool TryParseLink(
-        ref StringSlice lines,
-        out string? title,
-        out string? display,
-        out string? action,
-        out bool hasDisplay,
-        out bool autoDisplay,
-        out int endPosition)
+    private static bool ProcessLinkReference(
+        InlineProcessor state,
+        StringSlice text,
+        string label,
+        SourceSpan labelWithTriviaSpan,
+        bool isShortcut,
+        SourceSpan labelSpan,
+        LinkDelimiterInline parent,
+        int endPosition,
+        LocalLabel localLabel)
     {
-        lines.NextChar(); // skip second opening char, which has already been confirmed
-
-        endPosition = lines.Start;
-        autoDisplay = false;
-        hasDisplay = false;
-        title = null;
-        display = null;
-        action = null;
-        var buffer = new StringBuilder();
-
-        char c;
-        var hasEscape = false;
-        var previousWhitespace = true;
-        var hasNonWhitespace = false;
-        var hasSeparator = false;
-        var hasActionSeparator = false;
-        var hasDoubleSeparator = false;
-        var isValid = false;
-        while (true)
-        {
-            c = lines.NextChar();
-            if (c == '\0')
-            {
-                break;
-            }
-
-            if (hasEscape)
-            {
-                if (c is not LinkOpenChar
-                    and not LinkCloseChar
-                    and not SeparatorChar
-                    and not ActionSeparatorChar
-                    and not '\\')
-                {
-                    break;
-                }
-            }
-            else
-            {
-                if (c == LinkOpenChar)
-                {
-                    break;
-                }
-
-                if (c == SeparatorChar)
-                {
-                    if (!hasNonWhitespace)
-                    {
-                        if (hasSeparator)
-                        {
-                            hasDoubleSeparator = true;
-                            endPosition = lines.Start;
-                            break;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    if (!hasSeparator)
-                    {
-                        endPosition = lines.Start;
-                    }
-                    hasSeparator = true;
-                    for (var i = buffer.Length - 1; i >= 0; i--)
-                    {
-                        if (!buffer[i].IsWhitespace())
-                        {
-                            break;
-                        }
-                        buffer.Length = i;
-                    }
-
-                    if (buffer.Length <= 999)
-                    {
-                        if (hasActionSeparator)
-                        {
-                            action = buffer.ToString();
-                        }
-                        else
-                        {
-                            title = buffer.ToString();
-                        }
-                        buffer.Length = 0;
-                        hasNonWhitespace = false;
-                        previousWhitespace = true;
-                        isValid = true;
-                    }
-
-                    continue;
-                }
-
-                if (c == ActionSeparatorChar
-                    && (buffer.Length == 0
-                    || buffer[^1] != '<'))
-                {
-                    if (!hasNonWhitespace)
-                    {
-                        if (hasActionSeparator)
-                        {
-                            endPosition = lines.Start;
-                            break;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    if (!hasActionSeparator)
-                    {
-                        endPosition = lines.Start;
-                    }
-                    hasActionSeparator = true;
-                    for (var i = buffer.Length - 1; i >= 0; i--)
-                    {
-                        if (!buffer[i].IsWhitespace())
-                        {
-                            break;
-                        }
-                        buffer.Length = i;
-                    }
-
-                    if (buffer.Length <= 999)
-                    {
-                        title = buffer.ToString();
-                        buffer.Length = 0;
-                        hasNonWhitespace = false;
-                        previousWhitespace = true;
-                        isValid = true;
-                    }
-
-                    continue;
-                }
-
-                if (c == LinkCloseChar && lines.PeekChar() == LinkCloseChar)
-                {
-                    lines.NextChar();
-                    lines.NextChar();
-                    if (hasNonWhitespace)
-                    {
-                        for (var i = buffer.Length - 1; i >= 0; i--)
-                        {
-                            if (!buffer[i].IsWhitespace())
-                            {
-                                break;
-                            }
-                            buffer.Length = i;
-                        }
-
-                        if (buffer.Length <= 999)
-                        {
-                            if (hasSeparator)
-                            {
-                                display = buffer.ToString();
-                            }
-                            else if (hasActionSeparator)
-                            {
-                                action = buffer.ToString();
-                            }
-                            else
-                            {
-                                title = buffer.ToString();
-                            }
-                            isValid = true;
-                        }
-                    }
-                    break;
-                }
-            }
-
-            var isWhitespace = c.IsWhitespace();
-            if (isWhitespace)
-            {
-                c = ' ';
-            }
-
-            if (!hasEscape && c == '\\')
-            {
-                hasEscape = true;
-            }
-            else
-            {
-                hasEscape = false;
-
-                if (!previousWhitespace || !isWhitespace)
-                {
-                    if (hasDoubleSeparator)
-                    {
-                        hasDoubleSeparator = false;
-                    }
-                    buffer.Append(c);
-                    if (!isWhitespace)
-                    {
-                        hasNonWhitespace = true;
-                    }
-                }
-            }
-            previousWhitespace = isWhitespace;
-        }
-
-        if (!isValid)
+        // Ordinary reference link, rather than a wiki link.
+        if (state.Document.TryGetLinkReferenceDefinition(label, out _))
         {
             return false;
         }
 
-        if (!hasSeparator)
+        // Inline Link
+        var link = new WikiLinkInline()
         {
-            return true;
+            Title = localLabel == LocalLabel.Empty
+                ? null
+                : HtmlHelper.Unescape(parent.Label),
+            TitleSpan = localLabel == LocalLabel.Empty
+                ? SourceSpan.Empty
+                : parent.LabelSpan,
+            Label = label,
+            LabelSpan = labelSpan,
+            IsImage = parent.IsImage,
+            IsShortcut = isShortcut,
+            Span = new SourceSpan(parent.Span.Start, endPosition),
+            Line = parent.Line,
+            Column = parent.Column,
+        };
+
+        if (state.TrackTrivia)
+        {
+            link.LabelWithTrivia = new StringSlice(text.Text, labelWithTriviaSpan.Start, labelWithTriviaSpan.End);
+            link.LocalLabel = localLabel;
         }
 
-        if (hasNonWhitespace)
+        var child = parent.FirstChild;
+        if (child is null)
         {
-            hasDisplay = true;
-            return true;
+            child = new LiteralInline()
+            {
+                Content = StringSlice.Empty,
+                IsClosed = true,
+                // Not exact but we leave it like this
+                Span = parent.Span,
+                Line = parent.Line,
+                Column = parent.Column,
+            };
+            link.AppendChild(child);
+        }
+        else
+        {
+            // Insert all child into the link
+            while (child is not null)
+            {
+                var next = child.NextSibling;
+                child.Remove();
+                link.AppendChild(child);
+                child = next;
+            }
         }
 
-        if (string.IsNullOrEmpty(title))
-        {
-            return true;
-        }
+        link.IsClosed = true;
 
-        autoDisplay = true;
-        hasDisplay = true;
+        // Process emphasis delimiters
+        state.PostProcessInlines(0, link, null, false);
 
-        // Remove domain and namespace.
-        var pageTitle = PageTitle.Parse(title);
-        title = pageTitle.ToString(); // Normalize casing.
-        var titlePart = pageTitle.Title ?? string.Empty;
-        var endIndex = titlePart.Length;
-
-        // Remove fragment.
-        var fragmentIndex = titlePart.LastIndexOf('#');
-        if (fragmentIndex != -1)
-        {
-            endIndex = fragmentIndex;
-        }
-
-        // Remove anything in parenthesis at the end.
-        var openParen = titlePart.IndexOf('(');
-        if (openParen != -1
-            && openParen < endIndex
-            && titlePart.TrimEnd()[^1] == ')')
-        {
-            endIndex = openParen;
-        }
-
-        display = titlePart[..endIndex].Trim();
-
-        if (fragmentIndex >= 0)
-        {
-            var fragment = openParen == -1 || openParen < fragmentIndex
-                ? titlePart[(fragmentIndex + 1)..]
-                : titlePart[(fragmentIndex + 1)..openParen];
-            display = fragmentIndex == 0
-                ? fragment
-                : $"{display} § {fragment}";
-        }
-
-        if (hasDoubleSeparator)
-        {
-            display = display.ToLower(System.Globalization.CultureInfo.CurrentCulture);
-        }
+        state.Inline = link;
 
         return true;
     }
 
-    private bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
+    private static bool TryProcessLinkOrImage(InlineProcessor inlineState, ref StringSlice text)
     {
-        var openParent = inlineState.Inline?.FindParentOfType<WikiLinkDelimiterInline>().FirstOrDefault();
+        var openParent = inlineState.Inline!.FirstParentOfType<LinkDelimiterInline>();
         if (openParent is null)
         {
             return false;
         }
 
+        // If we do find one, but it’s not active,
+        // we remove the inactive delimiter from the stack,
+        // and return a literal text node ].
         if (!openParent.IsActive)
         {
             inlineState.Inline = new LiteralInline()
             {
-                Content = new StringSlice("[["),
+                Content = new StringSlice("["),
                 Span = openParent.Span,
                 Line = openParent.Line,
                 Column = openParent.Column,
@@ -452,201 +213,85 @@ public class WikiLinkInlineParser : InlineParser
             return false;
         }
 
+        // Inline link, not wiki link.
+        if (text.CurrentChar == '(')
+        {
+            return false;
+        }
+
+        // If we find one and it’s active, then we parse ahead to see if we have a reference
+        // link/image, compact reference link/image, or shortcut reference link/image.
         var parentDelimiter = openParent.Parent;
-        var savedText = text;
+        var labelSpan = SourceSpan.Empty;
+        string? label = null;
+        var isLabelSpanLocal = true;
+        var isShortcut = false;
+        var localLabel = LocalLabel.Local;
 
-        string? endmatter = null;
-        if (!openParent.HasDisplay || openParent.AutoDisplay)
+        // Handle Collapsed links
+        if (text.CurrentChar == '[')
         {
-            endmatter = ParseEndmatter(ref text);
-            text = savedText;
-            if (endmatter?.Length > 0)
+            if (text.PeekChar() == ']')
             {
-                text.Start += endmatter.Length;
+                label = openParent.Label;
+                labelSpan = openParent.LabelSpan;
+                isLabelSpanLocal = false;
+                localLabel = LocalLabel.Empty;
+                text.SkipChar(); // Skip [
+                text.SkipChar(); // Skip ]
+            }
+        }
+        else
+        {
+            localLabel = LocalLabel.None;
+            label = openParent.Label;
+            isShortcut = true;
+        }
+
+        if (label is not null || LinkHelper.TryParseLabelTrivia(ref text, true, out label, out labelSpan))
+        {
+            var labelWithTrivia = new SourceSpan(labelSpan.Start, labelSpan.End);
+            if (isLabelSpanLocal)
+            {
+                labelSpan = inlineState.GetSourcePositionFromLocalSpan(labelSpan);
+            }
+
+            if (ProcessLinkReference(
+                inlineState,
+                text,
+                label!,
+                labelWithTrivia,
+                isShortcut,
+                labelSpan,
+                openParent,
+                inlineState.GetSourcePosition(text.Start - 1),
+                localLabel))
+            {
+                // Remove the open parent
+                openParent.Remove();
+                if (!openParent.IsImage)
+                {
+                    MarkParentAsInactive(parentDelimiter);
+                }
+                return true;
+            }
+            else if (text.CurrentChar is not ']' and not '[')
+            {
+                return false;
             }
         }
 
-        var title = openParent.Title;
-        var display = openParent.Display;
-        string? fragment = null;
-        var isWikipedia = title?.StartsWith("w:", StringComparison.OrdinalIgnoreCase) == true;
-        var isCommons = !isWikipedia
-            && title?.StartsWith("cc:", StringComparison.OrdinalIgnoreCase) == true;
-        var isCategory = false;
-        var isGroupPage = false;
-        var isUserPage = false;
-        var isEscaped = false;
-        var ignoreMissing = !string.IsNullOrEmpty(openParent.Action);
-        var pageTitle = new PageTitle();
+        // We have a nested [ ]
+        // firstParent.Remove();
+        // The opening [ will be transformed to a literal followed by all the children of the [
 
-        if (isWikipedia)
+        var literal = new LiteralInline()
         {
-            title = title![2..];
-            if (!openParent.HasDisplay)
-            {
-                display = display?[2..].Replace('_', ' ');
-                openParent.HasDisplay = true;
-            }
-            else if (openParent.AutoDisplay)
-            {
-                display = display?.Replace('_', ' ');
-            }
-        }
-        else if (isCommons)
-        {
-            title = title![3..];
-
-            if (!openParent.HasDisplay)
-            {
-                if (display is not null)
-                {
-                    var extIndex = display.IndexOf('.');
-                    {
-                        if (extIndex != -1)
-                        {
-                            display = display[3..extIndex].Replace('_', ' ');
-                            openParent.HasDisplay = true;
-                        }
-                    }
-                }
-            }
-            else if (openParent.AutoDisplay)
-            {
-                display = display?.Replace('_', ' ');
-            }
-        }
-        else if (!string.IsNullOrWhiteSpace(title))
-        {
-            if (title[0] == '~')
-            {
-                ignoreMissing = true;
-                title = title[1..];
-            }
-
-            var fragmentIndex = title.IndexOf('#');
-            if (fragmentIndex >= 0)
-            {
-                fragment = title[(fragmentIndex + 1)..];
-            }
-            if (fragmentIndex == 0)
-            {
-                ignoreMissing = true;
-                if (string.IsNullOrEmpty(display))
-                {
-                    display = title[1..];
-                    openParent.HasDisplay = true;
-                }
-            }
-            else
-            {
-                isEscaped = title.StartsWith(':');
-                if (isEscaped)
-                {
-                    title = title[1..];
-                }
-
-                var mainTitle = title;
-                if (fragmentIndex != -1)
-                {
-                    mainTitle = title[..fragmentIndex];
-                }
-
-                pageTitle = PageTitle.Parse(HtmlHelper.Unescape(mainTitle));
-
-                isCategory = string.Equals(
-                    pageTitle.Namespace,
-                    Options.CategoryNamespace,
-                    StringComparison.OrdinalIgnoreCase);
-                if (isCategory)
-                {
-                    pageTitle = pageTitle.WithNamespace(Options.CategoryNamespace); // normalize casing
-                }
-                else
-                {
-                    isGroupPage = string.Equals(
-                        pageTitle.Namespace,
-                        Options.GroupNamespace,
-                        StringComparison.OrdinalIgnoreCase);
-                    if (isGroupPage)
-                    {
-                        pageTitle = pageTitle.WithNamespace(Options.GroupNamespace);
-                    }
-                    else
-                    {
-                        isUserPage = string.Equals(
-                            pageTitle.Namespace,
-                            Options.UserNamespace,
-                            StringComparison.OrdinalIgnoreCase);
-                        if (isUserPage)
-                        {
-                            pageTitle = pageTitle.WithNamespace(Options.UserNamespace);
-                        }
-                    }
-                }
-
-                title = fragmentIndex == -1 || fragmentIndex >= title.Length - 1
-                    ? pageTitle.Title
-                    : pageTitle.Title + title[fragmentIndex..].ToLowerInvariant().Replace(' ', '-');
-            }
-        }
-
-        Page? page = null;
-        var pageMissing = false;
-        if (!isCategory
-            && !isGroupPage
-            && !isUserPage
-            && !isWikipedia
-            && !isCommons)
-        {
-            var id = IPage<Page>.GetId(pageTitle);
-            page = DataStore.GetItem(id, WikiJsonSerializerContext.Default.Page);
-            if (!ignoreMissing && !pageTitle.Equals(Title))
-            {
-                pageMissing = page?.Revision?.IsDeleted != false;
-            }
-        }
-
-        var wikiLink = new WikiLinkInline()
-        {
-            Page = page,
-            PageTitle = pageTitle,
-            Action = openParent.Action,
-            Title = HtmlHelper.Unescape(title),
-            Display = display,
-            Fragment = fragment,
-            HasDisplay = openParent.HasDisplay,
-            IsImage = openParent.IsImage,
-            IsCategory = isCategory,
-            IsCommons = isCommons,
-            IsWikipedia = isWikipedia,
-            IsEscaped = isEscaped,
-            IsMissing = pageMissing,
-            Endmatter = endmatter,
-            Span = new SourceSpan(openParent.Span.Start, inlineState.GetSourcePosition(text.Start - 1)),
-            Line = openParent.Line,
-            Column = openParent.Column,
+            Span = openParent.Span,
+            Content = new StringSlice(openParent.IsImage ? "![" : "[")
         };
 
-        openParent.ReplaceBy(wikiLink);
-        inlineState.Inline = wikiLink;
-
-        inlineState.PostProcessInlines(0, wikiLink, null, false);
-
-        if (!openParent.IsImage && parentDelimiter != null)
-        {
-            foreach (var parent in parentDelimiter.FindParentOfType<WikiLinkDelimiterInline>())
-            {
-                if (parent.IsImage)
-                {
-                    break;
-                }
-
-                parent.IsActive = false;
-            }
-        }
-
-        wikiLink.IsClosed = true;
-
-        return true;
+        inlineState.Inline = openParent.ReplaceBy(literal);
+        return false;
     }
 }

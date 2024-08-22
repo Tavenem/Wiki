@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using SmartComponents.LocalEmbeddings;
 using Tavenem.DataStorage;
 
 namespace Tavenem.Wiki;
@@ -66,16 +65,6 @@ public class Archive
     /// <param name="domain">
     /// An optional new domain to assign to all restored pages.
     /// </param>
-    /// <param name="embedder">
-    /// <para>
-    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
-    /// </para>
-    /// <para>
-    /// If omitted, a default static instance will be created, used, and then disposed. This is
-    /// highly inefficient and can slow performance considerably. A singleton instance should be
-    /// passed whenever possible.
-    /// </para>
-    /// </param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -106,7 +95,6 @@ public class Archive
         WikiOptions options,
         string editor,
         string? domain = null,
-        LocalEmbedder? embedder = null,
         IMemoryCache? cache = null)
     {
         if (Pages is null)
@@ -126,7 +114,6 @@ public class Archive
                     null,
                     options.CategoryNamespace,
                     domain,
-                    embedder,
                     cache)
                     .ConfigureAwait(false);
             }
@@ -140,7 +127,6 @@ public class Archive
                     null,
                     options.FileNamespace,
                     domain,
-                    embedder,
                     cache)
                     .ConfigureAwait(false);
             }
@@ -205,7 +191,6 @@ public class Archive
                     newTitle,
                     newNamespace,
                     domain,
-                    embedder,
                     cache)
                     .ConfigureAwait(false);
             }
@@ -219,7 +204,6 @@ public class Archive
                     null,
                     null,
                     domain,
-                    embedder,
                     cache)
                     .ConfigureAwait(false);
             }

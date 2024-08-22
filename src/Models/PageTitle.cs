@@ -12,6 +12,11 @@ namespace Tavenem.Wiki;
 public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
 {
     /// <summary>
+    /// Separator between title parts.
+    /// </summary>
+    public const char Separator = ':';
+
+    /// <summary>
     /// The domain of the page (if any).
     /// </summary>
     /// <remarks>
@@ -89,6 +94,89 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// May be null when referring to the default (i.e. home) page for the domain+namespace.
     /// </para>
     /// </param>
+    public PageTitle(in ReadOnlySpan<char> title) : this()
+    {
+        Title = title.ToString().ToWikiTitleCase();
+        NormalizedTitle = Title.ToLowerInvariant();
+
+        IsEmpty = string.IsNullOrEmpty(Title);
+    }
+
+    /// <summary>
+    /// Constructs a new instance of <see cref="PageTitle"/>.
+    /// </summary>
+    /// <param name="title">
+    /// <para>
+    /// The title of the page.
+    /// </para>
+    /// <para>
+    /// May be null when referring to the default (i.e. home) page for the domain+namespace.
+    /// </para>
+    /// </param>
+    /// <param name="namespace">
+    /// The namespace of the page (if any).
+    /// </param>
+    public PageTitle(in ReadOnlySpan<char> title, in ReadOnlySpan<char> @namespace) : this()
+    {
+        Title = title.ToString().ToWikiTitleCase();
+        NormalizedTitle = Title.ToLowerInvariant();
+
+        Namespace = @namespace.Length == 0
+            ? null
+            : @namespace.ToString().ToWikiTitleCase();
+        NormalizedNamespace = Namespace?.ToLowerInvariant();
+
+        IsEmpty = string.IsNullOrEmpty(Namespace)
+            && string.IsNullOrEmpty(Title);
+    }
+
+    /// <summary>
+    /// Constructs a new instance of <see cref="PageTitle"/>.
+    /// </summary>
+    /// <param name="title">
+    /// <para>
+    /// The title of the page.
+    /// </para>
+    /// <para>
+    /// May be null when referring to the default (i.e. home) page for the domain+namespace.
+    /// </para>
+    /// </param>
+    /// <param name="namespace">
+    /// The namespace of the page (if any).
+    /// </param>
+    /// <param name="domain">
+    /// The domain of the page (if any).
+    /// </param>
+    public PageTitle(in ReadOnlySpan<char> title, in ReadOnlySpan<char> @namespace, in ReadOnlySpan<char> domain) : this()
+    {
+        Title = title.ToString().ToWikiTitleCase();
+        NormalizedTitle = Title.ToLowerInvariant();
+
+        Namespace = @namespace.Length == 0
+            ? null
+            : @namespace.ToString().ToWikiTitleCase();
+        NormalizedNamespace = Namespace?.ToLowerInvariant();
+
+        Domain = domain.Length == 0
+            ? null
+            : domain.ToString();
+
+        IsEmpty = string.IsNullOrEmpty(Domain)
+            && string.IsNullOrEmpty(Namespace)
+            && string.IsNullOrEmpty(Title);
+    }
+
+    /// <summary>
+    /// Constructs a new instance of <see cref="PageTitle"/>.
+    /// </summary>
+    /// <param name="title">
+    /// <para>
+    /// The title of the page.
+    /// </para>
+    /// <para>
+    /// May be null when referring to the default (i.e. home) page for the domain+namespace.
+    /// </para>
+    /// </param>
     /// <param name="namespace">
     /// The namespace of the page (if any).
     /// </param>
@@ -110,6 +198,47 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
             && string.IsNullOrEmpty(Namespace)
             && string.IsNullOrEmpty(Title);
     }
+
+    /// <summary>
+    /// Parses a string into a value.
+    /// </summary>
+    /// <param name="s">The <see cref="ReadOnlySpan{T}"/> to parse.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information about <paramref name="s"/>.
+    /// </param>
+    /// <returns>
+    /// The result of parsing <paramref name="s"/>.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="PageTitle"/> has the following format:
+    /// </para>
+    /// <para>
+    /// (<c>domain</c>):<c>namespace</c>:title
+    /// </para>
+    /// <para>
+    /// If the domain or namespace are <see langword="null"/> the entire segment, up to and
+    /// including the colon, may be omitted. They may also be included as an empty segment, with
+    /// the delimiting colon (and parenthesis for domain) but no content, or only whitespace.
+    /// </para>
+    /// <para>
+    /// If the title is <see langword="null"/> but not the domain or namespace, the string must
+    /// terminate in a colon, to remove any ambiguity with cases where the last part could also
+    /// be construed as a title.
+    /// </para>
+    /// <para>
+    /// Only the first segment is considered a domain when bracketed by parenthesis. If a
+    /// parenthesized segment occurs in the second or a later position, the parenthesis are
+    /// considered part of the text, and not a domain indicator.
+    /// </para>
+    /// <para>
+    /// Excess colons are interpreted as part of the title.
+    /// </para>
+    /// </remarks>
+    public static PageTitle Parse(in ReadOnlySpan<char> s, IFormatProvider? provider = null)
+        => TryParse(s, provider, out var result)
+        ? result
+        : throw new InvalidOperationException();
 
     /// <summary>
     /// Parses a string into a value.
@@ -198,6 +327,99 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// </para>
     /// </remarks>
     public static bool TryParse(
+        in ReadOnlySpan<char> s,
+        IFormatProvider? provider,
+        [MaybeNullWhen(false)] out PageTitle result)
+    {
+        if (s.IsEmpty || s.IsWhiteSpace())
+        {
+            result = default;
+            return true;
+        }
+
+        Span<Range> parts = stackalloc Range[3];
+        var length = s.Split(parts, Separator, StringSplitOptions.TrimEntries);
+        if (length == 0)
+        {
+            result = default;
+            return true;
+        }
+
+        if (length > 2)
+        {
+            if (s[parts[0]][0] == '('
+                && s[parts[0]][^1] == ')')
+            {
+                result = new(
+                    s[parts[2]],
+                    s[parts[1]],
+                    s[parts[0]][1..^1]);
+                return true;
+            }
+            else
+            {
+                var sep = Separator;
+                result = new(
+                    string.Concat(s[parts[1]], new ReadOnlySpan<char>(ref sep), s[parts[2]]),
+                    s[parts[0]].ToString());
+                return true;
+            }
+        }
+
+        result = length > 1
+            ? new(
+                s[parts[1]],
+                s[parts[0]])
+            : new(s[parts[0]]);
+        return true;
+    }
+
+    /// <summary>
+    /// Tries to parse a string into a <see cref="PageTitle"/>.
+    /// </summary>
+    /// <param name="s">The string to parse.</param>
+    /// <param name="provider">
+    /// An object that provides culture-specific formatting information about <paramref name="s"/>.
+    /// </param>
+    /// <param name="result">
+    /// When this method returns, contains the result of successfully parsing <paramref name="s"/>
+    /// or an undefined value on failure.
+    /// </param>
+    /// <returns>
+    /// <see langword="true"/> if <paramref name="s"/> was successfully parsed; otherwise, <see
+    /// langword="false"/>.
+    /// </returns>
+    /// <remarks>
+    /// <para>
+    /// A <see cref="PageTitle"/> has the following format:
+    /// </para>
+    /// <para>
+    /// (<c>domain</c>):<c>namespace</c>:title
+    /// </para>
+    /// <para>
+    /// If the domain or namespace are <see langword="null"/> the entire segment, up to and
+    /// including the colon, may be omitted. They may also be included as an empty segment, with
+    /// the delimiting colon (and parenthesis for domain) but no content, or only whitespace.
+    /// </para>
+    /// <para>
+    /// If the title is <see langword="null"/> but not the domain or namespace, the string must
+    /// terminate in a colon, to remove any ambiguity with cases where the last part could also
+    /// be construed as a title.
+    /// </para>
+    /// <para>
+    /// Only the first segment is considered a domain when bracketed by parenthesis. If a
+    /// parenthesized segment occurs in the second or a later position, the parenthesis are
+    /// considered part of the text, and not a domain indicator.
+    /// </para>
+    /// <para>
+    /// Excess colons are interpreted as part of the title.
+    /// </para>
+    /// <para>
+    /// Note: this method always returns <see langword="true"/>; there is no string which cannot be
+    /// parsed as a <see cref="PageTitle"/>.
+    /// </para>
+    /// </remarks>
+    public static bool TryParse(
         [NotNullWhen(true)] string? s,
         IFormatProvider? provider,
         [MaybeNullWhen(false)] out PageTitle result)
@@ -208,7 +430,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
             return true;
         }
 
-        var parts = s.Split(':', StringSplitOptions.TrimEntries);
+        var parts = s.Split(Separator, StringSplitOptions.TrimEntries);
         if (parts.Length == 0)
         {
             result = default;
@@ -233,7 +455,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         {
             result = new(
                 string
-                    .Join(':', parts[1..])
+                    .Join(Separator, parts[1..])
                     .ToWikiTitleCase(),
                 string.IsNullOrWhiteSpace(parts[0])
                     ? null
@@ -371,7 +593,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         if (!string.IsNullOrEmpty(Namespace))
         {
             sb.Append(Namespace)
-                .Append(':');
+                .Append(Separator);
         }
         if (string.IsNullOrEmpty(Title))
         {
@@ -426,7 +648,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         if (!string.IsNullOrEmpty(Namespace))
         {
             sb.Append(Namespace)
-                .Append(':');
+                .Append(Separator);
         }
         if (!string.IsNullOrEmpty(Title))
         {
@@ -464,6 +686,19 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     public readonly PageTitle WithDomain(string? domain) => new(Title, Namespace, domain);
 
     /// <summary>
+    /// Gets a copy of this instance with the specified <paramref name="domain"/>.
+    /// </summary>
+    /// <param name="domain">
+    /// The domain of the page (if any).
+    /// </param>
+    /// <returns>
+    /// A new <see cref="PageTitle"/> with <see cref="Domain"/> set to the given <paramref
+    /// name="domain"/>, and the same <see cref="Namespace"/> and <see cref="Title"/> as this
+    /// instance.
+    /// </returns>
+    public readonly PageTitle WithDomain(ReadOnlySpan<char> domain) => new(Title, Namespace, domain);
+
+    /// <summary>
     /// Gets a copy of this instance with the specified <paramref name="namespace"/>.
     /// </summary>
     /// <param name="namespace">
@@ -477,6 +712,19 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     public readonly PageTitle WithNamespace(string? @namespace) => new(Title, @namespace, Domain);
 
     /// <summary>
+    /// Gets a copy of this instance with the specified <paramref name="namespace"/>.
+    /// </summary>
+    /// <param name="namespace">
+    /// The namespace of the page (if any).
+    /// </param>
+    /// <returns>
+    /// A new <see cref="PageTitle"/> with <see cref="Namespace"/> set to the given <paramref
+    /// name="namespace"/>, and the same <see cref="Domain"/> and <see cref="Title"/> as this
+    /// instance.
+    /// </returns>
+    public readonly PageTitle WithNamespace(ReadOnlySpan<char> @namespace) => new(Title, @namespace, Domain);
+
+    /// <summary>
     /// Gets a copy of this instance with the specified title.
     /// </summary>
     /// <param name="title">
@@ -487,6 +735,19 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
     /// <see cref="Namespace"/> and <see cref="Domain"/> as this instance.
     /// </returns>
     public readonly PageTitle WithTitle(string? title)
+        => new(title, Namespace, Domain);
+
+    /// <summary>
+    /// Gets a copy of this instance with the specified title.
+    /// </summary>
+    /// <param name="title">
+    /// The title of the page (if any).
+    /// </param>
+    /// <returns>
+    /// A new <see cref="PageTitle"/> with <see cref="Title"/> set to the given value, and the same
+    /// <see cref="Namespace"/> and <see cref="Domain"/> as this instance.
+    /// </returns>
+    public readonly PageTitle WithTitle(ReadOnlySpan<char> title)
         => new(title, Namespace, Domain);
 
     internal readonly bool IsMatch(PageTitle other)
@@ -560,7 +821,7 @@ public struct PageTitle : IEquatable<PageTitle>, IParsable<PageTitle>
         if (!string.IsNullOrEmpty(Namespace))
         {
             UrlEncoder.Default.Encode(writer, Namespace);
-            writer.Write(':');
+            writer.Write(Separator);
         }
         if (!string.IsNullOrEmpty(Title)
             || string.IsNullOrEmpty(Namespace))

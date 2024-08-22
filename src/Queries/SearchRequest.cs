@@ -11,10 +11,6 @@
 /// A query can consist of one or more words, punctuation, and other characters.
 /// </para>
 /// <para>
-/// Searches are performed using semantic matching. This means that similar words and phrases will
-/// be considered when ranking matches.
-/// </para>
-/// <para>
 /// A word or phrase inside double quotes must be present on a page exactly as it appears in the
 /// query for the page to be considered a match. Quoted terms can be combined with standard search
 /// terms. The entire query (both quoted and unquoted portions) is considered when calculating the
@@ -27,7 +23,7 @@
 /// </param>
 /// <param name="Domain">
 /// <para>
-/// If <see langword="null"/> or empty, pages with any <see cref="PageTitle.Domain"/> are returned.
+/// If <see langword="null"/>, pages with any <see cref="PageTitle.Domain"/> are returned.
 /// </para>
 /// <para>
 /// If empty (but not <see langword="null"/>), only pages with no <see cref="PageTitle.Domain"/> are

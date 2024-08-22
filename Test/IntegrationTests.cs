@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using SmartComponents.LocalEmbeddings;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Models;
 using Tavenem.Wiki.Queries;
@@ -73,7 +72,8 @@ public class IntegrationTests
             options,
             dataStore,
             main.MarkdownContent,
-            main.Title);
+            main.Title,
+            main);
         var missing = wikiLinks.Find(x => x.IsMissing);
         Assert.IsNull(missing);
         Assert.AreEqual(_ExpectedMain, main.Html);
@@ -106,8 +106,9 @@ public class IntegrationTests
             options,
             dataStore,
             main.MarkdownContent,
-            main.Title);
-        var missing = wikiLinks.Find(x => x.IsMissing);
+            main.Title,
+            main);
+        var missing = wikiLinks?.Find(x => x.IsMissing);
         Assert.IsNotNull(missing);
 
         var category = await IPage<Category>
@@ -123,8 +124,9 @@ public class IntegrationTests
             options,
             dataStore,
             category.MarkdownContent,
-            category.Title);
-        missing = wikiLinks.Find(x => x.IsMissing);
+            category.Title,
+            category);
+        missing = wikiLinks?.Find(x => x.IsMissing);
         Assert.IsNotNull(missing);
 
         success = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
@@ -136,8 +138,9 @@ public class IntegrationTests
             options,
             dataStore,
             main.MarkdownContent,
-            main.Title);
-        missing = wikiLinks.Find(x => x.IsMissing);
+            main.Title,
+            main);
+        missing = wikiLinks?.Find(x => x.IsMissing);
         Assert.IsNull(missing);
 
         category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
@@ -146,8 +149,9 @@ public class IntegrationTests
             options,
             dataStore,
             category.MarkdownContent,
-            category.Title);
-        missing = wikiLinks.Find(x => x.IsMissing);
+            category.Title,
+            category);
+        missing = wikiLinks?.Find(x => x.IsMissing);
         Assert.IsNull(missing);
 
         var about = await dataStore.GetWikiPageAsync(
@@ -171,7 +175,6 @@ public class IntegrationTests
         _ = await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
         _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
 
-        using var embedder = new LocalEmbedder();
         using var cache = new MemoryCache(Options.Create<MemoryCacheOptions>(new()));
 
         var searchRequest = new SearchRequest("wiki");
@@ -180,7 +183,6 @@ public class IntegrationTests
             groupManager,
             searchRequest,
             Admin,
-            embedder,
             cache);
 
         Assert.AreEqual(3, searchResults.TotalCount);
@@ -194,7 +196,6 @@ public class IntegrationTests
             groupManager,
             searchRequest,
             Admin,
-            embedder,
             cache);
 
         Assert.AreEqual(1, searchResults.TotalCount);
@@ -206,7 +207,6 @@ public class IntegrationTests
             groupManager,
             searchRequest,
             Admin,
-            embedder,
             cache);
 
         Assert.AreEqual(1, searchResults.TotalCount);
@@ -218,7 +218,6 @@ public class IntegrationTests
             groupManager,
             searchRequest,
             Admin,
-            embedder,
             cache);
 
         Assert.AreEqual(1, searchResults.TotalCount);
@@ -230,7 +229,6 @@ public class IntegrationTests
             groupManager,
             searchRequest,
             Admin,
-            embedder,
             cache);
 
         Assert.AreEqual(1, searchResults.TotalCount);
@@ -242,7 +240,6 @@ public class IntegrationTests
             groupManager,
             searchRequest,
             Admin,
-            embedder,
             cache);
 
         Assert.AreEqual(2, searchResults.TotalCount);
@@ -261,15 +258,15 @@ public class IntegrationTests
         Admin,
         new PageTitle(options.AboutPageTitle, options.SystemNamespace),
         $$$"""
-        {{{{{WelcomeTitle}}}}}
+        {{> {{{WelcomeTitle}}}}}
 
-        The [Tavenem.Wiki](https://github.com/Tavenem/Wiki) package is a [.NET](https://dotnet.microsoft.com) [[w:Wiki||]] library.
+        The [Tavenem.Wiki](https://github.com/Tavenem/Wiki) package is a [.NET](https://dotnet.microsoft.com) [w:Wiki||] library.
 
         Unlike many wiki implementations, the main package (`Tavenem.Wiki`) is implementation-agnostic. It provides a set of core features which can be used to build a web-based wiki, a desktop application, a distributed cloud app with native clients, or any other architecture desired.
 
-        See the [[{{{options.SystemNamespace}}}:{{{options.HelpPageTitle}}}|]] page for usage information.
+        See the [{{{options.SystemNamespace}}}:{{{options.HelpPageTitle}}}|] page for usage information.
 
-        [[{{{options.CategoryNamespace}}}:{{{CategoryTitle}}}]]
+        [{{{options.CategoryNamespace}}}:{{{CategoryTitle}}}]
         """,
         null,
         false,
@@ -287,11 +284,11 @@ public class IntegrationTests
         Admin,
         new PageTitle(),
         $$$"""
-        {{{{{WelcomeTitle}}}}}
+        {{> {{{WelcomeTitle}}}}}
 
-        See the [[{{{options.SystemNamespace}}}:{{{options.AboutPageTitle}}}|]] page for more information.
+        See the [{{{options.SystemNamespace}}}:{{{options.AboutPageTitle}}}|] page for more information.
 
-        [[{{{options.CategoryNamespace}}}:{{{CategoryTitle}}}]]
+        [{{{options.CategoryNamespace}}}:{{{CategoryTitle}}}]
         """,
         null,
         false,
@@ -311,7 +308,7 @@ public class IntegrationTests
         $$$"""
         Welcome to the [Tavenem.Wiki](https://github.com/Tavenem/Wiki) sample.
 
-        {{ifnottemplate|[[{{{options.CategoryNamespace}}}:{{{CategoryTitle}}}]]}}
+        {{#unless isTemplate}}[{{{options.CategoryNamespace}}}:{{{CategoryTitle}}}]{{/unless}}
         """,
         null,
         false,
@@ -328,7 +325,7 @@ public class IntegrationTests
         groupManager,
         Admin,
         new PageTitle(CategoryTitle, options.CategoryNamespace),
-        $"These are system pages in the [Tavenem.Wiki](https://github.com/Tavenem/Wiki) sample [[w:Wiki||]]. [[{options.SystemNamespace}:{options.AboutPageTitle}|]]",
+        $"These are system pages in the [Tavenem.Wiki](https://github.com/Tavenem/Wiki) sample [w:Wiki||]. [{options.SystemNamespace}:{options.AboutPageTitle}|]",
         "Provide a description",
         false,
         AdminId,

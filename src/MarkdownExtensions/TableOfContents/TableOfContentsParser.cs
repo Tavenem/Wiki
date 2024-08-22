@@ -18,14 +18,14 @@ public static class TableOfContentsParser
     /// <returns>
     /// A <see cref="List{T}"/> of <see cref="Heading"/> objects.
     /// </returns>
-    public static List<Heading> Parse(WikiOptions options, string? markdown)
+    public static List<Heading>? Parse(WikiOptions options, string? markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
-            return [];
+            return null;
         }
 
-        var document = Markdig.Markdown.Parse(markdown, WikiConfig.GetMarkdownPipelineWithoutLinks(options));
+        var document = Markdig.Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options));
 
         var toCs = document.Descendants<TableOfContentsBlock>().ToList();
 
@@ -93,7 +93,7 @@ public static class TableOfContentsParser
         }
         if (headingLines.Count == 0)
         {
-            return [];
+            return null;
         }
         headingLines.Sort((x, y) => x.line.CompareTo(y.line));
         return headingLines.Select(x => x.heading).ToList();

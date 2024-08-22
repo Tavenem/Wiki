@@ -138,23 +138,17 @@ public abstract class MarkdownItem : IdItem
     /// Gets the given markdown content as plain text (i.e. strips all formatting).
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <param name="characterLimit">The maximum number of characters to return.</param>
     /// <param name="singleParagraph">
     /// If true, stops after the first paragraph break, even still under the allowed character limit.
     /// </param>
-    /// <param name="title">
-    /// The title of the page being rendered, if it is a wiki page.
-    /// </param>
     /// <returns>The plain text.</returns>
     public static string FormatPlainText(
         WikiOptions options,
-        IDataStore dataStore,
         string? markdown,
         int? characterLimit = 200,
-        bool singleParagraph = true,
-        PageTitle title = default)
+        bool singleParagraph = true)
     {
         if (string.IsNullOrEmpty(markdown))
         {
@@ -175,7 +169,7 @@ public abstract class MarkdownItem : IdItem
             markdown = markdown[..(characterLimit.Value * 5)];
         }
 
-        var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipelinePlainText(options, dataStore, title));
+        var html = Markdown.ToHtml(markdown, WikiConfig.MarkdownPipelinePlainText);
         if (string.IsNullOrWhiteSpace(html))
         {
             return string.Empty;
@@ -201,38 +195,24 @@ public abstract class MarkdownItem : IdItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown.</param>
-    /// <param name="title">The title of the page, if this is a page.</param>
+    /// <param name="title">The title of the page.</param>
+    /// <param name="page">The wiki <see cref="Page"/>.</param>
     /// <returns>
     /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
     /// </returns>
-    public static List<WikiLink> GetWikiLinks(
+    public static List<WikiLink>? GetWikiLinks(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        PageTitle title = default) => string.IsNullOrEmpty(markdown)
-        ? []
-        : Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title))
-            .Descendants<WikiLinkInline>()
-            .Where(x => !x.IsWikipedia
-                && !x.IsCommons
-                && (string.IsNullOrEmpty(x.Title)
-                || x.Title.Length < 5
-                || ((x.Title[0] != TransclusionParser.TransclusionOpenChar
-                || x.Title[1] != TransclusionParser.TransclusionOpenChar
-                || x.Title[^1] != TransclusionParser.TransclusionCloseChar
-                || x.Title[^2] != TransclusionParser.TransclusionCloseChar)
-                && (x.Title[0] != TransclusionParser.ParameterOpenChar
-                || x.Title[1] != TransclusionParser.ParameterOpenChar
-                || x.Title[^1] != TransclusionParser.ParameterCloseChar
-                || x.Title[^2] != TransclusionParser.ParameterCloseChar))))
-            .Select(x => new WikiLink(
-                x.Page,
-                x.Action,
-                x.Fragment,
-                x.IsCategory,
-                x.IsEscaped,
-                x.IsMissing,
-                x.PageTitle))
+        PageTitle title = default,
+        Page? page = null) => string.IsNullOrEmpty(markdown)
+        ? null
+        : WikiLinkParser.ReplaceWikiLinks(
+            options,
+            dataStore,
+            title,
+            page,
+            Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options)))?
             .Distinct()
             .ToList();
 
@@ -242,52 +222,45 @@ public abstract class MarkdownItem : IdItem
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
-    /// <param name="title">
-    /// The title of the page being rendered, if it is a wiki page.
-    /// </param>
+    /// <param name="title">The title of the page.</param>
+    /// <param name="page">The wiki <see cref="Page"/>.</param>
     /// <returns>The rendered HTML.</returns>
-    public static string RenderHtml(WikiOptions options, IDataStore dataStore, string? markdown, PageTitle title = default)
+    public static string RenderHtml(
+        WikiOptions options,
+        IDataStore dataStore,
+        string? markdown,
+        PageTitle title = default,
+        Page? page = null)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
             return string.Empty;
         }
 
-        var html = Markdown.ToHtml(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title));
-        if (string.IsNullOrWhiteSpace(html))
-        {
-            return string.Empty;
-        }
-
-        if (options.Postprocessors is not null)
-        {
-            foreach (var preprocessor in options.Postprocessors)
-            {
-                html = preprocessor.Process.Invoke(html);
-            }
-        }
-
-        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html).Trim();
+        var pipeline = WikiConfig.GetMarkdownPipeline(options);
+        return RenderHtml(
+            options,
+            dataStore,
+            pipeline,
+            Markdown.Parse(markdown, pipeline),
+            title,
+            page);
     }
 
     /// <summary>
     /// Gets a preview of the given markdown's rendered HTML.
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
-    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
-    /// <param name="title">
-    /// The title of the page being rendered, if it is a wiki page.
-    /// </param>
     /// <returns>A preview of the rendered HTML.</returns>
-    public static string RenderPreview(WikiOptions options, IDataStore dataStore, string? markdown, PageTitle title = default)
+    public static string RenderPreview(WikiOptions options, string? markdown)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
             return string.Empty;
         }
 
-        var document = Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options, dataStore, title));
+        var document = Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options));
         if (AnyPreviews(document))
         {
             TrimNonPreview(document);
@@ -303,7 +276,7 @@ public abstract class MarkdownItem : IdItem
         using (var writer = new StringWriter())
         {
             var renderer = new HtmlRenderer(writer);
-            WikiConfig.GetMarkdownPipeline(options, dataStore, title).Setup(renderer);
+            WikiConfig.GetMarkdownPipeline(options).Setup(renderer);
             renderer.Render(document);
             html = writer.ToString();
         }
@@ -384,14 +357,20 @@ public abstract class MarkdownItem : IdItem
     /// instance, as rendered HTML.
     /// </returns>
     public virtual async ValueTask<string> GetDiffHtmlAsync(WikiOptions options, IDataStore dataStore, MarkdownItem other)
-        => RenderHtml(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, GetDiff(other, "html")));
+        => RenderHtml(
+            options,
+            dataStore,
+            await PostprocessMarkdownAsync(options, dataStore, GetDiff(other, "html")));
 
     /// <summary>
     /// Gets this item's content rendered as HTML.
     /// </summary>
     /// <returns>The rendered HTML.</returns>
     public virtual async ValueTask<string> GetHtmlAsync(WikiOptions options, IDataStore dataStore)
-        => RenderHtml(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent));
+        => RenderHtml(
+            options,
+            dataStore,
+            await PostprocessMarkdownAsync(options, dataStore, MarkdownContent));
 
     /// <summary>
     /// Gets the given markdown content as plain text (i.e. strips all formatting).
@@ -410,7 +389,7 @@ public abstract class MarkdownItem : IdItem
         string? markdown,
         int? characterLimit = 200,
         bool singleParagraph = true)
-        => FormatPlainText(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, markdown), characterLimit, singleParagraph);
+        => FormatPlainText(options, await PostprocessMarkdownAsync(options, dataStore, markdown), characterLimit, singleParagraph);
 
     /// <summary>
     /// Gets this item's content as plain text (i.e. strips all formatting).
@@ -427,19 +406,81 @@ public abstract class MarkdownItem : IdItem
         IDataStore dataStore,
         int? characterLimit = 200,
         bool singleParagraph = true)
-        => FormatPlainText(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent), characterLimit, singleParagraph);
+        => FormatPlainText(options, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent), characterLimit, singleParagraph);
 
     /// <summary>
     /// Gets a preview of this item's rendered HTML.
     /// </summary>
     /// <returns>A preview of this item's rendered HTML.</returns>
     public async ValueTask<string> GetPreviewAsync(WikiOptions options, IDataStore dataStore)
-        => RenderPreview(options, dataStore, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent, isPreview: true));
+        => RenderPreview(options, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent, isPreview: true));
+
+    internal static List<WikiLink>? GetWikiLinks(
+        WikiOptions options,
+        IDataStore dataStore,
+        MarkdownDocument? document,
+        PageTitle title = default,
+        Page? page = null) => document is null
+        ? null
+        : WikiLinkParser.ReplaceWikiLinks(
+            options,
+            dataStore,
+            title,
+            page,
+            document)?
+            .Distinct()
+            .ToList();
+
+    internal static string RenderHtml(
+        WikiOptions options,
+        IDataStore dataStore,
+        MarkdownPipeline pipeline,
+        MarkdownDocument? document,
+        PageTitle title = default,
+        Page? page = null,
+        bool wikiLinksReplaced = false)
+    {
+        if (document is null)
+        {
+            return string.Empty;
+        }
+
+        if (!wikiLinksReplaced)
+        {
+            WikiLinkParser.ReplaceWikiLinks(
+                options,
+                dataStore,
+                title,
+                page,
+                document);
+        }
+        var html = document.ToHtml(pipeline);
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return string.Empty;
+        }
+
+        if (options.Postprocessors is not null)
+        {
+            foreach (var preprocessor in options.Postprocessors)
+            {
+                html = preprocessor.Process.Invoke(html);
+            }
+        }
+
+        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html).Trim();
+    }
 
     private static bool AnyPreviews(MarkdownObject obj)
     {
         if (obj is ContainerBlock containerBlock)
         {
+            if (obj is CustomContainer cc
+                && cc.TryGetAttributes()?.Classes?.Contains(TransclusionPreprocessor.PreviewClass) == true)
+            {
+                return true;
+            }
+
             for (var i = 0; i < containerBlock.Count; i++)
             {
                 if (AnyPreviews(containerBlock[i]))
@@ -450,12 +491,6 @@ public abstract class MarkdownItem : IdItem
         }
         else if (obj is ContainerInline containerInline)
         {
-            if (obj is CustomContainerInline cc
-                && cc.TryGetAttributes()?.Classes?.Contains(TransclusionFunctions.PreviewClass) == true)
-            {
-                return true;
-            }
-
             var inline = containerInline.FirstChild;
 
             while (inline != null)
@@ -583,8 +618,8 @@ public abstract class MarkdownItem : IdItem
 
     private static bool TrimNonPreview(MarkdownObject obj)
     {
-        if (obj is CustomContainerInline cc
-            && cc.TryGetAttributes()?.Classes?.Contains(TransclusionFunctions.PreviewClass) == true)
+        if (obj is CustomContainer cc
+            && cc.TryGetAttributes()?.Classes?.Contains(TransclusionPreprocessor.PreviewClass) == true)
         {
             return true;
         }

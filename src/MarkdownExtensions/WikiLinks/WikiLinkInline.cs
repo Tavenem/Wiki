@@ -18,11 +18,6 @@ public class WikiLinkInline : LinkInline
     public string? Display { get; set; }
 
     /// <summary>
-    /// The text outside the link which is to be included.
-    /// </summary>
-    public string? Endmatter { get; set; }
-
-    /// <summary>
     /// Any fragment which follows the link.
     /// </summary>
     public string? Fragment { get; set; }
@@ -53,14 +48,14 @@ public class WikiLinkInline : LinkInline
     public bool IsMissing { get; set; }
 
     /// <summary>
-    /// Whether this is a link to a discussion page.
-    /// </summary>
-    public bool IsTalk { get; set; }
-
-    /// <summary>
     /// Whether this is a link to Wikipedia.
     /// </summary>
     public bool IsWikipedia { get; set; }
+
+    /// <summary>
+    /// A string added to this wiki link, if non-empty.
+    /// </summary>
+    public string? LinkTemplate { get; set; }
 
     /// <summary>
     /// The linked page (if any).
@@ -70,5 +65,5 @@ public class WikiLinkInline : LinkInline
     /// <summary>
     /// The title of the linked article.
     /// </summary>
-    public PageTitle PageTitle { get; set; }
+    public PageTitle? PageTitle { get; set; }
 }

@@ -2,30 +2,14 @@
 using Markdig.Parsers.Inlines;
 using Markdig.Renderers;
 using Markdig.Renderers.Html.Inlines;
-using Tavenem.DataStorage;
 
 namespace Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 
 /// <summary>
 /// An extension for wiki links.
 /// </summary>
-public class WikiLinkExtension(WikiOptions options, IDataStore dataStore, PageTitle title) : IMarkdownExtension
+public class WikiLinkExtension : IMarkdownExtension
 {
-    /// <summary>
-    /// The <see cref="IDataStore"/> used by this instance.
-    /// </summary>
-    public IDataStore DataStore { get; } = dataStore;
-
-    /// <summary>
-    /// The options for this instance.
-    /// </summary>
-    public WikiOptions Options { get; } = options;
-
-    /// <summary>
-    /// The title of the page being parsed/rendered.
-    /// </summary>
-    public PageTitle Title { get; } = title;
-
     /// <summary>
     /// Setups this extension for the specified pipeline.
     /// </summary>
@@ -34,7 +18,7 @@ public class WikiLinkExtension(WikiOptions options, IDataStore dataStore, PageTi
     {
         if (!pipeline.InlineParsers.Contains<WikiLinkInlineParser>())
         {
-            pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new WikiLinkInlineParser(Options, DataStore, Title));
+            pipeline.InlineParsers.InsertBefore<LinkInlineParser>(new WikiLinkInlineParser());
         }
     }
 
@@ -48,7 +32,7 @@ public class WikiLinkExtension(WikiOptions options, IDataStore dataStore, PageTi
         if (renderer is HtmlRenderer htmlRenderer
             && !htmlRenderer.ObjectRenderers.Contains<WikiLinkInlineRenderer>())
         {
-            htmlRenderer.ObjectRenderers.InsertBefore<LinkInlineRenderer>(new WikiLinkInlineRenderer(Options));
+            htmlRenderer.ObjectRenderers.InsertBefore<LinkInlineRenderer>(new WikiLinkInlineRenderer());
         }
     }
 }

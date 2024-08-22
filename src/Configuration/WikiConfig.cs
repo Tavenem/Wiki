@@ -1,7 +1,8 @@
 ﻿using Ganss.Xss;
+using Lucene.Net.Util;
 using Markdig;
-using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions;
+using Tavenem.Wiki.MarkdownExtensions.TableOfContents;
 
 namespace Tavenem.Wiki;
 
@@ -11,27 +12,35 @@ namespace Tavenem.Wiki;
 /// </summary>
 internal static class WikiConfig
 {
+    internal const LuceneVersion WikiLuceneVersion = LuceneVersion.LUCENE_48;
+
     private static IHtmlSanitizer? _HtmlSanitizerNoTemplate;
+    private static Dictionary<TableOfContentsOptions, MarkdownPipeline>? _PipelineCache;
+    private static Dictionary<string, IHtmlSanitizer>? _SanitizerCache;
 
     private static IHtmlSanitizer? _HtmlSanitizerFull;
     internal static IHtmlSanitizer HtmlSanitizerFull
-    {
-        get
+        => _HtmlSanitizerFull ??= new HtmlSanitizer(new HtmlSanitizerOptions())
         {
-            _HtmlSanitizerFull ??= new HtmlSanitizer(new HtmlSanitizerOptions())
-            {
-                KeepChildNodes = true
-            };
-            return _HtmlSanitizerFull;
-        }
-    }
+            KeepChildNodes = true
+        };
+
+    internal static MarkdownPipeline? _markdownPipelinePlainText;
+    internal static MarkdownPipeline MarkdownPipelinePlainText
+        => _markdownPipelinePlainText ??= GetMarkdownPipelinePlainText();
 
     internal static IHtmlSanitizer GetHtmlSanitizer(WikiOptions options)
     {
-        if (string.IsNullOrEmpty(options.LinkTemplate)
-            && _HtmlSanitizerNoTemplate is not null)
+        if (string.IsNullOrEmpty(options.LinkTemplate))
         {
-            return _HtmlSanitizerNoTemplate;
+            if (_HtmlSanitizerNoTemplate is not null)
+            {
+                return _HtmlSanitizerNoTemplate;
+            }
+        }
+        else if (_SanitizerCache?.TryGetValue(options.LinkTemplate, out var sanitizer) == true)
+        {
+            return sanitizer;
         }
 
         var htmlSanitizer = new HtmlSanitizer();
@@ -52,70 +61,61 @@ internal static class WikiConfig
         {
             _HtmlSanitizerNoTemplate = htmlSanitizer;
         }
+        else
+        {
+            (_SanitizerCache ??= [])[options.LinkTemplate] = htmlSanitizer;
+        }
 
         return htmlSanitizer;
     }
 
-    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options, IDataStore dataStore, PageTitle title)
-        => new MarkdownPipelineBuilder()
-        .UseWikiLinks(options, dataStore, title)
-        .UseAbbreviations()
-        .UseAutoIdentifiers()
-        .UseTableOfContents(new MarkdownExtensions.TableOfContents.TableOfContentsOptions
+    internal static MarkdownPipeline GetMarkdownPipeline(WikiOptions options)
+    {
+        var tableOfContentsOptions = new TableOfContentsOptions
         {
             DefaultDepth = options.DefaultTableOfContentsDepth,
             DefaultStartingLevel = 1,
             MinimumTopLevel = options.MinimumTableOfContentsHeadings,
             DefaultTitle = options.DefaultTableOfContentsTitle,
-        })
-        .UseCitations()
-        .UseCustomContainers()
-        .UseDefinitionLists()
-        .UseEmphasisExtras()
-        .UseFigures()
-        .UseFooters()
-        .UseFootnotes()
-        .UseGridTables()
-        .UseMathematics()
-        .UsePipeTables()
-        .UseListExtras()
-        .UseTaskLists()
-        .UseAutoLinks()
-        .UseGenericAttributes()
-        .UseSmartyPants()
-        .Build();
-
-    internal static MarkdownPipeline GetMarkdownPipelineWithoutLinks(WikiOptions options)
-        => new MarkdownPipelineBuilder()
-        .UseAbbreviations()
-        .UseAutoIdentifiers()
-        .UseTableOfContents(new MarkdownExtensions.TableOfContents.TableOfContentsOptions
+        };
+        if (_PipelineCache?.TryGetValue(tableOfContentsOptions, out var pipeline) == true)
         {
-            DefaultDepth = options.DefaultTableOfContentsDepth,
-            DefaultStartingLevel = 1,
-            MinimumTopLevel = options.MinimumTableOfContentsHeadings,
-            DefaultTitle = options.DefaultTableOfContentsTitle,
-        })
-        .UseCitations()
-        .UseCustomContainers()
-        .UseDefinitionLists()
-        .UseEmphasisExtras()
-        .UseFigures()
-        .UseFooters()
-        .UseFootnotes()
-        .UseGridTables()
-        .UseMathematics()
-        .UsePipeTables()
-        .UseListExtras()
-        .UseTaskLists()
-        .UseAutoLinks()
-        .UseGenericAttributes()
-        .UseSmartyPants()
-        .Build();
+            return pipeline;
+        }
+        pipeline = new MarkdownPipelineBuilder()
+            .UseWikiLinks()
+            .UseAbbreviations()
+            .UseAutoIdentifiers()
+            .UseTableOfContents(new TableOfContentsOptions
+            {
+                DefaultDepth = options.DefaultTableOfContentsDepth,
+                DefaultStartingLevel = 1,
+                MinimumTopLevel = options.MinimumTableOfContentsHeadings,
+                DefaultTitle = options.DefaultTableOfContentsTitle,
+            })
+            .UseCitations()
+            .UseCustomContainers()
+            .UseDefinitionLists()
+            .UseEmphasisExtras()
+            .UseFigures()
+            .UseFooters()
+            .UseFootnotes()
+            .UseGridTables()
+            .UseMathematics()
+            .UsePipeTables()
+            .UseListExtras()
+            .UseTaskLists()
+            .UseAutoLinks()
+            .UseGenericAttributes()
+            .UseSmartyPants()
+            .Build();
+        (_PipelineCache ??= new()).Add(tableOfContentsOptions, pipeline);
+        return pipeline;
+    }
 
-    internal static MarkdownPipeline GetMarkdownPipelinePlainText(WikiOptions options, IDataStore dataStore, PageTitle title)
+    private static MarkdownPipeline GetMarkdownPipelinePlainText()
         => new MarkdownPipelineBuilder()
-        .UseWikiLinks(options, dataStore, title)
+        .UseWikiLinks()
         .UseAbbreviations()
         .UseAutoIdentifiers()
         .UseCitations()

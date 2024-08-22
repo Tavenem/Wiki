@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
-using SmartComponents.LocalEmbeddings;
 using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
 
@@ -57,11 +56,9 @@ public class UserPage : OwnerPage, IPage<UserPage>
         IReadOnlyCollection<string>? allowedEditorGroups = null,
         IReadOnlyCollection<string>? allowedViewerGroups = null,
         IReadOnlyCollection<PageTitle>? categories = null,
-        IReadOnlyCollection<IReadOnlyCollection<byte>>? embeddingI1Bytes = null,
         IReadOnlyCollection<Heading>? headings = null,
         IReadOnlyCollection<PageTitle>? redirectReferences = null,
         IReadOnlyCollection<PageTitle>? references = null,
-        IReadOnlyCollection<byte>? titleEmbeddingI1Bytes = null,
         IReadOnlyCollection<PageTitle>? transclusionReferences = null,
         IReadOnlyCollection<PageTitle>? transclusions = null,
         bool isBrokenRedirect = false,
@@ -79,11 +76,9 @@ public class UserPage : OwnerPage, IPage<UserPage>
         allowedEditorGroups,
         allowedViewerGroups,
         categories,
-        embeddingI1Bytes,
         headings,
         redirectReferences,
         references,
-        titleEmbeddingI1Bytes,
         transclusionReferences,
         transclusions,
         isBrokenRedirect,
@@ -186,16 +181,6 @@ public class UserPage : OwnerPage, IPage<UserPage>
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
-    /// <param name="embedder">
-    /// <para>
-    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
-    /// </para>
-    /// <para>
-    /// If omitted, a default static instance will be created, used, and then disposed. This is
-    /// highly inefficient and can slow performance considerably. A singleton instance should be
-    /// passed whenever possible.
-    /// </para>
-    /// </param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -237,7 +222,6 @@ public class UserPage : OwnerPage, IPage<UserPage>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
-        LocalEmbedder? embedder = null,
         IMemoryCache? cache = null) => RenameAsync(
             options,
             dataStore,
@@ -252,6 +236,5 @@ public class UserPage : OwnerPage, IPage<UserPage>
             allowedViewerGroups,
             redirectTitle,
             WikiJsonSerializerContext.Default.UserPage,
-            embedder,
             cache);
 }

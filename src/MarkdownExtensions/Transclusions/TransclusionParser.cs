@@ -1,5 +1,4 @@
 ﻿using Markdig.Helpers;
-using System.Globalization;
 using System.Text;
 using Tavenem.DataStorage;
 
@@ -10,13 +9,15 @@ namespace Tavenem.Wiki.MarkdownExtensions.Transclusions;
 /// </summary>
 public static class TransclusionParser
 {
-    internal const char ParameterCloseChar = ')';
-    internal const char ParameterOpenChar = '(';
+    internal const char CodeBlockChar = '`';
     internal const char TransclusionCloseChar = '}';
     internal const char TransclusionOpenChar = '{';
 
-    private const char CodeBlockChar = '`';
-    private const char SeparatorChar = '|';
+    private const string TransclusionBlockOpenSequence = "{{#>";
+    private const string TransclusionBlockEndOpenSequence = "{{/";
+    private const string TransclusionCloseSequence = "}}";
+    private const string TransclusionOpenSequence = "{{>";
+
     private const int TransclusionMaxDepth = 100;
 
     /// <summary>
@@ -24,36 +25,29 @@ public static class TransclusionParser
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the top-level article being generated.</param>
     /// <param name="markdown">A markdown string.</param>
-    /// <param name="isTemplate">Whether the article is being rendered as a transclusion.</param>
+    /// <param name="title">The title of the top-level article being generated.</param>
     /// <param name="isPreview">Whether a preview is being rendered.</param>
     /// <param name="isTalk">Whether the content is a message.</param>
-    /// <param name="parameterValues">
-    /// A collection of supplied parameter values, if the markdown is itself a transclusion.
-    /// </param>
     /// <returns>
     /// The markdown with all transclusions substituted.
     /// </returns>
     public static async ValueTask<string> TranscludeAsync(
         WikiOptions options,
         IDataStore dataStore,
-        PageTitle? title,
         string markdown,
-        bool isTemplate = false,
+        PageTitle? title = null,
         bool isPreview = false,
-        bool isTalk = false,
-        Dictionary<string, string>? parameterValues = null)
+        bool isTalk = false)
     {
         var (result, _) = await TranscludeInnerAsync(
             options,
             dataStore,
-            title,
             markdown,
-            isTemplate,
+            title,
+            false,
             isPreview,
-            isTalk,
-            parameterValues);
+            isTalk);
         return result!;
     }
 
@@ -63,13 +57,16 @@ public static class TransclusionParser
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
-    /// <param name="title">The title of the top-level page being generated.</param>
     /// <param name="markdown">A markdown string.</param>
+    /// <param name="title">The title of the top-level page being generated.</param>
     /// <param name="isTemplate">Whether the page is being rendered as a
     /// transclusion.</param>
     /// <param name="isPreview">Whether a preview is being rendered.</param>
     /// <param name="isTalk">Whether the content is a message.</param>
-    /// <param name="parameterValues">
+    /// <param name="arguments">
+    /// A collection of supplied arguments, if the markdown is itself a transclusion.
+    /// </param>
+    /// <param name="parameters">
     /// A collection of supplied parameter values, if the markdown is itself a transclusion.
     /// </param>
     /// <returns>
@@ -77,581 +74,787 @@ public static class TransclusionParser
     /// cref="List{T}"/> of the full titles of all pages referenced by the transclusions within
     /// the given <paramref name="markdown"/> (including nested transclusions).
     /// </returns>
-    internal static async ValueTask<(string? markdown, List<PageTitle> transcludedPages)> TranscludeInnerAsync(
+    internal static async ValueTask<(string? markdown, HashSet<PageTitle> transcludedPages)> TranscludeInnerAsync(
         WikiOptions options,
         IDataStore dataStore,
-        PageTitle? title,
         string? markdown,
+        PageTitle? title = null,
         bool isTemplate = false,
         bool isPreview = false,
         bool isTalk = false,
-        Dictionary<string, string>? parameterValues = null)
+        List<object>? arguments = null,
+        Dictionary<string, object>? parameters = null)
     {
-        var transcludedPages = new List<PageTitle>();
+        var transcludedPages = new HashSet<PageTitle>();
 
         if (string.IsNullOrWhiteSpace(markdown))
         {
-            return (markdown, transcludedPages);
+            return (string.Empty, transcludedPages);
         }
 
-        var parameterInclusions = new List<Transclusion>();
-        var transclusions = new List<Transclusion>();
-
-        var lineReader = new LineReader(markdown);
-        var codeFenced = false;
-        while (true)
-        {
-            var lineText = lineReader.ReadLine();
-            if (lineText.Text is null)
-            {
-                break;
-            }
-
-            var lineTransclusions = Parse(lineText, out var lineParameters, out var isCodeFence);
-
-            if (isCodeFence)
-            {
-                codeFenced = false;
-            }
-            if (codeFenced)
-            {
-                continue;
-            }
-
-            if (parameterValues != null)
-            {
-                foreach (var parameter in lineParameters)
-                {
-                    var name = lineText.Text[(parameter.Start + 2)..(parameter.End - 2)].ToLower(CultureInfo.CurrentCulture);
-                    parameter.Content = parameterValues.TryGetValue(name, out var value)
-                        ? value
-                        : string.Empty;
-                }
-            }
-
-            lineTransclusions.Sort((x, y) => x.Start.CompareTo(y.Start));
-            for (var i = 0; i < lineTransclusions.Count; i++)
-            {
-                (lineTransclusions[i].Content, var linePages) = await GetContentAsync(
-                    options,
-                    dataStore,
-                    title,
-                    lineText.Text[lineTransclusions[i].Start..lineTransclusions[i].End],
-                    offset: lineTransclusions[i].Start,
-                    end: lineTransclusions[i].End - 2,
-                    depth: 0,
-                    isTemplate,
-                    isPreview,
-                    isTalk,
-                    lineTransclusions,
-                    lineParameters,
-                    parameterValues);
-                transcludedPages = transcludedPages.Union(linePages).ToList();
-            }
-
-            transclusions.AddRange(lineTransclusions);
-            parameterInclusions.AddRange(lineParameters);
-        }
-
-        return (Render(markdown, 0, transclusions, parameterInclusions),
-            transcludedPages);
+        var writer = new StringBuilder();
+        await TranscludeInnerAsync(
+            options,
+            dataStore,
+            writer,
+            transcludedPages,
+            markdown,
+            title,
+            isTemplate,
+            isPreview,
+            isTalk,
+            arguments,
+            parameters);
+        return (writer.ToString(), transcludedPages);
     }
 
-    private static async ValueTask<(string?, List<PageTitle>)> GetContentAsync(
+    internal static async ValueTask TranscludeInnerAsync(
         WikiOptions options,
         IDataStore dataStore,
-        PageTitle? title,
-        string markdown,
-        int offset,
-        int end,
-        int depth,
-        bool isTemplate,
-        bool isPreview,
-        bool isTalk,
-        List<Transclusion> transclusions,
-        List<Transclusion> parameterInclusions,
-        Dictionary<string, string>? passedParameterValues = null)
+        StringBuilder writer,
+        HashSet<PageTitle> transcludedPages,
+        string? markdown,
+        PageTitle? title = null,
+        bool isTemplate = false,
+        bool isPreview = false,
+        bool isTalk = false,
+        List<object>? arguments = null,
+        Dictionary<string, object>? parameters = null)
     {
-        var transcludedPages = new List<PageTitle>();
-
-        var includedTransclusions = new List<Transclusion>();
-        var j = 0;
-        while (j < transclusions.Count
-            && transclusions[j].Start < offset + 2)
+        if (string.IsNullOrWhiteSpace(markdown))
         {
-            j++;
-        }
-        while (j < transclusions.Count
-            && transclusions[j].Start < end)
-        {
-            includedTransclusions.Add(transclusions[j]);
-            j++;
+            return;
         }
 
-        var includedParameters = new List<Transclusion>();
-        j = 0;
-        while (j < parameterInclusions.Count
-            && parameterInclusions[j].Start < offset + 2)
+        var transclusions = GetTransclusions(markdown);
+        if (transclusions.Count == 0)
         {
-            j++;
-        }
-        while (j < parameterInclusions.Count
-            && parameterInclusions[j].Start < end)
-        {
-            includedParameters.Add(parameterInclusions[j]);
-            j++;
-        }
-        for (var i = 0; i < includedTransclusions.Count; i++)
-        {
-            if (depth >= TransclusionMaxDepth)
-            {
-                includedTransclusions[i].Content = markdown[(includedTransclusions[i].Start - offset)..(includedTransclusions[i].End - offset)];
-                continue;
-            }
-
-            (includedTransclusions[i].Content, var nestedArticles) = await GetContentAsync(
+            writer.Append(TransclusionPreprocessor.Transclude(
                 options,
-                dataStore,
                 title,
-                markdown[(includedTransclusions[i].Start - offset)..(includedTransclusions[i].End - offset)],
-                offset: includedTransclusions[i].Start,
-                end: includedTransclusions[i].End - 2,
-                depth + 1,
+                markdown,
                 isTemplate,
                 isPreview,
                 isTalk,
-                includedTransclusions,
-                includedParameters,
-                passedParameterValues);
-            transcludedPages = transcludedPages.Union(nestedArticles).ToList();
+                arguments,
+                parameters));
+            return;
         }
 
-        var template = Render(markdown, offset, includedTransclusions, includedParameters);
-        var templateContent = template[2..^2];
-
-        var separatorIndex = templateContent.IndexOfUnescaped(SeparatorChar);
-        if (separatorIndex == 0)
+        RemoveInvalidTransclusions(options, markdown, transclusions);
+        if (transclusions.Count == 0)
         {
-            return (template, transcludedPages);
+            writer.Append(TransclusionPreprocessor.Transclude(
+                options,
+                title,
+                markdown,
+                isTemplate,
+                isPreview,
+                isTalk,
+                arguments,
+                parameters));
+            return;
         }
 
-        string? reference;
-        string? parameters;
-        if (separatorIndex == -1)
+        for (var i = 0; i < transclusions.Count; i++)
         {
-            reference = templateContent;
-            parameters = null;
-        }
-        else
-        {
-            reference = templateContent[..separatorIndex];
-            if (separatorIndex == templateContent.Length - 1)
+            if (!transclusions[i].Title.HasValue)
             {
-                parameters = null;
+                transclusions.RemoveAt(i--);
+                continue;
+            }
+
+            if (transclusions[i].Title!.Value.Title == "@partial-block")
+            {
+                continue;
+            }
+
+            // Always add the page to the list of transclusions,
+            // even if it doesn't exist or can't be transcluded,
+            // since missing transclusions are obtained from this list.
+            if (!transclusions[i].IsBlockEnd)
+            {
+                transcludedPages.Add(transclusions[i].Title!.Value);
+            }
+
+            var page = await IPage<Page>.GetExistingPageAsync(
+                dataStore,
+                transclusions[i].Title!.Value,
+                true,
+                false,
+                WikiJsonSerializerContext.Default.Page)
+                .ConfigureAwait(false);
+            // If an anonymous user cannot read the page, do not transclude it.
+            // The transclusion process occurs as part of the generation of page content,
+            // not dynamically at render time (when consideration for individual permissions might be possible).
+            if (page?.Exists == true
+                && !string.IsNullOrWhiteSpace(page.MarkdownContent)
+                && page.GetPermission(options).HasFlag(WikiPermission.Read))
+            {
+                transclusions[i].Page = page;
             }
             else
             {
-                parameters = templateContent[(separatorIndex + 1)..];
+                transclusions.RemoveAt(i--);
             }
         }
-        reference = reference.Trim();
-
-        Dictionary<string, string> parameterValues;
-        var invariantReference = reference.ToLowerInvariant();
-        if (TransclusionFunctions._Functions.TryGetValue(invariantReference, out var func))
+        if (transclusions.Count == 0)
         {
-            // If the function uses any parameters, return it as-is so that it can be invoked
-            // with those parameters at a higher level.
-            parameterValues = ParseParameters(parameters);
-            if (parameterValues.Any(x => x.Value.Length > 4
-                && x.Value[0] == ParameterOpenChar
-                && x.Value[1] == ParameterOpenChar
-                && x.Value[^1] == ParameterCloseChar
-                && x.Value[^2] == ParameterCloseChar))
-            {
-                return (template, transcludedPages);
-            }
-            if (passedParameterValues is not null
-                && (invariantReference == "eval"
-                || invariantReference == "exec"))
-            {
-                var index = 1;
-                foreach (var (key, value) in passedParameterValues)
-                {
-                    if (!parameterValues.TryAdd(key, value)
-                        && int.TryParse(key, out var i))
-                    {
-                        while (parameterValues.ContainsKey(index.ToString()))
-                        {
-                            index++;
-                        }
-                        parameterValues.Add(index.ToString(), value);
-                    }
-                }
-            }
-            if (invariantReference == "exec")
-            {
-                string? script = null;
-                if (!parameterValues.TryGetValue("code", out var code)
-                    && parameterValues.TryGetValue("1", out code))
-                {
-                    parameterValues.Remove("1");
-                }
-                parameterValues.Remove("code");
-                if (!string.IsNullOrWhiteSpace(code))
-                {
-                    var codeTitle = PageTitle.Parse(code);
-                    if (codeTitle.Title?.Equals(options.MainPageTitle) == true)
-                    {
-                        codeTitle = codeTitle.WithTitle(null);
-                    }
-                    if (string.IsNullOrEmpty(codeTitle.Namespace))
-                    {
-                        codeTitle = codeTitle.WithNamespace(options.ScriptNamespace);
-                    }
-                    if (string.CompareOrdinal(codeTitle.Namespace, options.ScriptNamespace) == 0)
-                    {
-                        var scriptPage = await IPage<Article>
-                            .GetExistingPageAsync(
-                                dataStore,
-                                codeTitle,
-                                true,
-                                false,
-                                WikiJsonSerializerContext.Default.Article)
-                            .ConfigureAwait(false);
-                        script = scriptPage?.MarkdownContent;
-                    }
-                }
-                if (!string.IsNullOrWhiteSpace(script))
-                {
-                    parameterValues["code"] = script;
-                }
-            }
-            return (func.Invoke(options, parameterValues, title, isTemplate, isPreview, isTalk),
-                transcludedPages);
+            writer.Append(TransclusionPreprocessor.Transclude(
+                options,
+                title,
+                markdown,
+                isTemplate,
+                isPreview,
+                isTalk,
+                arguments,
+                parameters));
+            return;
         }
 
-        if (depth >= TransclusionMaxDepth)
+        var builder = new StringBuilder();
+        var markdownIndex = 0;
+        var transclusionIndex = 0;
+        while (transclusionIndex < transclusions.Count)
         {
-            return (template, transcludedPages);
+            (transclusionIndex, markdownIndex) = await WriteTransclusionContentAsync(
+                options,
+                dataStore,
+                builder,
+                transcludedPages,
+                transclusions,
+                transclusionIndex,
+                markdownIndex,
+                0,
+                markdown,
+                title,
+                isPreview,
+                isTalk,
+                arguments,
+                parameters);
         }
-
-        var pageTitle = PageTitle.Parse(reference);
-        if (string.IsNullOrEmpty(pageTitle.Namespace))
+        if (transclusions[^1].End < markdown.Length)
         {
-            pageTitle = pageTitle.WithNamespace(options.TransclusionNamespace);
+            builder.Append(markdown[transclusions[^1].End..]);
         }
-        else if (string.CompareOrdinal(pageTitle.Namespace, "-") == 0)
-        {
-            pageTitle = pageTitle.WithNamespace(null);
-        }
-        else if (string.CompareOrdinal(pageTitle.Namespace, "\\-") == 0)
-        {
-            pageTitle = pageTitle.WithNamespace("-");
-        }
-        if (pageTitle.Title?.Equals(options.MainPageTitle) == true)
-        {
-            pageTitle = pageTitle.WithTitle(null);
-        }
-        transcludedPages.Add(pageTitle);
-
-        var page = await IPage<Page>.GetExistingPageAsync(
-            dataStore,
-            pageTitle,
-            true,
-            false,
-            WikiJsonSerializerContext.Default.Page)
-            .ConfigureAwait(false);
-        if (page is null
-            || page.AllowedViewers?.Count > 0)
-        {
-            return (template, transcludedPages);
-        }
-
-        parameterValues = ParseParameters(parameters);
-
-        var (pageContent, pageTransclusions) = await TranscludeInnerAsync(
+        writer.Append(TransclusionPreprocessor.Transclude(
             options,
-            dataStore,
             title,
-            page.MarkdownContent,
-            isTemplate: true,
+            builder,
+            isTemplate,
             isPreview,
             isTalk,
-            parameterValues);
-
-        transcludedPages = transcludedPages.Union(pageTransclusions).ToList();
-
-        return (pageContent, transcludedPages);
+            arguments,
+            parameters));
     }
 
-    private static List<Transclusion> Parse(StringSlice slice, out List<Transclusion> parameterInclusions, out bool isCodeFence)
+    private static async ValueTask<(int newTransclusionIndex, int newMarkdownIndex)> WriteTransclusionContentAsync(
+        WikiOptions options,
+        IDataStore dataStore,
+        StringBuilder writer,
+        HashSet<PageTitle> transcludedPages,
+        List<Transclusion> transclusions,
+        int transclusionIndex,
+        int markdownIndex,
+        int depth,
+        string markdown,
+        PageTitle? title,
+        bool isPreview,
+        bool isTalk,
+        List<object>? arguments,
+        Dictionary<string, object>? parameters)
     {
-        isCodeFence = false;
+        var transclusion = transclusions[transclusionIndex];
+        transclusionIndex++;
 
-        parameterInclusions = [];
+        // write content prior to the start of the transclusion
+        if (transclusion.Start > markdownIndex)
+        {
+            writer.Append(markdown[markdownIndex..transclusion.Start]);
+        }
+
+        if (transclusion.Title!.Value.Title == "@partial-block")
+        {
+            if (parameters?.TryGetValue("@partial-block", out var p) == true
+                && p is string md)
+            {
+                writer.Append(md);
+            }
+            else
+            {
+                writer.Append(markdown, transclusion.Start, transclusion.End - transclusion.Start);
+            }
+            markdownIndex = transclusion.End;
+            return (transclusionIndex, markdownIndex);
+        }
+
+        if (transclusion.IsBlockEnd)
+        {
+            // if this block is not associated with a starting block (should not happen),
+            // or its starting block was not successfully transcluded,
+            // write the literal content
+            if (transclusion.BlockStart?.WasTranscluded != true)
+            {
+                writer.Append(markdown, transclusion.Start, transclusion.End - transclusion.Start);
+            }
+            markdownIndex = transclusion.End;
+            return (transclusionIndex, markdownIndex);
+        }
+
+        if (depth >= TransclusionMaxDepth
+            || transclusion.Page is null
+            || string.IsNullOrWhiteSpace(transclusion.Page.MarkdownContent)
+            || (transclusion.IsBlockStart && transclusion.BlockEnd is null))
+        {
+            writer.Append(markdown, transclusion.Start, transclusion.End - transclusion.Start);
+            markdownIndex = transclusion.End;
+            return (transclusionIndex, markdownIndex);
+        }
+
+        var (transclusionArguments, transclusionParameters) = transclusion.Parameters.HasValue
+            ? ParseParameters(markdown, transclusion.Parameters.Value)
+            : (null, null);
+        if (arguments is not null)
+        {
+            (transclusionArguments ??= []).AddRange(arguments);
+        }
+        if (parameters is not null)
+        {
+            foreach (var (key, value) in parameters)
+            {
+                if (transclusionParameters is null)
+                {
+                    (transclusionParameters = [])[key] = value;
+                }
+                else if (!transclusionParameters.ContainsKey(key))
+                {
+                    transclusionParameters[key] = value;
+                }
+            }
+        }
+
+        markdownIndex = transclusion.End;
+
+        if (transclusion.BlockEnd is not null
+            && transclusion.End < transclusion.BlockEnd.Start - 1)
+        {
+            var content = new StringBuilder();
+            while (transclusionIndex < transclusions.Count)
+            {
+                if (transclusions[transclusionIndex].End > transclusion.BlockEnd.Start)
+                {
+                    break;
+                }
+                if (transclusions[transclusionIndex].Start < transclusion.End)
+                {
+                    transclusionIndex++;
+                    continue;
+                }
+                (transclusionIndex, markdownIndex) = await WriteTransclusionContentAsync(
+                    options,
+                    dataStore,
+                    content,
+                    transcludedPages,
+                    transclusions,
+                    transclusionIndex,
+                    markdownIndex,
+                    depth + 1,
+                    markdown,
+                    title,
+                    isPreview,
+                    isTalk,
+                    transclusionArguments,
+                    transclusionParameters);
+            }
+
+            if (transclusions[transclusionIndex - 1].End < transclusion.BlockEnd.Start - 1)
+            {
+                content.Append(
+                    markdown,
+                    transclusions[transclusionIndex - 1].End,
+                    transclusion.BlockEnd.Start - transclusions[transclusionIndex - 1].End);
+            }
+
+            if (content.Length > 0)
+            {
+                (transclusionParameters ??= [])["@partial-block"] = TransclusionPreprocessor
+                    .Transclude(
+                    options,
+                    title,
+                    content.ToString(),
+                    true,
+                    isPreview,
+                    isTalk,
+                    transclusionArguments,
+                    transclusionParameters);
+            }
+
+            markdownIndex = transclusion.BlockEnd.End;
+        }
+
+        await TranscludeInnerAsync(
+            options,
+            dataStore,
+            writer,
+            transcludedPages,
+            transclusion.Page.MarkdownContent,
+            title,
+            true,
+            isPreview,
+            isTalk,
+            transclusionArguments,
+            transclusionParameters);
+
+        return (transclusionIndex, markdownIndex);
+    }
+
+    private static ReadOnlySpan<char> GetTransclusionName(string markdown, Transclusion transclusion, out int separatorIndex)
+    {
+        if (transclusion.IsBlockEnd)
+        {
+            separatorIndex = -1;
+            return markdown.AsSpan()[transclusion.ContentStart..transclusion.ContentEnd];
+        }
+        else
+        {
+            var span = markdown.AsSpan();
+            separatorIndex = span[transclusion.ContentStart..transclusion.ContentEnd].IndexOf(' ');
+            if (separatorIndex != -1)
+            {
+                separatorIndex += transclusion.ContentStart;
+            }
+            return separatorIndex == -1
+                ? span[transclusion.ContentStart..transclusion.ContentEnd]
+                : span[transclusion.ContentStart..separatorIndex];
+        }
+    }
+
+    private static List<Transclusion> GetTransclusions(string markdown)
+    {
         var transclusions = new List<Transclusion>();
+
+        var lineReader = new LineReader(markdown);
+        var isCodeFenced = false;
+        StringSlice lineText;
+        while ((lineText = lineReader.ReadLine()).Text is not null)
+        {
+            Parse(transclusions, ref lineText, ref isCodeFenced);
+        }
+
+        transclusions.Sort((x, y) => x.Start.CompareTo(y.Start));
+        return transclusions;
+    }
+
+    private static void Parse(List<Transclusion> transclusions, ref StringSlice slice, ref bool isCodeFenced)
+    {
         if (slice.IsEmptyOrWhitespace())
         {
-            return transclusions;
+            return;
         }
 
         var c = slice.CurrentChar;
 
-        var transclusionOpenerIndexes = new Stack<int>();
-        var parameterOpenerIndexes = new Stack<int>();
-        var isCodeBlock = false;
+        var transclusionOpenerIndex = -1;
+        var transclusionContentOpenIndex = -1;
+        var inCodeSpan = false;
+        var inBlockOpen = false;
+        var inBlockEndOpen = false;
+        var isEscaped = false;
         var leadingSpaces = 0;
+        var transclusionOpenSpaces = false;
+        var transclusionCloseSpaces = -1;
         var codeFenceCharacters = 0;
         while (c != '\0')
         {
-            if (leadingSpaces > 0)
+            if (leadingSpaces >= 0)
             {
                 if (c.IsWhitespace())
                 {
                     leadingSpaces++;
                     if (leadingSpaces >= 4)
                     {
-                        return transclusions;
+                        return;
                     }
+                    c = slice.NextChar();
+                    continue;
                 }
                 else
                 {
-                    leadingSpaces = 0;
+                    leadingSpaces = -1;
                 }
             }
+            else if (transclusionOpenSpaces)
+            {
+                if (c.IsWhitespace())
+                {
+                    transclusionContentOpenIndex++;
+                    c = slice.NextChar();
+                    continue;
+                }
+                else
+                {
+                    transclusionOpenSpaces = false;
+                    transclusionCloseSpaces = 0;
+                }
+            }
+            else if (transclusionCloseSpaces >= 0)
+            {
+                if (c.IsWhitespace())
+                {
+                    transclusionCloseSpaces++;
+                    c = slice.NextChar();
+                    continue;
+                }
+                else
+                {
+                    transclusionCloseSpaces = 0;
+                }
+            }
+
             if (c == CodeBlockChar)
             {
-                if (codeFenceCharacters > 0)
+                codeFenceCharacters++;
+                if (codeFenceCharacters >= 3)
                 {
-                    codeFenceCharacters++;
-                    if (codeFenceCharacters >= 3)
-                    {
-                        isCodeFence = true;
-                        return transclusions;
-                    }
+                    isCodeFenced = !isCodeFenced;
                 }
-                if (isCodeBlock)
+                if (inCodeSpan)
                 {
-                    isCodeBlock = false;
+                    inCodeSpan = false;
                 }
                 else if (slice.IndexOf(CodeBlockChar) != -1)
                 {
-                    isCodeBlock = true;
+                    inCodeSpan = true;
                 }
+                c = slice.NextChar();
+                continue;
+            }
+
+            if (c == '\\')
+            {
+                isEscaped = !isEscaped;
+                c = slice.NextChar();
+                continue;
+            }
+
+            codeFenceCharacters = 0;
+            if (inCodeSpan
+                || isCodeFenced
+                || isEscaped)
+            {
+                isEscaped = false;
+                c = slice.NextChar();
+                continue;
+            }
+
+            if (slice.Match(TransclusionOpenSequence))
+            {
+                transclusionOpenerIndex = slice.Start;
+                transclusionContentOpenIndex = slice.Start + TransclusionOpenSequence.Length;
+                for (var i = 1; i < TransclusionOpenSequence.Length; i++)
+                {
+                    slice.SkipChar();
+                }
+                transclusionOpenSpaces = true;
+            }
+            else if (slice.Match(TransclusionBlockOpenSequence))
+            {
+                transclusionOpenerIndex = slice.Start;
+                transclusionContentOpenIndex = slice.Start + TransclusionBlockOpenSequence.Length;
+                inBlockOpen = true;
+                for (var i = 1; i < TransclusionBlockOpenSequence.Length; i++)
+                {
+                    slice.SkipChar();
+                }
+                transclusionOpenSpaces = true;
+            }
+            else if (slice.Match(TransclusionBlockEndOpenSequence))
+            {
+                transclusionOpenerIndex = slice.Start;
+                transclusionContentOpenIndex = slice.Start + TransclusionBlockEndOpenSequence.Length;
+                inBlockEndOpen = true;
+                for (var i = 1; i < TransclusionBlockEndOpenSequence.Length; i++)
+                {
+                    slice.SkipChar();
+                }
+                transclusionOpenSpaces = true;
+            }
+            else if (slice.Match(TransclusionCloseSequence))
+            {
+                if (transclusionOpenerIndex != -1)
+                {
+                    var contentEnd = slice.Start;
+                    contentEnd -= transclusionCloseSpaces;
+
+                    if (contentEnd > transclusionContentOpenIndex)
+                    {
+                        transclusions.Add(new Transclusion(
+                            transclusionOpenerIndex,
+                            transclusionContentOpenIndex,
+                            contentEnd,
+                            slice.Start + TransclusionCloseSequence.Length,
+                            inBlockEndOpen,
+                            inBlockOpen));
+                    }
+
+                    transclusionOpenerIndex = -1;
+                    transclusionContentOpenIndex = -1;
+                    transclusionCloseSpaces = -1;
+                    inBlockEndOpen = false;
+                    inBlockOpen = false;
+                }
+                for (var i = 1; i < TransclusionCloseSequence.Length; i++)
+                {
+                    slice.SkipChar();
+                }
+            }
+
+            isEscaped = false;
+            c = slice.NextChar();
+        }
+    }
+
+    private static (List<object>? arguments, Dictionary<string, object>? parameters) ParseParameters(string value, Range range)
+    {
+        if (value.Length == 0)
+        {
+            return (null, null);
+        }
+
+        List<object>? arguments = null;
+        Dictionary<string, object>? parameters = null;
+
+        static int FindUnescaped(string searchString, char value, int startIndex, int endIndex)
+        {
+            var escaped = false;
+            for (var i = startIndex; i < endIndex; i++)
+            {
+                if (escaped)
+                {
+                    escaped = false;
+                }
+                else if (searchString[i] == '\\')
+                {
+                    escaped = true;
+                }
+                else if (searchString[i] == value)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        static object GetParameterValue(in ReadOnlySpan<char> span)
+        {
+            if ((span[0] == '"' && span[^1] == '"')
+                || (span[0] == '\'' && span[^1] == '\''))
+            {
+                return HtmlHelper.Unescape(span[1..^1].ToString());
+            }
+            else if (span[0] == '['
+                && span[^1] == ']')
+            {
+                var array = new List<object>();
+                var startIndex = 0;
+                int separatorIndex;
+                ReadOnlySpan<char> current;
+                do
+                {
+                    separatorIndex = span[startIndex..].IndexOf(',');
+                    if (separatorIndex == 0)
+                    {
+                        startIndex++;
+                        continue;
+                    }
+
+                    current = separatorIndex == -1
+                        ? span[startIndex..]
+                        : span[startIndex..separatorIndex];
+
+                    array.Add(GetParameterValue(current));
+
+                    startIndex = separatorIndex == -1
+                        ? span.Length
+                        : separatorIndex + 1;
+                }
+                while (startIndex < span.Length);
+                return array.ToArray();
+            }
+            else if (bool.TryParse(span, out var b))
+            {
+                return b;
+            }
+            else if (DateTimeOffset.TryParse(span, out var dt))
+            {
+                return dt;
+            }
+            else if (long.TryParse(span, out var l))
+            {
+                return l;
+            }
+            else if (double.TryParse(span, out var d))
+            {
+                return d;
             }
             else
             {
-                codeFenceCharacters = 0;
-                if (!isCodeBlock)
-                {
-                    if (c == TransclusionOpenChar)
-                    {
-                        if (slice.PeekChar() == TransclusionOpenChar)
-                        {
-                            transclusionOpenerIndexes.Push(slice.Start);
-                            slice.NextChar();
-                        }
-                    }
-                    else if (c == ParameterOpenChar)
-                    {
-                        if (slice.PeekChar() == ParameterOpenChar)
-                        {
-                            parameterOpenerIndexes.Push(slice.Start);
-                            slice.NextChar();
-                        }
-                    }
-                    else if (c == TransclusionCloseChar)
-                    {
-                        if (slice.PeekChar() == TransclusionCloseChar)
-                        {
-                            if (transclusionOpenerIndexes.Count > 0)
-                            {
-                                var transclusionOpener = transclusionOpenerIndexes.Count > 0 ? transclusionOpenerIndexes.Peek() : -1;
-                                var parameterOpener = parameterOpenerIndexes.Count > 0 ? parameterOpenerIndexes.Peek() : -1;
-                                if (transclusionOpener > parameterOpener && transclusionOpener != -1)
-                                {
-                                    transclusions.Add(new Transclusion(
-                                        transclusionOpenerIndexes.Pop(),
-                                        slice.Start + 2));
-                                }
-                            }
-                            slice.NextChar();
-                        }
-                    }
-                    else if (c == ParameterCloseChar)
-                    {
-                        if (slice.PeekChar() == ParameterCloseChar)
-                        {
-                            if (parameterOpenerIndexes.Count > 0)
-                            {
-                                var transclusionOpener = transclusionOpenerIndexes.Count > 0 ? transclusionOpenerIndexes.Peek() : -1;
-                                var parameterOpener = parameterOpenerIndexes.Count > 0 ? parameterOpenerIndexes.Peek() : -1;
-                                if (parameterOpener > transclusionOpener && parameterOpener != -1)
-                                {
-                                    parameterInclusions.Add(new Transclusion(
-                                        parameterOpenerIndexes.Pop(),
-                                        slice.Start + 2));
-                                }
-                            }
-                            slice.NextChar();
-                        }
-                    }
-                }
+                return HtmlHelper.Unescape(span.ToString());
             }
-            c = slice.NextChar();
         }
 
-        return transclusions;
-    }
-
-    private static Dictionary<string, string> ParseParameters(ReadOnlySpan<char> span)
-    {
-        var parameters = new Dictionary<string, string>();
-        if (span.Length == 0)
-        {
-            return parameters;
-        }
-
-        var index = 1;
-        var separatorIndex = -1;
+        var startIndex = range.Start.Value;
+        int equalIndex, separatorIndex;
+        ReadOnlySpan<char> current;
         do
         {
-            if (separatorIndex != -1 && separatorIndex < span.Length - 1)
+            if (value[startIndex] == '"')
             {
-                span = span[(separatorIndex + 1)..];
+                separatorIndex = FindUnescaped(value, '"', startIndex + 1, range.End.Value);
+                current = separatorIndex == -1
+                    ? value.AsSpan()[startIndex..]
+                    : value.AsSpan()[startIndex..(separatorIndex + 1)];
             }
-            separatorIndex = span.IndexOfUnescaped(SeparatorChar);
-            if (separatorIndex != -1) // skip separators inside links
+            else if (value[startIndex] == '\'')
             {
-                var linkIndex = span.IndexOfUnescaped(WikiLinks.WikiLinkInlineParser.LinkOpenChar);
-                if (linkIndex != -1
-                    && linkIndex < separatorIndex
-                    && linkIndex < span.Length - 4
-                    && span[linkIndex + 1] == WikiLinks.WikiLinkInlineParser.LinkOpenChar)
-                {
-                    var linkCloseIndex = linkIndex + 2 + span[(linkIndex + 2)..].IndexOfUnescaped(WikiLinks.WikiLinkInlineParser.LinkCloseChar);
-                    if (linkCloseIndex != -1
-                        && linkCloseIndex < span.Length - 1
-                        && span[linkCloseIndex + 1] == WikiLinks.WikiLinkInlineParser.LinkCloseChar)
-                    {
-                        separatorIndex = linkCloseIndex == span.Length - 2
-                            ? -1
-                            : linkCloseIndex + 2 + span[(linkCloseIndex + 2)..].IndexOfUnescaped(SeparatorChar);
-                    }
-                }
+                separatorIndex = FindUnescaped(value, '\'', startIndex + 1, range.End.Value);
+                current = separatorIndex == -1
+                    ? value.AsSpan()[startIndex..]
+                    : value.AsSpan()[startIndex..(separatorIndex + 1)];
             }
-            var parameter = separatorIndex == -1
-                ? span
-                : span[..separatorIndex];
+            else
+            {
+                separatorIndex = FindUnescaped(value, ' ', startIndex, range.End.Value);
+                current = separatorIndex == -1
+                    ? value.AsSpan()[startIndex..range.End.Value]
+                    : value.AsSpan()[startIndex..separatorIndex];
+            }
+            if (current.Length == 0)
+            {
+                startIndex++;
+                continue;
+            }
 
-            var equalIndex = parameter.IndexOfUnescaped('=');
-            string name;
-            ReadOnlySpan<char> value;
+            equalIndex = current.IndexOf('=');
             if (equalIndex == -1)
             {
-                name = index.ToString();
-                value = parameter;
-                index++;
+                (arguments ??= []).Add(GetParameterValue(current));
             }
             else if (equalIndex == 0)
             {
-                name = index.ToString();
-                value = parameter[1..];
-                index++;
+                (arguments ??= []).Add(GetParameterValue(current[1..]));
             }
-            else if (equalIndex == parameter.Length - 1)
+            else if (equalIndex == current.Length - 1)
             {
-                name = parameter[..equalIndex].ToString();
-                value = new ReadOnlySpan<char>();
+                (parameters ??= []).Add(current[..equalIndex].ToString(), string.Empty);
             }
             else
             {
-                name = parameter[..equalIndex].ToString();
-                value = parameter[(equalIndex + 1)..];
+                (parameters ??= []).Add(
+                    current[..equalIndex].ToString(),
+                    GetParameterValue(current[(equalIndex + 1)..]));
             }
-            parameters[name.Trim().ToLower()] = value.Trim().ToString();
-        }
-        while (separatorIndex != -1 && separatorIndex < span.Length - 1);
-        if (separatorIndex == span.Length - 1)
-        {
-            parameters[index.ToString()] = string.Empty;
-        }
 
-        return parameters;
+            startIndex = separatorIndex == -1
+                ? range.End.Value
+                : separatorIndex + 1;
+        }
+        while (startIndex < range.End.Value);
+
+        return (arguments, parameters);
     }
 
-    private static string Render(
+    private static void RemoveInvalidTransclusions(
+        WikiOptions options,
         string markdown,
-        int offset,
-        List<Transclusion> transclusions,
-        List<Transclusion> parameterInclusions)
+        List<Transclusion> transclusions)
     {
-        var sb = new StringBuilder();
-        var endIndex = 0;
-        var transclusionIndex = 0;
-        var parameterIndex = 0;
-        while (endIndex < markdown.Length)
+        var matchedEnds = new HashSet<int>();
+        for (var i = 0; i < transclusions.Count; i++)
         {
-            if (parameterIndex >= parameterInclusions.Count
-                && transclusionIndex >= transclusions.Count)
+            if (transclusions[i].IsBlockEnd)
             {
-                sb.Append(markdown[endIndex..]);
-                break;
+                if (!matchedEnds.Contains(i))
+                {
+                    transclusions.RemoveAt(i--);
+                }
+                continue;
             }
 
-            var isTransclusion = parameterIndex >= parameterInclusions.Count
-                || (transclusions.Count > transclusionIndex
-                && transclusions[transclusionIndex].Start < parameterInclusions[parameterIndex].Start);
-            var transclusion = isTransclusion
-                ? transclusions[transclusionIndex]
-                : parameterInclusions[parameterIndex];
-            while (transclusionIndex < transclusions.Count - 1
-                && transclusions[transclusionIndex + 1].Start < transclusion.End)
+            var name = GetTransclusionName(markdown, transclusions[i], out var separatorIndex);
+            if (!TryGetTransclusionPageTitle(options, name, out var title))
             {
-                transclusionIndex++;
+                transclusions.RemoveAt(i--);
+                continue;
             }
-            while (parameterIndex < parameterInclusions.Count - 1
-                && parameterInclusions[parameterIndex + 1].Start < transclusion.End)
+            transclusions[i].Title = title;
+            if (separatorIndex != -1)
             {
-                parameterIndex++;
+                transclusions[i].Parameters = new(separatorIndex + 1, transclusions[i].ContentEnd);
             }
 
-            if ((transclusion.Start - offset) > endIndex)
+            if (!transclusions[i].IsBlockStart)
             {
-                sb.Append(markdown[endIndex..(transclusion.Start - offset)]);
+                continue;
             }
 
-            if (transclusion.Content is null)
+            var matched = false;
+            for (var j = i + 1; j < transclusions.Count; j++)
             {
-                sb.Append(markdown[(transclusion.Start - offset)..(transclusion.End - offset)]);
-            }
-            else
-            {
-                sb.Append(transclusion.Content);
-            }
+                if (!transclusions[j].IsBlockEnd)
+                {
+                    continue;
+                }
+                if (matchedEnds.Contains(j))
+                {
+                    break;
+                }
 
-            endIndex = transclusion.End - offset;
-            if (isTransclusion)
-            {
-                transclusionIndex++;
+                var otherName = GetTransclusionName(markdown, transclusions[j], out _);
+                if (!TryGetTransclusionPageTitle(options, otherName, out var otherTitle))
+                {
+                    continue;
+                }
+                transclusions[j].Title = otherTitle;
+                if (otherName.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    matched = true;
+                    matchedEnds.Add(j);
+                    transclusions[j].BlockStart = transclusions[i];
+                    transclusions[i].BlockEnd = transclusions[j];
+                    break;
+                }
             }
-            else
+            if (!matched)
             {
-                parameterIndex++;
-            }
-            while (transclusionIndex < transclusions.Count
-                && (transclusions[transclusionIndex].Start - offset) < endIndex)
-            {
-                transclusionIndex++;
-            }
-            while (parameterIndex < parameterInclusions.Count
-                && (parameterInclusions[parameterIndex].Start - offset) < endIndex)
-            {
-                parameterIndex++;
+                transclusions.RemoveAt(i--);
             }
         }
+    }
 
-        return sb.ToString();
+    private static bool TryGetTransclusionPageTitle(WikiOptions options, in ReadOnlySpan<char> name, out PageTitle title)
+    {
+        title = PageTitle.Parse(name);
+        if (title.IsEmpty)
+        {
+            return false;
+        }
+        if (string.IsNullOrEmpty(title.Namespace))
+        {
+            title = title.WithNamespace(options.TransclusionNamespace);
+        }
+        else if (string.CompareOrdinal(title.Namespace, "-") == 0)
+        {
+            title = title.WithNamespace(null);
+        }
+        else if (string.CompareOrdinal(title.Namespace, "\\-") == 0)
+        {
+            title = title.WithNamespace("-");
+        }
+        if (title.Title?.Equals(options.MainPageTitle) == true)
+        {
+            title = title.WithTitle(null);
+        }
+        return true;
     }
 }

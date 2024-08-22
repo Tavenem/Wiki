@@ -1,5 +1,4 @@
 ﻿using Markdig;
-using Tavenem.DataStorage;
 using Tavenem.Wiki.MarkdownExtensions.TableOfContents;
 using Tavenem.Wiki.MarkdownExtensions.WikiLinks;
 
@@ -39,12 +38,9 @@ internal static class PipelineExtensions
     /// </summary>
     /// <returns>The <see cref="MarkdownPipelineBuilder"/>.</returns>
     internal static MarkdownPipelineBuilder UseWikiLinks(
-        this MarkdownPipelineBuilder pipeline,
-        WikiOptions options,
-        IDataStore dataStore,
-        PageTitle title)
+        this MarkdownPipelineBuilder pipeline)
     {
-        pipeline.Extensions.ReplaceOrAdd<WikiLinkExtension>(new WikiLinkExtension(options, dataStore, title));
+        pipeline.Extensions.ReplaceOrAdd<WikiLinkExtension>(new WikiLinkExtension());
         return pipeline;
     }
 }

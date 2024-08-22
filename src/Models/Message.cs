@@ -140,8 +140,9 @@ public class Message : MarkdownItem
             markdown = await TransclusionParser.TranscludeAsync(
                 options,
                 dataStore,
+                markdown,
                 null,
-                markdown);
+                isTalk: true);
         }
 
         var message = new Message(
@@ -150,8 +151,8 @@ public class Message : MarkdownItem
             senderName,
             markdown,
             RenderHtml(options, dataStore, markdown),
-            RenderPreview(options, dataStore, await PostprocessMessageMarkdownAsync(options, dataStore, markdown, true)),
-            FormatPlainText(options, dataStore, markdown, null, false),
+            RenderPreview(options, await PostprocessMessageMarkdownAsync(options, dataStore, markdown, true)),
+            FormatPlainText(options, markdown, null, false),
             DateTimeOffset.UtcNow.Ticks,
             replyMessageId);
 
@@ -191,9 +192,10 @@ public class Message : MarkdownItem
         return TransclusionParser.TranscludeAsync(
             options,
             dataStore,
-            null,
             markdown,
-            isPreview: isPreview);
+            null,
+            isPreview: isPreview,
+            isTalk: true);
     }
 
     private protected override ValueTask<string> PostprocessMarkdownAsync(

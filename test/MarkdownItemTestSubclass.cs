@@ -68,22 +68,21 @@ public class MarkdownItemTestSubclass : MarkdownItem
             : await TransclusionParser.TranscludeAsync(
                 options,
                 dataStore,
-                null,
-                markdown);
+                markdown,
+                null);
         return new MarkdownItemTestSubclass(
             md,
             RenderHtml(options, dataStore, md),
             RenderPreview(
                 options,
-                dataStore,
                 string.IsNullOrEmpty(markdown)
                     ? string.Empty
                     : await TransclusionParser.TranscludeAsync(
                         options,
                         dataStore,
-                        null,
                         markdown,
+                        null,
                         isPreview: true)),
-            FormatPlainText(options, dataStore, md, null, false));
+            FormatPlainText(options, md, null, false));
     }
 }

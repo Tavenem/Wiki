@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.0-preview
+### Changed
+- Custom function syntax replaced by Handlebars templating
+- Custom wiki link syntax largely replaced by CommonMark reference links, with some deviations
+- Custom search replaced by Lucene
+
 ## 0.25.4-preview
 ### Added
 - `PageTitle.ToString` overload which accepts a `WikiOptions` parameter, and uses the configured `MainPageTitle` when the title is empty

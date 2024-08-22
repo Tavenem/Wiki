@@ -1,11 +1,17 @@
-﻿using Markdig.Helpers;
+﻿using Lucene.Net.Analysis;
+using Lucene.Net.Documents;
+using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Flexible.Standard;
+using Lucene.Net.Search;
+using Lucene.Net.Search.Highlight;
+using Lucene.Net.Store;
+using Markdig.Helpers;
 using Microsoft.Extensions.Caching.Memory;
-using SmartComponents.LocalEmbeddings;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq.Expressions;
 using System.Text;
 using System.Text.Json.Serialization.Metadata;
-using System.Text.RegularExpressions;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Queries;
 
@@ -14,11 +20,13 @@ namespace Tavenem.Wiki;
 /// <summary>
 /// Extension methods.
 /// </summary>
-public static partial class WikiExtensions
+public static class WikiExtensions
 {
-    private const int SearchExcerptCharacterLimit = 50;
+    private const string NullSearchValue = ":NULL:";
 
-    private static readonly char[] TermSplitCharacters = [' ', ',', ';'];
+    private static Analyzer? _analyzer;
+    private static FieldType? _textFieldType;
+    private static IndexWriterConfig? _indexWriterConfig;
 
     /// <summary>
     /// Creates or revises a <see cref="Page"/>.
@@ -111,16 +119,6 @@ public static partial class WikiExtensions
     /// <param name="originalTitle">
     /// The original title of the page, if it is being renamed.
     /// </param>
-    /// <param name="embedder">
-    /// <para>
-    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
-    /// </para>
-    /// <para>
-    /// If omitted, a default static instance will be created, used, and then disposed. This is
-    /// highly inefficient and can slow performance considerably. A singleton instance should be
-    /// passed whenever possible.
-    /// </para>
-    /// </param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -180,7 +178,6 @@ public static partial class WikiExtensions
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
         PageTitle? originalTitle = null,
-        LocalEmbedder? embedder = null,
         IMemoryCache? cache = null)
     {
         if (string.Equals(
@@ -265,7 +262,6 @@ public static partial class WikiExtensions
                 allowedEditorGroups,
                 allowedViewerGroups,
                 redirectTitle,
-                embedder,
                 cache)
                 .ConfigureAwait(false);
         }
@@ -283,7 +279,6 @@ public static partial class WikiExtensions
                 allowedEditorGroups,
                 allowedViewerGroups,
                 null,
-                embedder,
                 cache)
                 .ConfigureAwait(false);
         }
@@ -301,7 +296,6 @@ public static partial class WikiExtensions
                 allowedEditorGroups,
                 allowedViewerGroups,
                 redirectTitle,
-                embedder,
                 cache)
                 .ConfigureAwait(false);
         }
@@ -758,6 +752,72 @@ public static partial class WikiExtensions
             request,
             await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false));
+
+    /// <summary>
+    /// Determines the permission an anonymous user has for the given page.
+    /// </summary>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="title">The title of the wiki page.</param>
+    /// <returns>
+    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
+    /// permissions.
+    /// </returns>
+    public static async ValueTask<WikiPermission> GetPermissionAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        PageTitle title)
+    {
+        var page = await dataStore
+            .GetWikiPageAsync(options, title, true)
+            .ConfigureAwait(false);
+        return GetPermission(page, options);
+    }
+
+    /// <summary>
+    /// Determines the permission an anonymous user has for the given page.
+    /// </summary>
+    /// <param name="page">The wiki page.</param>
+    /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <returns>
+    /// A <see cref="WikiPermission"/> value, which may be a combination of flags indicating various
+    /// permissions.
+    /// </returns>
+    public static WikiPermission GetPermission(
+        this Page page,
+        WikiOptions options)
+    {
+        if (page.AllowedViewers is not null)
+        {
+            return WikiPermission.None;
+        }
+
+        var title = page.Title;
+
+        var defaultPermission = string.IsNullOrEmpty(title.Domain)
+            ? options.DefaultAnonymousPermission
+            : WikiPermission.None;
+
+        if (page.Exists)
+        {
+            return defaultPermission & WikiPermission.Read;
+        }
+
+        var isUserPage = string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0;
+        if (isUserPage)
+        {
+            return defaultPermission & WikiPermission.Read;
+        }
+
+        var isGroupPage = string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0;
+        if (isGroupPage
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            return defaultPermission & WikiPermission.Read;
+        }
+
+        return defaultPermission;
+    }
 
     /// <summary>
     /// Determines the permission the given user has for the wiki page with the given <paramref
@@ -2042,16 +2102,6 @@ public static partial class WikiExtensions
     /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
     /// </para>
     /// </param>
-    /// <param name="embedder">
-    /// <para>
-    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
-    /// </para>
-    /// <para>
-    /// If omitted, a default static instance will be created, used, and then disposed. This is
-    /// highly inefficient and can slow performance considerably. A singleton instance should be
-    /// passed whenever possible.
-    /// </para>
-    /// </param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -2063,7 +2113,7 @@ public static partial class WikiExtensions
     /// persistence mechanisms, this may be desirable.
     /// </para>
     /// <para>
-    /// It is not necessarily to invalidate the cache. Once initialized (lazily, the first time this
+    /// It is not necessary to invalidate the cache. Once initialized (lazily, the first time this
     /// method is called), it will be updated whenever pages are updated (if it is supplied as a
     /// parameter to the appropriate methods).
     /// </para>
@@ -2078,7 +2128,6 @@ public static partial class WikiExtensions
         IWikiGroupManager groupManager,
         SearchRequest request,
         IWikiUser? user = null,
-        LocalEmbedder? embedder = null,
         IMemoryCache? cache = null)
     {
         if (string.IsNullOrWhiteSpace(request.Query))
@@ -2086,42 +2135,185 @@ public static partial class WikiExtensions
             return new(null, 1, request.PageSize, 0);
         }
 
-        var exactTitleMatch = await dataStore.GetWikiPageAsync(
-            options,
-            new(request.Query, request.Namespace, request.Domain),
-            true);
-
-        var candidates = request.TitleMatchOnly
-            ? await GetSearchTitleCacheAsync(dataStore, cache)
-            : await GetSearchCacheAsync(dataStore, cache);
-        if (candidates.Count == 0)
+        var directory = await GetSearchCacheAsync(options, dataStore, cache);
+        using var reader = DirectoryReader.Open(directory);
+        if (reader.NumDocs == 0)
         {
             return new(null, 1, request.PageSize, 0);
         }
 
-        var workingEmbedder = embedder ?? new LocalEmbedder();
-        var query = workingEmbedder.Embed<EmbeddingI1>(request.Query);
-        if (embedder is null)
+        var queryString = request.Query.ToLowerInvariant();
+        var queryBuilder = new StringBuilder(nameof(Page.Title))
+            .Append(":(")
+            .Append(queryString)
+            .Append(')');
+        if (!string.IsNullOrEmpty(request.Domain))
         {
-            workingEmbedder?.Dispose();
+            queryBuilder.Append(" +")
+                .Append(nameof(Page.Title.Domain))
+                .Append(":\"")
+                .Append(request.Domain)
+                .Append('"');
         }
 
-        var (scores, totalCount) = await GetSearchPageAsync(
-            query,
-            request,
-            dataStore,
-            options,
-            user,
-            groupManager,
-            candidates);
+        if (!string.IsNullOrEmpty(request.Namespace))
+        {
+            queryBuilder.Append(" +")
+                .Append(nameof(Page.Title.Namespace))
+                .Append(":\"")
+                .Append(request.Namespace.ToLowerInvariant())
+                .Append('"');
+        }
+
+        if (!string.IsNullOrEmpty(request.Owner))
+        {
+            queryBuilder.Append(" +")
+                .Append(nameof(Page.Owner))
+                .Append(":(")
+                .Append(request.Owner)
+                .Append(')');
+        }
+
+        if (!string.IsNullOrEmpty(request.Uploader))
+        {
+            queryBuilder.Append(" +")
+                .Append(nameof(WikiFile.Uploader))
+                .Append(":(")
+                .Append(request.Uploader)
+                .Append(')');
+        }
+
+        if (!request.TitleMatchOnly)
+        {
+            queryBuilder
+                .Append(' ')
+                .Append(nameof(Page.Text))
+                .Append(":(")
+                .Append(queryString)
+                .Append(')');
+        }
+
+        var parser = new StandardQueryParser
+        {
+            Analyzer = _analyzer ??= new SearchAnalyzer(WikiConfig.WikiLuceneVersion),
+            EnablePositionIncrements = true,
+        };
+        var query = new BooleanQuery
+        {
+            { parser.Parse(queryBuilder.ToString(), nameof(Page.Text)), Occur.MUST }
+        };
+
+        if (request.Domain?.Length == 0)
+        {
+            query.Add(new TermQuery(new Term(nameof(Page.Title.Domain), NullSearchValue)), Occur.MUST);
+        }
+
+        if (request.Namespace?.Length == 0)
+        {
+            query.Add(new TermQuery(new Term(nameof(Page.Title.Namespace), NullSearchValue)), Occur.MUST);
+        }
+
+        var searcher = new IndexSearcher(reader);
+        var max = int.MaxValue / (request.PageNumber + 10) < request.PageSize
+            ? int.MaxValue
+            : (request.PageNumber + 10) * request.PageSize;
+        var results = searcher.Search(query, max);
+        if (results.TotalHits == 0)
+        {
+            return new(null, 1, request.PageSize, 0);
+        }
+
+        var hits = new List<SearchHit>();
+        var formatter = new SimpleHTMLFormatter();
+        var highlighter = new Highlighter(formatter, new QueryScorer(query));
+        var userGroups = new List<IWikiGroup>(); // filled on demand by HasReadPermissionAsync
+        var total = 0L;
+        var skip = (request.PageNumber - 1) * request.PageSize;
+        var take = int.MaxValue / request.PageNumber < request.PageSize
+            ? int.MaxValue
+            : request.PageNumber * request.PageSize;
+        if (skip == 0)
+        {
+            var exactTitleMatch = await dataStore.GetWikiPageAsync(
+                options,
+                new(request.Query, request.Namespace, request.Domain),
+                true);
+            if (exactTitleMatch.Exists)
+            {
+                hits.Add(new(exactTitleMatch.Title, $"<b>{exactTitleMatch.Title}</b>"));
+                take--;
+            }
+        }
+        for (var i = 0; i < results.ScoreDocs.Length; i++)
+        {
+            var id = results.ScoreDocs[i].Doc;
+            var doc = searcher.Doc(id);
+
+            var titleName = doc.Get(nameof(Page.Title));
+            var namespaceName = doc.Get(nameof(Page.Title.Namespace));
+            var domainName = doc.Get(nameof(Page.Title.Domain));
+            var title = new PageTitle(
+                titleName.Equals(options.MainPageTitle, StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : titleName,
+                namespaceName.Equals(NullSearchValue, StringComparison.Ordinal)
+                    ? null
+                    : namespaceName,
+                domainName.Equals(NullSearchValue, StringComparison.Ordinal)
+                    ? null
+                    : domainName);
+
+            var ownerId = doc.Get(nameof(Page.Owner));
+            if (ownerId.Equals(NullSearchValue, StringComparison.Ordinal))
+            {
+                ownerId = null;
+            }
+
+            var (hasPermission, page) = await HasReadPermissionAsync(
+                user,
+                userGroups,
+                options,
+                dataStore,
+                groupManager,
+                title,
+                ownerId);
+            if (!hasPermission)
+            {
+                continue;
+            }
+
+            total++;
+            if (total <= skip || total > take)
+            {
+                continue;
+            }
+
+            page ??= await dataStore.GetExistingWikiPageAsync(options, title, true);
+            if (string.IsNullOrEmpty(page?.Text))
+            {
+                hits.Add(new(title));
+            }
+            else
+            {
+                hits.Add(new(
+                title,
+                highlighter.GetBestFragments(
+                    TokenSources.GetAnyTokenStream(
+                        searcher.IndexReader,
+                        id,
+                        nameof(Page.Text),
+                        _analyzer),
+                    page.Text,
+                    3,
+                    "...")));
+            }
+        }
+
         return new(
-            scores
-                .Select(x => new SearchHit(
-                    x.Info.Title,
-                    x.Excerpt)),
-            scores.Count == 0 ? 1 : request.PageNumber,
+            hits,
+            hits.Count == 0 ? 1 : request.PageNumber,
             request.PageSize,
-            totalCount);
+            total);
     }
 
     /// <summary>
@@ -2138,16 +2330,6 @@ public static partial class WikiExtensions
     /// </para>
     /// <para>
     /// May be <see langword="null"/>, in which case permission is determined for an anonymous user.
-    /// </para>
-    /// </param>
-    /// <param name="embedder">
-    /// <para>
-    /// An instance of <see cref="LocalEmbedder"/> to use for embedding.
-    /// </para>
-    /// <para>
-    /// If omitted, a default static instance will be created, used, and then disposed. This is
-    /// highly inefficient and can slow performance considerably. A singleton instance should be
-    /// passed whenever possible.
     /// </para>
     /// </param>
     /// <param name="cache">
@@ -2177,7 +2359,6 @@ public static partial class WikiExtensions
         IWikiGroupManager groupManager,
         SearchRequest request,
         string userId,
-        LocalEmbedder? embedder = null,
         IMemoryCache? cache = null) => await SearchWikiAsync(
             dataStore,
             options,
@@ -2186,7 +2367,6 @@ public static partial class WikiExtensions
             await userManager
                 .FindByIdAsync(userId)
                 .ConfigureAwait(false),
-            embedder,
             cache);
 
     /// <summary>
@@ -2258,60 +2438,6 @@ public static partial class WikiExtensions
             .ConfigureAwait(false);
     }
 
-    internal static int IndexOfUnescaped(this ReadOnlySpan<char> span, char target)
-    {
-        for (var i = 0; i < span.Length; i++)
-        {
-            if (span.IsUnescapedMatch(i, target))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    internal static int IndexOfUnescaped(this string value, char target)
-    {
-        for (var i = 0; i < value.Length; i++)
-        {
-            if (value.IsUnescapedMatch(i, target))
-            {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    internal static bool IsUnescapedMatch(this ReadOnlySpan<char> span, int index, char target)
-    {
-        if (index >= span.Length || index < 0 || span[index] != target)
-        {
-            return false;
-        }
-        var i = index - 1;
-        var escapes = 0;
-        while (i > 0 && span[i] == '\\')
-        {
-            escapes++;
-        }
-        return escapes == 0 || escapes % 2 == 1;
-    }
-
-    internal static bool IsUnescapedMatch(this string value, int index, char target)
-    {
-        if (index >= value.Length || index < 0 || value[index] != target)
-        {
-            return false;
-        }
-        var i = index - 1;
-        var escapes = 0;
-        while (i > 0 && value[i] == '\\')
-        {
-            escapes++;
-        }
-        return escapes == 0 || escapes % 2 == 1;
-    }
-
     internal static string TruncateString(this string str, int? characterLimit, out bool truncated)
     {
         if (!characterLimit.HasValue
@@ -2340,6 +2466,32 @@ public static partial class WikiExtensions
         return whitespace
             ? substring[..(i + 1)]
             : substring;
+    }
+
+    internal static async Task UpdateSearchCacheAsync(
+        this IDataStore dataStore,
+        WikiOptions options,
+        IMemoryCache? cache,
+        PageTitle title,
+        string? owner,
+        string? uploader,
+        string? text)
+    {
+        var directory = await GetSearchCacheAsync(options, dataStore, cache);
+        _analyzer ??= new SearchAnalyzer(WikiConfig.WikiLuceneVersion);
+        _indexWriterConfig ??= new IndexWriterConfig(WikiConfig.WikiLuceneVersion, _analyzer);
+        InitializeFieldType();
+        var titleTerm = new Term(nameof(Page.Title), title.ToString());
+        using var writer = new IndexWriter(directory, (IndexWriterConfig)_indexWriterConfig.Clone());
+        var document = GetSearchCachedDocument(
+            options,
+            _textFieldType,
+            title,
+            owner,
+            uploader,
+            text);
+        writer.UpdateDocument(titleTerm, document, _analyzer);
+        writer.Flush(true, true);
     }
 
     private static bool CheckEditPermissions(
@@ -2747,637 +2899,129 @@ public static partial class WikiExtensions
             : defaultPermission & WikiPermission.Read;
     }
 
-    private static async Task<List<PageSearchInfo>> GetSearchCacheAsync(IDataStore dataStore, IMemoryCache? cache)
+    private static async Task<Lucene.Net.Store.Directory> GetSearchCacheAsync(WikiOptions options, IDataStore dataStore, IMemoryCache? cache)
     {
-        if (cache?.TryGetValue<List<PageSearchInfo>>(
+        if (cache?.TryGetValue<RAMDirectory>(
             Page.SearchCacheKey,
-            out var info) == true
-            && info?.Count > 0)
+            out var directory) == true
+            && directory is not null)
         {
-            return info;
+            return directory;
         }
 
-        info = [];
+        directory = new();
+        cache?.Set(Page.SearchCacheKey, directory);
+        _analyzer ??= new SearchAnalyzer(WikiConfig.WikiLuceneVersion);
+        _indexWriterConfig ??= new IndexWriterConfig(WikiConfig.WikiLuceneVersion, _analyzer);
+        InitializeFieldType();
+        using var writer = new IndexWriter(directory, (IndexWriterConfig)_indexWriterConfig.Clone());
         await foreach (var page in dataStore
             .Query(WikiJsonSerializerContext.Default.Page)
-            .Where(x => x.TitleEmbeddingI1.HasValue || x.EmbeddingI1Bytes != null)
+            .Where(x => x.Exists
+                && x.IsSearchable
+                && !string.Equals(x.Title.Namespace, options.ScriptNamespace, StringComparison.Ordinal)
+                && !string.Equals(x.Title.Namespace, options.TransclusionNamespace, StringComparison.Ordinal))
             .AsAsyncEnumerable())
         {
-            if (page.TitleEmbeddingI1.HasValue)
-            {
-                info.Add(new PageSearchInfo(
-                    page.Title,
-                    page.TitleEmbeddingI1.Value,
-                    -1,
-                    page.Owner,
-                    page is WikiFile file ? file.Uploader : null));
-            }
-
-            if (page.EmbeddingI1s is null)
-            {
-                continue;
-            }
-            foreach (var (embedding, i) in page.EmbeddingI1s.Select((x, i) => (x, i)))
-            {
-                info.Add(new PageSearchInfo(
-                    page.Title,
-                    embedding,
-                    i,
-                    page.Owner,
-                    page is WikiFile file ? file.Uploader : null));
-            }
-        }
-
-        cache?.Set(Page.SearchCacheKey, info);
-
-        return info;
-    }
-
-    private static async Task<List<PageSearchInfo>> GetSearchTitleCacheAsync(IDataStore dataStore, IMemoryCache? cache)
-    {
-        if (cache?.TryGetValue<List<PageSearchInfo>>(
-            Page.SearchTitleCacheKey,
-            out var info) == true
-            && info?.Count > 0)
-        {
-            return info;
-        }
-
-        info = [];
-        await foreach (var page in dataStore
-            .Query(WikiJsonSerializerContext.Default.Page)
-            .Where(x => x.TitleEmbeddingI1.HasValue)
-            .AsAsyncEnumerable())
-        {
-            info.Add(new PageSearchInfo(
-                page.Title,
-                page.TitleEmbeddingI1!.Value,
-                -1,
-                page.Owner,
-                page is WikiFile file ? file.Uploader : null));
-        }
-
-        cache?.Set(Page.SearchTitleCacheKey, info);
-
-        return info;
-    }
-
-    private static async Task<(List<SearchScore> Scores, long TotalCount)> GetSearchPageAsync(
-        EmbeddingI1 query,
-        SearchRequest request,
-        IDataStore dataStore,
-        WikiOptions options,
-        IWikiUser? user,
-        IWikiGroupManager groupManager,
-        List<PageSearchInfo> candidates)
-    {
-        const float MinSimilarity = 0.625f;
-
-        var requestOwners = string.IsNullOrEmpty(request.Owner)
-            ? null
-            : request.Owner.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var requiredOwners = requestOwners?.Length > 0
-            ? requestOwners
-                .Where(x => x[0] != '!')
-                .ToList()
-            : null;
-        var forbiddenOwners = requestOwners?.Length > 0
-            ? requestOwners
-                .Where(x => x.Length > 1 && x[0] == '!')
-                .Select(x => x[1..])
-                .ToList()
-            : null;
-
-        var requestUploaders = string.IsNullOrEmpty(request.Uploader)
-            ? null
-            : request.Uploader.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var requiredUploaders = requestUploaders?.Length > 0
-            ? requestUploaders
-                .Where(x => x[0] != '!')
-                .ToList()
-            : null;
-        var forbiddenUploaders = requestUploaders?.Length > 0
-            ? requestUploaders
-                .Where(x => x.Length > 1 && x[0] == '!')
-                .Select(x => x[1..])
-                .ToList()
-            : null;
-
-        var queryRequiresValidation = requiredOwners?.Count > 0
-            || forbiddenOwners?.Count > 0
-            || requiredUploaders?.Count > 0
-            || forbiddenUploaders?.Count > 0
-            || request.Domain is not null
-            || request.Namespace is not null;
-
-        var pageResults = new HashSet<PageTitle>();
-
-        bool ValidateResult(PageSearchInfo info)
-        {
-            if (request.Domain is not null)
-            {
-                if (request.Domain.Length > 0)
-                {
-                    if (info.Title.Domain?.Equals(request.Domain, StringComparison.OrdinalIgnoreCase) != true)
-                    {
-                        return false;
-                    }
-                }
-                else if (!string.IsNullOrEmpty(info.Title.Domain))
-                {
-                    return false;
-                }
-            }
-
-            if (request.Namespace is not null)
-            {
-                if (request.Namespace.Length > 0)
-                {
-                    if (string.CompareOrdinal(info.Title.NormalizedNamespace, request.Namespace.ToLowerInvariant()) != 0)
-                    {
-                        return false;
-                    }
-                }
-                else if (!string.IsNullOrEmpty(info.Title.Namespace))
-                {
-                    return false;
-                }
-            }
-
-            if (requiredOwners?.Count > 0
-                && (string.IsNullOrEmpty(info.Owner)
-                || !requiredOwners.Contains(info.Owner)))
-            {
-                return false;
-            }
-
-            if (forbiddenOwners?.Count > 0
-                && !string.IsNullOrEmpty(info.Owner)
-                && forbiddenOwners.Contains(info.Owner))
-            {
-                return false;
-            }
-
-            if (requiredUploaders?.Count > 0
-                && (string.IsNullOrEmpty(info.Uploader)
-                || !requiredUploaders.Contains(info.Uploader)))
-            {
-                return false;
-            }
-
-            if (forbiddenUploaders?.Count > 0
-                && !string.IsNullOrEmpty(info.Uploader)
-                && forbiddenUploaders.Contains(info.Uploader))
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        var parts = QuotedStringsRegex()
-            .Split(request.Query);
-
-        var exactTerms = parts
-            .Where(x => x.Length > 0 && x[0] == '"' && x[^1] == '"')
-            .Select(x => x[1..^1])
-            .ToList();
-
-        var terms = parts
-            .Where(x => x.Length > 0 && (x[0] != '"' || x[^1] != '"'))
-            .SelectMany(x => x.Split(TermSplitCharacters, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries));
-        var forbiddenTerms = terms
-            .Where(x => x[0] == '-')
-            .Select(x => x[1..])
-            .ToList();
-
-        var queryRequiresTextValidation = exactTerms.Count > 0
-            || forbiddenTerms.Count > 0;
-
-        var userGroups = new List<IWikiGroup>();
-
-        async ValueTask<(bool IsValid, Page? Page)> ValidatePageAsync(PageSearchInfo info)
-        {
-            var pages = new List<Page>();
-
-            if (!await HasReadPermissionAsync(
-                user,
-                userGroups,
+            var document = GetSearchCachedDocument(
                 options,
-                dataStore,
-                groupManager,
-                info.Title,
-                info.Owner,
-                pages))
-            {
-                return (false, null);
-            }
-
-            if (!queryRequiresTextValidation)
-            {
-                return (true, null);
-            }
-
-            if (pages.Count == 0)
-            {
-                pages.Add(await dataStore
-                    .GetWikiPageAsync(options, info.Title, true)
-                    .ConfigureAwait(false));
-            }
-
-            var page = pages[0];
-
-            if (exactTerms.Count > 0
-                && !exactTerms.All(x => page.Text?.Contains(x) == true))
-            {
-                return (false, null);
-            }
-
-            if (forbiddenTerms.Count > 0
-                && forbiddenTerms.Any(x => page.Text?.Contains(x) == true))
-            {
-                return (false, null);
-            }
-
-            return (true, page);
+                _textFieldType,
+                page.Title,
+                page.Owner,
+                page is WikiFile file ? file.Uploader : null,
+                page.Text);
+            writer.AddDocument(document);
         }
+        writer.Flush(false, false);
 
-        async ValueTask<string?> GetExcerptAsync(PageSearchInfo info, Page? page)
-        {
-            if (request.TitleMatchOnly
-                || info.Line < 0)
-            {
-                return null;
-            }
-
-            page ??= await dataStore
-                .GetWikiPageAsync(options, info.Title, true)
-                .ConfigureAwait(false);
-            if (string.IsNullOrEmpty(page.Text))
-            {
-                return null;
-            }
-
-            var text = page.Text.Split(Page.LineSplitCharacters, StringSplitOptions.RemoveEmptyEntries);
-            if (text.Length <= info.Line
-                || string.IsNullOrEmpty(text[info.Line]))
-            {
-                return null;
-            }
-
-            var words = text[info.Line]
-                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                .Select(x => (
-                    Word: x,
-                    IsMatch: terms.Contains(x, StringComparer.OrdinalIgnoreCase)))
-                .ToList();
-
-            var sb = new StringBuilder();
-
-            var firstIndex = words.FindIndex(x => x.IsMatch);
-            if (firstIndex == -1)
-            {
-                sb.Append(page.Text.TruncateString(SearchExcerptCharacterLimit, out var truncated));
-                if (truncated)
-                {
-                    sb.Append("...");
-                }
-                return sb.ToString();
-            }
-
-            if (firstIndex > 0)
-            {
-                firstIndex--;
-            }
-
-            if (firstIndex > 0)
-            {
-                sb.Append("...");
-            }
-
-            var i = 0;
-            for (; i < words.Count; i++)
-            {
-                if (sb.Length + words[i].Word.Length > SearchExcerptCharacterLimit)
-                {
-                    break;
-                }
-                if (sb.Length > 0)
-                {
-                    sb.Append(' ');
-                }
-                if (words[i].IsMatch)
-                {
-                    sb.Append("<em>");
-                }
-                sb.Append(words[i]);
-                if (words[i].IsMatch)
-                {
-                    sb.Append("</em>");
-                }
-            }
-            if (i < words.Count)
-            {
-                sb.Append("...");
-            }
-
-            return sb.ToString();
-        }
-
-        var sortedSet = new SortedSet<SearchScore>(SearchScore.Comparer);
-        var enumerator = candidates.GetEnumerator();
-        var num = 0L;
-        var count = int.MaxValue / request.PageNumber < request.PageSize
-            ? int.MaxValue
-            : request.PageNumber * request.PageSize;
-        while (sortedSet.Count < count
-            && enumerator.MoveNext())
-        {
-            var info = enumerator.Current;
-
-            if (pageResults.Contains(info.Title))
-            {
-                continue;
-            }
-
-            var similarity = query.Similarity(info.Embedding);
-            if (similarity < MinSimilarity)
-            {
-                continue;
-            }
-
-            pageResults.Add(info.Title);
-
-            if (queryRequiresValidation && !ValidateResult(info))
-            {
-                continue;
-            }
-
-            var (isValid, page) = await ValidatePageAsync(info);
-            if (!isValid)
-            {
-                continue;
-            }
-
-            sortedSet.Add(new SearchScore(
-                similarity,
-                info,
-                await GetExcerptAsync(info, page),
-                num++));
-        }
-
-        var totalCount = sortedSet.Count;
-
-        while (enumerator.MoveNext())
-        {
-            var info = enumerator.Current;
-
-            if (pageResults.Contains(info.Title))
-            {
-                continue;
-            }
-
-            var similarity = query.Similarity(info.Embedding);
-            if (similarity < MinSimilarity)
-            {
-                continue;
-            }
-
-            pageResults.Add(info.Title);
-
-            if (queryRequiresValidation && !ValidateResult(info))
-            {
-                continue;
-            }
-
-            var (isValid, page) = await ValidatePageAsync(info);
-            if (!isValid)
-            {
-                continue;
-            }
-
-            totalCount++;
-
-            if (similarity > sortedSet.Min.Similarity)
-            {
-                sortedSet.Remove(sortedSet.Min);
-                sortedSet.Add(new SearchScore(
-                    similarity,
-                    info,
-                    await GetExcerptAsync(info, page),
-                    num++));
-            }
-        }
-
-        return (sortedSet
-            .Skip((request.PageNumber - 1) * request.PageSize)
-            .Take(request.PageSize)
-            .ToList(),
-            totalCount);
+        return directory;
     }
 
-    private static async ValueTask<bool> HasReadPermissionAsync(
-        IWikiUser? user,
-        List<IWikiGroup> userGroups,
+    private static Document GetSearchCachedDocument(
         WikiOptions options,
-        IDataStore dataStore,
-        IWikiGroupManager groupManager,
+        FieldType textField,
         PageTitle title,
-        string? ownerId,
-        List<Page> pages)
+        string? owner,
+        string? uploader,
+        string? text)
     {
-        if (user?.IsWikiAdmin == true)
+        var document = new Document
         {
-            return true;
-        }
+            new StringField(
+                nameof(Page.Title),
+                title.NormalizedTitle ?? options.MainPageTitle.ToLowerInvariant(),
+                Field.Store.YES),
+        };
 
-        if (!string.IsNullOrEmpty(title.Domain)
-            && user is not null
-            && options.UserDomains
-            && string.CompareOrdinal(title.Domain, user.Id) == 0)
-        {
-            return true;
-        }
-
-        var isUserPage = string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0;
-        if (isUserPage
-            && user is not null
-            && !string.IsNullOrEmpty(title.Title)
-            && string.Equals(user.Id, title.Title))
-        {
-            return true;
-        }
-
-        var isGroupPage = !isUserPage && string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0;
-
-        if (user is not null
-            && !string.IsNullOrEmpty(ownerId))
-        {
-            if (string.Equals(user.Id, ownerId))
-            {
-                return true;
-            }
-
-            if (!isGroupPage && user.Groups?.Contains(ownerId) == true)
-            {
-                return true;
-            }
-        }
-
-        if (isGroupPage
-            && user is not null
-            && !string.IsNullOrEmpty(title.Title))
-        {
-            if (user.Groups?.Contains(title.Title) == true)
-            {
-                return true;
-            }
-
-            var groupOwnerId = await groupManager
-                .GetGroupOwnerIdAsync(title.Title)
-                .ConfigureAwait(false);
-            if (string.Equals(user.Id, groupOwnerId))
-            {
-                return true;
-            }
-        }
-
-        var canReadByDefault = false;
         if (string.IsNullOrEmpty(title.Domain))
         {
-            canReadByDefault = (user is null
-                ? options.DefaultAnonymousPermission
-                : options.DefaultRegisteredPermission)
-                .HasFlag(WikiPermission.Read);
+            document.Add(new StringField(
+                nameof(Page.Title.Domain),
+                NullSearchValue,
+                Field.Store.YES));
         }
-        else if (user is not null)
+        else
         {
-            if (options.GetDomainPermission is not null)
-            {
-                canReadByDefault = (await options
-                    .GetDomainPermission(user.Id, title.Domain))
-                    .HasFlag(WikiPermission.Read);
-            }
-            if (user.AllowedViewDomains?.Contains(title.Domain) == true)
-            {
-                canReadByDefault = true;
-            }
-            if (!canReadByDefault)
-            {
-                if (userGroups.Count == 0
-                    && user.Groups?.Count > 0)
-                {
-                    foreach (var groupId in user.Groups)
-                    {
-                        var group = await groupManager.FindByIdAsync(groupId);
-                        if (group is not null)
-                        {
-                            userGroups.Add(group);
-                        }
-                    }
-                }
-                if (userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
-                {
-                    canReadByDefault = true;
-                }
-            }
+            document.Add(new StringField(
+                nameof(Page.Title.Domain),
+                title.Domain,
+                Field.Store.YES));
         }
 
-        if (user is null
-            && !canReadByDefault)
+        if (string.IsNullOrEmpty(title.NormalizedNamespace))
         {
-            return false;
+            document.Add(new StringField(
+                nameof(Page.Title.Namespace),
+                NullSearchValue,
+                Field.Store.YES));
+        }
+        else
+        {
+            document.Add(new StringField(
+                nameof(Page.Title.Namespace),
+                title.NormalizedNamespace,
+                Field.Store.YES));
         }
 
-        if (!isUserPage
-            && !isGroupPage
-            && string.IsNullOrEmpty(ownerId))
+        if (string.IsNullOrEmpty(owner))
         {
-            return canReadByDefault;
+            document.Add(new StringField(
+                nameof(Page.Owner),
+                NullSearchValue,
+                Field.Store.YES));
+        }
+        else
+        {
+            document.Add(new StringField(
+                nameof(Page.Owner),
+                owner,
+                Field.Store.YES));
         }
 
-        var page = await dataStore
-            .GetWikiPageAsync(options, title, true)
-            .ConfigureAwait(false);
-        pages.Add(page);
-
-        if (!page.Exists)
+        if (!string.IsNullOrEmpty(uploader))
         {
-            if (isUserPage)
-            {
-                return canReadByDefault;
-            }
-            else if (isGroupPage
-                && !string.IsNullOrEmpty(title.Title))
-            {
-                return canReadByDefault
-                    || user?.Groups?.Contains(title.Title) == true;
-            }
-            return canReadByDefault;
+            document.Add(new StringField(
+                nameof(WikiFile.Uploader),
+                uploader,
+                Field.Store.YES));
+        }
+        else
+        {
+            document.Add(new StringField(
+                nameof(WikiFile.Uploader),
+                NullSearchValue,
+                Field.Store.YES));
         }
 
-        if (user is null)
+        if (!string.IsNullOrEmpty(text))
         {
-            return page.AllowedViewers is null;
+            document.Add(new Field(
+                nameof(Page.Text),
+                text,
+                textField));
         }
 
-        if (page.AllowedViewers?.Contains(user.Id) == false
-            && user.AllowedViewPages?.Contains(title) != true
-            && (!isGroupPage
-                || string.IsNullOrEmpty(title.Title)
-                || user.Groups?.Contains(title.Title) != true)
-            && (page.AllowedViewerGroups is null
-                || user.Groups is null
-                || !page.AllowedViewerGroups.Intersect(user.Groups).Any()))
-        {
-            if (userGroups.Count == 0
-                && user.Groups?.Count > 0)
-            {
-                foreach (var groupId in user.Groups)
-                {
-                    var group = await groupManager.FindByIdAsync(groupId);
-                    if (group is not null)
-                    {
-                        userGroups.Add(group);
-                    }
-                }
-            }
-            if (!userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
-            {
-                return false;
-            }
-        }
-
-        if (isUserPage
-            || (isGroupPage
-            && !string.IsNullOrEmpty(title.Title)))
-        {
-            return canReadByDefault;
-        }
-
-        if (canReadByDefault
-            || page.AllowedEditors?.Contains(user.Id) != false
-            || user.AllowedEditPages?.Contains(title) == true
-            || (page.AllowedEditorGroups is not null
-                && user.Groups is not null
-                && page.AllowedEditorGroups.Intersect(user.Groups).Any()))
-        {
-            return true;
-        }
-
-        if (userGroups.Count == 0
-            && user.Groups?.Count > 0)
-        {
-            foreach (var groupId in user.Groups)
-            {
-                var group = await groupManager.FindByIdAsync(groupId);
-                if (group is not null)
-                {
-                    userGroups.Add(group);
-                }
-            }
-        }
-        return userGroups.Any(x => x.AllowedEditPages?.Contains(title) == true);
+        return document;
     }
 
     private static async Task<IPagedList<Page>> GetSpecialListInnerAsync(
@@ -3494,6 +3138,218 @@ public static partial class WikiExtensions
             _ => new PagedList<Page>(null, 1, request.PageSize, 0),
         };
 
-    [GeneratedRegex("((?<!\\\\)\"[^\" ].*?[^\\\\]\")")]
-    private static partial Regex QuotedStringsRegex();
+    private static async ValueTask<(bool hasPermission, Page? page)> HasReadPermissionAsync(
+        IWikiUser? user,
+        List<IWikiGroup> userGroups,
+        WikiOptions options,
+        IDataStore dataStore,
+        IWikiGroupManager groupManager,
+        PageTitle title,
+        string? ownerId)
+    {
+        if (user?.IsWikiAdmin == true)
+        {
+            return (true, null);
+        }
+
+        if (!string.IsNullOrEmpty(title.Domain)
+            && user is not null
+            && options.UserDomains
+            && string.CompareOrdinal(title.Domain, user.Id) == 0)
+        {
+            return (true, null);
+        }
+
+        var isUserPage = string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0;
+        if (isUserPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title)
+            && string.Equals(user.Id, title.Title))
+        {
+            return (true, null);
+        }
+
+        var isGroupPage = !isUserPage && string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0;
+
+        if (user is not null
+            && !string.IsNullOrEmpty(ownerId))
+        {
+            if (string.Equals(user.Id, ownerId))
+            {
+                return (true, null);
+            }
+
+            if (!isGroupPage && user.Groups?.Contains(ownerId) == true)
+            {
+                return (true, null);
+            }
+        }
+
+        if (isGroupPage
+            && user is not null
+            && !string.IsNullOrEmpty(title.Title))
+        {
+            if (user.Groups?.Contains(title.Title) == true)
+            {
+                return (true, null);
+            }
+
+            var groupOwnerId = await groupManager
+                .GetGroupOwnerIdAsync(title.Title)
+                .ConfigureAwait(false);
+            if (string.Equals(user.Id, groupOwnerId))
+            {
+                return (true, null);
+            }
+        }
+
+        var canReadByDefault = false;
+        if (string.IsNullOrEmpty(title.Domain))
+        {
+            canReadByDefault = (user is null
+                ? options.DefaultAnonymousPermission
+                : options.DefaultRegisteredPermission)
+                .HasFlag(WikiPermission.Read);
+        }
+        else if (user is not null)
+        {
+            if (options.GetDomainPermission is not null)
+            {
+                canReadByDefault = (await options
+                    .GetDomainPermission(user.Id, title.Domain))
+                    .HasFlag(WikiPermission.Read);
+            }
+            if (user.AllowedViewDomains?.Contains(title.Domain) == true)
+            {
+                canReadByDefault = true;
+            }
+            if (!canReadByDefault)
+            {
+                if (userGroups.Count == 0
+                    && user.Groups?.Count > 0)
+                {
+                    foreach (var groupId in user.Groups)
+                    {
+                        var group = await groupManager.FindByIdAsync(groupId);
+                        if (group is not null)
+                        {
+                            userGroups.Add(group);
+                        }
+                    }
+                }
+                if (userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+                {
+                    canReadByDefault = true;
+                }
+            }
+        }
+
+        if (user is null
+            && !canReadByDefault)
+        {
+            return (false, null);
+        }
+
+        if (!isUserPage
+            && !isGroupPage
+            && string.IsNullOrEmpty(ownerId))
+        {
+            return (canReadByDefault, null);
+        }
+
+        var page = await dataStore
+            .GetWikiPageAsync(options, title, true)
+            .ConfigureAwait(false);
+
+        if (!page.Exists)
+        {
+            if (isUserPage)
+            {
+                return (canReadByDefault, null);
+            }
+            else if (isGroupPage
+                && !string.IsNullOrEmpty(title.Title))
+            {
+                return (canReadByDefault
+                    || user?.Groups?.Contains(title.Title) == true,
+                    null);
+            }
+            return (canReadByDefault, page);
+        }
+
+        if (user is null)
+        {
+            return (page.AllowedViewers is null, page);
+        }
+
+        if (page.AllowedViewers?.Contains(user.Id) == false
+            && user.AllowedViewPages?.Contains(title) != true
+            && (!isGroupPage
+                || string.IsNullOrEmpty(title.Title)
+                || user.Groups?.Contains(title.Title) != true)
+            && (page.AllowedViewerGroups is null
+                || user.Groups is null
+                || !page.AllowedViewerGroups.Intersect(user.Groups).Any()))
+        {
+            if (userGroups.Count == 0
+                && user.Groups?.Count > 0)
+            {
+                foreach (var groupId in user.Groups)
+                {
+                    var group = await groupManager.FindByIdAsync(groupId);
+                    if (group is not null)
+                    {
+                        userGroups.Add(group);
+                    }
+                }
+            }
+            if (!userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+            {
+                return (false, page);
+            }
+        }
+
+        if (isUserPage
+            || (isGroupPage
+            && !string.IsNullOrEmpty(title.Title)))
+        {
+            return (canReadByDefault, page);
+        }
+
+        if (canReadByDefault
+            || page.AllowedEditors?.Contains(user.Id) != false
+            || user.AllowedEditPages?.Contains(title) == true
+            || (page.AllowedEditorGroups is not null
+                && user.Groups is not null
+                && page.AllowedEditorGroups.Intersect(user.Groups).Any()))
+        {
+            return (true, page);
+        }
+
+        if (userGroups.Count == 0
+            && user.Groups?.Count > 0)
+        {
+            foreach (var groupId in user.Groups)
+            {
+                var group = await groupManager.FindByIdAsync(groupId);
+                if (group is not null)
+                {
+                    userGroups.Add(group);
+                }
+            }
+        }
+        return (userGroups.Any(x => x.AllowedEditPages?.Contains(title) == true),
+            page);
+    }
+
+    [MemberNotNull(nameof(_textFieldType))]
+    private static void InitializeFieldType()
+    {
+        _textFieldType ??= new FieldType(TextField.TYPE_NOT_STORED)
+        {
+            StoreTermVectors = true,
+            StoreTermVectorOffsets = true,
+        };
+        _textFieldType.Freeze();
+    }
 }

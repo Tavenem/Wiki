@@ -369,7 +369,7 @@ public class WikiOptions
     public string MaxFileSizeString => MaxFileSize switch
     {
         >= 1024 * 1024 * 1024 => $"{MaxFileSize / (1024 * 1024 * 1024.0):N3} GiB",
-        >= 1024 * 1024 => $"{MaxFileSize / 1024 * 1024.0:N3} MiB",
+        >= 1024 * 1024 => $"{MaxFileSize / (1024 * 1024.0):N3} MiB",
         >= 1024 => $"{MaxFileSize / 1024.0:G} KiB",
         _ => $"{MaxFileSize} bytes"
     };
@@ -481,19 +481,7 @@ public class WikiOptions
     /// The name of the script namespace.
     /// </summary>
     /// <remarks>
-    /// <para>
     /// If omitted "Script" will be used.
-    /// </para>
-    /// <para>
-    /// When the <c>exec</c> transclusion function omits the namespace from the code parameter, this
-    /// namespace is assumed.
-    /// </para>
-    /// <para>
-    /// Note that only pages from this namespace may be used in the <c>exec</c> function. If any
-    /// other namespace is explicitly specified, the code parameter will be treated as empty. This
-    /// is done to prevent excessive errors when markdown content is accidentally used as script
-    /// source.
-    /// </para>
     /// </remarks>
     [AllowNull]
     public string ScriptNamespace
