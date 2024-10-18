@@ -1,6 +1,6 @@
 name: publish
 env:
-  VERSION: '0.26.1-preview'
+  VERSION: '0.26.2-preview'
   PRERELEASE: true
 on:
   push:

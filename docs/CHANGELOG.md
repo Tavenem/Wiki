@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.2-preview
+### Updated
+- Update dependencies
+
 ## 0.26.1-preview
 ### Fixed
 - Wiki link rendering
