@@ -167,12 +167,18 @@ public static class WikiLinkParser
         {
             ignoreMissing = true;
             slice = slice[1..];
+            inlineTitle = slice.IsEmpty
+                ? null
+                : slice.ToString();
         }
 
         if (slice[0] == ':')
         {
             inline.IsEscaped = true;
             slice = slice[1..];
+            inlineTitle = slice.IsEmpty
+                ? null
+                : slice.ToString();
         }
 
         if (slice[0..2].Equals("w:", StringComparison.OrdinalIgnoreCase))
@@ -270,6 +276,7 @@ public static class WikiLinkParser
             if (!inline.HasDisplay)
             {
                 inline.Display = inline.Display?.Replace('_', ' ');
+                inline.HasDisplay = !string.IsNullOrEmpty(inline.Display);
             }
         }
         else if (inline.IsCommons)

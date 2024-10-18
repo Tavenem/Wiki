@@ -25,14 +25,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
 
         if (renderer.EnableHtmlForInline)
         {
-            if (link.IsImage)
-            {
-                renderer.Write("<img src=\"");
-            }
-            else
-            {
-                renderer.Write("<a href=\"");
-            }
+            renderer.Write("<a href=\"");
             renderer.WriteEscapeUrl(link.Url);
             renderer.Write("\"");
             renderer.WriteAttributes(link);
@@ -54,14 +47,14 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
         {
             renderer.Write(">");
         }
+
         if (link.HasDisplay && !string.IsNullOrEmpty(link.Display))
         {
             renderer.Write(link.Display);
         }
-        else
+        else if (link.PageTitle.HasValue)
         {
-            if (link.PageTitle.HasValue
-                && !string.IsNullOrEmpty(link.PageTitle.Value.Domain))
+            if (!string.IsNullOrEmpty(link.PageTitle.Value.Domain))
             {
                 if (renderer.EnableHtmlForInline)
                 {
@@ -81,8 +74,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                     renderer.Write("):");
                 }
             }
-            if (link.PageTitle.HasValue
-                && !string.IsNullOrEmpty(link.PageTitle.Value.Namespace))
+            if (!string.IsNullOrEmpty(link.PageTitle.Value.Namespace))
             {
                 if (renderer.EnableHtmlForInline)
                 {
@@ -98,8 +90,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                     renderer.Write(':');
                 }
             }
-            if (link.PageTitle.HasValue
-                && !string.IsNullOrEmpty(link.PageTitle.Value.Title))
+            if (!string.IsNullOrEmpty(link.PageTitle.Value.Title))
             {
                 if (renderer.EnableHtmlForInline)
                 {
@@ -111,7 +102,10 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
                     renderer.Write("</span>");
                 }
             }
-            //renderer.WriteChildren(link);
+        }
+        else
+        {
+            renderer.WriteChildren(link);
         }
         if (renderer.EnableHtmlForInline)
         {
@@ -123,21 +117,19 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
     {
         if (renderer.EnableHtmlForInline)
         {
-            if (link.IsWikipedia)
+            renderer.Write(" target=\"_blank\"");
+
+            if (link.IsCommons)
             {
-                renderer.Write("><img src=\"https://wikipedia.org/wiki/");
-                renderer.WriteEscapeUrl(link.Url);
-                renderer.Write("\" alt=\"");
-            }
-            else if (link.IsCommons)
-            {
-                renderer.Write("><img src=\"https://commons.wikimedia.org/wiki/Special:Redirect/file/");
-                renderer.WriteEscapeUrl(link.Url);
+                renderer.Write("><img src=\"https://commons.wikimedia.org/wiki/Special:Redirect/file/File:");
+                renderer.WriteEscapeUrl(link.Title);
                 renderer.Write("\" alt=\"");
             }
             else
             {
-                renderer.Write(" alt=\"");
+                renderer.Write("><img src=\"");
+                renderer.WriteEscapeUrl(link.Url);
+                renderer.Write("\" alt=\"");
             }
         }
         var wasEnableHtmlForInline = renderer.EnableHtmlForInline;
@@ -186,11 +178,7 @@ public class WikiLinkInlineRenderer : HtmlObjectRenderer<WikiLinkInline>
 
         if (renderer.EnableHtmlForInline)
         {
-            renderer.Write(" />");
-            if (link.IsWikipedia || link.IsCommons)
-            {
-                renderer.Write("</a>");
-            }
+            renderer.Write(" /></a>");
         }
     }
 }

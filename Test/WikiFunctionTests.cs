@@ -206,6 +206,9 @@ Fourth section text";
         await TestTemplateAsync(dataStore, "[Namespace:Title||]", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">title</a>", @namespace: Namespace);
         await TestTemplateAsync(dataStore, "[Namespace:Title|s]", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">Titles</a>", @namespace: Namespace);
         await TestTemplateAsync(dataStore, "[Namespace:Title||s]", "<a href=\"./Wiki/Namespace:Title\" class=\"wiki-link-exists\">titles</a>", @namespace: Namespace);
+        await TestTemplateAsync(dataStore, $"[:{_Options.CategoryNamespace}:Title]", "<a href=\"./Wiki/Category:Title\" class=\"wiki-link-exists\"><span class=\"wiki-link-namespace\">Category</span><span class=\"wiki-link-title\">Title</span></a>", @namespace: _Options.CategoryNamespace);
+        await TestTemplateAsync(dataStore, "[w:Wiki]", "<a href=\"https://wikipedia.org/wiki/Wiki\">Wiki</a>");
+        await TestTemplateAsync(dataStore, "![cc:Example.jpg]", "<a href=\"https://commons.wikimedia.org/wiki/File:Example.jpg\" target=\"_blank\"><img src=\"https://commons.wikimedia.org/wiki/Special:Redirect/file/File:Example.jpg\" alt=\"cc:Example.jpg\"></a>");
     }
 
     [TestMethod]

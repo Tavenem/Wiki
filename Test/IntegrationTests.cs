@@ -74,7 +74,7 @@ public class IntegrationTests
             main.MarkdownContent,
             main.Title,
             main);
-        var missing = wikiLinks.Find(x => x.IsMissing);
+        var missing = wikiLinks?.Find(x => x.IsMissing);
         Assert.IsNull(missing);
         Assert.AreEqual(_ExpectedMain, main.Html);
     }

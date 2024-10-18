@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.1-preview
+### Fixed
+- Wiki link rendering
+
 ## 0.26.0-preview
 ### Changed
 - Custom function syntax replaced by Handlebars templating
