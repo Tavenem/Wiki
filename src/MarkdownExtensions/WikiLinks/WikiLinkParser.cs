@@ -172,7 +172,8 @@ public static class WikiLinkParser
                 : slice.ToString();
         }
 
-        if (slice[0] == ':')
+        if (!slice.IsEmpty
+            && slice[0] == ':')
         {
             inline.IsEscaped = true;
             slice = slice[1..];
@@ -181,7 +182,8 @@ public static class WikiLinkParser
                 : slice.ToString();
         }
 
-        if (slice[0..2].Equals("w:", StringComparison.OrdinalIgnoreCase))
+        if (slice.Length >= 2
+            && slice[0..2].Equals("w:", StringComparison.OrdinalIgnoreCase))
         {
             inline.IsWikipedia = true;
             slice = slice[2..];
@@ -194,6 +196,7 @@ public static class WikiLinkParser
         }
 
         if (!inline.IsWikipedia
+            && slice.Length >= 3
             && slice[0..3].Equals("cc:", StringComparison.OrdinalIgnoreCase))
         {
             inline.IsCommons = true;

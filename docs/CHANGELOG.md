@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.3-preview
+### Fixed
+- Wiki link parsing bug
+
 ## 0.26.2-preview
 ### Updated
 - Update dependencies
