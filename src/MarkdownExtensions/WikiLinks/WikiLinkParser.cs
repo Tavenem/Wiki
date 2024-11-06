@@ -167,9 +167,12 @@ public static class WikiLinkParser
         {
             ignoreMissing = true;
             slice = slice[1..];
-            inlineTitle = slice.IsEmpty
+            if (inline.IsShortcut)
+            {
+                inlineTitle = slice.IsEmpty
                 ? null
                 : slice.ToString();
+            }
         }
 
         if (!slice.IsEmpty
@@ -177,9 +180,12 @@ public static class WikiLinkParser
         {
             inline.IsEscaped = true;
             slice = slice[1..];
-            inlineTitle = slice.IsEmpty
+            if (inline.IsShortcut)
+            {
+                inlineTitle = slice.IsEmpty
                 ? null
                 : slice.ToString();
+            }
         }
 
         if (slice.Length >= 2
