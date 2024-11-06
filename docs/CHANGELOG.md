@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.4-preview
+### Fixed
+- Ignore-missing link formatting
+
 ## 0.26.3-preview
 ### Fixed
 - Wiki link parsing bug
