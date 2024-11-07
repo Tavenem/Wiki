@@ -1513,7 +1513,7 @@ public static class WikiExtensions
         else
         {
             var permission = page.Permission;
-            page = Page.Empty(title);
+            page = Article.Empty(title);
             page.Permission = permission;
         }
 
@@ -1789,7 +1789,7 @@ public static class WikiExtensions
         else
         {
             var permission = page.Permission;
-            page = Page.Empty(title);
+            page = Article.Empty(title);
             page.Permission = permission;
         }
 
@@ -1860,7 +1860,7 @@ public static class WikiExtensions
 
         if (!page.Permission.HasFlag(WikiPermission.Read))
         {
-            var empty = Page.Empty(title);
+            var empty = Article.Empty(title);
             empty.Permission = page.Permission;
             if (string.IsNullOrEmpty(empty.Title.Title))
             {

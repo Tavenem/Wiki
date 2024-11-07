@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.5-preview
+### Fixed
+- Invalid page creation
+
 ## 0.26.4-preview
 ### Fixed
 - Ignore-missing link formatting
