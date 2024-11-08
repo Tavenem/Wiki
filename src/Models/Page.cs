@@ -2340,7 +2340,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                     WikiJsonSerializerContext.Default.Category)
                 .ConfigureAwait(false);
             await category
-                .AddPageAsync(dataStore, categoryTitle)
+                .AddPageAsync(dataStore, Title)
                 .ConfigureAwait(false);
         }
 
@@ -2356,7 +2356,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                     if (category is not null)
                     {
                         await category
-                            .RemovePageAsync(dataStore, categoryTitle)
+                            .RemovePageAsync(dataStore, Title)
                             .ConfigureAwait(false);
                     }
                 }
@@ -2459,7 +2459,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 .GetWikiPageAsync(options, finalRedirectTitle, true, true)
                 .ConfigureAwait(false);
         }
-        IsBrokenRedirect = redirect.Exists;
+        IsBrokenRedirect = !redirect.Exists;
         IsDoubleRedirect = redirect.RedirectTitle.HasValue;
 
         await redirect

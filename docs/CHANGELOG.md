@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.26.6-preview
+### Fixed
+- Category child lists
+- Redirects
+
 ## 0.26.5-preview
 ### Fixed
 - Invalid page creation

@@ -153,12 +153,45 @@ public class IntegrationTests
             category);
         missing = wikiLinks?.Find(x => x.IsMissing);
         Assert.IsNull(missing);
+        Assert.AreEqual(3, category.Children?.Count);
 
         var about = await dataStore.GetWikiPageAsync(
             options,
             new(options.AboutPageTitle, options.SystemNamespace),
             true);
         Assert.AreEqual(_ExpectedAbout, about.Html, ignoreCase: false);
+    }
+
+    [TestMethod]
+    public async Task RedirectTest()
+    {
+        var options = new WikiOptions();
+        var dataStore = new InMemoryDataStore();
+        var userManager = new WikiUserManager(dataStore);
+        dataStore.StoreItem(Admin);
+        var groupManager = new WikiGroupManager(dataStore, userManager);
+
+        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager);
+        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
+
+        var aboutTitle = new PageTitle(options.AboutPageTitle, options.SystemNamespace);
+        var redirectTitle = new PageTitle("AboutRedirect", options.SystemNamespace);
+        await dataStore.AddOrReviseWikiPageAsync(
+            options,
+            userManager,
+            groupManager,
+            Admin,
+            redirectTitle,
+            null,
+            null,
+            false,
+            AdminId,
+            [AdminId],
+            redirectTitle: aboutTitle);
+        var about = await dataStore.GetWikiPageAsync(
+            options,
+            redirectTitle);
+        Assert.AreEqual(aboutTitle, about.Title);
     }
 
     [TestMethod]
