@@ -507,4 +507,27 @@ public class SerializationTests
         Assert.AreEqual(value, deserialized);
         Assert.AreEqual(json, JsonSerializer.Serialize(deserialized, WikiJsonSerializerContext.Default.Revision));
     }
+
+    [TestMethod]
+    public void WikiUserTest()
+    {
+        var value = new WikiUser
+        {
+            DisplayName = "Test",
+        };
+        var json = JsonSerializer.Serialize(value);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        var deserialized = JsonSerializer.Deserialize<WikiUser>(json);
+        Assert.AreEqual(value, deserialized);
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserialized));
+
+        json = JsonSerializer.Serialize<IWikiOwner>(value);
+        Console.WriteLine();
+        Console.WriteLine(json);
+        var deserializedIWikiOwner = JsonSerializer.Deserialize<IWikiOwner>(json);
+        Assert.IsInstanceOfType<WikiUser>(deserializedIWikiOwner);
+        Assert.AreEqual(value, deserializedIWikiOwner);
+        Assert.AreEqual(json, JsonSerializer.Serialize(deserializedIWikiOwner));
+    }
 }

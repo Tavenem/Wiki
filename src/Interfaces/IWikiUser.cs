@@ -1,8 +1,12 @@
-﻿namespace Tavenem.Wiki;
+﻿using System.Text.Json.Serialization;
+
+namespace Tavenem.Wiki;
 
 /// <summary>
 /// A user of the wiki.
 /// </summary>
+[JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
+[JsonDerivedType(typeof(WikiUser), WikiUser.WikiUserIdItemTypeName)]
 public interface IWikiUser : IWikiOwner
 {
     /// <summary>

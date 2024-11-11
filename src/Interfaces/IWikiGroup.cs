@@ -1,4 +1,6 @@
-﻿namespace Tavenem.Wiki;
+﻿using System.Text.Json.Serialization;
+
+namespace Tavenem.Wiki;
 
 /// <summary>
 /// <para>
@@ -9,6 +11,8 @@
 /// individual users may.
 /// </para>
 /// </summary>
+[JsonPolymorphic(UnknownDerivedTypeHandling = JsonUnknownDerivedTypeHandling.FallBackToNearestAncestor)]
+[JsonDerivedType(typeof(WikiGroup), WikiGroup.WikiGroupIdItemTypeName)]
 public interface IWikiGroup : IWikiOwner
 {
     /// <summary>

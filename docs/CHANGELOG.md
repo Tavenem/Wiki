@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.7-preview
+### Added
+- `IWikiOwner` polymorphism
+
 ## 0.26.6-preview
 ### Fixed
 - Category child lists
