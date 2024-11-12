@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.8-preview
+### Changed
+- Allow null parameters
+
 ## 0.26.7-preview
 ### Added
 - `IWikiOwner` polymorphism

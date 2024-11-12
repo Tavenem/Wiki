@@ -164,8 +164,8 @@ public static class WikiExtensions
     public static async Task<bool> AddOrReviseWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         IWikiUser editor,
         PageTitle title,
         string? markdown = null,
@@ -349,8 +349,8 @@ public static class WikiExtensions
     public static async Task<Category> GetCategoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         IWikiUser? user = null)
     {
@@ -448,8 +448,8 @@ public static class WikiExtensions
     public static async Task<Category> GetCategoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         string userId) => await GetCategoryAsync(
             dataStore,
@@ -457,7 +457,9 @@ public static class WikiExtensions
             userManager,
             groupManager,
             title,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false));
 
     /// <summary>
@@ -494,14 +496,25 @@ public static class WikiExtensions
     public static async Task<GroupPage> GetGroupPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiGroupManager groupManager,
+        IWikiGroupManager? groupManager,
         string groupId,
         IWikiUser? user = null)
     {
         GroupPage page;
-        var articleGroup = await groupManager.FindByIdAsync(groupId)
+        var articleGroup = groupManager is null
+            ? null
+            : await groupManager.FindByIdAsync(groupId)
             .ConfigureAwait(false);
-        if (articleGroup is null)
+        if (groupManager is null)
+        {
+            page = await dataStore.GetWikiPageAsync<GroupPage>(
+                options,
+                new(groupId, options.GroupNamespace),
+                true,
+                true)
+                .ConfigureAwait(false);
+        }
+        else if (articleGroup is null)
         {
             articleGroup = await groupManager.FindByNameAsync(groupId);
             page = await dataStore.GetWikiPageAsync<GroupPage>(
@@ -559,6 +572,11 @@ public static class WikiExtensions
             }
         }
 
+        if (groupManager is null)
+        {
+            return page;
+        }
+
         var users = await groupManager.GetUsersInGroupAsync(articleGroup);
         if (users.Count > 0)
         {
@@ -603,15 +621,17 @@ public static class WikiExtensions
     public static async Task<GroupPage> GetGroupPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         string groupId,
         string userId) => await GetGroupPageAsync(
             dataStore,
             options,
             groupManager,
             groupId,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false));
 
     /// <summary>
@@ -638,8 +658,8 @@ public static class WikiExtensions
     public static async Task<PagedRevisionInfo> GetHistoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         HistoryRequest request,
         IWikiUser? user = null)
     {
@@ -671,43 +691,46 @@ public static class WikiExtensions
 
         List<IWikiUser>? editors = null;
         var editorIds = new HashSet<string>();
-        foreach (var revision in history)
+        if (userManager is not null)
         {
-            if (editorIds.Contains(revision.Editor))
+            foreach (var revision in history)
             {
-                continue;
-            }
-
-            var editor = await userManager.FindByIdAsync(revision.Editor)
-                .ConfigureAwait(false);
-            if (editor?.IsDeleted != false)
-            {
-                continue;
-            }
-
-            editorIds.Add(editor.Id);
-
-            if (user is not null
-                && (user.IsWikiAdmin
-                || string.CompareOrdinal(user.Id, editor.Id) == 0))
-            {
-                (editors ??= []).Add(editor);
-            }
-            else if (editor.IsDeleted)
-            {
-                (editors ??= []).Add(new WikiUser
+                if (editorIds.Contains(revision.Editor))
                 {
-                    Id = editor.Id,
-                });
-            }
-            else
-            {
-                (editors ??= []).Add(new WikiUser
+                    continue;
+                }
+
+                var editor = await userManager.FindByIdAsync(revision.Editor)
+                    .ConfigureAwait(false);
+                if (editor?.IsDeleted != false)
                 {
-                    DisplayName = editor.DisplayName,
-                    Id = editor.Id,
-                    IsWikiAdmin = editor.IsWikiAdmin,
-                });
+                    continue;
+                }
+
+                editorIds.Add(editor.Id);
+
+                if (user is not null
+                    && (user.IsWikiAdmin
+                    || string.CompareOrdinal(user.Id, editor.Id) == 0))
+                {
+                    (editors ??= []).Add(editor);
+                }
+                else if (editor.IsDeleted)
+                {
+                    (editors ??= []).Add(new WikiUser
+                    {
+                        Id = editor.Id,
+                    });
+                }
+                else
+                {
+                    (editors ??= []).Add(new WikiUser
+                    {
+                        DisplayName = editor.DisplayName,
+                        Id = editor.Id,
+                        IsWikiAdmin = editor.IsWikiAdmin,
+                    });
+                }
             }
         }
 
@@ -741,8 +764,8 @@ public static class WikiExtensions
     public static async Task<PagedRevisionInfo> GetHistoryAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         HistoryRequest request,
         string? userId = null) => await GetHistoryAsync(
             dataStore,
@@ -750,7 +773,9 @@ public static class WikiExtensions
             userManager,
             groupManager,
             request,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false));
 
     /// <summary>
@@ -842,7 +867,7 @@ public static class WikiExtensions
     public static ValueTask<WikiPermission> GetPermissionAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiGroupManager groupManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         IWikiUser? user)
     {
@@ -881,7 +906,7 @@ public static class WikiExtensions
     public static ValueTask<WikiPermission> GetPermissionAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiGroupManager groupManager,
+        IWikiGroupManager? groupManager,
         Page page,
         IWikiUser? user)
     {
@@ -921,15 +946,17 @@ public static class WikiExtensions
     public static async Task<WikiPermission> GetPermissionAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         Page page,
         string? userId = null) => await GetPermissionAsync(
             dataStore,
             options,
             groupManager,
             page,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false))
         .ConfigureAwait(false);
 
@@ -957,15 +984,17 @@ public static class WikiExtensions
     public static async Task<WikiPermission> GetPermissionAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         string? userId = null) => await GetPermissionAsync(
             dataStore,
             options,
             groupManager,
             title,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false))
         .ConfigureAwait(false);
 
@@ -1079,15 +1108,26 @@ public static class WikiExtensions
     public static async Task<UserPage> GetUserPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         string userId,
         IWikiUser? requestingUser = null)
     {
         UserPage page;
-        var articleUser = await userManager.FindByIdAsync(userId)
+        var articleUser = userManager is null
+            ? null
+            : await userManager.FindByIdAsync(userId)
             .ConfigureAwait(false);
-        if (articleUser is null)
+        if (userManager is null)
+        {
+            page = await dataStore.GetWikiPageAsync<UserPage>(
+                options,
+                new(userId, options.UserNamespace),
+                true,
+                true)
+                .ConfigureAwait(false);
+        }
+        else if (articleUser is null)
         {
             articleUser = await userManager.FindByNameAsync(userId)
                 .ConfigureAwait(false);
@@ -1154,7 +1194,8 @@ public static class WikiExtensions
             };
         }
 
-        if (articleUser.Groups is not null)
+        if (articleUser.Groups is not null
+            && groupManager is not null)
         {
             page.Groups = [];
             foreach (var id in articleUser.Groups)
@@ -1207,8 +1248,8 @@ public static class WikiExtensions
     public static async Task<UserPage> GetUserPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         string userId,
         string requestingUserId) => await GetUserPageAsync(
             dataStore,
@@ -1216,7 +1257,9 @@ public static class WikiExtensions
             userManager,
             groupManager,
             userId,
-            await userManager.FindByIdAsync(requestingUserId));
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(requestingUserId));
 
     /// <summary>
     /// Gets a page of the wiki pages which link to the given title and namespace.
@@ -1471,8 +1514,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         IWikiUser? user = null,
         bool noRedirect = false,
@@ -1555,8 +1598,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         string? userId = null,
         bool noRedirect = false,
@@ -1566,7 +1609,9 @@ public static class WikiExtensions
             userManager,
             groupManager,
             title,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false),
             noRedirect,
             time);
@@ -1601,8 +1646,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         long timestamp,
         IWikiUser? user = null,
@@ -1646,8 +1691,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         long timestamp,
         string? userId = null,
@@ -1657,7 +1702,9 @@ public static class WikiExtensions
             userManager,
             groupManager,
             title,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false),
             noRedirect,
             new DateTimeOffset(timestamp, TimeSpan.Zero));
@@ -1710,8 +1757,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageDiffAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         DateTimeOffset? firstTime = null,
         DateTimeOffset? secondTime = null,
@@ -1825,8 +1872,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         IWikiUser? user = null)
     {
@@ -1874,7 +1921,8 @@ public static class WikiExtensions
             page.DisplayTitle ??= options.MainPageTitle;
         }
 
-        var owner = string.IsNullOrEmpty(page.Owner)
+        var owner = userManager is null
+            || string.IsNullOrEmpty(page.Owner)
             ? null
             : await userManager.FindByIdAsync(page.Owner)
                 .ConfigureAwait(false);
@@ -1905,7 +1953,8 @@ public static class WikiExtensions
             }
         }
 
-        if (page.AllowedEditors is not null)
+        if (page.AllowedEditors is not null
+            && userManager is not null)
         {
             var allowedEditors = new List<IWikiUser>();
             foreach (var id in page.AllowedEditors)
@@ -1947,7 +1996,8 @@ public static class WikiExtensions
             }
         }
 
-        if (page.AllowedViewers is not null)
+        if (page.AllowedViewers is not null
+            && userManager is not null)
         {
             var allowedViewers = new List<IWikiUser>();
             foreach (var id in page.AllowedViewers)
@@ -1987,7 +2037,8 @@ public static class WikiExtensions
             }
         }
 
-        if (page.AllowedEditorGroups is not null)
+        if (page.AllowedEditorGroups is not null
+            && groupManager is not null)
         {
             var allowedEditorGroups = new List<IWikiGroup>();
             foreach (var id in page.AllowedEditorGroups)
@@ -2018,7 +2069,8 @@ public static class WikiExtensions
             }
         }
 
-        if (page.AllowedViewerGroups is not null)
+        if (page.AllowedViewerGroups is not null
+            && groupManager is not null)
         {
             var allowedViewerGroups = new List<IWikiGroup>();
             foreach (var id in page.AllowedViewerGroups)
@@ -2075,8 +2127,8 @@ public static class WikiExtensions
     public static async Task<Page> GetWikiPageForEditingAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         string userId) => await GetWikiPageForEditingAsync(
             dataStore,
@@ -2084,7 +2136,9 @@ public static class WikiExtensions
             userManager,
             groupManager,
             title,
-            await userManager.FindByIdAsync(userId)
+            userManager is null
+                ? null
+                : await userManager.FindByIdAsync(userId)
                 .ConfigureAwait(false));
 
     /// <summary>
@@ -2125,7 +2179,7 @@ public static class WikiExtensions
     public static async Task<PagedList<SearchHit>> SearchWikiAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiGroupManager groupManager,
+        IWikiGroupManager? groupManager,
         SearchRequest request,
         IWikiUser? user = null,
         IMemoryCache? cache = null)
@@ -2355,8 +2409,8 @@ public static class WikiExtensions
     public static async Task<PagedList<SearchHit>> SearchWikiAsync(
         this IDataStore dataStore,
         WikiOptions options,
-        IWikiUserManager userManager,
-        IWikiGroupManager groupManager,
+        IWikiUserManager? userManager,
+        IWikiGroupManager? groupManager,
         SearchRequest request,
         string userId,
         IMemoryCache? cache = null) => await SearchWikiAsync(
@@ -2364,7 +2418,9 @@ public static class WikiExtensions
             options,
             groupManager,
             request,
-            await userManager
+            userManager is null
+                ? null
+                : await userManager
                 .FindByIdAsync(userId)
                 .ConfigureAwait(false),
             cache);
@@ -2668,7 +2724,7 @@ public static class WikiExtensions
         IWikiUser? user,
         WikiOptions options,
         IDataStore dataStore,
-        IWikiGroupManager groupManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         Page? page = null)
     {
@@ -2705,6 +2761,7 @@ public static class WikiExtensions
         var isGroupPage = !isUserPage && string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0;
         if (isGroupPage
             && user is not null
+            && groupManager is not null
             && !string.IsNullOrEmpty(title.Title))
         {
             var ownerId = await groupManager
@@ -2738,7 +2795,8 @@ public static class WikiExtensions
             if (!defaultPermission.HasFlag(WikiPermission.Read))
             {
                 userGroups = [];
-                if (user.Groups is not null)
+                if (user.Groups is not null
+                    && groupManager is not null)
                 {
                     foreach (var groupId in user.Groups)
                     {
@@ -2835,7 +2893,8 @@ public static class WikiExtensions
             if (userGroups is null)
             {
                 userGroups = [];
-                if (user.Groups is not null)
+                if (user.Groups is not null
+                    && groupManager is not null)
                 {
                     foreach (var groupId in user.Groups)
                     {
@@ -2876,7 +2935,8 @@ public static class WikiExtensions
             if (userGroups is null)
             {
                 userGroups = [];
-                if (user.Groups is not null)
+                if (user.Groups is not null
+                    && groupManager is not null)
                 {
                     foreach (var groupId in user.Groups)
                     {
@@ -3143,7 +3203,7 @@ public static class WikiExtensions
         List<IWikiGroup> userGroups,
         WikiOptions options,
         IDataStore dataStore,
-        IWikiGroupManager groupManager,
+        IWikiGroupManager? groupManager,
         PageTitle title,
         string? ownerId)
     {
@@ -3194,12 +3254,15 @@ public static class WikiExtensions
                 return (true, null);
             }
 
-            var groupOwnerId = await groupManager
-                .GetGroupOwnerIdAsync(title.Title)
-                .ConfigureAwait(false);
-            if (string.Equals(user.Id, groupOwnerId))
+            if (groupManager is not null)
             {
-                return (true, null);
+                var groupOwnerId = await groupManager
+                    .GetGroupOwnerIdAsync(title.Title)
+                    .ConfigureAwait(false);
+                if (string.Equals(user.Id, groupOwnerId))
+                {
+                    return (true, null);
+                }
             }
         }
 
@@ -3226,7 +3289,8 @@ public static class WikiExtensions
             if (!canReadByDefault)
             {
                 if (userGroups.Count == 0
-                    && user.Groups?.Count > 0)
+                    && user.Groups?.Count > 0
+                    && groupManager is not null)
                 {
                     foreach (var groupId in user.Groups)
                     {
@@ -3292,7 +3356,8 @@ public static class WikiExtensions
                 || !page.AllowedViewerGroups.Intersect(user.Groups).Any()))
         {
             if (userGroups.Count == 0
-                && user.Groups?.Count > 0)
+                && user.Groups?.Count > 0
+                && groupManager is not null)
             {
                 foreach (var groupId in user.Groups)
                 {
@@ -3327,7 +3392,8 @@ public static class WikiExtensions
         }
 
         if (userGroups.Count == 0
-            && user.Groups?.Count > 0)
+            && user.Groups?.Count > 0
+            && groupManager is not null)
         {
             foreach (var groupId in user.Groups)
             {
