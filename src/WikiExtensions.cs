@@ -1074,6 +1074,79 @@ public static class WikiExtensions
     }
 
     /// <summary>
+    /// Determines the maximum upload limit of a user with the given ID.
+    /// </summary>
+    /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
+    /// <param name="userId">The user ID to search for.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <returns>
+    /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
+    /// maximum upload limit of the user with the given ID (note that any negative value is
+    /// "greater" than any positive value, since it indicates no limit). Returns zero if no such
+    /// user exists, or the user is deleted or disabled.
+    /// </returns>
+    public static async ValueTask<int> GetUserMaxUploadLimit(
+        this IWikiUserManager userManager,
+        string? userId,
+        IWikiGroupManager? groupManager = null)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return 0;
+        }
+        var user = await userManager.FindByIdAsync(userId);
+        return await GetUserMaxUploadLimit(user, groupManager);
+    }
+
+    /// <summary>
+    /// Determines if the given <paramref name="user"/> is in any group with upload permission.
+    /// </summary>
+    /// <param name="user">The user to check.</param>
+    /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <returns>
+    /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
+    /// maximum upload limit of the given <paramref name="user"/> (note that any negative value
+    /// is "greater" than any positive value, since it indicates no limit). Returns zero if no
+    /// such user exists, or the user is deleted or disabled.
+    /// </returns>
+    public static async ValueTask<int> GetUserMaxUploadLimit(
+        this IWikiUser? user,
+        IWikiGroupManager? groupManager)
+    {
+        if (user?.IsDeleted != false
+            || user.IsDisabled)
+        {
+            return 0;
+        }
+        if (user.UploadLimit < 0
+            || user.Groups is null)
+        {
+            return -1;
+        }
+        var max = user.UploadLimit;
+        if (groupManager is not null)
+        {
+            foreach (var groupId in user.Groups)
+            {
+                var group = await groupManager.FindByIdAsync(groupId);
+                if (group is null)
+                {
+                    continue;
+                }
+                if (group.UploadLimit < 0)
+                {
+                    return -1;
+                }
+                if (group.UploadLimit > max)
+                {
+                    max = group.UploadLimit;
+                }
+            }
+        }
+        return max;
+    }
+
+    /// <summary>
     /// Gets the user page with the given user ID.
     /// </summary>
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>

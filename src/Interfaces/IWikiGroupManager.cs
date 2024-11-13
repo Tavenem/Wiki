@@ -161,28 +161,4 @@ public interface IWikiGroupManager
     /// user does not belong to the group.
     /// </returns>
     ValueTask<bool> UserIsInGroup(IWikiGroup? group, IWikiUser? user);
-
-    /// <summary>
-    /// Determines the maximum upload limit of a user with the given ID.
-    /// </summary>
-    /// <param name="userId">The user ID to search for.</param>
-    /// <returns>
-    /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
-    /// maximum upload limit of the user with the given ID (note that any negative value is
-    /// "greater" than any positive value, since it indicates no limit). Returns zero if no such
-    /// user exists, or the user is deleted or disabled.
-    /// </returns>
-    ValueTask<int> UserMaxUploadLimit(string? userId);
-
-    /// <summary>
-    /// Determines if the given <paramref name="user"/> is in any group with upload permission.
-    /// </summary>
-    /// <param name="user">The user to check.</param>
-    /// <returns>
-    /// The <see cref="ValueTask"/> that represents the asynchronous operation, containing the
-    /// maximum upload limit of the given <paramref name="user"/> (note that any negative value
-    /// is "greater" than any positive value, since it indicates no limit). Returns zero if no
-    /// such user exists, or the user is deleted or disabled.
-    /// </returns>
-    ValueTask<int> UserMaxUploadLimit(IWikiUser? user);
 }

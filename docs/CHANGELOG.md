@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.26.9-preview
+### Added
+- `GetUserMaxUploadLimit` to `WikiExtensions`
+### Removed
+- `UserMaxUploadLimit` from `IWikiGroupManager`
+
 ## 0.26.8-preview
 ### Changed
 - Allow null parameters
