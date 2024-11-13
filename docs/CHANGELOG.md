@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.10-preview
+### Changed
+- `GetUserMaxUploadLimit` to `GetUserMaxUploadLimitAsync`
+
 ## 0.26.9-preview
 ### Added
 - `GetUserMaxUploadLimit` to `WikiExtensions`

@@ -1085,7 +1085,7 @@ public static class WikiExtensions
     /// "greater" than any positive value, since it indicates no limit). Returns zero if no such
     /// user exists, or the user is deleted or disabled.
     /// </returns>
-    public static async ValueTask<int> GetUserMaxUploadLimit(
+    public static async ValueTask<int> GetUserMaxUploadLimitAsync(
         this IWikiUserManager userManager,
         string? userId,
         IWikiGroupManager? groupManager = null)
@@ -1109,7 +1109,7 @@ public static class WikiExtensions
     /// is "greater" than any positive value, since it indicates no limit). Returns zero if no
     /// such user exists, or the user is deleted or disabled.
     /// </returns>
-    public static async ValueTask<int> GetUserMaxUploadLimit(
+    public static async ValueTask<int> GetUserMaxUploadLimitAsync(
         this IWikiUser? user,
         IWikiGroupManager? groupManager)
     {
