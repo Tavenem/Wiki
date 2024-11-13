@@ -1095,7 +1095,7 @@ public static class WikiExtensions
             return 0;
         }
         var user = await userManager.FindByIdAsync(userId);
-        return await GetUserMaxUploadLimit(user, groupManager);
+        return await GetUserMaxUploadLimitAsync(user, groupManager);
     }
 
     /// <summary>
