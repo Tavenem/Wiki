@@ -22,6 +22,10 @@ public class GroupPage : OwnerPage, IPage<GroupPage>
     /// <summary>
     /// The users which belong to the associated group (if any).
     /// </summary>
+    /// <remarks>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved.
+    /// </remarks>
+    [JsonIgnore]
     public List<IWikiUser>? Users { get; set; }
 
     /// <summary>

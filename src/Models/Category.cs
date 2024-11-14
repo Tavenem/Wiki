@@ -58,6 +58,7 @@ public sealed class Category : Page, IPage<Category>
     /// <remarks>
     /// Note: this property is not persisted. It is dynamically built when the category is retrieved.
     /// </remarks>
+    [JsonIgnore]
     public Dictionary<string, List<CategoryFile>>? Files { get; set; }
 
     /// <summary>
@@ -71,6 +72,7 @@ public sealed class Category : Page, IPage<Category>
     /// <remarks>
     /// Note: this property is not persisted. It is dynamically built when the category is retrieved.
     /// </remarks>
+    [JsonIgnore]
     public Dictionary<string, List<PageTitle>>? Pages { get; set; }
 
     /// <summary>
@@ -79,6 +81,7 @@ public sealed class Category : Page, IPage<Category>
     /// <remarks>
     /// Note: this property is not persisted. It is dynamically built when the category is retrieved.
     /// </remarks>
+    [JsonIgnore]
     public Dictionary<string, List<Subcategory>>? Subcategories { get; set; }
 
     /// <summary>

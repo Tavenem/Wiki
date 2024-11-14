@@ -12,6 +12,10 @@ public class UserPage : OwnerPage, IPage<UserPage>
     /// <summary>
     /// The groups to which the associated user belongs (if any).
     /// </summary>
+    /// <remarks>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved.
+    /// </remarks>
+    [JsonIgnore]
     public List<IWikiGroup>? Groups { get; set; }
 
     /// <summary>

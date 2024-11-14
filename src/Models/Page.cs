@@ -118,6 +118,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// editing.
     /// </para>
     /// </remarks>
+    [JsonIgnore]
     public IReadOnlyCollection<IWikiGroup>? AllowedEditorGroupObjects { get; set; }
 
     /// <summary>
@@ -204,6 +205,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// editing.
     /// </para>
     /// </remarks>
+    [JsonIgnore]
     public IReadOnlyCollection<IWikiUser>? AllowedEditorObjects { get; set; }
 
     /// <summary>
@@ -276,6 +278,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// editing.
     /// </para>
     /// </remarks>
+    [JsonIgnore]
     public IReadOnlyCollection<IWikiGroup>? AllowedViewerGroupObjects { get; set; }
 
     /// <summary>
@@ -362,6 +365,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// editing.
     /// </para>
     /// </remarks>
+    [JsonIgnore]
     public IReadOnlyCollection<IWikiUser>? AllowedViewerObjects { get; set; }
 
     /// <summary>
@@ -552,6 +556,16 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <summary>
     /// The <see cref="IWikiOwner"/> associated with this page.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This property has a public setter for serialization support, but should not be directly set
+    /// by non-library code.
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted. It is dynamically built when the page is retrieved.
+    /// </para>
+    /// </remarks>
+    [JsonIgnore]
     public IWikiOwner? OwnerObject { get; set; }
 
     /// <summary>

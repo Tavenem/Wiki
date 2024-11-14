@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.11-preview
+### Fixed
+- Ignore correct properties for serialization
+
 ## 0.26.10-preview
 ### Changed
 - `GetUserMaxUploadLimit` to `GetUserMaxUploadLimitAsync`
