@@ -405,7 +405,6 @@ public class SerializationTests
             null,
             false,
             false,
-            false,
             new("Test Title", "Test Namespace", "Test Domain"));
         var json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -419,7 +418,6 @@ public class SerializationTests
             null,
             false,
             false,
-            true,
             new("Test Title", "Test Namespace", "Test Domain"));
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -433,7 +431,6 @@ public class SerializationTests
             null,
             true,
             false,
-            false,
             new("Test Title", _Options.CategoryNamespace, "Test Domain"));
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -447,7 +444,6 @@ public class SerializationTests
             null,
             true,
             true,
-            false,
             new("Test Title", _Options.CategoryNamespace, "Test Domain"));
         json = JsonSerializer.Serialize(value);
         Console.WriteLine();
@@ -459,7 +455,6 @@ public class SerializationTests
         value = new WikiLink(
             null,
             "talk",
-            false,
             false,
             false,
             new("Test Title", "Test Namespace", "Test Domain"));

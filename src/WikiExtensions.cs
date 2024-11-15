@@ -822,6 +822,11 @@ public static class WikiExtensions
         var defaultPermission = string.IsNullOrEmpty(title.Domain)
             ? options.DefaultAnonymousPermission
             : WikiPermission.None;
+        if (string.CompareOrdinal(title.Namespace, options.TransclusionNamespace) == 0
+            || string.CompareOrdinal(title.Namespace, options.ScriptNamespace) == 0)
+        {
+            defaultPermission |= WikiPermission.Read;
+        }
 
         if (page.Exists)
         {
@@ -2886,6 +2891,11 @@ public static class WikiExtensions
                 }
             }
         }
+        if (string.CompareOrdinal(title.Namespace, options.TransclusionNamespace) == 0
+            || string.CompareOrdinal(title.Namespace, options.ScriptNamespace) == 0)
+        {
+            defaultPermission |= WikiPermission.Read;
+        }
 
         page ??= await dataStore
             .GetWikiPageAsync(options, title, true)
@@ -3339,44 +3349,48 @@ public static class WikiExtensions
             }
         }
 
-        var canReadByDefault = false;
-        if (string.IsNullOrEmpty(title.Domain))
+        var canReadByDefault = string.CompareOrdinal(title.Namespace, options.TransclusionNamespace) == 0
+            || string.CompareOrdinal(title.Namespace, options.ScriptNamespace) == 0;
+        if (!canReadByDefault)
         {
-            canReadByDefault = (user is null
-                ? options.DefaultAnonymousPermission
-                : options.DefaultRegisteredPermission)
-                .HasFlag(WikiPermission.Read);
-        }
-        else if (user is not null)
-        {
-            if (options.GetDomainPermission is not null)
+            if (string.IsNullOrEmpty(title.Domain))
             {
-                canReadByDefault = (await options
-                    .GetDomainPermission(user.Id, title.Domain))
+                canReadByDefault = (user is null
+                    ? options.DefaultAnonymousPermission
+                    : options.DefaultRegisteredPermission)
                     .HasFlag(WikiPermission.Read);
             }
-            if (user.AllowedViewDomains?.Contains(title.Domain) == true)
+            else if (user is not null)
             {
-                canReadByDefault = true;
-            }
-            if (!canReadByDefault)
-            {
-                if (userGroups.Count == 0
-                    && user.Groups?.Count > 0
-                    && groupManager is not null)
+                if (options.GetDomainPermission is not null)
                 {
-                    foreach (var groupId in user.Groups)
-                    {
-                        var group = await groupManager.FindByIdAsync(groupId);
-                        if (group is not null)
-                        {
-                            userGroups.Add(group);
-                        }
-                    }
+                    canReadByDefault = (await options
+                        .GetDomainPermission(user.Id, title.Domain))
+                        .HasFlag(WikiPermission.Read);
                 }
-                if (userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+                if (user.AllowedViewDomains?.Contains(title.Domain) == true)
                 {
                     canReadByDefault = true;
+                }
+                if (!canReadByDefault)
+                {
+                    if (userGroups.Count == 0
+                        && user.Groups?.Count > 0
+                        && groupManager is not null)
+                    {
+                        foreach (var groupId in user.Groups)
+                        {
+                            var group = await groupManager.FindByIdAsync(groupId);
+                            if (group is not null)
+                            {
+                                userGroups.Add(group);
+                            }
+                        }
+                    }
+                    if (userGroups.Any(x => x.AllowedViewPages?.Contains(title) == true))
+                    {
+                        canReadByDefault = true;
+                    }
                 }
             }
         }

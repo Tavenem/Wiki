@@ -200,7 +200,9 @@ public class WikiOptions
     /// </para>
     /// <para>
     /// Note also that content in a domain always uses a default permission of <see
-    /// cref="WikiPermission.None"/>.
+    /// cref="WikiPermission.None"/>, and content in the <see cref="TransclusionNamespace"/> and
+    /// <see cref="ScriptNamespace"/> use a minimum default permission of <see
+    /// cref="WikiPermission.Read"/>.
     /// </para>
     /// </remarks>
     public WikiPermission DefaultAnonymousPermission { get; set; } = WikiPermission.Read;
@@ -216,7 +218,9 @@ public class WikiOptions
     /// </para>
     /// <para>
     /// Note that content in a domain always uses a default permission of <see
-    /// cref="WikiPermission.None"/>.
+    /// cref="WikiPermission.None"/>, and content in the <see cref="TransclusionNamespace"/> and
+    /// <see cref="ScriptNamespace"/> use a minimum default permission of <see
+    /// cref="WikiPermission.Read"/>.
     /// </para>
     /// </remarks>
     public WikiPermission DefaultRegisteredPermission { get; set; } = WikiPermission.All;

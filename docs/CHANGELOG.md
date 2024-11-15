@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.13-preview
+### Fixed
+- Anonymous transclusions
+
 ## 0.26.12-preview
 ### Fixed
 - Missing references

@@ -27,6 +27,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </summary>
     public const string PageIdItemTypeName = ":Page:";
 
+    private static readonly string[] SpecialPageTitles = ["Search", "Special", "Upload", .. Enum.GetNames<SpecialListType>()];
+
     /// <summary>
     /// A key used with a <see cref="IMemoryCache"/> to cache search information for wiki pages.
     /// </summary>
@@ -2040,7 +2042,9 @@ public abstract class Page : MarkdownItem, IPage<Page>
             && !RedirectTitle.HasValue
             && this is not Category
             && string.CompareOrdinal(Title.Namespace, options.UserNamespace) != 0
-            && string.CompareOrdinal(Title.Namespace, options.GroupNamespace) != 0)
+            && string.CompareOrdinal(Title.Namespace, options.GroupNamespace) != 0
+            && (string.CompareOrdinal(Title.Namespace, options.SystemNamespace) != 0
+                || Array.IndexOf(SpecialPageTitles, Title.Title) == -1))
         {
             IsMissing = true;
         }

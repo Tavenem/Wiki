@@ -2,7 +2,6 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 using Tavenem.Wiki.Queries;
 
 namespace Tavenem.Wiki.Test;
@@ -68,14 +67,6 @@ public class IntegrationTests
             options,
             new(),
             true);
-        var wikiLinks = MarkdownItem.GetWikiLinks(
-            options,
-            dataStore,
-            main.MarkdownContent,
-            main.Title,
-            main);
-        var missing = wikiLinks?.Find(x => x.IsMissing);
-        Assert.IsNull(missing);
         Assert.AreEqual(_ExpectedMain, main.Html);
     }
 
@@ -102,14 +93,6 @@ public class IntegrationTests
             options,
             new(),
             true);
-        var wikiLinks = MarkdownItem.GetWikiLinks(
-            options,
-            dataStore,
-            main.MarkdownContent,
-            main.Title,
-            main);
-        var missing = wikiLinks?.Find(x => x.IsMissing);
-        Assert.IsNotNull(missing);
 
         var category = await IPage<Category>
             .GetExistingPageAsync(
@@ -120,39 +103,15 @@ public class IntegrationTests
         await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
         category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
         Assert.IsNotNull(category);
-        wikiLinks = MarkdownItem.GetWikiLinks(
-            options,
-            dataStore,
-            category.MarkdownContent,
-            category.Title,
-            category);
-        missing = wikiLinks?.Find(x => x.IsMissing);
-        Assert.IsNotNull(missing);
 
         success = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
         Assert.IsTrue(success);
 
         main = dataStore.GetItem<Article>(main.Id, TimeSpan.Zero);
         Assert.IsNotNull(main);
-        wikiLinks = MarkdownItem.GetWikiLinks(
-            options,
-            dataStore,
-            main.MarkdownContent,
-            main.Title,
-            main);
-        missing = wikiLinks?.Find(x => x.IsMissing);
-        Assert.IsNull(missing);
 
         category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
         Assert.IsNotNull(category);
-        wikiLinks = MarkdownItem.GetWikiLinks(
-            options,
-            dataStore,
-            category.MarkdownContent,
-            category.Title,
-            category);
-        missing = wikiLinks?.Find(x => x.IsMissing);
-        Assert.IsNull(missing);
         Assert.AreEqual(3, category.Children?.Count);
 
         var about = await dataStore.GetWikiPageAsync(

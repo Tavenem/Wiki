@@ -42,7 +42,6 @@ public static class WikiLinkParser
                     link.Fragment,
                     link.IsCategory,
                     link.IsEscaped,
-                    link.IsMissing,
                     link.PageTitle.Value));
             }
         }

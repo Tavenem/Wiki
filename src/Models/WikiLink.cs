@@ -11,11 +11,6 @@ public class WikiLink : IEquatable<WikiLink>
     /// <summary>
     /// Any action segment which follows the link.
     /// </summary>
-    /// <remarks>
-    /// <see cref="IsMissing"/> is never <see langword="true"/> when <see cref="Action"/> is not
-    /// <see langword="null"/>, since actions are always possible, even for pages which do not
-    /// currently exist.
-    /// </remarks>
     public string? Action { get; set; }
 
     /// <summary>
@@ -32,25 +27,6 @@ public class WikiLink : IEquatable<WikiLink>
     /// Whether a leading ':' precedes the link.
     /// </summary>
     public bool IsEscaped { get; }
-
-    /// <summary>
-    /// Whether this is a link to a missing page.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <see cref="IsMissing"/> is never <see langword="true"/> when the link is to an external
-    /// site. Page existence is not verified for external sites.
-    /// </para>
-    /// <para>
-    /// <see cref="IsMissing"/> is also never <see langword="true"/> for links to categories, which
-    /// exist implicitly even if nothing is currently categorized under them.
-    /// </para>
-    /// <para>
-    /// <see cref="IsMissing"/> is also never <see langword="true"/> when the link is to an external
-    /// site. Page existence is not verified for external sites.
-    /// </para>
-    /// </remarks>
-    public bool IsMissing { get; set; }
 
     /// <summary>
     /// <para>
@@ -87,9 +63,6 @@ public class WikiLink : IEquatable<WikiLink>
     /// <param name="isEscaped">
     /// Whether a leading ':' precedes the link.
     /// </param>
-    /// <param name="isMissing">
-    /// Whether this is a link to a missing page.
-    /// </param>
     /// <param name="title">
     /// The title of the linked page.
     /// </param>
@@ -99,7 +72,6 @@ public class WikiLink : IEquatable<WikiLink>
         string? fragment,
         bool isCategory,
         bool isEscaped,
-        bool isMissing,
         PageTitle title)
     {
         Page = page;
@@ -107,7 +79,6 @@ public class WikiLink : IEquatable<WikiLink>
         Fragment = fragment;
         IsCategory = isCategory;
         IsEscaped = isEscaped;
-        IsMissing = isMissing;
         Title = title;
     }
 
@@ -126,9 +97,6 @@ public class WikiLink : IEquatable<WikiLink>
     /// <param name="isEscaped">
     /// Whether a leading ':' precedes the namespace.
     /// </param>
-    /// <param name="isMissing">
-    /// Whether this is a link to an existing page.
-    /// </param>
     /// <param name="title">
     /// The title for the linked article.
     /// </param>
@@ -138,14 +106,12 @@ public class WikiLink : IEquatable<WikiLink>
         string? fragment,
         bool isCategory,
         bool isEscaped,
-        bool isMissing,
         PageTitle title)
     {
         Action = action;
         Fragment = fragment;
         IsCategory = isCategory;
         IsEscaped = isEscaped;
-        IsMissing = isMissing;
         Title = title;
     }
 
