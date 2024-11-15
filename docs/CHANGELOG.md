@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.12-preview
+### Fixed
+- Missing references
+
 ## 0.26.11-preview
 ### Fixed
 - Ignore correct properties for serialization

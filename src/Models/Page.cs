@@ -1707,6 +1707,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
         else
         {
+            IsMissing = false;
             await NormalizedPageReference
                 .AddReferenceAsync(dataStore, Title, Id)
                 .ConfigureAwait(false);
@@ -2475,6 +2476,11 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
         IsBrokenRedirect = !redirect.Exists;
         IsDoubleRedirect = redirect.RedirectTitle.HasValue;
+
+        if (!IsBrokenRedirect)
+        {
+            IsMissing = false;
+        }
 
         await redirect
             .AddRedirectReferenceAsync(dataStore, Title)

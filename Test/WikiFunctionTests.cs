@@ -465,9 +465,39 @@ Fourth section text";
             false);
     }
 
-    private static async Task<Article> GetArticleAsync(IDataStore dataStore, string markdown, string? title = null, string? @namespace = null)
+    [TestMethod]
+    public async Task TransclusionTest()
     {
-        var pageTitle = new PageTitle(title ?? Title, @namespace);
+        var dataStore = new InMemoryDataStore();
+
+        const string Template = ":::wiki-main-article-ref\r\n{{#if isCategory}}The main article for this category is{{else}}Main article{{/if}} {{#if args.[1]}}[{{args.[1]}}][{{args.[0]}}]{{else}}{{#if args.[0]}}[{{args.[0]}}][{{pagename}}]{{else}}[{{pagename}}|]{{/if}}{{/if}}\r\n:::\r\n{{#unless isTemplate}}[Category:Transclusions]{{/unless}}";
+        _ = await GetArticleAsync(dataStore, Template, new PageTitle(null, _Options.TransclusionNamespace));
+
+        await TestTemplateAsync(
+            dataStore,
+            "{{> Main }}",
+            "<div class=\"wiki-main-article-ref\"><p>The main article for this category is <a href=\"./Wiki/Title\" class=\"wiki-link-missing\">Title</a></p>\n</div>",
+            false,
+            _Options.CategoryNamespace);
+        await TestTemplateAsync(
+            dataStore,
+            "{{> Main }}",
+            "<div class=\"wiki-main-article-ref\"><p>Main article <a href=\"./Wiki/Title\" class=\"wiki-link-exists\">Title</a></p>\n</div>",
+            false);
+        await TestTemplateAsync(
+            dataStore,
+            "{{> Main 'Title'}}",
+            "<div class=\"wiki-main-article-ref\"><p>Main article <a href=\"./Wiki/Title\" class=\"wiki-link-exists\">Title</a></p>\n</div>",
+            false);
+        await TestTemplateAsync(
+            dataStore,
+            "{{> Main 'Title' 'Other'}}",
+            "<div class=\"wiki-main-article-ref\"><p>Main article <a href=\"./Wiki/Title\" class=\"wiki-link-exists\">Other</a></p>\n</div>",
+            false);
+    }
+
+    private static async Task<Article> GetArticleAsync(IDataStore dataStore, string markdown, PageTitle pageTitle)
+    {
         var id = IPage<Page>.GetId(pageTitle);
         var article = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Article, TimeSpan.Zero);
         if (article is null)
@@ -491,6 +521,9 @@ Fourth section text";
         Assert.IsNotNull(article);
         return article;
     }
+
+    private static Task<Article> GetArticleAsync(IDataStore dataStore, string markdown, string? title = null, string? @namespace = null)
+        => GetArticleAsync(dataStore, markdown, new PageTitle(title ?? Title, @namespace));
 
     private static async Task TestTemplateAsync(
         IDataStore dataStore,
