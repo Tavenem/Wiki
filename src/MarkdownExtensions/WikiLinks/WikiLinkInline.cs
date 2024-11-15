@@ -48,6 +48,11 @@ public class WikiLinkInline : LinkInline
     public bool IsMissing { get; set; }
 
     /// <summary>
+    /// Whether this link's missing status should be ignored.
+    /// </summary>
+    public bool IsMissingIgnored { get; set; }
+
+    /// <summary>
     /// Whether this is a link to Wikipedia.
     /// </summary>
     public bool IsWikipedia { get; set; }

@@ -42,6 +42,7 @@ public static class WikiLinkParser
                     link.Fragment,
                     link.IsCategory,
                     link.IsEscaped,
+                    link.IsMissingIgnored,
                     link.PageTitle.Value));
             }
         }
@@ -160,11 +161,11 @@ public static class WikiLinkParser
             }
         }
 
-        var ignoreMissing = !string.IsNullOrEmpty(inline.Action);
+        inline.IsMissingIgnored = !string.IsNullOrEmpty(inline.Action);
         if (!slice.IsEmpty
             && slice[0] == '~')
         {
-            ignoreMissing = true;
+            inline.IsMissingIgnored = true;
             slice = slice[1..];
             if (inline.IsShortcut)
             {
@@ -220,7 +221,7 @@ public static class WikiLinkParser
         {
             if (fragmentIndex == 0)
             {
-                ignoreMissing = true;
+                inline.IsMissingIgnored = true;
             }
             inline.Fragment = slice[(fragmentIndex + 1)..].ToString();
             slice = slice[..fragmentIndex];
@@ -359,7 +360,7 @@ public static class WikiLinkParser
                 {
                     var id = IPage<Page>.GetId(pageTitle);
                     inline.Page = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Page);
-                    if (!ignoreMissing)
+                    if (!inline.IsMissingIgnored)
                     {
                         inline.IsMissing = inline.Page?.Revision?.IsDeleted != false;
                     }

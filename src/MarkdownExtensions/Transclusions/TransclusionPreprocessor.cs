@@ -35,7 +35,7 @@ internal static class TransclusionPreprocessor
                 {
                     if (context["title"] is PageTitle title)
                     {
-                        output.Write(title.Domain);
+                        output.Write(title.Domain, false);
                     }
                 });
 
@@ -116,14 +116,14 @@ internal static class TransclusionPreprocessor
                     {
                         try
                         {
-                            output.Write(intValue.ToString(format ?? "N0"));
+                            output.Write(intValue.ToString(format ?? "N0"), false);
                             return;
                         }
                         catch
                         {
                             if (format is null)
                             {
-                                output.Write(intValue.ToString("N0"));
+                                output.Write(intValue.ToString("N0"), false);
                                 return;
                             }
                         }
@@ -132,14 +132,14 @@ internal static class TransclusionPreprocessor
                     {
                         try
                         {
-                            output.Write(floatValue.ToString(format ?? "N"));
+                            output.Write(floatValue.ToString(format ?? "N"), false);
                             return;
                         }
                         catch
                         {
                             if (format is null)
                             {
-                                output.Write(floatValue.ToString("N"));
+                                output.Write(floatValue.ToString("N"), false);
                                 return;
                             }
                         }
@@ -148,14 +148,14 @@ internal static class TransclusionPreprocessor
                     {
                         try
                         {
-                            output.Write(timestamp.ToString(format ?? "g"));
+                            output.Write(timestamp.ToString(format ?? "g"), false);
                             return;
                         }
                         catch
                         {
                             if (format is null)
                             {
-                                output.Write(timestamp.ToString("g"));
+                                output.Write(timestamp.ToString("g"), false);
                                 return;
                             }
                         }
@@ -178,11 +178,11 @@ internal static class TransclusionPreprocessor
                     }
                     if (options.Data["options"] is WikiOptions wikiOptions)
                     {
-                        output.Write(title.ToString(wikiOptions));
+                        output.Write(title.ToString(wikiOptions), false);
                     }
                     else
                     {
-                        output.Write(title.ToString());
+                        output.Write(title.ToString(), false);
                     }
                 });
 
@@ -280,7 +280,7 @@ internal static class TransclusionPreprocessor
                     {
                         return;
                     }
-                    output.Write(CultureInfo.CurrentCulture.TextInfo.ToLower(first));
+                    output.Write(CultureInfo.CurrentCulture.TextInfo.ToLower(first), false);
                 });
 
             _context.RegisterHelper(
@@ -294,7 +294,7 @@ internal static class TransclusionPreprocessor
                 {
                     if (context["title"] is PageTitle title)
                     {
-                        output.Write(title.Namespace);
+                        output.Write(title.Namespace, false);
                     }
                 });
 
@@ -327,21 +327,21 @@ internal static class TransclusionPreprocessor
                     }
                     if (arguments.Length < 2)
                     {
-                        output.Write(first);
+                        output.Write(first, false);
                         return;
                     }
                     var number = arguments.At<int>(1);
                     if (number == 0)
                     {
-                        output.Write(first);
+                        output.Write(first, false);
                     }
                     else if (arguments.Length > 2)
                     {
-                        output.Write(first.PadLeft(number, arguments.At<string>(2)?[0] ?? ' '));
+                        output.Write(first.PadLeft(number, arguments.At<string>(2)?[0] ?? ' '), false);
                     }
                     else
                     {
-                        output.Write(first.PadLeft(number));
+                        output.Write(first.PadLeft(number), false);
                     }
                 });
 
@@ -365,21 +365,21 @@ internal static class TransclusionPreprocessor
                     }
                     if (arguments.Length < 2)
                     {
-                        output.Write(first);
+                        output.Write(first, false);
                         return;
                     }
                     var number = arguments.At<int>(1);
                     if (number == 0)
                     {
-                        output.Write(first);
+                        output.Write(first, false);
                     }
                     else if (arguments.Length > 2)
                     {
-                        output.Write(first.PadRight(number, arguments.At<string>(2)?[0] ?? ' '));
+                        output.Write(first.PadRight(number, arguments.At<string>(2)?[0] ?? ' '), false);
                     }
                     else
                     {
-                        output.Write(first.PadRight(number));
+                        output.Write(first.PadRight(number), false);
                     }
                 });
 
@@ -394,11 +394,11 @@ internal static class TransclusionPreprocessor
                 {
                     if (context["title"] is PageTitle title)
                     {
-                        output.Write(title.Title);
+                        output.Write(title.Title, false);
                     }
                     else if (options.Data["options"] is WikiOptions wikiOptions)
                     {
-                        output.Write(wikiOptions.MainPageTitle);
+                        output.Write(wikiOptions.MainPageTitle, false);
                     }
                 });
 
@@ -418,9 +418,9 @@ internal static class TransclusionPreprocessor
 
                     output.Write(":::");
                     output.Write(PreviewClass);
-                    output.Write(Environment.NewLine);
+                    output.Write(Environment.NewLine, false);
                     options.Template(output, context);
-                    output.Write(Environment.NewLine);
+                    output.Write(Environment.NewLine, false);
                     output.Write(":::");
                 });
 
@@ -481,7 +481,7 @@ internal static class TransclusionPreprocessor
                         : null;
                     if (second is null)
                     {
-                        output.Write(first.ToWikiTitleCase());
+                        output.Write(first.ToWikiTitleCase(), false);
                         return;
                     }
 
@@ -489,13 +489,13 @@ internal static class TransclusionPreprocessor
                     {
                         if (b)
                         {
-                            output.Write(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(first));
+                            output.Write(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(first), false);
                         }
                     }
                     else if (double.TryParse(second, out var n)
                         && n > 0)
                     {
-                        output.Write(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(first));
+                        output.Write(CultureInfo.CurrentCulture.TextInfo.ToTitleCase(first), false);
                     }
                 });
 
@@ -517,7 +517,7 @@ internal static class TransclusionPreprocessor
                     {
                         return;
                     }
-                    output.Write(CultureInfo.CurrentCulture.TextInfo.ToUpper(first));
+                    output.Write(CultureInfo.CurrentCulture.TextInfo.ToUpper(first), false);
                 });
 
             _context.RegisterHelper(
@@ -527,7 +527,7 @@ internal static class TransclusionPreprocessor
                     in HelperOptions options,
                     in Context context,
                     in Arguments arguments
-                ) => output.Write($"{{{{{options.Name}}}}}")); // Return the original transclusion as written
+                ) => output.Write($"{{{{{options.Name}}}}}", false)); // Return the original transclusion as written
         }
         _context = _context.CreateSharedEnvironment();
     }

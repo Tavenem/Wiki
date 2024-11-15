@@ -30,6 +30,18 @@ public class WikiLink : IEquatable<WikiLink>
 
     /// <summary>
     /// <para>
+    /// Whether this link's missing status should be ignored.
+    /// </para>
+    /// <para>
+    /// Note: this property is not persisted to storage, and should only be considered valid
+    /// immediately after parsing.
+    /// </para>
+    /// </summary>
+    [JsonIgnore]
+    public bool IsMissingIgnored { get; set; }
+
+    /// <summary>
+    /// <para>
     /// The linked page (if any).
     /// </para>
     /// <para>
@@ -63,6 +75,9 @@ public class WikiLink : IEquatable<WikiLink>
     /// <param name="isEscaped">
     /// Whether a leading ':' precedes the link.
     /// </param>
+    /// <param name="isMissingIgnored">
+    /// Whether this link's missing status should be ignored.
+    /// </param>
     /// <param name="title">
     /// The title of the linked page.
     /// </param>
@@ -72,6 +87,7 @@ public class WikiLink : IEquatable<WikiLink>
         string? fragment,
         bool isCategory,
         bool isEscaped,
+        bool isMissingIgnored,
         PageTitle title)
     {
         Page = page;
@@ -79,6 +95,7 @@ public class WikiLink : IEquatable<WikiLink>
         Fragment = fragment;
         IsCategory = isCategory;
         IsEscaped = isEscaped;
+        IsMissingIgnored = isMissingIgnored;
         Title = title;
     }
 

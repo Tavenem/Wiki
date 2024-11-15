@@ -2023,12 +2023,17 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <param name="title">
     /// The title of a page which links to this one.
     /// </param>
+    /// <param name="ignoreMissing">
+    /// Whether a missing page should be ignored.
+    /// </param>
     private async Task AddReferenceAsync(
         WikiOptions options,
         IDataStore dataStore,
-        PageTitle title)
+        PageTitle title,
+        bool ignoreMissing)
     {
-        if (References?.Contains(title) == true)
+        if (References?.Contains(title) == true
+            || (ignoreMissing && Revision is null))
         {
             return;
         }
@@ -2037,7 +2042,8 @@ public abstract class Page : MarkdownItem, IPage<Page>
         references.Add(title);
         References = references.AsReadOnly();
 
-        if (!IsMissing
+        if (!ignoreMissing
+            && !IsMissing
             && Revision?.IsDeleted != false
             && !RedirectTitle.HasValue
             && this is not Category
@@ -2069,7 +2075,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 .GetWikiPageAsync(options, link.Title, true)
                 .ConfigureAwait(false);
             await reference
-                .AddReferenceAsync(options, dataStore, Title)
+                .AddReferenceAsync(options, dataStore, Title, link.IsMissingIgnored)
                 .ConfigureAwait(false);
         }
     }

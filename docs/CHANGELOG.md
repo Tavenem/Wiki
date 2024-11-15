@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.14-preview
+### Fixed
+- Do not encode transclusions
+
 ## 0.26.13-preview
 ### Fixed
 - Anonymous transclusions
