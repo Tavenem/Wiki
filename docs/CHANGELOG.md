@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.27.0-preview
+### Updated
+- Update to .NET 9
+- Update dependencies
+
 ## 0.26.14-preview
 ### Fixed
 - Do not encode transclusions

@@ -1,8 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <LangVersion>preview</LangVersion>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <IsTrimmable>true</IsTrimmable>
@@ -38,14 +37,14 @@
   <ItemGroup>
     <PackageReference Include="Handlebars.Net" Version="2.1.6" />
     <PackageReference Include="HtmlSanitizer" Version="8.1.870" />
-    <PackageReference Include="Jint" Version="4.0.3" />
+    <PackageReference Include="Jint" Version="4.1.0" />
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.Highlighter" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
-    <PackageReference Include="Markdig" Version="0.37.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="8.0.0" />
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="Markdig" Version="0.38.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="9.0.0" />
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
     <PackageReference Include="Tavenem.DataStore" Version="2.0.4" />
     <PackageReference Include="Tavenem.DiffPatchMerge" Version="1.0.0" />
   </ItemGroup>
