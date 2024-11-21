@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.27.2-preview
+### Fixed
+- WikiLink Preview rendering
+
 ## 0.27.1-preview
 ### Changed
 - Improve WikiLink handling

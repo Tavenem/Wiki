@@ -151,7 +151,7 @@ public class Message : MarkdownItem
             senderName,
             markdown,
             RenderHtml(options, dataStore, markdown),
-            RenderPreview(options, await PostprocessMessageMarkdownAsync(options, dataStore, markdown, true)),
+            RenderPreview(options, dataStore, await PostprocessMessageMarkdownAsync(options, dataStore, markdown, true)),
             FormatPlainText(options, markdown, null, false),
             DateTimeOffset.UtcNow.Ticks,
             replyMessageId);

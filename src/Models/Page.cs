@@ -1771,12 +1771,14 @@ public abstract class Page : MarkdownItem, IPage<Page>
             MarkdownContent = markdown ?? string.Empty;
             Preview = RenderPreview(
                 options,
+                dataStore,
                 await PostprocessPageMarkdownAsync(
                     options,
                     dataStore,
                     Title,
                     markdown,
-                    true));
+                    true),
+                Title);
             Text = FormatPlainText(
                 options,
                 md,

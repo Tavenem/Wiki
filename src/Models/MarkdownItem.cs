@@ -1,7 +1,6 @@
 ﻿using Markdig;
 using Markdig.Extensions.CustomContainers;
 using Markdig.Helpers;
-using Markdig.Renderers;
 using Markdig.Renderers.Html;
 using Markdig.Syntax;
 using Markdig.Syntax.Inlines;
@@ -245,16 +244,23 @@ public abstract class MarkdownItem : IdItem
     /// Gets a preview of the given markdown's rendered HTML.
     /// </summary>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
+    /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
+    /// <param name="title">The title of the page.</param>
     /// <returns>A preview of the rendered HTML.</returns>
-    public static string RenderPreview(WikiOptions options, string? markdown)
+    public static string RenderPreview(
+        WikiOptions options,
+        IDataStore dataStore,
+        string? markdown,
+        PageTitle title = default)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
             return string.Empty;
         }
 
-        var document = Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options));
+        var pipeline = WikiConfig.GetMarkdownPipeline(options);
+        var document = Markdown.Parse(markdown, pipeline);
         if (AnyPreviews(document))
         {
             TrimNonPreview(document);
@@ -265,26 +271,12 @@ public abstract class MarkdownItem : IdItem
             var maxCharactersAvailable = PreviewCharacterMax;
             Trim(document, ref minCharactersAvailable, ref maxCharactersAvailable);
         }
-
-        string html;
-        using (var writer = new StringWriter())
-        {
-            var renderer = new HtmlRenderer(writer);
-            WikiConfig.GetMarkdownPipeline(options).Setup(renderer);
-            renderer.Render(document);
-            html = writer.ToString();
-        }
-
-        if (!string.IsNullOrWhiteSpace(html)
-            && options.Postprocessors is not null)
-        {
-            foreach (var preprocessor in options.Postprocessors)
-            {
-                html = preprocessor.Process.Invoke(html);
-            }
-        }
-
-        return WikiConfig.GetHtmlSanitizer(options).Sanitize(html).Trim();
+        return RenderHtml(
+            options,
+            dataStore,
+            pipeline,
+            document,
+            title);
     }
 
     /// <summary>
@@ -407,7 +399,10 @@ public abstract class MarkdownItem : IdItem
     /// </summary>
     /// <returns>A preview of this item's rendered HTML.</returns>
     public async ValueTask<string> GetPreviewAsync(WikiOptions options, IDataStore dataStore)
-        => RenderPreview(options, await PostprocessMarkdownAsync(options, dataStore, MarkdownContent, isPreview: true));
+        => RenderPreview(
+            options,
+            dataStore,
+            await PostprocessMarkdownAsync(options, dataStore, MarkdownContent, isPreview: true));
 
     internal static List<WikiLink>? GetWikiLinks(
         WikiOptions options,

@@ -109,7 +109,7 @@ internal static class WikiConfig
             .UseGenericAttributes()
             .UseSmartyPants()
             .Build();
-        (_PipelineCache ??= new()).Add(tableOfContentsOptions, pipeline);
+        (_PipelineCache ??= []).Add(tableOfContentsOptions, pipeline);
         return pipeline;
     }
 

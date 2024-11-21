@@ -75,6 +75,7 @@ public class MarkdownItemTestSubclass : MarkdownItem
             RenderHtml(options, dataStore, md),
             RenderPreview(
                 options,
+                dataStore,
                 string.IsNullOrEmpty(markdown)
                     ? string.Empty
                     : await TransclusionParser.TranscludeAsync(
