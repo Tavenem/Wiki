@@ -27,17 +27,15 @@ public static class WikiLinkParser
         WikiOptions options,
         IDataStore dataStore,
         PageTitle title,
-        Page? page,
         MarkdownDocument document)
     {
         List<WikiLink>? wikiLinks = null;
         foreach (var link in document.Descendants<WikiLinkInline>())
         {
-            ParseLabel(options, dataStore, title, page, link);
+            ParseLabel(options, dataStore, title, link);
             if (link.PageTitle.HasValue)
             {
                 (wikiLinks ??= []).Add(new(
-                    link.Page,
                     link.Action,
                     link.Fragment,
                     link.IsCategory,
@@ -121,7 +119,6 @@ public static class WikiLinkParser
         WikiOptions options,
         IDataStore dataStore,
         PageTitle currentPageTitle,
-        Page? currentPage,
         WikiLinkInline inline)
     {
         var slice = inline.LabelWithTrivia.IsEmpty
@@ -343,28 +340,17 @@ public static class WikiLinkParser
         {
             inline.PageTitle = pageTitle;
 
-            if (!inline.IsCategory
-                && !isGroupPage
-                && !isUserPage)
+            if (!isGroupPage
+                && !isUserPage
+                && !inline.IsCategory
+                && !inline.IsMissingIgnored
+                && !pageTitle.Equals(currentPageTitle)
+                && (string.CompareOrdinal(pageTitle.Namespace, options.SystemNamespace) != 0
+                    || Array.IndexOf(Page.SpecialPageTitles, pageTitle.Title) == -1))
             {
-                if (pageTitle.Equals(currentPageTitle))
-                {
-                    if (currentPage is null)
-                    {
-                        var id = IPage<Page>.GetId(pageTitle);
-                        currentPage = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Page);
-                    }
-                    inline.Page = currentPage;
-                }
-                else
-                {
-                    var id = IPage<Page>.GetId(pageTitle);
-                    inline.Page = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Page);
-                    if (!inline.IsMissingIgnored)
-                    {
-                        inline.IsMissing = inline.Page?.Revision?.IsDeleted != false;
-                    }
-                }
+                var id = IPage<Page>.GetId(pageTitle);
+                var page = dataStore.GetItem(id, WikiJsonSerializerContext.Default.Page);
+                inline.IsMissing = page?.Revision?.IsDeleted != false;
             }
         }
 

@@ -196,7 +196,6 @@ public abstract class MarkdownItem : IdItem
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown.</param>
     /// <param name="title">The title of the page.</param>
-    /// <param name="page">The wiki <see cref="Page"/>.</param>
     /// <returns>
     /// A <see cref="List{T}"/> of <see cref="WikiLink"/>s.
     /// </returns>
@@ -204,14 +203,12 @@ public abstract class MarkdownItem : IdItem
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        PageTitle title = default,
-        Page? page = null) => string.IsNullOrEmpty(markdown)
+        PageTitle title = default) => string.IsNullOrEmpty(markdown)
         ? null
         : WikiLinkParser.ReplaceWikiLinks(
             options,
             dataStore,
             title,
-            page,
             Markdown.Parse(markdown, WikiConfig.GetMarkdownPipeline(options)))?
             .Distinct()
             .ToList();
@@ -223,14 +220,12 @@ public abstract class MarkdownItem : IdItem
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="markdown">The markdown content.</param>
     /// <param name="title">The title of the page.</param>
-    /// <param name="page">The wiki <see cref="Page"/>.</param>
     /// <returns>The rendered HTML.</returns>
     public static string RenderHtml(
         WikiOptions options,
         IDataStore dataStore,
         string? markdown,
-        PageTitle title = default,
-        Page? page = null)
+        PageTitle title = default)
     {
         if (string.IsNullOrWhiteSpace(markdown))
         {
@@ -243,8 +238,7 @@ public abstract class MarkdownItem : IdItem
             dataStore,
             pipeline,
             Markdown.Parse(markdown, pipeline),
-            title,
-            page);
+            title);
     }
 
     /// <summary>
@@ -419,14 +413,12 @@ public abstract class MarkdownItem : IdItem
         WikiOptions options,
         IDataStore dataStore,
         MarkdownDocument? document,
-        PageTitle title = default,
-        Page? page = null) => document is null
+        PageTitle title = default) => document is null
         ? null
         : WikiLinkParser.ReplaceWikiLinks(
             options,
             dataStore,
             title,
-            page,
             document)?
             .Distinct()
             .ToList();
@@ -437,7 +429,6 @@ public abstract class MarkdownItem : IdItem
         MarkdownPipeline pipeline,
         MarkdownDocument? document,
         PageTitle title = default,
-        Page? page = null,
         bool wikiLinksReplaced = false)
     {
         if (document is null)
@@ -451,7 +442,6 @@ public abstract class MarkdownItem : IdItem
                 options,
                 dataStore,
                 title,
-                page,
                 document);
         }
         var html = document.ToHtml(pipeline);

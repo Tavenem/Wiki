@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.27.1-preview
+### Changed
+- Improve WikiLink handling
+### Fixed
+- Escape script variables
+
 ## 0.27.0-preview
 ### Updated
 - Update to .NET 9

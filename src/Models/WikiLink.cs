@@ -41,18 +41,6 @@ public class WikiLink : IEquatable<WikiLink>
     public bool IsMissingIgnored { get; set; }
 
     /// <summary>
-    /// <para>
-    /// The linked page (if any).
-    /// </para>
-    /// <para>
-    /// Note: this property is not persisted to storage, and should only be considered valid
-    /// immediately after parsing.
-    /// </para>
-    /// </summary>
-    [JsonIgnore]
-    public Page? Page { get; set; }
-
-    /// <summary>
     /// The title of the linked article.
     /// </summary>
     public PageTitle Title { get; }
@@ -60,9 +48,6 @@ public class WikiLink : IEquatable<WikiLink>
     /// <summary>
     /// Initializes a new instance of <see cref="WikiLink"/>.
     /// </summary>
-    /// <param name="page">
-    /// The linked page (if any).
-    /// </param>
     /// <param name="action">
     /// Any action segment which follows the link.
     /// </param>
@@ -82,7 +67,6 @@ public class WikiLink : IEquatable<WikiLink>
     /// The title of the linked page.
     /// </param>
     public WikiLink(
-        Page? page,
         string? action,
         string? fragment,
         bool isCategory,
@@ -90,7 +74,6 @@ public class WikiLink : IEquatable<WikiLink>
         bool isMissingIgnored,
         PageTitle title)
     {
-        Page = page;
         Action = action;
         Fragment = fragment;
         IsCategory = isCategory;

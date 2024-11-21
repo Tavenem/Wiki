@@ -27,7 +27,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// </summary>
     public const string PageIdItemTypeName = ":Page:";
 
-    private static readonly string[] SpecialPageTitles = ["Search", "Special", "Upload", .. Enum.GetNames<SpecialListType>()];
+    internal static readonly string[] SpecialPageTitles = ["Search", "Special", "Upload", .. Enum.GetNames<SpecialListType>()];
 
     /// <summary>
     /// A key used with a <see cref="IMemoryCache"/> to cache search information for wiki pages.
@@ -883,8 +883,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             options,
             dataStore,
             await PostprocessMarkdownAsync(options, dataStore, GetDiff(other, "html")),
-            Title,
-            this);
+            Title);
 
     /// <summary>
     /// Gets a diff which represents the final revision at the given <paramref name="time"/>, as
@@ -932,8 +931,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 dataStore,
                 Revision.GetDiff(revisions, "html"),
                 Title.WithDefaultTitle(options.MainPageTitle)),
-            Title,
-            this);
+            Title);
     }
 
     /// <summary>
@@ -1029,8 +1027,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 dataStore,
                 diff,
                 Title.WithDefaultTitle(options.MainPageTitle)),
-            Title,
-            this);
+            Title);
     }
 
     /// <summary>
@@ -1152,8 +1149,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 dataStore,
                 diff,
                 Title.WithDefaultTitle(options.MainPageTitle)),
-            Title,
-            this);
+            Title);
     }
 
     /// <summary>
@@ -1223,8 +1219,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             options,
             dataStore,
             await PostprocessMarkdownAsync(options, dataStore, MarkdownContent),
-            Title,
-            this);
+            Title);
 
     /// <summary>
     /// Gets this page's content at the given <paramref name="time"/>, rendered as HTML.
@@ -1254,8 +1249,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
                 dataStore,
                 Revision.GetText(revisions),
                 Title.WithDefaultTitle(options.MainPageTitle)),
-            Title,
-            this);
+            Title);
     }
 
     /// <summary>
@@ -1750,7 +1744,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             : Markdown.Parse(md, pipeline);
         var wikiLinks = isScript || redirectTitle.HasValue
             ? null
-            : GetWikiLinks(options, dataStore, document, Title, this);
+            : GetWikiLinks(options, dataStore, document, Title);
         if (References is not null)
         {
             await RemoveReferencesAsync(dataStore, wikiLinks)
@@ -1773,7 +1767,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         }
         else
         {
-            Html = RenderHtml(options, dataStore, pipeline, document, Title, this, true);
+            Html = RenderHtml(options, dataStore, pipeline, document, Title, true);
             MarkdownContent = markdown ?? string.Empty;
             Preview = RenderPreview(
                 options,
