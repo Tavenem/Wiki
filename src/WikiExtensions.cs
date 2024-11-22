@@ -35,6 +35,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="editor">
     /// The wiki user who is making this revision.
     /// </param>
@@ -119,6 +120,7 @@ public static class WikiExtensions
     /// <param name="originalTitle">
     /// The original title of the page, if it is being renamed.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -166,6 +168,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         IWikiUser editor,
         PageTitle title,
         string? markdown = null,
@@ -178,6 +181,7 @@ public static class WikiExtensions
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
         PageTitle? originalTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null)
     {
         if (string.Equals(
@@ -201,6 +205,7 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             editor,
             true)
@@ -228,6 +233,7 @@ public static class WikiExtensions
                 options,
                 userManager,
                 groupManager,
+                permissionManager,
                 originalTitle.Value,
                 editor,
                 true)
@@ -262,6 +268,7 @@ public static class WikiExtensions
                 allowedEditorGroups,
                 allowedViewerGroups,
                 redirectTitle,
+                pageManager,
                 cache)
                 .ConfigureAwait(false);
         }
@@ -279,6 +286,7 @@ public static class WikiExtensions
                 allowedEditorGroups,
                 allowedViewerGroups,
                 null,
+                pageManager,
                 cache)
                 .ConfigureAwait(false);
         }
@@ -296,6 +304,7 @@ public static class WikiExtensions
                 allowedEditorGroups,
                 allowedViewerGroups,
                 redirectTitle,
+                pageManager,
                 cache)
                 .ConfigureAwait(false);
         }
@@ -334,6 +343,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the category.</param>
     /// <param name="user">
     /// <para>
@@ -351,6 +361,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         IWikiUser? user = null)
     {
@@ -359,6 +370,7 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             user,
             true)
@@ -433,6 +445,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the category.</param>
     /// <param name="userId">
     /// <para>
@@ -450,12 +463,14 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         string userId) => await GetCategoryAsync(
             dataStore,
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             userManager is null
                 ? null
@@ -468,6 +483,7 @@ public static class WikiExtensions
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="groupId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of the group.
@@ -497,6 +513,7 @@ public static class WikiExtensions
         this IDataStore dataStore,
         WikiOptions options,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         string groupId,
         IWikiUser? user = null)
     {
@@ -539,6 +556,7 @@ public static class WikiExtensions
             options,
             dataStore,
             groupManager,
+            permissionManager,
             page.Title,
             page)
             .ConfigureAwait(false);
@@ -593,6 +611,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="groupId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of the group.
@@ -623,11 +642,13 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         string groupId,
         string userId) => await GetGroupPageAsync(
             dataStore,
             options,
             groupManager,
+            permissionManager,
             groupId,
             userManager is null
                 ? null
@@ -641,6 +662,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="request">A request record.</param>
     /// <param name="user">
     /// <para>
@@ -660,6 +682,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         HistoryRequest request,
         IWikiUser? user = null)
     {
@@ -668,6 +691,7 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
+            permissionManager,
             request.Title,
             user,
             true)
@@ -747,6 +771,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="request">A request record.</param>
     /// <param name="userId">
     /// <para>
@@ -766,12 +791,14 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         HistoryRequest request,
         string? userId = null) => await GetHistoryAsync(
             dataStore,
             options,
             userManager,
             groupManager,
+            permissionManager,
             request,
             userManager is null
                 ? null
@@ -856,6 +883,7 @@ public static class WikiExtensions
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="user">
     /// <para>
@@ -873,6 +901,7 @@ public static class WikiExtensions
         this IDataStore dataStore,
         WikiOptions options,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         IWikiUser? user)
     {
@@ -886,7 +915,7 @@ public static class WikiExtensions
             return ValueTask.FromResult(WikiPermission.All);
         }
 
-        return GetPermissionInnerAsync(user, options, dataStore, groupManager, title);
+        return GetPermissionInnerAsync(user, options, dataStore, groupManager, permissionManager, title);
     }
 
     /// <summary>
@@ -895,6 +924,7 @@ public static class WikiExtensions
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="page">The wiki page.</param>
     /// <param name="user">
     /// <para>
@@ -912,6 +942,7 @@ public static class WikiExtensions
         this IDataStore dataStore,
         WikiOptions options,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         Page page,
         IWikiUser? user)
     {
@@ -925,7 +956,7 @@ public static class WikiExtensions
             return ValueTask.FromResult(WikiPermission.All);
         }
 
-        return GetPermissionInnerAsync(user, options, dataStore, groupManager, page.Title, page);
+        return GetPermissionInnerAsync(user, options, dataStore, groupManager, permissionManager, page.Title, page);
     }
 
     /// <summary>
@@ -935,6 +966,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="page">The wiki page.</param>
     /// <param name="userId">
     /// <para>
@@ -953,11 +985,13 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         Page page,
         string? userId = null) => await GetPermissionAsync(
             dataStore,
             options,
             groupManager,
+            permissionManager,
             page,
             userManager is null
                 ? null
@@ -973,6 +1007,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="userId">
     /// <para>
@@ -991,11 +1026,13 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         string? userId = null) => await GetPermissionAsync(
             dataStore,
             options,
             groupManager,
+            permissionManager,
             title,
             userManager is null
                 ? null
@@ -1158,6 +1195,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of the user.
@@ -1188,6 +1226,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         string userId,
         IWikiUser? requestingUser = null)
     {
@@ -1231,6 +1270,7 @@ public static class WikiExtensions
             options,
             dataStore,
             groupManager,
+            permissionManager,
             page.Title,
             page)
             .ConfigureAwait(false);
@@ -1298,6 +1338,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="userId">
     /// <para>
     /// The <see cref="IWikiOwner.Id"/> of the user.
@@ -1328,12 +1369,14 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         string userId,
         string requestingUserId) => await GetUserPageAsync(
             dataStore,
             options,
             userManager,
             groupManager,
+            permissionManager,
             userId,
             userManager is null
                 ? null
@@ -1569,6 +1612,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="user">
     /// <para>
@@ -1594,6 +1638,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         IWikiUser? user = null,
         bool noRedirect = false,
@@ -1602,12 +1647,12 @@ public static class WikiExtensions
         if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            return await GetUserPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+            return await GetUserPageAsync(dataStore, options, userManager, groupManager, permissionManager, title.Title, user);
         }
         else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            return await GetGroupPageAsync(dataStore, options, groupManager, title.Title, user);
+            return await GetGroupPageAsync(dataStore, options, groupManager, permissionManager, title.Title, user);
         }
 
         var page = await dataStore
@@ -1619,6 +1664,7 @@ public static class WikiExtensions
             options,
             dataStore,
             groupManager,
+            permissionManager,
             title,
             page)
             .ConfigureAwait(false);
@@ -1653,6 +1699,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="userId">
     /// <para>
@@ -1678,6 +1725,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         string? userId = null,
         bool noRedirect = false,
@@ -1686,6 +1734,7 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             userManager is null
                 ? null
@@ -1701,6 +1750,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="timestamp">
     /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
@@ -1726,6 +1776,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         long timestamp,
         IWikiUser? user = null,
@@ -1734,6 +1785,7 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             user,
             noRedirect,
@@ -1746,6 +1798,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="timestamp">
     /// If not <see langword="null"/>, the most recent revision as of the given time is retrieved,
@@ -1771,6 +1824,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         long timestamp,
         string? userId = null,
@@ -1779,6 +1833,7 @@ public static class WikiExtensions
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             userManager is null
                 ? null
@@ -1794,6 +1849,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="firstTime">
     /// <para>
@@ -1837,6 +1893,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         DateTimeOffset? firstTime = null,
         DateTimeOffset? secondTime = null,
@@ -1846,12 +1903,12 @@ public static class WikiExtensions
         if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            page = await GetUserPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+            page = await GetUserPageAsync(dataStore, options, userManager, groupManager, permissionManager, title.Title, user);
         }
         else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            page = await GetGroupPageAsync(dataStore, options, groupManager, title.Title, user);
+            page = await GetGroupPageAsync(dataStore, options, groupManager, permissionManager, title.Title, user);
         }
 
         if (page is null)
@@ -1865,6 +1922,7 @@ public static class WikiExtensions
                 options,
                 dataStore,
                 groupManager,
+                permissionManager,
                 title,
                 page)
                 .ConfigureAwait(false);
@@ -1934,6 +1992,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="user">
     /// <para>
@@ -1952,6 +2011,7 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         IWikiUser? user = null)
     {
@@ -1959,12 +2019,12 @@ public static class WikiExtensions
         if (string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            page = await GetUserPageAsync(dataStore, options, userManager, groupManager, title.Title, user);
+            page = await GetUserPageAsync(dataStore, options, userManager, groupManager, permissionManager, title.Title, user);
         }
         else if (string.CompareOrdinal(title.Namespace, options.GroupNamespace) == 0
             && !string.IsNullOrEmpty(title.Title))
         {
-            page = await GetGroupPageAsync(dataStore, options, groupManager, title.Title, user);
+            page = await GetGroupPageAsync(dataStore, options, groupManager, permissionManager, title.Title, user);
         }
 
         if (page is null)
@@ -1978,6 +2038,7 @@ public static class WikiExtensions
                 options,
                 dataStore,
                 groupManager,
+                permissionManager,
                 title,
                 page)
                 .ConfigureAwait(false);
@@ -2189,6 +2250,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="title">The title of the wiki page.</param>
     /// <param name="userId">
     /// <para>
@@ -2207,12 +2269,14 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         string userId) => await GetWikiPageForEditingAsync(
             dataStore,
             options,
             userManager,
             groupManager,
+            permissionManager,
             title,
             userManager is null
                 ? null
@@ -2225,6 +2289,7 @@ public static class WikiExtensions
     /// <param name="dataStore">An <see cref="IDataStore"/> instance.</param>
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="request">A <see cref="SearchRequest"/> instance.</param>
     /// <param name="user">
     /// <para>
@@ -2258,6 +2323,7 @@ public static class WikiExtensions
         this IDataStore dataStore,
         WikiOptions options,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         SearchRequest request,
         IWikiUser? user = null,
         IMemoryCache? cache = null)
@@ -2407,6 +2473,7 @@ public static class WikiExtensions
                 options,
                 dataStore,
                 groupManager,
+                permissionManager,
                 title,
                 ownerId);
             if (!hasPermission)
@@ -2455,6 +2522,7 @@ public static class WikiExtensions
     /// <param name="options">A <see cref="WikiOptions"/> instance.</param>
     /// <param name="userManager">An <see cref="IWikiUserManager"/> instance.</param>
     /// <param name="groupManager">An <see cref="IWikiGroupManager"/> instance.</param>
+    /// <param name="permissionManager">An <see cref="IPermissionManager"/> instance.</param>
     /// <param name="request">A <see cref="SearchRequest"/> instance.</param>
     /// <param name="userId">
     /// <para>
@@ -2489,12 +2557,14 @@ public static class WikiExtensions
         WikiOptions options,
         IWikiUserManager? userManager,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         SearchRequest request,
         string userId,
         IMemoryCache? cache = null) => await SearchWikiAsync(
             dataStore,
             options,
             groupManager,
+            permissionManager,
             request,
             userManager is null
                 ? null
@@ -2803,6 +2873,7 @@ public static class WikiExtensions
         WikiOptions options,
         IDataStore dataStore,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         Page? page = null)
     {
@@ -2861,9 +2932,13 @@ public static class WikiExtensions
         }
         else if (user is not null)
         {
-            if (options.GetDomainPermission is not null)
+            if (permissionManager is not null)
             {
-                defaultPermission = await options.GetDomainPermission(user.Id, title.Domain);
+                var managerPermission = await permissionManager.GetDomainPermissionAsync(user.Id, title.Domain);
+                if (managerPermission.HasValue)
+                {
+                    defaultPermission = managerPermission.Value;
+                }
             }
             if (!defaultPermission.HasFlag(WikiPermission.Read)
                 && user.AllowedViewDomains?.Contains(title.Domain) == true)
@@ -3287,6 +3362,7 @@ public static class WikiExtensions
         WikiOptions options,
         IDataStore dataStore,
         IWikiGroupManager? groupManager,
+        IPermissionManager? permissionManager,
         PageTitle title,
         string? ownerId)
     {
@@ -3362,15 +3438,18 @@ public static class WikiExtensions
             }
             else if (user is not null)
             {
-                if (options.GetDomainPermission is not null)
-                {
-                    canReadByDefault = (await options
-                        .GetDomainPermission(user.Id, title.Domain))
-                        .HasFlag(WikiPermission.Read);
-                }
                 if (user.AllowedViewDomains?.Contains(title.Domain) == true)
                 {
                     canReadByDefault = true;
+                }
+                if (!canReadByDefault
+                    && permissionManager is not null)
+                {
+                    var managerPermission = await permissionManager.GetDomainPermissionAsync(user.Id, title.Domain);
+                    if (managerPermission.HasValue)
+                    {
+                        canReadByDefault = managerPermission.Value.HasFlag(WikiPermission.Read);
+                    }
                 }
                 if (!canReadByDefault)
                 {

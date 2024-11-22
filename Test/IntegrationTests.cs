@@ -35,11 +35,12 @@ public class IntegrationTests
         var userManager = new WikiUserManager(dataStore);
         dataStore.StoreItem(Admin);
         var groupManager = new WikiGroupManager(dataStore, userManager);
+        var permissionManager = new PermissionManager();
 
-        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager);
-        _ = await GetDefaultMainAsync(options, dataStore, userManager, groupManager);
-        _ = await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
-        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
+        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await GetDefaultMainAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await UpdateCategoryAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager, permissionManager);
 
         var pageCount = dataStore.Query<Page>().Count();
 
@@ -78,8 +79,9 @@ public class IntegrationTests
         var userManager = new WikiUserManager(dataStore);
         dataStore.StoreItem(Admin);
         var groupManager = new WikiGroupManager(dataStore, userManager);
+        var permissionManager = new PermissionManager();
 
-        var success = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager);
+        var success = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager, permissionManager);
         Assert.IsTrue(success);
         var welcome = await dataStore.GetWikiPageAsync(
             options,
@@ -87,7 +89,7 @@ public class IntegrationTests
             true);
         Assert.AreEqual(ExpectedWelcome, welcome.Html, ignoreCase: false);
 
-        success = await GetDefaultMainAsync(options, dataStore, userManager, groupManager);
+        success = await GetDefaultMainAsync(options, dataStore, userManager, groupManager, permissionManager);
         Assert.IsTrue(success);
         var main = await dataStore.GetWikiPageAsync(
             options,
@@ -100,11 +102,11 @@ public class IntegrationTests
             new(CategoryTitle, options.CategoryNamespace),
             typeInfo: WikiJsonSerializerContext.Default.Category);
         Assert.IsNotNull(category);
-        await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
+        await UpdateCategoryAsync(options, dataStore, userManager, groupManager, permissionManager);
         category = dataStore.GetItem<Category>(category.Id, TimeSpan.Zero);
         Assert.IsNotNull(category);
 
-        success = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
+        success = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager, permissionManager);
         Assert.IsTrue(success);
 
         main = dataStore.GetItem<Article>(main.Id, TimeSpan.Zero);
@@ -129,9 +131,10 @@ public class IntegrationTests
         var userManager = new WikiUserManager(dataStore);
         dataStore.StoreItem(Admin);
         var groupManager = new WikiGroupManager(dataStore, userManager);
+        var permissionManager = new PermissionManager();
 
-        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager);
-        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
+        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager, permissionManager);
 
         var aboutTitle = new PageTitle(options.AboutPageTitle, options.SystemNamespace);
         var redirectTitle = new PageTitle("AboutRedirect", options.SystemNamespace);
@@ -139,6 +142,7 @@ public class IntegrationTests
             options,
             userManager,
             groupManager,
+            permissionManager,
             Admin,
             redirectTitle,
             null,
@@ -161,11 +165,12 @@ public class IntegrationTests
         var userManager = new WikiUserManager(dataStore);
         dataStore.StoreItem(Admin);
         var groupManager = new WikiGroupManager(dataStore, userManager);
+        var permissionManager = new PermissionManager();
 
-        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager);
-        _ = await GetDefaultMainAsync(options, dataStore, userManager, groupManager);
-        _ = await UpdateCategoryAsync(options, dataStore, userManager, groupManager);
-        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager);
+        _ = await GetDefaultWelcomeAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await GetDefaultMainAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await UpdateCategoryAsync(options, dataStore, userManager, groupManager, permissionManager);
+        _ = await GetDefaultAboutAsync(options, dataStore, userManager, groupManager, permissionManager);
 
         using var cache = new MemoryCache(Options.Create<MemoryCacheOptions>(new()));
 
@@ -173,6 +178,7 @@ public class IntegrationTests
         var searchResults = await dataStore.SearchWikiAsync(
             options,
             groupManager,
+            permissionManager,
             searchRequest,
             Admin,
             cache);
@@ -186,6 +192,7 @@ public class IntegrationTests
         searchResults = await dataStore.SearchWikiAsync(
             options,
             groupManager,
+            permissionManager,
             searchRequest,
             Admin,
             cache);
@@ -197,6 +204,7 @@ public class IntegrationTests
         searchResults = await dataStore.SearchWikiAsync(
             options,
             groupManager,
+            permissionManager,
             searchRequest,
             Admin,
             cache);
@@ -208,6 +216,7 @@ public class IntegrationTests
         searchResults = await dataStore.SearchWikiAsync(
             options,
             groupManager,
+            permissionManager,
             searchRequest,
             Admin,
             cache);
@@ -219,6 +228,7 @@ public class IntegrationTests
         searchResults = await dataStore.SearchWikiAsync(
             options,
             groupManager,
+            permissionManager,
             searchRequest,
             Admin,
             cache);
@@ -230,6 +240,7 @@ public class IntegrationTests
         searchResults = await dataStore.SearchWikiAsync(
             options,
             groupManager,
+            permissionManager,
             searchRequest,
             Admin,
             cache);
@@ -243,10 +254,12 @@ public class IntegrationTests
         WikiOptions options,
         IDataStore dataStore,
         IWikiUserManager userManager,
-        IWikiGroupManager groupManager) => dataStore.AddOrReviseWikiPageAsync(
+        IWikiGroupManager groupManager,
+        IPermissionManager permissionManager) => dataStore.AddOrReviseWikiPageAsync(
         options,
         userManager,
         groupManager,
+        permissionManager,
         Admin,
         new PageTitle(options.AboutPageTitle, options.SystemNamespace),
         $$$"""
@@ -269,10 +282,12 @@ public class IntegrationTests
         WikiOptions options,
         IDataStore dataStore,
         IWikiUserManager userManager,
-        IWikiGroupManager groupManager) => dataStore.AddOrReviseWikiPageAsync(
+        IWikiGroupManager groupManager,
+        IPermissionManager permissionManager) => dataStore.AddOrReviseWikiPageAsync(
         options,
         userManager,
         groupManager,
+        permissionManager,
         Admin,
         new PageTitle(),
         $$$"""
@@ -291,10 +306,12 @@ public class IntegrationTests
         WikiOptions options,
         IDataStore dataStore,
         IWikiUserManager userManager,
-        IWikiGroupManager groupManager) => dataStore.AddOrReviseWikiPageAsync(
+        IWikiGroupManager groupManager,
+        IPermissionManager permissionManager) => dataStore.AddOrReviseWikiPageAsync(
         options,
         userManager,
         groupManager,
+        permissionManager,
         Admin,
         new PageTitle(WelcomeTitle, options.TransclusionNamespace),
         $$$"""
@@ -311,10 +328,12 @@ public class IntegrationTests
         WikiOptions options,
         IDataStore dataStore,
         IWikiUserManager userManager,
-        IWikiGroupManager groupManager) => dataStore.AddOrReviseWikiPageAsync(
+        IWikiGroupManager groupManager,
+        IPermissionManager permissionManager) => dataStore.AddOrReviseWikiPageAsync(
         options,
         userManager,
         groupManager,
+        permissionManager,
         Admin,
         new PageTitle(CategoryTitle, options.CategoryNamespace),
         $"These are system pages in the [Tavenem.Wiki](https://github.com/Tavenem/Wiki) sample [w:Wiki||]. [{options.SystemNamespace}:{options.AboutPageTitle}|]",

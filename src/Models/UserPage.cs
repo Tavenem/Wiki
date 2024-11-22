@@ -185,6 +185,7 @@ public class UserPage : OwnerPage, IPage<UserPage>
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -226,6 +227,7 @@ public class UserPage : OwnerPage, IPage<UserPage>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null) => RenameAsync(
             options,
             dataStore,
@@ -239,6 +241,7 @@ public class UserPage : OwnerPage, IPage<UserPage>
             allowedEditorGroups,
             allowedViewerGroups,
             redirectTitle,
+            pageManager,
             WikiJsonSerializerContext.Default.UserPage,
             cache);
 }

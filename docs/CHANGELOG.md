@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.28.0-preview
+### Added
+- `IPageManager` and `PageManager` to handle lifecylce hooks
+- `IPermissionManager` and `PermissionManager` to handle permission hooks
+### Removed
+- `WikiOptions.GetDomainPermission` (replaced by `IPermissionManager`)
+- `WikiOptions.OnCreated` (replaced by `IPageManager`)
+- `WikiOptions.OnDeleted` (replaced by `IPageManager`)
+- `WikiOptions.OnEdited` (replaced by `IPageManager`)
+- `WikiOptions.OnRenamed` (replaced by `IPageManager`)
+
 ## 0.27.2-preview
 ### Fixed
 - WikiLink Preview rendering

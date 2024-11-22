@@ -1390,6 +1390,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="typeInfo">
     /// <see cref="JsonTypeInfo{T}"/> for <typeparamref name="T"/>.
     /// </param>
@@ -1434,6 +1435,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         JsonTypeInfo<T>? typeInfo = null,
         IMemoryCache? cache = null) where T : Page, IPage<T>
     {
@@ -1481,6 +1483,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             allowedEditorGroups,
             allowedViewerGroups,
             redirectTitle,
+            pageManager,
             cache)
             .ConfigureAwait(false);
 
@@ -1497,6 +1500,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             allowedEditorGroups,
             allowedViewerGroups,
             title,
+            pageManager,
             cache)
             .ConfigureAwait(false);
         if (RedirectReferences is not null)
@@ -1514,13 +1518,13 @@ public abstract class Page : MarkdownItem, IPage<Page>
             }
         }
 
-        if (options.OnRenamed is not null
+        if (pageManager is not null
             && this is not Category
             && string.CompareOrdinal(Title.Namespace, options.GroupNamespace) != 0
             && string.CompareOrdinal(Title.Namespace, options.UserNamespace) != 0)
         {
-            await options.OnRenamed
-                .Invoke(newPage, Title, oldOwner, Owner)
+            await pageManager
+                .OnRenamedAsync(newPage, Title, oldOwner, Owner)
                 .ConfigureAwait(false);
         }
     }
@@ -1559,6 +1563,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null)
         => throw new InvalidOperationException();
 
@@ -1638,6 +1643,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     /// <param name="redirectTitle">
     /// If this page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -1664,6 +1670,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null)
     {
         if (redirectTitle.HasValue)
@@ -1828,41 +1835,40 @@ public abstract class Page : MarkdownItem, IPage<Page>
         await UpdateReferencesAsync(options, dataStore)
             .ConfigureAwait(false);
 
-        if (Revision.IsDeleted)
+        if (pageManager is not null)
         {
-            if (previousRevision?.IsDeleted == false)
+            if (Revision.IsDeleted)
             {
-                if (options.OnDeleted is not null
-                    && this is not Category
-                    && string.CompareOrdinal(Title.Namespace, options.GroupNamespace) != 0
-                    && string.CompareOrdinal(Title.Namespace, options.UserNamespace) != 0)
+                if (previousRevision?.IsDeleted == false)
                 {
-                    await options.OnDeleted
-                        .Invoke(this, oldOwner, Owner)
-                        .ConfigureAwait(false);
-                }
-                else if (options.OnEdited is not null)
-                {
-                    await options.OnEdited
-                        .Invoke(this, Revision, oldOwner, Owner)
-                        .ConfigureAwait(false);
+                    if (this is not Category
+                        && string.CompareOrdinal(Title.Namespace, options.GroupNamespace) != 0
+                        && string.CompareOrdinal(Title.Namespace, options.UserNamespace) != 0)
+                    {
+                        await pageManager
+                            .OnDeletedAsync(this, oldOwner, Owner)
+                            .ConfigureAwait(false);
+                    }
+                    else
+                    {
+                        await pageManager
+                            .OnEditedAsync(this, Revision, oldOwner, Owner)
+                            .ConfigureAwait(false);
+                    }
                 }
             }
-        }
-        else if (previousRevision?.IsDeleted != false)
-        {
-            if (options.OnCreated is not null)
+            else if (previousRevision?.IsDeleted != false)
             {
-                await options.OnCreated
-                    .Invoke(this, editor)
+                await pageManager
+                    .OnCreatedAsync(this, editor)
                     .ConfigureAwait(false);
             }
-        }
-        else if (options.OnEdited is not null)
-        {
-            await options.OnEdited
-                .Invoke(this, Revision, oldOwner, Owner)
-                .ConfigureAwait(false);
+            else
+            {
+                await pageManager
+                    .OnEditedAsync(this, Revision, oldOwner, Owner)
+                    .ConfigureAwait(false);
+            }
         }
 
         if (Revision.IsMilestone)
@@ -1880,6 +1886,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
     internal static async Task RestoreAsync<T>(
         WikiOptions options,
         IDataStore dataStore,
+        IPageManager? pageManager,
         T page,
         string editor,
         string? newTitle,
@@ -1908,6 +1915,7 @@ public abstract class Page : MarkdownItem, IPage<Page>
             page.AllowedEditorGroups,
             page.AllowedViewerGroups,
             page.RedirectTitle,
+            pageManager,
             cache)
             .ConfigureAwait(false);
     }

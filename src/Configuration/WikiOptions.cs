@@ -6,46 +6,6 @@ using Tavenem.Wiki.MarkdownExtensions;
 namespace Tavenem.Wiki;
 
 /// <summary>
-/// The delegate signature used by <see cref="WikiOptions.GetDomainPermission"/>.
-/// </summary>
-/// <param name="userId">The ID of a user.</param>
-/// <param name="domain">The domain.</param>
-public delegate ValueTask<WikiPermission> GetDomainPermissionFunc(string userId, string domain);
-
-/// <summary>
-/// The delegate signature used by <see cref="WikiOptions.OnCreated"/>.
-/// </summary>
-/// <param name="page">The new page.</param>
-/// <param name="editor">The ID of the editor who created the page.</param>
-public delegate ValueTask OnCreatedFunc(Page page, string editor);
-
-/// <summary>
-/// The delegate signature used by <see cref="WikiOptions.OnDeleted"/>.
-/// </summary>
-/// <param name="page">The deleted page.</param>
-/// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
-/// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
-public delegate ValueTask OnDeletedFunc(Page page, string? oldOwner, string? newOwner);
-
-/// <summary>
-/// The delegate signature used by <see cref="WikiOptions.OnEdited"/>.
-/// </summary>
-/// <param name="page">The edited page.</param>
-/// <param name="revision">The revision applied.</param>
-/// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
-/// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
-public delegate ValueTask OnEditedFunc(Page page, Revision revision, string? oldOwner, string? newOwner);
-
-/// <summary>
-/// The delegate signature used by <see cref="WikiOptions.OnRenamed"/>.
-/// </summary>
-/// <param name="page">The renamed page.</param>
-/// <param name="oldTitle">The original title.</param>
-/// <param name="oldOwner">The original <see cref="Page.Owner"/>.</param>
-/// <param name="newOwner">The new <see cref="Page.Owner"/>.</param>
-public delegate ValueTask OnRenamedFunc(Page page, PageTitle oldTitle, string? oldOwner, string? newOwner);
-
-/// <summary>
 /// Various customization and configuration options for the wiki system.
 /// </summary>
 public class WikiOptions
@@ -267,32 +227,6 @@ public class WikiOptions
             : value;
     }
 
-    /// <summary>
-    /// When a user attempts to interact with an article in a domain (including viewing, creating,
-    /// editing, or deleting items), this function is invoked (if provided) to determine the
-    /// permissions the user has for that domain.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// The <see cref="WikiUser.AllowedViewDomains"/> property for the given user will also be
-    /// checked, and will provide <see cref="WikiPermission.Read"/> permission, if a matching domain
-    /// name is found.
-    /// </para>
-    /// <para>
-    /// The user's effective permission is determined by the combination of this function, <see
-    /// cref="WikiUser.AllowedViewDomains"/>, and <see cref="WikiGroup.AllowedViewDomains"/>, as
-    /// well as any access controls on the specific article, which override the general permissions
-    /// for the domain, if present.
-    /// </para>
-    /// <para>
-    /// Note that the default when no permission is specified is to be denied access (unlike the
-    /// default for non-domain articles, which is to grant full access even to anonymous users).
-    /// </para>
-    /// Also see <seealso cref="UserDomains"/>.
-    /// </remarks>
-    [JsonIgnore]
-    public GetDomainPermissionFunc? GetDomainPermission { get; set; }
-
     private const string GroupNamespaceDefault = "Group";
     private string _groupNamespace = GroupNamespaceDefault;
     /// <summary>
@@ -388,59 +322,6 @@ public class WikiOptions
     public int MinimumTableOfContentsHeadings { get; set; } = 3;
 
     /// <summary>
-    /// An optional callback invoked when a new page is created.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Receives the new <see cref="Page"/> as a parameter.
-    /// </para>
-    /// <para>
-    /// This function is also invoked when a previously deleted article is re-created.
-    /// </para>
-    /// </remarks>
-    [JsonIgnore]
-    public OnCreatedFunc? OnCreated { get; set; }
-
-    /// <summary>
-    /// An optional callback invoked when a page is deleted.
-    /// </summary>
-    /// <remarks>
-    /// Receives the deleted <see cref="Page"/>, the original <see cref="Page.Owner"/>,
-    /// and the new <see cref="Page.Owner"/> as parameters.
-    /// </remarks>
-    [JsonIgnore]
-    public OnDeletedFunc? OnDeleted { get; set; }
-
-    /// <summary>
-    /// An optional callback invoked when a <see cref="Page"/> is edited (not including deletion if
-    /// <see cref="OnDeleted"/> is provided).
-    /// </summary>
-    /// <remarks>
-    /// Receives the edited <see cref="Page"/>, the <see cref="Revision"/> which was applied, the
-    /// original <see cref="Page.Owner"/>, and the new <see cref="Page.Owner"/> as parameters.
-    /// </remarks>
-    [JsonIgnore]
-    public OnEditedFunc? OnEdited { get; set; }
-
-    /// <summary>
-    /// An optional callback invoked when a <see cref="Page"/> is renamed.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Receives the <see cref="Page"/> which has been renamed (with the new title), the original
-    /// <see cref="PageTitle"/>, the original <see cref="Page.Owner"/>, and the new <see
-    /// cref="Page.Owner"/> as parameters.
-    /// </para>
-    /// <para>
-    /// Note that this is called in addition to <see cref="OnDeleted"/> for the original page, since
-    /// a rename is actually the deletion of the original page, plus the creation of a new page with
-    /// a new title.
-    /// </para>
-    /// </remarks>
-    [JsonIgnore]
-    public OnRenamedFunc? OnRenamed { get; set; }
-
-    /// <summary>
     /// The title of the main policy page (expected in the <see cref="SystemNamespace"/>, not in a
     /// domain)..
     /// </summary>
@@ -456,7 +337,7 @@ public class WikiOptions
     public string? PolicyPageTitle { get; set; } = "Policies";
 
     /// <summary>
-    /// A collection of preprocessors which transform the HTML of an article <em>after</em> it is
+    /// A collection of postprocessors which transform the HTML of an article <em>after</em> it is
     /// parsed from markdown but <em>before</em> it is sanitized.
     /// </summary>
     /// <remarks>
@@ -579,7 +460,7 @@ public class WikiOptions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The <see cref="GetDomainPermission"/> function, the <see
+    /// The <see cref="IPermissionManager.GetDomainPermissionAsync"/> function, the <see
     /// cref="WikiUser.AllowedViewDomains"/> property, and the <see
     /// cref="WikiGroup.AllowedViewDomains"/> property will still be checked for other users
     /// attempting to access content in such domains, but the user with the matching ID will always

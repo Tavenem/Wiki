@@ -65,6 +65,7 @@ public class Archive
     /// <param name="domain">
     /// An optional new domain to assign to all restored pages.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -95,6 +96,7 @@ public class Archive
         WikiOptions options,
         string editor,
         string? domain = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null)
     {
         if (Pages is null)
@@ -109,6 +111,7 @@ public class Archive
                 await Page.RestoreAsync(
                     options,
                     dataStore,
+                    pageManager,
                     category,
                     editor,
                     null,
@@ -122,6 +125,7 @@ public class Archive
                 await Page.RestoreAsync(
                     options,
                     dataStore,
+                    pageManager,
                     file,
                     editor,
                     null,
@@ -186,6 +190,7 @@ public class Archive
                 await Page.RestoreAsync(
                     options,
                     dataStore,
+                    pageManager,
                     article,
                     editor,
                     newTitle,
@@ -199,6 +204,7 @@ public class Archive
                 await Page.RestoreAsync(
                     options,
                     dataStore,
+                    pageManager,
                     page,
                     editor,
                     null,

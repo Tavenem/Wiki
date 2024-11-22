@@ -276,6 +276,7 @@ public sealed class WikiFile : Page, IPage<WikiFile>
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -317,6 +318,7 @@ public sealed class WikiFile : Page, IPage<WikiFile>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null) => RenameAsync(
             options,
             dataStore,
@@ -330,6 +332,7 @@ public sealed class WikiFile : Page, IPage<WikiFile>
             allowedEditorGroups,
             allowedViewerGroups,
             redirectTitle,
+            pageManager,
             WikiJsonSerializerContext.Default.WikiFile,
             cache);
 
@@ -416,6 +419,7 @@ public sealed class WikiFile : Page, IPage<WikiFile>
     /// <param name="redirectTitle">
     /// If this page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -464,6 +468,7 @@ public sealed class WikiFile : Page, IPage<WikiFile>
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null)
     {
         if (fileSize <= 0)
@@ -495,6 +500,7 @@ public sealed class WikiFile : Page, IPage<WikiFile>
             allowedEditorGroups,
             allowedViewerGroups,
             redirectTitle,
+            pageManager,
             cache)
             .ConfigureAwait(false);
     }

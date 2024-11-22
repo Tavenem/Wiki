@@ -281,6 +281,7 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
     /// <param name="redirectTitle">
     /// If the new page will redirect to another, this indicates the title of the destination.
     /// </param>
+    /// <param name="pageManager">An <see cref="IPageManager"/> instance.</param>
     /// <param name="cache">
     /// <para>
     /// An <see cref="IMemoryCache"/> instance used to cache a mapping of wiki page titles to search
@@ -322,5 +323,6 @@ public interface IPage<TSelf> where TSelf : class, IIdItem, IPage<TSelf>?
         IEnumerable<string>? allowedEditorGroups = null,
         IEnumerable<string>? allowedViewerGroups = null,
         PageTitle? redirectTitle = null,
+        IPageManager? pageManager = null,
         IMemoryCache? cache = null);
 }
