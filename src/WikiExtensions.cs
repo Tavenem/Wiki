@@ -213,8 +213,10 @@ public static class WikiExtensions
         var hasPermission = CheckEditPermissions(
             options,
             page,
+            editor,
             isDeleted
                 || (originalTitle.HasValue && !originalTitle.Equals(title)),
+            owner,
             allowedEditors,
             allowedViewers,
             allowedEditorGroups,
@@ -242,7 +244,9 @@ public static class WikiExtensions
             var hasOriginalPermission = CheckEditPermissions(
                 options,
                 originalPage,
+                editor,
                 true,
+                owner,
                 allowedEditors,
                 allowedViewers,
                 allowedEditorGroups,
@@ -2701,7 +2705,9 @@ public static class WikiExtensions
     private static bool CheckEditPermissions(
         WikiOptions options,
         Page page,
+        IWikiUser editor,
         bool isDeletedOrRenamed = false,
+        string? owner = null,
         IEnumerable<string>? allowedEditors = null,
         IEnumerable<string>? allowedViewers = null,
         IEnumerable<string>? allowedEditorGroups = null,
@@ -2723,6 +2729,8 @@ public static class WikiExtensions
             }
         }
         if (!string.IsNullOrEmpty(page.Owner)
+            && editor.Id != page.Owner
+            && owner != page.Owner
             && !page.Permission.HasFlag(WikiPermission.SetOwner))
         {
             return false;
