@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.1-preview
+### Fixed
+- Page owner permission
+
 ## 0.28.0-preview
 ### Added
 - `IPageManager` and `PageManager` to handle lifecylce hooks

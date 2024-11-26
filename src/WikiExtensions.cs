@@ -2894,8 +2894,8 @@ public static class WikiExtensions
         if (user?.IsWikiAdmin == true)
         {
             return isReservedNamespace
-                ? WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions
-                : WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+                ? WikiPermission.ReadWrite | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner
+                : WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner;
         }
 
         var isUserPage = string.CompareOrdinal(title.Namespace, options.UserNamespace) == 0;
@@ -2918,7 +2918,7 @@ public static class WikiExtensions
                 .ConfigureAwait(false);
             if (string.Equals(user.Id, ownerId))
             {
-                return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions;
+                return WikiPermission.ReadWrite | WikiPermission.Create | WikiPermission.Delete | WikiPermission.SetPermissions | WikiPermission.SetOwner;
             }
         }
 
