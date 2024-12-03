@@ -1,7 +1,7 @@
 ﻿using System.Security.Claims;
 using Tavenem.DataStorage;
 
-namespace Tavenem.Wiki;
+namespace Tavenem.Wiki.Services;
 
 /// <summary>
 /// A default user manager for <see cref="WikiUser"/>s, which keeps its data in an <see

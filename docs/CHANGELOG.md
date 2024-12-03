@@ -1,12 +1,16 @@
 # Changelog
 
+## 0.28.3-preview
+### Changed
+- Namespace for default service implementations
+
 ## 0.28.1-2-preview
 ### Fixed
 - Page owner permission
 
 ## 0.28.0-preview
 ### Added
-- `IPageManager` and `PageManager` to handle lifecylce hooks
+- `IPageManager` and `PageManager` to handle lifecycle hooks
 - `IPermissionManager` and `PermissionManager` to handle permission hooks
 ### Removed
 - `WikiOptions.GetDomainPermission` (replaced by `IPermissionManager`)

@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -63,13 +62,14 @@ public interface IWikiOwner
     /// </summary>
     /// <remarks>
     /// <para>
-    /// The <see cref="WikiOptions.GetDomainPermission"/> function will also be invoked with this
-    /// entity's <see cref="IdItem.Id"/>, if an implementation for the function is provided.
+    /// The <see cref="IPermissionManager.GetDomainPermissionAsync"/> function will also be invoked
+    /// with this entity's <see cref="IdItem.Id"/>, if an implementation for the function is
+    /// provided.
     /// </para>
     /// <para>
     /// The entity's effective permission is determined by the combination of this property and <see
-    /// cref="WikiOptions.GetDomainPermission"/>, as well as any access controls on the specific
-    /// page, which override the general permissions for the domain, if present.
+    /// cref="IPermissionManager.GetDomainPermissionAsync"/>, as well as any access controls on the
+    /// specific page, which override the general permissions for the domain, if present.
     /// </para>
     /// <para>
     /// Note that the default when no permission is specified is to be denied access (unlike the

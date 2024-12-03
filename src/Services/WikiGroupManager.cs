@@ -1,6 +1,6 @@
 ﻿using Tavenem.DataStorage;
 
-namespace Tavenem.Wiki;
+namespace Tavenem.Wiki.Services;
 
 /// <summary>
 /// A default group manager for <see cref="WikiGroup"/>s, which keeps its data in an <see

@@ -1,4 +1,4 @@
-﻿namespace Tavenem.Wiki.Interfaces;
+﻿namespace Tavenem.Wiki.Services;
 
 /// <summary>
 /// A default implementation of <see cref="IPageManager"/> which performs no actions.

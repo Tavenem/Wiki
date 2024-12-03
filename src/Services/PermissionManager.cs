@@ -1,4 +1,4 @@
-﻿namespace Tavenem.Wiki;
+﻿namespace Tavenem.Wiki.Services;
 
 /// <summary>
 /// A default implementation of <see cref="IPermissionManager"/> which always returns <see langword="null"/>.

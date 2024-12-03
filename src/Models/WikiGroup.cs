@@ -1,6 +1,5 @@
 ﻿using System.Text.Json.Serialization;
 using Tavenem.DataStorage;
-using Tavenem.Wiki.Models;
 
 namespace Tavenem.Wiki;
 
@@ -74,8 +73,9 @@ public class WikiGroup : IdItem, IWikiGroup
     /// <para>
     /// A user's effective permission is determined by the combination of this property, the <see
     /// cref="WikiUser.AllowedViewDomains"/> property, and the <see
-    /// cref="WikiOptions.GetDomainPermission"/> function, as well as any access controls on the
-    /// specific article, which override the general permissions for the domain, if present.
+    /// cref="IPermissionManager.GetDomainPermissionAsync"/> function, as well as any access
+    /// controls on the specific article, which override the general permissions for the domain, if
+    /// present.
     /// </para>
     /// <para>
     /// Note that the default when no permission is specified is to be denied access (unlike the
