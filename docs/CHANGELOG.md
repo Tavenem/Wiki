@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.4-preview
+### Changed
+- Added more script error logging
+
 ## 0.28.3-preview
 ### Changed
 - Namespace for default service implementations

@@ -889,9 +889,17 @@ internal static class TransclusionPreprocessor
                 .ToString()
                 ?? string.Empty;
         }
+        catch (Jint.Runtime.JavaScriptException ex)
+        {
+            Console.WriteLine(ex);
+            Console.WriteLine(ex.JavaScriptStackTrace);
+            Console.WriteLine(scriptCode);
+            return string.Empty;
+        }
         catch (Exception ex)
         {
             Console.WriteLine(ex);
+            Console.WriteLine(scriptCode);
             return string.Empty;
         }
 

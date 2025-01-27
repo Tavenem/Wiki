@@ -428,13 +428,11 @@ Fourth section text";
         _ = await GetArticleAsync(dataStore, InnerTemplate, InnerNestedTitle, _Options.ScriptNamespace);
 
         const string Template = $$$"""
+            {{#unless isTemplate}}This is the "For" template. It executes the "For" script.{{/unless}}
             :::wiki-article-ref
-            {{#if isTemplate}}
-            {{#exec}}{{> Script:{{{InnerNestedTitle}}} }}{{/exec}}
-            {{else}}
-            This is the "For" template
-            {{/if}}
+            {{#if isTemplate}}{{#exec}}{{> Script:{{{InnerNestedTitle}}}}}{{/exec}}{{/if}}
             :::
+            {{#unless isTemplate}}[Category:Link transclusions]{{/unless}}
             """;
         _ = await GetArticleAsync(dataStore, Template, NestedTitle, _Options.TransclusionNamespace);
 

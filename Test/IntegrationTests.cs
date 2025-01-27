@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Tavenem.DataStorage;
 using Tavenem.Wiki.Queries;
+using Tavenem.Wiki.Services;
 
 namespace Tavenem.Wiki.Test;
 
