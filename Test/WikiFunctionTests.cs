@@ -394,6 +394,15 @@ Fourth section text";
     {
         var dataStore = new InMemoryDataStore();
 
+        const string Template = $$$"""
+            {{#unless isTemplate}}This is the "For" template. It executes the "For" script.{{/unless}}
+            :::wiki-article-ref
+            {{#if isTemplate}}{{#exec}}{{> Script:{{{InnerNestedTitle}}}}}{{/exec}}{{/if}}
+            :::
+            {{#unless isTemplate}}[Category:Link transclusions]{{/unless}}
+            """;
+        _ = await GetArticleAsync(dataStore, Template, NestedTitle, _Options.TransclusionNamespace);
+
         const string InnerTemplate = """
             let s;
             if (args.length && args[0] && args[0].length) {
@@ -426,15 +435,6 @@ Fourth section text";
             return s;
             """;
         _ = await GetArticleAsync(dataStore, InnerTemplate, InnerNestedTitle, _Options.ScriptNamespace);
-
-        const string Template = $$$"""
-            {{#unless isTemplate}}This is the "For" template. It executes the "For" script.{{/unless}}
-            :::wiki-article-ref
-            {{#if isTemplate}}{{#exec}}{{> Script:{{{InnerNestedTitle}}}}}{{/exec}}{{/if}}
-            :::
-            {{#unless isTemplate}}[Category:Link transclusions]{{/unless}}
-            """;
-        _ = await GetArticleAsync(dataStore, Template, NestedTitle, _Options.TransclusionNamespace);
 
         await TestTemplateAsync(
             dataStore,

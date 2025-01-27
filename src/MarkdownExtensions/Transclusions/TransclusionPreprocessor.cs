@@ -49,7 +49,9 @@ internal static class TransclusionPreprocessor
                 ) =>
                 {
                     var script = options.Template();
-                    if (string.IsNullOrWhiteSpace(script))
+                    if (string.IsNullOrWhiteSpace(script)
+                        || script.StartsWith("{{>")
+                        || script.StartsWith("{{#>"))
                     {
                         return;
                     }
@@ -75,7 +77,9 @@ internal static class TransclusionPreprocessor
                 ) =>
                 {
                     var script = options.Template();
-                    if (string.IsNullOrWhiteSpace(script))
+                    if (string.IsNullOrWhiteSpace(script)
+                        || script.StartsWith("{{>")
+                        || script.StartsWith("{{#>"))
                     {
                         return;
                     }

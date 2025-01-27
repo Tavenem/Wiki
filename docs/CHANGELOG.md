@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.5-preview
+### Changed
+- Shortcut missing script parsing
+
 ## 0.28.4-preview
 ### Changed
 - Added more script error logging
